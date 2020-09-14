@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <ComponentGroup Id="SimplyBudgetDesktopFiles">
+            <Component Id="cmp47587D6E893FE9602B596FCC4408C7B0" Directory="INSTALLFOLDER" Guid="{97A2CA01-AE5E-48A0-A553-1DB54E71659F}">
+                <File Id="filEBA79DDE806132D113F04DC0E3BC4FAA" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)Microsoft.Expression.Interactions.dll" />
+            </Component>
+            <Component Id="cmpE1241CA124445C6D2D91995DFCA4A100" Directory="INSTALLFOLDER" Guid="{5F6F22D8-CAF8-4E6C-9B99-F317B38625E2}">
+                <File Id="fil8464BF4C87080518E5C99DB9DE595A59" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)Microsoft.Practices.Prism.dll" />
+            </Component>
+            <Component Id="cmp524AF93D9F8426C9E04299ED25BA16B0" Directory="INSTALLFOLDER" Guid="{A3FD3B64-9EF5-4A43-B262-558B2FD1014B}">
+                <File Id="fil2917B2190035F84081CD4A09B5D7BAC8" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)Microsoft.Practices.Prism.Interactivity.dll" />
+            </Component>
+            <Component Id="cmp77A6DCC5C600027941742FBE662AAE83" Directory="INSTALLFOLDER" Guid="{818C4A57-F22A-4FF3-8FC9-438198E3F801}">
+                <File Id="fil5311D69B043CE06296887DD6730E0EBA" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)Microsoft.Practices.Prism.Interactivity.xml" />
+            </Component>
+            <Component Id="cmp0E05BE0878B1E2D0C3935C9BA8A7023D" Directory="INSTALLFOLDER" Guid="{6FCBA726-6BD7-4C17-ADCF-8C2DA94FF3A7}">
+                <File Id="fil9117312698DD44EE2D34F5CE87C3B401" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)Microsoft.Practices.Prism.xml" />
+            </Component>
+            <Component Id="cmp16511F0BADC7EEC196CE5B9ABD21FEEA" Directory="INSTALLFOLDER" Guid="{727C8ED9-8C0D-4A9E-8B66-C4D7CA6A9F03}">
+                <File Id="filBCEFCC1D8DF6BD6C8D728D7CC68EF9DF" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)Microsoft.Practices.ServiceLocation.dll" />
+            </Component>
+            <Component Id="cmpB39335B3EBED3792140039A44D2D9E7A" Directory="INSTALLFOLDER" Guid="{645ACCBC-0144-4ED2-A0E6-8AA81F5598CA}">
+                <File Id="fil56A60CEDFA63BB544408D1ECDDBFCB06" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)Microsoft.Practices.ServiceLocation.xml" />
+            </Component>
+            <Component Id="cmp165207C15F6FAD136949C80D5CFCE12E" Directory="INSTALLFOLDER" Guid="{33EC7EAE-791C-4B6D-BD73-3614966934E0}">
+                <File Id="fil2C0AC94BCC222527C8AE299A8094378F" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)SimplyBudgetDesktop.exe" />
+            </Component>
+            <Component Id="cmp30D41E3EA56D6162A92548C3A2217942" Directory="INSTALLFOLDER" Guid="{2F822886-0C84-4132-A107-99D6078E6AF7}">
+                <File Id="fil2640ABDF3F7C788F5CA376F2523B93A0" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)SimplyBudgetDesktop.exe.config" />
+            </Component>
+            <Component Id="cmp44CC6C35A2EC0CBF2D382025C06D492F" Directory="INSTALLFOLDER" Guid="{2E98CBC7-B850-48DC-B2C2-CE97B750B57D}">
+                <File Id="filC175E5328704D1A63FBDD53F3B4B45FA" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)SimplyBudgetShared.dll" />
+            </Component>
+            <Component Id="cmp665B011215EE152C839B9E89FFFDEA84" Directory="INSTALLFOLDER" Guid="{DC13731D-B6FB-494C-A174-A456438213B4}">
+                <File Id="fil97A8BB7079FFE483DA421296C7897EB4" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)sqlite3.dll" />
+            </Component>
+            <Component Id="cmp6420500FF1ABC06969E348ACB0B55D77" Directory="INSTALLFOLDER" Guid="{3E0DFBB3-CF4B-4FFA-B053-C74E60489CAB}">
+                <File Id="filA545F6C5C51315B4671A7FE6553F80CE" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)System.Windows.Interactivity.dll" />
+            </Component>
+            <Component Id="cmpC778C599576B4385862DB090CD6F1B61" Directory="INSTALLFOLDER" Guid="{E0161EAB-EE83-4D1E-BC2D-78DC99B24EA1}">
+                <File Id="fil668BBD826672443EAE9E523D47B901D8" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)Telerik.Windows.Controls.dll" />
+            </Component>
+            <Component Id="cmpAECE7A562DD54A6CADFD8AB90F30DB60" Directory="INSTALLFOLDER" Guid="{71D0A5C0-6C3E-4D78-B0F5-1F00E8C47E2A}">
+                <File Id="filC9A596E55C8F4A3392221021578044D5" KeyPath="yes" Source="$(var.SimplyBudgetDesktop.TargetDir)telerik.windows.controls.input.dll" />
+            </Component>
+        </ComponentGroup>
+    </Fragment>
+</Wix>

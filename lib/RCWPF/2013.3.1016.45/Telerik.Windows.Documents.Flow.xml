@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Telerik.Windows.Documents.Flow</name>
+    </assembly>
+    <members>
+        <member name="T:Telerik.Windows.Documents.Layout.ContentAlignment">
+            <summary>
+            Describes the alignment of the content of layout element.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Layout.ContentAlignment.TopLeft">
+            <summary>
+            Top left alignment.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Layout.ContentAlignment.TopCenter">
+            <summary>
+            Top centered alignment.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Layout.ContentAlignment.TopRight">
+            <summary>
+            Top right alignment.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Layout.ContentAlignment.MiddleLeft">
+            <summary>
+            Middle left alignment.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Layout.ContentAlignment.MiddleCenter">
+            <summary>
+            Middle centered alignment.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Layout.ContentAlignment.MiddleRight">
+            <summary>
+            Middle right alignment.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Layout.ContentAlignment.BottomLeft">
+            <summary>
+            Bottom left alignment.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Layout.ContentAlignment.BottomCenter">
+            <summary>
+            Bottom centered alignment.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Layout.ContentAlignment.BottomRight">
+            <summary>
+            Bottom right alignment.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Model.AnnotationMarkerDeleteBehavior">
+            <summary>
+            Describes the behavior of an annotation in case of delete operation.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Model.AnnotationMarkerDeleteBehavior.PreserveAnnotation">
+            <summary>
+            Preserves the annotation, but the content can be modified. Can be used for Backspace and DeleteBehavior.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Model.AnnotationMarkerDeleteBehavior.PreserveAnnotationContent">
+            <summary>
+            Deprecated. Preserves the annotation and its content from modifications and deleting. Can be used for DeleteSelectedBehavior.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Model.AnnotationMarkerDeleteBehavior.SelectAnnotation">
+            <summary>
+            Selects the annotation. Can be used for Backspace and DeleteBehavior.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Model.AnnotationMarkerDeleteBehavior.RemoveAnnotation">
+            <summary>
+            Removes the annotation, but leaves its content. Can be used for Backspace, Delete and DeleteSelectedBehavior.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Model.AnnotationMarkerDeleteBehavior.SelectAnnotationMarker">
+            <summary>
+            Selects the annotation marker. Can be used for Backspace and DeleteBehavior.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Model.BaselineAlignment">
+            <summary>
+            Describes how the baseline for a text-based element is positioned on the vertical axis, relative to the established baseline for text.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Model.BaselineAlignment.Baseline">
+            <summary>
+            A baseline that is aligned at the actual baseline of the containing box.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Model.BaselineAlignment.Subscript">
+            <summary>
+            A baseline that is aligned at the subscript position of the containing box.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Model.BaselineAlignment.Superscript">
+            <summary>
+            A baseline that is aligned at the superscript position of the containing box.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Model.IReadOnlyRangeMarker">
+            <summary>
+            Indicator interface for annotation markers denoting read-only ranges.
+            </summary>
+        </member>
+    </members>
+</doc>

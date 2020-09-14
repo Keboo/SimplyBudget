@@ -1,0 +1,192 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Telerik.Windows.Documents.Core</name>
+    </assembly>
+    <members>
+        <member name="T:Telerik.Windows.Documents.Core.Fonts.FontProperties">
+            <summary>
+            Represents fonts properties class.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Core.Fonts.FontProperties.#ctor(System.Windows.Media.FontFamily,System.Windows.FontStyle,System.Windows.FontWeight)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Telerik.Windows.Documents.Core.Fonts.FontProperties"/> class.
+            </summary>
+            <param name="fontFamily">The font family.</param>
+            <param name="fontStyle">The font style.</param>
+            <param name="fontWeight">The font weight.</param>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Core.Fonts.FontProperties.#ctor(System.Windows.Media.FontFamily)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Telerik.Windows.Documents.Core.Fonts.FontProperties"/> class.
+            </summary>
+            <param name="fontFamily">The font family.</param>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Core.Fonts.FontProperties.Equals(System.Object)">
+            <summary>
+            Determines whether the specified <see cref="T:System.Object" /> is equal
+            to the current <see cref="T:System.Object" />.
+            </summary>
+            <param name="obj">The <see cref="T:System.Object" /> to compare with the current
+            <see cref="T:System.Object" />.</param>
+            <returns>
+            true if the specified <see cref="T:System.Object" /> is equal to the
+            current <see cref="T:System.Object" />; otherwise, false.
+            </returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Core.Fonts.FontProperties.GetHashCode">
+            <summary>
+            Serves as a hash function for a particular type.
+            </summary>
+            <returns>A hash code for the current <see cref="T:System.Object" />.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Core.Fonts.FontProperties.FontFamilyName">
+            <summary>
+            Gets font family name.
+            </summary>
+            <value>The name of the font family.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Core.Fonts.FontProperties.FontWeight">
+            <summary>
+            Gets the font weight.
+            </summary>
+            <value>The font weight.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Core.Fonts.FontProperties.FontStyle">
+            <summary>
+            Gets the font style.
+            </summary>
+            <value>The font style.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Core.Fonts.FontProperties.FontFamily">
+            <summary>
+            Gets the font family.
+            </summary>
+            <value>The font family.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Core.Fonts.FontProperties.IsMonoSpaced">
+            <summary>
+            Gets if font is mono spaced.
+            </summary>
+            <value>The is mono spaced.</value>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Core.TextMeasurer.SubStringPosition">
+            <summary>
+            Represents sub string position enum. This position is used when RTL text is measured.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Core.TextMeasurer.SubStringPosition.None">
+            <summary>
+            Represents the default substring position.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Core.TextMeasurer.SubStringPosition.Start">
+            <summary>
+            Represents position in start of string.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Core.TextMeasurer.SubStringPosition.Middle">
+            <summary>
+            Represents position in middle of string.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Documents.Core.TextMeasurer.SubStringPosition.End">
+            <summary>
+            Represents position in end of string.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Core.TextMeasurer.ITextMeasurer">
+            <summary>
+            Represents base text measurer interface.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Core.TextMeasurer.ITextMeasurer.MeasureText(Telerik.Windows.Documents.Core.TextMeasurer.TextProperties,Telerik.Windows.Documents.Core.Fonts.FontProperties)">
+            <summary>
+            Measures the text.
+            </summary>
+            <param name="textProperties">The text properties.</param>
+            <param name="fontProperties">The font properties.</param>
+            <returns></returns>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Core.TextMeasurer.RadTextMeasurer">
+            <summary>
+            Represents text measurer that can be used in multi-threaded applications.
+            </summary>
+            <summary>
+            Represents text measurer that can be used in multi-threaded applications.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Core.TextMeasurer.RadTextMeasurer.MeasureText(Telerik.Windows.Documents.Core.TextMeasurer.TextProperties,Telerik.Windows.Documents.Core.Fonts.FontProperties)">
+            <summary>
+            Measures the text.
+            </summary>
+            <param name="textProperties"></param>
+            <param name="fontProperties">The font properties.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Core.TextMeasurer.RadTextMeasurer.MeasureTextWithWrapping(Telerik.Windows.Documents.Core.TextMeasurer.TextProperties,Telerik.Windows.Documents.Core.Fonts.FontProperties,System.Double)">
+            <summary>
+            Measures the text with wrapping.
+            </summary>
+            <param name="textProperties">The text properties.</param>
+            <param name="fontProperties">The font properties.</param>
+            <param name="wrappingWidth">Width of the wrapping.</param>
+            <returns></returns>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Core.TextMeasurer.TextProperties">
+            <summary>
+            Represents text properties.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Core.TextMeasurer.TextProperties.#ctor(System.String,System.Double,Telerik.Windows.Documents.Core.TextMeasurer.SubStringPosition)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Telerik.Windows.Documents.Core.TextMeasurer.TextProperties"/> class.
+            </summary>
+            <param name="text">The text.</param>
+            <param name="size">The size.</param>
+            <param name="subStringPosition">The sub string position.</param>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Core.TextMeasurer.TextProperties.SubStringPosition">
+            <summary>
+            Gets the sub string position.
+            </summary>
+            <value>The sub string position.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Core.TextMeasurer.TextProperties.Size">
+            <summary>
+            Gets the size.
+            </summary>
+            <value>The size.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Core.TextMeasurer.TextProperties.Text">
+            <summary>
+            Gets the text.
+            </summary>
+            <value>The text.</value>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Core.TextMeasurer.TextMeasurementInfo">
+            <summary>
+            Represents text measurement info class.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Core.TextMeasurer.TextMeasurementInfo.Empty">
+            <summary>
+            Gets empty text measurement info.
+            </summary>
+            <value>Empty text measurement info.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Core.TextMeasurer.TextMeasurementInfo.Size">
+            <summary>
+            Gets or sets the size.
+            </summary>
+            <value>The size.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Core.TextMeasurer.TextMeasurementInfo.BaselineOffset">
+            <summary>
+            Gets or sets the baseline offset.
+            </summary>
+            <value>The baseline offset.</value>
+        </member>
+    </members>
+</doc>

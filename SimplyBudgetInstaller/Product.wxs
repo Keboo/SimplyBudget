@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include $(sys.CURRENTDIR)Includes\Variables.wxi ?>
+
+  <Product Id="*" Name="$(var.ProductName)" Language="1033" Version="1.0.0.0" Manufacturer="$(var.Manufacturer)"
+           UpgradeCode="b9765401-4e1d-459b-9b2b-d5bbd766491f">
+
+
+    <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine"  />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of $(var.ProductName) is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Feature Id="ProductFeature" Title="$(var.ProductName)" Level="1">
+      <ComponentGroupRef Id="SimplyBudgetDesktopFiles" />
+      <ComponentRef Id="DesktopShortcut"/>
+    </Feature>
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="$(var.ProductName)" />
+      </Directory>
+      <Directory Id="DesktopFolder"  SourceName="Desktop"/>
+    </Directory>
+
+    <!-- Desktop Shortcut -->
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="*">
+      <RegistryValue Id="RegShortcutDesktop" Root="HKCU"
+              Key="SOFTWARE\SimplyBudget\settings" Name="DesktopShortcut" Value="1"
+              Type="integer" KeyPath="yes" />
+      <Shortcut Id="DesktopShortcut" Target="[INSTALLFOLDER]SimplyBudgetDesktop.exe"
+              Directory="DesktopFolder" Name="$(var.ProductName)"
+              IconIndex="0" WorkingDirectory="INSTALLFOLDER" Advertise="no"/>
+    </Component>
+
+  </Fragment>
+</Wix>

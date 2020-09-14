@@ -1,0 +1,602 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Telerik.Windows.Zip</name>
+    </assembly>
+    <members>
+        <member name="T:Telerik.Windows.Zip.CompressionType">
+            <summary>
+            Represents the compression types.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.CompressionType.Default">
+            <summary>
+            This is the default compression type which uses the deflate algorithm.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.CompressionType.Lzma">
+            <summary>
+            This compression type uses the LZMA algorithm.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Zip.LZMA.LzmaDecoder">
+            <summary>
+            Represents a class that provides LZMA decompression.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Zip.LZMA.LzmaEncoder">
+            <summary>
+            Represents a class that provides LZMA compression.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.DefaultProp">
+            <summary>
+            Specifies default property.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.DictionarySize">
+            <summary>
+            Specifies size of dictionary.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.UsedMemorySize">
+            <summary>
+            Specifies size of memory for PPM*.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.Order">
+            <summary>
+            Specifies order for PPM methods.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.BlockSize">
+            <summary>
+            Specifies Block Size.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.PosStateBits">
+            <summary>
+            Specifies number of postion state bits for LZMA
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.LitContextBits">
+            <summary>
+            Specifies number of literal context bits for LZMA 
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.LitPosBits">
+            <summary>
+            Specifies number of literal position bits for LZMA
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.NumFastBytes">
+            <summary>
+            Specifies number of fast bytes for LZ*.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.MatchFinder">
+            <summary>
+            Specifies match finder. LZMA: "BT2", "BT4" or "BT4B".
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.MatchFinderCycles">
+            <summary>
+            Specifies the number of match finder cyckes.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.NumPasses">
+            <summary>
+            Specifies number of passes.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.Algorithm">
+            <summary>
+            Specifies number of algorithm.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.NumThreads">
+            <summary>
+            Specifies the number of threads.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.LZMA.LZ.CoderPropID.EndMarker">
+            <summary>
+            Specifies mode with end marker.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Zip.ZipCompression">
+            <summary>
+            Represents the compression methods.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.ZipCompression.Default">
+            <summary>
+            This is the defaul compression method.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.ZipCompression.Stored">
+            <summary>
+            This is the no-compression method.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.ZipCompression.BestSpeed">
+            <summary>
+            This is the fastest compression method.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.ZipCompression.Method2">
+            <summary>
+            This is a custom compression method.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.ZipCompression.Method3">
+            <summary>
+            This is a custom compression method.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.ZipCompression.Method4">
+            <summary>
+            This is a custom compression method.        
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.ZipCompression.Method5">
+            <summary>
+            This is a custom compression method.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.ZipCompression.Method6">
+            <summary>
+            This is a custom compression method.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.ZipCompression.Method7">
+            <summary>
+            This is a custom compression method.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.ZipCompression.Deflated">
+            <summary>
+            This is the the best compression method.
+            </summary>
+        </member>
+        <member name="F:Telerik.Windows.Zip.ZipCompression.Deflate64">
+            <summary>
+            This is the the best compression method.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Zip.ZipInputStream">
+            <summary>
+            Represents a stream that can read from a compressed stream.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipInputStream.#ctor(System.IO.Stream)">
+            <summary>
+            Initializes a new instance of the ZipInputStream class.
+            </summary>
+            <param name="baseStream">
+            The stream that will be decompressed.
+            </param>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipInputStream.#ctor(System.IO.Stream,System.Boolean)">
+            <summary>
+            Initializes a new instance of the ZipInputStream class.
+            </summary>
+            <param name="baseStream">
+            The stream that will be decompressed.
+            </param>
+            <param name="shouldReadAfterDeflatedBlock">
+            Identifies whether the ZipInputStream should stop reading after the end of the deflated part of the base stream is reached.
+            </param>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipInputStream.Flush">
+            <summary>
+            Clears all buffers for this stream and causes any buffered data to be written to the underlying device.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipInputStream.Read(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Reads a sequence of bytes from the
+            current stream and advances the position within the stream by the number of bytes
+            read.
+            </summary>
+            <returns>The total number of bytes read into the buffer. This can be less than
+            the number of bytes requested if that many bytes are not currently available,
+            or zero (0) if the end of the stream has been reached.</returns>
+            <param name="buffer">An array of bytes. When this method returns, the buffer
+            contains the specified byte array with the values between <paramref name="offset"/>
+            and (<paramref name="offset"/> + <paramref name="count"/> - 1) replaced by the
+            bytes read from the current source. </param>
+            <param name="offset">The zero-based byte offset in <paramref name="buffer"/>
+            at which to begin storing the data read from the current stream. </param>
+            <param name="count">The maximum number of bytes to be read from the current stream.
+            </param>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipInputStream.ReadByte">
+            <summary>
+            Reads a byte from the stream and advances the position within the stream
+            by one byte, or returns -1 if at the end of the stream.</summary>
+            <returns>The unsigned byte cast to an Int32, or -1 if at the end of the stream.
+            </returns>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipInputStream.Seek(System.Int64,System.IO.SeekOrigin)">
+            <summary>
+            Seeking is not supported.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipInputStream.SetLength(System.Int64)">
+            <summary>
+            Sets the length of the current stream.
+            </summary>
+            <param name="value">The desired length of the current stream in bytes. </param>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipInputStream.Write(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Writing is not supported.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipInputStream.Close">
+            <summary>
+            Closes the current stream and releases any resources associated with the current stream.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipInputStream.BaseStream">
+            <summary>
+            The stream that is decompressed.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipInputStream.CanRead">
+            <summary>
+            Gets a value indicating whether the current stream supports reading.
+            </summary>
+            <returns>true if the stream supports reading; otherwise, false.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipInputStream.CanSeek">
+            <summary> 
+            Gets a value indicating whether the current stream supports seeking.
+            </summary>
+            <returns>true if the stream supports seeking; otherwise, false.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipInputStream.CanWrite">
+            <summary>
+            Gets a value indicating whether the current stream supports writing.
+            </summary>
+            <returns>true if the stream supports writing; otherwise, false.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipInputStream.CompressedSize">
+            <summary>
+            Gets the compressed size of the stream.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipInputStream.Length">
+            <summary>
+            Gets the length in bytes of the stream.
+            </summary>
+            <returns>A long value representing the length of the stream in bytes.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipInputStream.Position">
+            <summary>
+            Gets the position within the current stream. Set is not supported.
+            </summary>
+            <returns>The current position within the stream.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipInputStream.UncompressedSize">
+            <summary>
+            Gets the uncompressed size of the stream.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipInputStream.DeflatedBlockSize">
+            <summary>
+            Gets the size of the deflated block if it is deflated with the Stored method.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipInputStream.IsBaseStreamStored">
+            <summary>
+            Identifies if the base stream is deflated with the Stored method.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipInputStream.ShouldReadAfterDeflatedBlock">
+            <summary>
+            Identifies whether the ZipInputStream should stop reading after the end of the deflated part of the base stream is reached (default value is true).
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Zip.ZipOutputStream">
+            <summary>
+            Represents a stream that can write into a compressed stream.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipOutputStream.#ctor(System.IO.Stream)">
+            <summary>
+            Initializes a new instance of the ZipOutputStream class.
+            </summary>
+            <param name="baseStream">
+            The stream that will be compressed.
+            </param>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipOutputStream.#ctor(System.IO.Stream,Telerik.Windows.Zip.ZipCompression)">
+            <summary>
+            Initializes a new instance of the ZipOutputStream class.
+            </summary>
+            <param name="baseStream">
+            The stream that will be compressed.
+            </param>
+            /// <param name="method">
+            The compression method.
+            </param>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipOutputStream.Cancel">
+            <summary>
+            Stops the compression of the stream.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipOutputStream.Close">
+            <summary
+            >Closes the current stream and releases any resources (such as sockets
+            and file handles) associated with the current stream.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipOutputStream.Close(System.Boolean)">
+            <summary>
+            Closes the ZipOutputStream. If the value is set to false it just finishes the writing, otherwise closes the stream.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipOutputStream.Flush">
+            <summary>
+            Clears all buffers for this stream and causes any buffered data to be written to the underlying device.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipOutputStream.Read(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Reading is not supported.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipOutputStream.Seek(System.Int64,System.IO.SeekOrigin)">
+            <summary>
+            Seeking is not supported.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipOutputStream.SetLength(System.Int64)">
+            <summary>
+            Setting length is not supported.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipOutputStream.Write(System.Byte[],System.Int32,System.Int32)">
+            <summary>
+            Writes a sequence of bytes to the current stream and advances the current position within this stream by the number
+            of bytes written.
+            </summary>
+            <param name="buffer">An array of bytes. This method copies <paramref name="count"/>
+            bytes from <paramref name="buffer"/> to the current stream. </param>
+            <param name="offset">The zero-based byte offset in <paramref name="buffer"/>
+            at which to begin copying bytes to the current stream. </param>
+            <param name="count">The number of bytes to be written to the current stream.
+            </param>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipOutputStream.WriteByte(System.Byte)">
+            <summary>
+            Writes a byte to the current position in the stream and advances the
+            position within the stream by one byte.
+            </summary>
+            <param name="value">The byte to write to the stream. </param>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipOutputStream.BaseStream">
+            <summary>
+            The stream that is compressed.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipOutputStream.CanRead">
+            <summary>
+            Gets a value indicating whether the current stream supports reading.
+            </summary>
+            <returns>true if the stream supports reading; otherwise, false.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipOutputStream.CanSeek">
+            <summary> 
+            Gets a value indicating whether the current stream supports seeking.
+            </summary>
+            <returns>true if the stream supports seeking; otherwise, false.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipOutputStream.CanWrite">
+            <summary>
+            Gets a value indicating whether the current stream supports writing.
+            </summary>
+            <returns>true if the stream supports writing; otherwise, false.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipOutputStream.Checksum">
+            <summary>
+            Gets the checksum of the compressed stream.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipOutputStream.CompressedSize">
+            <summary>
+            Gets the compressed size of the stream.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipOutputStream.Length">
+            <summary>
+            Gets the length in bytes of the stream.
+            </summary>
+            <returns>A long value representing the length of the stream in bytes.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipOutputStream.Position">
+            <summary>
+            Gets the position within the current stream. Set is not supported.
+            </summary>
+            <returns>The current position within the stream.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipOutputStream.UncompressedSize">
+            <summary>
+            Gets the uncompressed size of the stream.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Zip.ZipPackage">
+            <summary>
+            Represents the ZipPackage class.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Create(System.IO.Stream)">
+            <summary>
+            This method is used to create a ZipPackage from a stream.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.CreateFile(System.String)">
+            <summary>
+            This method is used to create a ZipPackage with the passed file name.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.OpenFile(System.String,System.IO.FileAccess)">
+            <summary>
+            This method is used to open a ZipPackage with the passed file name.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Open(System.IO.Stream,System.IO.FileAccess)">
+            <summary>
+            This method is used to open a ZipPakcage from a stream.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Open(System.IO.Stream)">
+            <summary>
+            This method is used to open a ZipPakcage from a stream.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.IsZipFile(System.IO.Stream)">
+            <summary>
+            Checks whether the stream that represents a zip file is actually a zip file.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.IsZipFile(System.String)">
+            <summary>
+            Checks whether the file with the passed file name is actually a zip file.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Add(System.String)">
+            <summary>
+            Adds a file with the passed file name in the ZipPackage.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Add(System.String,Telerik.Windows.Zip.CompressionType)">
+            <summary>
+            Adds a file with the passed file name in the ZipPackage.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Add(System.String[])">
+            <summary>
+            Adds the files from the passed array of file names in the ZipPackage.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Add(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Adds the files from the passed IEnumerable of file names in the ZipPackage.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Add(System.Collections.Generic.IEnumerable{System.String},Telerik.Windows.Zip.CompressionType)">
+            <summary>
+            Adds the files from the passed IEnumerable of file names in the ZipPackage.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.AddStream(System.String,System.IO.Stream)">
+            <summary>
+            Adds a stream in the ZipPackage and associates it with the passed file name in zip.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.AddStream(System.IO.Stream,System.String)">
+            <summary>
+            Adds a stream in the ZipPackage and associates it with the passed file name in zip.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.AddStream(System.IO.Stream,System.String,Telerik.Windows.Zip.CompressionType)">
+            <summary>
+            Adds a stream in the ZipPackage and associates it with the passed file name in zip.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Add(System.String,System.String)">
+            <summary>
+            Adds a file with the passed file name in the ZipPackage and associates it with the passed file name in zip.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Add(System.String,System.String,Telerik.Windows.Zip.CompressionType)">
+            <summary>
+            Adds a file with the passed file name in the ZipPackage and associates it with the passed file name in zip.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Add(System.String,System.String,System.DateTime)">
+            <summary>
+            Adds a file with the passed file name in the ZipPackage, associates it with the passed file name in zip and sets a date time for the entry.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Add(System.String,System.String,System.DateTime,Telerik.Windows.Zip.CompressionType)">
+            <summary>
+            Adds a file with the passed file name in the ZipPackage, associates it with the passed file name in zip and sets a date time for the entry.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.AddStream(Telerik.Windows.Zip.ZipCompression,System.String,System.IO.Stream,System.DateTime)">
+            <summary>
+            Adds a stream in the ZipPackage, compresses it with the passed compress method, associates it with the passed file name in zip and sets a date time for the entry. 
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.AddStream(System.IO.Stream,System.String,Telerik.Windows.Zip.ZipCompression,System.DateTime)">
+            <summary>
+            Adds a stream in the ZipPackage, compresses it with the passed compress method, associates it with the passed file name in zip and sets a date time for the entry. 
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.AddStream(System.IO.Stream,System.String,Telerik.Windows.Zip.ZipCompression,System.DateTime,Telerik.Windows.Zip.CompressionType)">
+            <summary>
+            Adds a stream in the ZipPackage, compresses it with the passed compress method, associates it with the passed file name in zip and sets a date time for the entry. 
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.Close(System.Boolean)">
+            <summary>
+            Closes the ZipPackage. If the value is set to false it just resets the internal values, otherwise closes the file.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.IndexOf(System.String)">
+            <summary>
+            Gets the index of the entry in the list of entries of the ZipPackage.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackage.RemoveEntry(Telerik.Windows.Zip.ZipPackageEntry)">
+            <summary>
+            Removes the passed entry from the ZipPackage.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipPackage.FileName">
+            <summary>
+            Gets the file name for the ZipPackage.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipPackage.ZipPackageEntries">
+            <summary>
+            Gets the list with all zip entries.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Zip.ZipPackageEntry">
+            <summary>
+            Represents the ZipPackageEntry class.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Zip.ZipPackageEntry.OpenInputStream">
+            <summary>
+            Opens an input stream that represents the entry.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipPackageEntry.Attributes">
+            <summary>
+            Gets the file attributes for the entry.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipPackageEntry.CompressedSize">
+            <summary>
+            Gets the compressed size for the entry.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipPackageEntry.FileNameInZip">
+            <summary>
+            Gets the file name in the ZipPackage for the entry.
+            </summary>
+        </member>
+        <member name="P:Telerik.Windows.Zip.ZipPackageEntry.UncompressedSize">
+            <summary>
+            Gets the uncompressed size for the entry.
+            </summary>
+        </member>
+    </members>
+</doc>

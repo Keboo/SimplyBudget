@@ -1,0 +1,4 @@
+Feature and Enhancements:
+Add the ability to import expeses from a file. Use STCU as an example, but be prepared to support multiple file formats.
+Add in tool bar for easy access to common functions.
+Add in icons for common functions, will need a decent library for this.

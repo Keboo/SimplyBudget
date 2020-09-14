@@ -1,0 +1,172 @@
+﻿<windows:BaseWindow x:Class="SimplyBudget.Windows.EditIncomeItemWindow"
+                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vc="clr-namespace:SimplyBudget.ValueConverter"
+                    xmlns:windows="clr-namespace:SimplyBudget.Windows"
+                    xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+                    xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors"
+                    xmlns:windowsVM="clr-namespace:SimplyBudget.ViewModels.Windows"
+                    xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation" x:ClassModifier="internal"
+                    Width="350" Height="500">
+    <Window.Resources>
+        <windowsVM:EditIncomeItemViewModel x:Key="MainViewModel" />
+    </Window.Resources>
+    <Window.DataContext>
+        <StaticResource ResourceKey="MainViewModel"/>
+    </Window.DataContext>
+    <Window.Style>
+        <Style TargetType="{x:Type Window}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEditing}" Value="False">
+                    <Setter Property="Title" Value="Add Income"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                    <Setter Property="Title" Value="Edit Income"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Style>
+    <Grid>
+        <Grid Margin="10">
+            <Grid.Resources>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Margin" Value="0,5" />
+                </Style>
+            </Grid.Resources>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition />
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Total Income Amount:" Margin="0,0,5,0"/>
+                <TextBox Text="{Binding TotalAmount, Converter={vc:CurrencyValueConverter}}" 
+                         Style="{StaticResource CurrencyTextBox}" Grid.Column="1" VerticalAlignment="Center">
+                    <i:Interaction.Behaviors>
+                        <behaviors:SelectAllOnFocusBehavior />
+                    </i:Interaction.Behaviors>
+                </TextBox>
+            </Grid>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource ErrorIndicator}" ToolTip="{Binding IncomeItemsError}"/>
+                <TextBlock Text="Add to" Grid.Column="1"/>
+                <!--<StackPanel Orientation="Horizontal" Grid.Column="2">
+                    <ToggleButton Content="A" IsChecked="{Binding }"/>
+                    <ToggleButton Content="G" />
+                </StackPanel>-->
+            </Grid>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Row="2">
+                <ItemsControl ItemsSource="{Binding IncomeItems}" Grid.IsSharedSizeScope="True">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type windowsVM:IncomeItemDetailsViewModel}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" SharedSizeGroup="First"/>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="70" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding ExpenseCategory.Name, Mode=OneWay}" />
+                                <TextBlock Grid.Column="1" Margin="3,0">
+                                    <Hyperlink Command="{Binding SetAmountCommand}">
+                                        <Run>
+                                            <Run.Style>
+                                                <Style TargetType="Run">
+                                                    <Setter Property="Text" Value="{Binding ExpenseCategory.RemainingAmount, Converter={vc:CurrencyValueConverter}, Mode=OneWay}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding ExpenseCategory.BudgetedPercentage, Converter={vc:IsPositiveValueConverter}}" Value="True">
+                                                            <Setter Property="Text" Value="{Binding ExpenseCategory.BudgetedPercentage, Converter={vc:PercentageValueConverter}}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Run.Style>
+                                        </Run>
+                                        <Hyperlink.Style>
+                                            <Style TargetType="Hyperlink">
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding ExpenseCategory.RemainingAmount, Converter={vc:IsPositiveValueConverter}}" Value="False"/>
+                                                            <Condition Binding="{Binding ExpenseCategory.BudgetedPercentage, Converter={vc:IsPositiveValueConverter}}" Value="False"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Foreground" Value="{StaticResource IgnoreBrush}"/>
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Hyperlink.Style>
+                                    </Hyperlink>
+                                </TextBlock>
+                                <TextBox Text="{Binding Amount, Converter={vc:CurrencyValueConverter}}" 
+                                         Style="{StaticResource CurrencyTextBox}" VerticalAlignment="Center"
+                                         Grid.Column="3">
+                                    <i:Interaction.Behaviors>
+                                        <behaviors:SelectAllOnFocusBehavior />
+                                    </i:Interaction.Behaviors>
+                                </TextBox>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <StackPanel Grid.Row="4">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource ErrorIndicator}" ToolTip="{Binding RemainingAmountError}"/>
+                    <TextBlock Text="{Binding RemainingAmount, StringFormat='Amount Remaining: {0}', Converter={vc:CurrencyValueConverter}}" 
+                           Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="Black"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RemainingAmount, Converter={vc:IsNegativeValueConverter}}" Value="True">
+                                        <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding RemainingAmount, Converter={vc:IsPositiveValueConverter}}" Value="True">
+                                        <Setter Property="Foreground" Value="Blue"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <CheckBox Content="All" IsChecked="{Binding ShowAll}" Grid.Column="2" VerticalAlignment="Center" Margin="10,0"/>
+                    <TextBlock Grid.Column="3">
+                        <Hyperlink Command="{Binding ClearCommand}">
+                            <Run Text="Clear" />
+                        </Hyperlink>
+                    </TextBlock>
+                </Grid>
+
+
+                <TextBlock Text="Description:"/>
+                <TextBox Text="{Binding Description}" Style="{StaticResource InputTextBox}">
+                    <i:Interaction.Behaviors>
+                        <behaviors:CommandOnKeyPressBehavior Key="Enter" Command="{Binding SaveCommand}" />
+                    </i:Interaction.Behaviors>
+                </TextBox>
+
+                <TextBlock Text="Date:"/>
+                <telerik:RadDatePicker SelectedValue="{Binding Date, Mode=TwoWay}" />
+
+                <telerik:RadButton Style="{StaticResource SaveButton}" Margin="0,5"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</windows:BaseWindow>

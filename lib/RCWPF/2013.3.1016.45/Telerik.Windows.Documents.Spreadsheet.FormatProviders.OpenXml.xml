@@ -1,0 +1,211 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml</name>
+    </assembly>
+    <members>
+        <member name="T:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader">
+            <summary>
+            Represents open XML reader.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader.IsEmptyElement">
+            <summary>
+            Determines whether the element is empty.
+            </summary>
+            <returns><c>True</c> if is empty.</returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader.HasAttributes">
+            <summary>
+            Determines whether this instance has attributes.
+            </summary>
+            <returns><c>True</c> if has attributes.</returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader.MoveToFirstAttribute">
+            <summary>
+            Moves to first attribute.
+            </summary>
+            <returns><c>True</c> if succeed.</returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader.MoveToNextAttribute">
+            <summary>
+            Moves to next attribute.
+            </summary>
+            <returns><c>True</c> if succeed.</returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader.GetNodeType">
+            <summary>
+            Gets the type of the node.
+            </summary>
+            <returns>The type of the node.</returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader.IsElementOfType(System.Xml.XmlNodeType)">
+            <summary>
+            Determines whether the element is of the specified type.
+            </summary>
+            <param name="type">The node type.</param>
+            <returns><c>True</c> if succeed.</returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader.Read(System.Xml.XmlNodeType@)">
+            <summary>
+            Reads the specified node.
+            </summary>
+            <param name="node">The node type.</param>
+            <returns><c>True</c> if succeed.</returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader.SkipElement">
+            <summary>
+            Skips the element.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader.GetElementValue(System.String@)">
+            <summary>
+            Gets the element value.
+            </summary>
+            <param name="value">The value.</param>
+            <returns><c>True</c> if succeed.</returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader.GetElementName(System.String@)">
+            <summary>
+            Gets the name of the element.
+            </summary>
+            <param name="elementName">Name of the element.</param>
+            <returns><c>True</c> if succeed.</returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.OpenXml.IOpenXmlReader.GetAttributeNameAndValue(System.String@,System.String@)">
+            <summary>
+            Gets the attribute name and value.
+            </summary>
+            <param name="attributeName">Name of the attribute.</param>
+            <param name="value">The value.</param>
+            <returns><c>True</c> if succeed.</returns>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.Contexts.GradientInfoType">
+            <summary>
+            Defines gradient info types.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.Contexts.StyleInfo">
+            <summary>
+            Describes style.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.Contexts.StyleInfo.Equals(System.Object)">
+            <summary>
+            Determines whether the specified <see cref="T:System.Object" /> is equal
+            to the current <see cref="T:System.Object" />.
+            </summary>
+            <param name="obj">The object to compare with the current object.</param>
+            <returns>
+            <c>true</c> if the specified <see cref="T:System.Object" /> is equal to the
+            current <see cref="T:System.Object" />; otherwise, false.
+            </returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.Contexts.StyleInfo.GetHashCode">
+            <summary>
+            Serves as a hash function for a particular type.
+            </summary>
+            <returns>A hash code for the current <see cref="T:System.Object" />.</returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.Contexts.StyleInfo.ToString">
+            <summary>
+            Returns a string that represents the current object.
+            </summary>
+            <returns>A string that represents the current object.</returns>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.Contexts.StyleInfo.Name">
+            <summary>
+            Gets or sets the name.
+            </summary>
+            <value>The name of the style.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.Contexts.StyleInfo.BuiltInId">
+            <summary>
+            Gets or sets the built in id.
+            </summary>
+            <value>The built in id.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.Contexts.StyleInfo.FormattingRecordId">
+            <summary>
+            Gets or sets the formatting record id.
+            </summary>
+            <value>The formatting record id.</value>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.Import.XlsxImportSettings">
+            <summary>
+            Represents XLSX import settings.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.Export.XlsxExportSettings">
+            <summary>
+            Represents XLSX export settings.
+            </summary>
+        </member>
+        <member name="T:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider">
+            <summary>
+            Binary format provider to export Spreadsheet data to XLSX.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider"/> class.
+            </summary>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider.ImportOverride(System.IO.Stream)">
+            <summary>
+            Imports the specified input.
+            </summary>
+            <param name="input">The input.</param>
+            <returns>The imported workbook.</returns>
+        </member>
+        <member name="M:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider.ExportOverride(Telerik.Windows.Documents.Spreadsheet.Model.Workbook,System.IO.Stream)">
+            <summary>
+            Exports the specified workbook.
+            </summary>
+            <param name="workbook">The workbook.</param>
+            <param name="output">The output.</param>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider.Name">
+            <summary>
+            Gets the name.
+            </summary>
+            <value>The name of the provider.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider.FilesDescription">
+            <summary>
+            Gets the files description.
+            </summary>
+            <value>The files description.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider.SupportedExtensions">
+            <summary>
+            Gets the supported extensions.
+            </summary>
+            <value>The supported extensions.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider.CanImport">
+            <summary>
+            Gets a value indicating whether can import.
+            </summary>
+            <value>The value indicating whether can import.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider.CanExport">
+            <summary>
+            Gets a value indicating whether can export.
+            </summary>
+            <value>The value indicating whether can export.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider.ExportSettings">
+            <summary>
+            Gets or sets the export settings.
+            </summary>
+            <value>The export settings.</value>
+        </member>
+        <member name="P:Telerik.Windows.Documents.Spreadsheet.FormatProviders.OpenXml.Xlsx.XlsxFormatProvider.ImportSettings">
+            <summary>
+            Gets or sets the import settings.
+            </summary>
+            <value>The import settings.</value>
+        </member>
+    </members>
+</doc>

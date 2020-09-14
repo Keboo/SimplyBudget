@@ -1,0 +1,109 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:utilities="clr-namespace:SimplyBudget.Utilities"
+                    xmlns:controls="clr-namespace:SimplyBudget.Controls"
+                    xmlns:vc="clr-namespace:SimplyBudget.ValueConverter"
+                    xmlns:telerik="clr-namespace:Telerik.Windows.Controls;assembly=Telerik.Windows.Controls">
+
+    <Style TargetType="Hyperlink" x:Key="DeleteHyperlink">
+        <Setter Property="Foreground" Value="Red"/>
+        <Setter Property="ToolTip" Value="Remove item"/>
+    </Style>
+
+    <Style TargetType="TextBox" x:Key="CurrencyTextBox">
+        <Setter Property="MinWidth" Value="70"/>
+    </Style>
+
+    <Style TargetType="TextBox" x:Key="InputTextBox">
+        <Setter Property="SpellCheck.IsEnabled" Value="True"/>
+    </Style>
+
+    <Style TargetType="Button">
+        <Setter Property="Padding" Value="12,1"/>
+        <Setter Property="MinWidth" Value="60"/>
+    </Style>
+
+    <Style TargetType="telerik:RadButton">
+        <Setter Property="Padding" Value="12,1"/>
+        <Setter Property="MinWidth" Value="60"/>
+    </Style>
+    
+    <Style TargetType="telerik:RadButton" x:Key="SaveButton" BasedOn="{StaticResource {x:Type telerik:RadButton}}">
+        <Setter Property="Content" Value="Save" />
+        <Setter Property="Command" Value="{Binding SaveCommand}"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+    </Style>
+
+    <Style TargetType="TextBlock" x:Key="ErrorIndicator">
+        <Setter Property="Text" Value="!"/>
+        <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="ToolTip" Value="{Binding ErrorMessage}"/>
+        <Setter Property="utilities:AttachedProperties.BooleanVisibility" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}, Converter={vc:StringNotNullOrEmptyConverter}}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="3,0"/>
+    </Style>
+    
+    <Style TargetType="TextBlock" x:Key="TitleTextBlock">
+        <Setter Property="FontSize" Value="14" /> 
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+
+    <Style TargetType="controls:DataGridEx">
+        <Setter Property="AlternatingRowBackground" Value="{StaticResource AlternateRowBrush}"/>
+    </Style>
+
+    <Style TargetType="GridViewColumnHeader">
+        <Setter Property="Padding" Value="8,0"/>
+        <Setter Property="Command" Value="{Binding SortCommand}"/>
+        <Setter Property="CommandParameter" Value="{Binding Path=(utilities:AttachedProperties.SortPropertyName), RelativeSource={RelativeSource Self}}"/>
+    </Style>
+
+    <Style x:Key="MainWindowListViewStyle" TargetType="ListView">
+        <Setter Property="AlternationCount" Value="2"/>
+    </Style>
+
+    <Style x:Key="MainWindowListViewItem" TargetType="ListViewItem">
+        <Style.Triggers>
+            <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                <Setter Property="Background" Value="{StaticResource AlternateRowBrush}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="DeleteItemButton" TargetType="Button">
+        <Setter Property="Height" Value="10"/>
+        <Setter Property="Width" Value="10"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Path Style="{StaticResource DeleteItemIcon}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="Button" x:Key="BackButton" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="MinWidth" Value="0"/>
+        <Setter Property="Height" Value="25"/>
+        <Setter Property="ToolTip" Value="Back"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Grid Background="Transparent">
+                        <Path Style="{StaticResource BackIcon}" Margin="2" x:Name="Path" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Path" Property="Fill" Value="{StaticResource ActiveIconBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
