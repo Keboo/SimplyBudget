@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using SQLite;
+
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
 
@@ -11,20 +11,21 @@ namespace SimplyBudgetShared.Data
     public class Income : BaseItem
     {
         private DateTime _date;
-        [Indexed]
+        //[Indexed]
         public DateTime Date
         {
-            get { return _date; }
-            set { _date = value.Date; } //Ensure that we only capture the date
+            get => _date;
+            set => _date = value.Date;  //Ensure that we only capture the date
         }
 
         public int TotalAmount { get; set; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         public async Task<IList<IncomeItem>> GetIncomeItems()
         {
-            return await GetConnection().Table<IncomeItem>().Where(x => x.IncomeID == ID).ToListAsync();
+            return default!;
+            //return await GetConnection().Table<IncomeItem>().Where(x => x.IncomeID == ID).ToListAsync();
         }
 
         public async Task<IncomeItem> AddIncomeItem(int expenseCategoryID, int amount)

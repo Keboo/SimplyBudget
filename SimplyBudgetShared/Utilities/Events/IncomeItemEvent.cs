@@ -5,25 +5,15 @@ namespace SimplyBudgetShared.Utilities.Events
 {
     public class IncomeItemEvent : Event
     {
-        private readonly IncomeItem _incomeItem;
-        private readonly EventType _type;
-
         public IncomeItemEvent(IncomeItem incomeItem, EventType type)
         {
-            if (incomeItem == null) throw new ArgumentNullException("incomeItem");
-            if (type == EventType.None) throw new ArgumentException(@"A type must be specified", "type");
-            _incomeItem = incomeItem;
-            _type = type;
+            if (type == EventType.None) throw new ArgumentException(@"A type must be specified", nameof(type));
+            IncomeItem = incomeItem ?? throw new ArgumentNullException(nameof(incomeItem));
+            Type = type;
         }
 
-        public IncomeItem IncomeItem
-        {
-            get { return _incomeItem; }
-        }
+        public IncomeItem IncomeItem { get; }
 
-        public EventType Type
-        {
-            get { return _type; }
-        }          
+        public EventType Type { get; }
     }
 }

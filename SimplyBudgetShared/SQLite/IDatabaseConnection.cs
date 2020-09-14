@@ -7,7 +7,7 @@ namespace SimplyBudgetShared.SQLite
 {
     public interface IDatabaseConnection
     {
-        Task<int> InsertAsync(object item);        
+        Task<int> InsertAsync(object item);
         Task<int> DeleteAsync(object item);
         Task<int> UpdateAsync(object item);
         Task<T> GetAsync<T>(object pk) where T : new();

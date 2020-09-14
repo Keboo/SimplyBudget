@@ -1,13 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
-using SQLite;
-using System;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
-using Telerik.JustMock;
+using SQLite;
+using System;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace SimplyBudgetSharedTests.Data
 {

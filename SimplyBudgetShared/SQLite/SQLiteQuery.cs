@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
-using SQLite;
+
+
 using SimplyBudgetShared.Data;
 
 namespace SimplyBudgetShared.SQLite
@@ -12,7 +12,7 @@ namespace SimplyBudgetShared.SQLite
     {
         private readonly AsyncTableQuery<T> _tableQuery;
  
-        internal SQLiteQuery([NotNull] AsyncTableQuery<T> tableQuery)
+        internal SQLiteQuery( AsyncTableQuery<T> tableQuery)
         {
             if (tableQuery == null) throw new ArgumentNullException("tableQuery");
             _tableQuery = tableQuery;

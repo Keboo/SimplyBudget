@@ -5,25 +5,16 @@ namespace SimplyBudgetShared.Utilities.Events
 {
     public class ExpenseCategoryEvent : Event
     {
-        private readonly ExpenseCategory _expenseCategory;
-        private readonly EventType _type;
-
         public ExpenseCategoryEvent(ExpenseCategory expenseCategory, EventType type)
         {
-            if (expenseCategory == null) throw new ArgumentNullException("expenseCategory");
-            if (type == EventType.None) throw new ArgumentException(@"A type must be specified", "type");
-            _expenseCategory = expenseCategory;
-            _type = type;
+            if (expenseCategory is null) throw new ArgumentNullException(nameof(expenseCategory));
+            if (type == EventType.None) throw new ArgumentException(@"A type must be specified", nameof(type));
+            ExpenseCategory = expenseCategory;
+            Type = type;
         }
 
-        public ExpenseCategory ExpenseCategory
-        {
-            get { return _expenseCategory; }
-        }
+        public ExpenseCategory ExpenseCategory { get; }
 
-        public EventType Type
-        {
-            get { return _type; }
-        }
+        public EventType Type { get; }
     }
 }

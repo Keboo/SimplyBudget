@@ -1,19 +1,15 @@
-﻿
-
-using SQLite;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace SimplyBudgetShared.Data
 {
     public abstract class BaseItem
     {
-        [PrimaryKey, AutoIncrement]
+        //[PrimaryKey, AutoIncrement]
         public int ID { get; set; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            var other = obj as BaseItem;
-            if (other != null)
+            if (obj is BaseItem other)
                 return Equals(other);
             return false;
         }
@@ -28,33 +24,33 @@ namespace SimplyBudgetShared.Data
             return ID;
         }
 
-        protected SQLiteAsyncConnection GetConnection()
-        {
-            return DatabaseManager.Instance.Connection;
-        }
+        //protected SQLiteAsyncConnection GetConnection()
+        //{
+        //    return DatabaseManager.Instance.Connection;
+        //}
 
         public virtual async Task Delete()
         {
-            await GetConnection().DeleteAsync(this);
+            //await GetConnection().DeleteAsync(this);
         }
 
         public async Task<BaseItem> Save()
         {
-            if (ID == 0)
-                await Create();
-            else
-                await Update();
+            //if (ID == 0)
+            //    await Create();
+            //else
+            //    await Update();
             return this;
         }
 
         protected virtual async Task Create()
         {
-            await GetConnection().InsertAsync(this);
+            //await GetConnection().InsertAsync(this);
         }
 
         protected virtual async Task Update()
         {
-            await GetConnection().UpdateAsync(this);
+            //await GetConnection().UpdateAsync(this);
         }
     }
 

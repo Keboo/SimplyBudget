@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using SQLite;
+
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
 
@@ -10,18 +10,19 @@ namespace SimplyBudgetShared.Data
     public class Transaction : BaseItem
     {
         private DateTime _date;
-        [Indexed]
+        //[Indexed]
         public DateTime Date
         {
-            get { return _date; }
-            set { _date = value.Date; } //Ensure that we only capture the date
+            get => _date;
+            set => _date = value.Date;  //Ensure that we only capture the date
         }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         public async Task<IList<TransactionItem>> GetTransactionItems()
         {
-            return await GetConnection().Table<TransactionItem>().Where(x => x.TransactionID == ID).ToListAsync();
+            return default!;
+            //return await GetConnection().Table<TransactionItem>().Where(x => x.TransactionID == ID).ToListAsync();
         }
 
         public async Task<TransactionItem> AddTransactionItem(int expenseCategoryID, int amount, string description)

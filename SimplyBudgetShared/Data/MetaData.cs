@@ -1,4 +1,4 @@
-﻿using SQLite;
+﻿
 
 namespace SimplyBudgetShared.Data
 {
@@ -6,14 +6,13 @@ namespace SimplyBudgetShared.Data
     {
         public const string VERSION_KEY = "Version";
 
-        [Indexed]
-        public string Key { get; set; }
-        public string Value { get; set; }
+        //[Indexed]
+        public string? Key { get; set; }
+        public string? Value { get; set; }
 
         public int ValueAsInt(int defaultValue = 0)
         {
-            int rv;
-            if (int.TryParse(Value ?? "", out rv) == false)
+            if (int.TryParse(Value ?? "", out int rv) == false)
                 rv = defaultValue;
             return rv;
         }

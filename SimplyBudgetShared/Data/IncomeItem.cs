@@ -1,6 +1,6 @@
 ﻿
 using System.Threading.Tasks;
-using SQLite;
+
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
 
@@ -8,10 +8,10 @@ namespace SimplyBudgetShared.Data
 {
     public class IncomeItem : BaseItem
     {
-        [Indexed]
+        //[Indexed]
         public int IncomeID { get; set; }
 
-        [Indexed]
+        //[Indexed]
         public int ExpenseCategoryID { get; set; }
 
         private DBProp<int> _ammount;
@@ -27,19 +27,19 @@ namespace SimplyBudgetShared.Data
             }
         }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         public override async Task Delete()
         {
             await base.Delete();
             NotificationCenter.PostEvent(new IncomeItemEvent(this, EventType.Deleted));
 
-            var expenseCategory = await GetConnection().GetAsync<ExpenseCategory>(ExpenseCategoryID);
-            if (expenseCategory != null)
-            {
-                expenseCategory.CurrentBalance -= Amount;
-                await expenseCategory.Save();
-            }
+            //var expenseCategory = await GetConnection().GetAsync<ExpenseCategory>(ExpenseCategoryID);
+            //if (expenseCategory != null)
+            //{
+            //    expenseCategory.CurrentBalance -= Amount;
+            //    await expenseCategory.Save();
+            //}
         }
 
         protected override async Task Create()
@@ -47,12 +47,12 @@ namespace SimplyBudgetShared.Data
             await base.Create();
             NotificationCenter.PostEvent(new IncomeItemEvent(this, EventType.Created));
 
-            var expenseCategory = await GetConnection().GetAsync<ExpenseCategory>(ExpenseCategoryID);
-            if (expenseCategory != null)
-            {
-                expenseCategory.CurrentBalance += Amount;
-                await expenseCategory.Save();
-            }
+            //var expenseCategory = await GetConnection().GetAsync<ExpenseCategory>(ExpenseCategoryID);
+            //if (expenseCategory != null)
+            //{
+            //    expenseCategory.CurrentBalance += Amount;
+            //    await expenseCategory.Save();
+            //}
         }
 
         protected override async Task Update()
@@ -63,13 +63,13 @@ namespace SimplyBudgetShared.Data
 
             if (_ammount != null && _ammount.Modified)
             {
-                var expenseCategory = await GetConnection().GetAsync<ExpenseCategory>(ExpenseCategoryID);
-                if (expenseCategory != null)
-                {
-                    expenseCategory.CurrentBalance -= _ammount.OriginalValue;
-                    expenseCategory.CurrentBalance += _ammount.Value;
-                    await expenseCategory.Save();
-                }
+                //var expenseCategory = await GetConnection().GetAsync<ExpenseCategory>(ExpenseCategoryID);
+                //if (expenseCategory != null)
+                //{
+                //    expenseCategory.CurrentBalance -= _ammount.OriginalValue;
+                //    expenseCategory.CurrentBalance += _ammount.Value;
+                //    await expenseCategory.Save();
+                //}
             }
         }
     }

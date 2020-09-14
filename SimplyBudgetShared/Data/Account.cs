@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using SQLite;
+
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
 
@@ -10,16 +10,16 @@ namespace SimplyBudgetShared.Data
 {
     public class Account : BaseItem
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         private DateTime _validatedDate;
         public DateTime ValidatedDate
         {
-            get { return _validatedDate; }
-            set { _validatedDate = value.Date; } //Ensure we only capture the date
+            get => _validatedDate;
+            set => _validatedDate = value.Date;  //Ensure we only capture the date
         }
 
-        [Indexed]
+        //[Indexed]
         public bool IsDefault { get; set; }
 
         public async Task<int> GetCurrentAmount()
@@ -30,7 +30,8 @@ namespace SimplyBudgetShared.Data
 
         public async Task<IList<ExpenseCategory>> GetExpenseCategories()
         {
-            return await GetConnection().Table<ExpenseCategory>().Where(x => x.AccountID == ID).ToListAsync();
+            return null!;
+            //return await GetConnection().Table<ExpenseCategory>().Where(x => x.AccountID == ID).ToListAsync();
         }
 
         protected override async Task Create()
@@ -59,12 +60,12 @@ namespace SimplyBudgetShared.Data
             if (IsDefault)
             {
                 //Select the first account to be the new default
-                var firstAccount = await GetConnection().Table<Account>().FirstOrDefaultAsync();
-                if (firstAccount != null)
-                {
-                    firstAccount.IsDefault = true;
-                    await firstAccount.Save();
-                }
+                //var firstAccount = await GetConnection().Table<Account>().FirstOrDefaultAsync();
+                //if (firstAccount != null)
+                //{
+                //    firstAccount.IsDefault = true;
+                //    await firstAccount.Save();
+                //}
             }
             NotificationCenter.PostEvent(new AccountEvent(this, EventType.Deleted));
         }
@@ -82,7 +83,8 @@ namespace SimplyBudgetShared.Data
 
         public static async Task<Account> GetDefault()
         {
-            return await DatabaseManager.Instance.Connection.Table<Account>().Where(x => x.IsDefault).FirstOrDefaultAsync();
+            return null!;
+            //return await DatabaseManager.Instance.Connection.Table<Account>().Where(x => x.IsDefault).FirstOrDefaultAsync();
         }
     }
 }

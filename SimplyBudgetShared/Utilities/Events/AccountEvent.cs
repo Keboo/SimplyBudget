@@ -5,25 +5,16 @@ namespace SimplyBudgetShared.Utilities.Events
 {
     public class AccountEvent : Event
     {
-        private readonly Account _acount;
-        private readonly EventType _type;
-
         public AccountEvent(Account account, EventType type)
         {
-            if (account == null) throw new ArgumentNullException("account");
-            if (type == EventType.None) throw new ArgumentException(@"A type must be specified", "type");
-            _acount = account;
-            _type = type;
+            if (account is null) throw new ArgumentNullException(nameof(account));
+            if (type == EventType.None) throw new ArgumentException(@"A type must be specified", nameof(type));
+            Account = account;
+            Type = type;
         }
 
-        public Account Account
-        {
-            get { return _acount; }
-        }
+        public Account Account { get; }
 
-        public EventType Type
-        {
-            get { return _type; }
-        }
+        public EventType Type { get; }
     }
 }

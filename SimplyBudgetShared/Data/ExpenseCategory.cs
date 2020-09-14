@@ -1,5 +1,5 @@
-﻿using JetBrains.Annotations;
-using SQLite;
+﻿
+
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
 using System;
@@ -11,13 +11,13 @@ namespace SimplyBudgetShared.Data
 {
     public class ExpenseCategory : BaseItem
     {
-        [Indexed]
-        public string CategoryName { get; set; }
+        //[Indexed]
+        public string? CategoryName { get; set; }
 
-        [Indexed]
+        //[Indexed]
         public int AccountID { get; set; }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
         public int BudgetedPercentage { get; set; }
         public int BudgetedAmount { get; set; }
         public int CurrentBalance { get; set; }
@@ -27,7 +27,7 @@ namespace SimplyBudgetShared.Data
             get { return BudgetedPercentage > 0; }
         }
 
-        public async Task<Transaction> AddTransaction(int amount, [CanBeNull] string description, DateTime? date = null)
+        public async Task<Transaction> AddTransaction(int amount,  string description, DateTime? date = null)
         {
             var transaction = new Transaction { Description = description };
 
@@ -51,43 +51,46 @@ namespace SimplyBudgetShared.Data
 
         public async Task<IList<Transfer>> GetTransfers(DateTime? queryStart = null, DateTime? queryEnd = null)
         {
-            if (queryStart != null && queryEnd != null)
-            {
-                return await GetConnection().Table<Transfer>()
-                    .Where(x => x.Date >= queryStart && x.Date <= queryEnd && (x.FromExpenseCategoryID == ID || x.ToExpenseCategoryID == ID))
-                    .ToListAsync();
-            }
-            return await GetConnection().Table<Transfer>().Where(
-                x => x.FromExpenseCategoryID == ID || x.ToExpenseCategoryID == ID).ToListAsync();
+            return default!;
+            //if (queryStart != null && queryEnd != null)
+            //{
+            //    return await GetConnection().Table<Transfer>()
+            //        .Where(x => x.Date >= queryStart && x.Date <= queryEnd && (x.FromExpenseCategoryID == ID || x.ToExpenseCategoryID == ID))
+            //        .ToListAsync();
+            //}
+            //return await GetConnection().Table<Transfer>().Where(
+            //    x => x.FromExpenseCategoryID == ID || x.ToExpenseCategoryID == ID).ToListAsync();
         }
 
         public async Task<IList<TransactionItem>> GetTransactionItems(
             DateTime? queryStart = null, DateTime? queryEnd = null)
         {
-            if (queryStart != null && queryEnd != null)
-            {
-                var transactions = await GetConnection().Table<Transaction>().Where(x => x.Date >= queryStart && x.Date <= queryEnd).ToListAsync();
-                var rv = new List<TransactionItem>();
-                foreach (var transaction in transactions)
-                    rv.AddRange((await transaction.GetTransactionItems()).Where(x => x.ExpenseCategoryID == ID));
-                return rv;
-            }
-            return await GetConnection().Table<TransactionItem>().Where(
-                x => x.ExpenseCategoryID == ID).ToListAsync();
+            return default!;
+            //if (queryStart != null && queryEnd != null)
+            //{
+            //    var transactions = await GetConnection().Table<Transaction>().Where(x => x.Date >= queryStart && x.Date <= queryEnd).ToListAsync();
+            //    var rv = new List<TransactionItem>();
+            //    foreach (var transaction in transactions)
+            //        rv.AddRange((await transaction.GetTransactionItems()).Where(x => x.ExpenseCategoryID == ID));
+            //    return rv;
+            //}
+            //return await GetConnection().Table<TransactionItem>().Where(
+            //    x => x.ExpenseCategoryID == ID).ToListAsync();
         }
 
         public async Task<IList<IncomeItem>> GetIncomeItems(DateTime? queryStart = null, DateTime? queryEnd = null)
         {
-            if (queryStart != null && queryEnd != null)
-            {
-                var transactions = await GetConnection().Table<Income>().Where(x => x.Date >= queryStart && x.Date <= queryEnd).ToListAsync();
-                var rv = new List<IncomeItem>();
-                foreach (var transaction in transactions)
-                    rv.AddRange((await transaction.GetIncomeItems()).Where(x => x.ExpenseCategoryID == ID));
-                return rv;
-            }
-            return await GetConnection().Table<IncomeItem>().Where(
-                x => x.ExpenseCategoryID == ID).ToListAsync();
+            return default!;
+            //if (queryStart != null && queryEnd != null)
+            //{
+            //    var transactions = await GetConnection().Table<Income>().Where(x => x.Date >= queryStart && x.Date <= queryEnd).ToListAsync();
+            //    var rv = new List<IncomeItem>();
+            //    foreach (var transaction in transactions)
+            //        rv.AddRange((await transaction.GetIncomeItems()).Where(x => x.ExpenseCategoryID == ID));
+            //    return rv;
+            //}
+            //return await GetConnection().Table<IncomeItem>().Where(
+            //    x => x.ExpenseCategoryID == ID).ToListAsync();
         }
 
         public string GetBudgetedDisplayString()
