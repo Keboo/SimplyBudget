@@ -22,17 +22,7 @@ namespace SimplyBudgetShared.Data
         //[Indexed]
         public bool IsDefault { get; set; }
 
-        public async Task<int> GetCurrentAmount()
-        {
-            var expenseCategories = await GetExpenseCategories();
-            return expenseCategories.Sum(x => x.CurrentBalance);
-        }
-
-        public async Task<IList<ExpenseCategory>> GetExpenseCategories()
-        {
-            return null!;
-            //return await GetConnection().Table<ExpenseCategory>().Where(x => x.AccountID == ID).ToListAsync();
-        }
+        public List<ExpenseCategory> ExpenseCategories { get; set; }
 
         protected override async Task Create()
         {

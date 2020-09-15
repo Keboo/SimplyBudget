@@ -15,8 +15,8 @@ namespace SimplyBudgetShared.Data
 
         public BudgetContext(DbContextOptions<BudgetContext> options)
             : base(options)
-        {
-            
-        }
+        { }
+
+
     }
 }

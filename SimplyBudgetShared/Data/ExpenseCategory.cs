@@ -16,6 +16,7 @@ namespace SimplyBudgetShared.Data
 
         //[Indexed]
         public int AccountID { get; set; }
+        public Account? Account { get; set; }
 
         public string? Name { get; set; }
         public int BudgetedPercentage { get; set; }
