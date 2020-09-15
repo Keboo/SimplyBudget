@@ -26,8 +26,7 @@ namespace SimplyBudgetShared.Utilities
                 list = Instance._listeners[type] = new List<WeakReference<object>>();
             for (int i = list.Count - 1; i >= 0; i--)
             {
-                object tmp;
-                if (list[i].TryGetTarget(out tmp) == false)
+                if (list[i].TryGetTarget(out _) == false)
                     list.RemoveAt(i);
             }
             list.Add(new WeakReference<object>(listener));
@@ -40,8 +39,7 @@ namespace SimplyBudgetShared.Utilities
             {
                 for (int i = list.Count - 1; i >= 0; i--)
                 {
-                    object tmp;
-                    if (list[i].TryGetTarget(out tmp) == false || ReferenceEquals(tmp, listener))
+                    if (list[i].TryGetTarget(out object? tmp) == false || ReferenceEquals(tmp, listener))
                         list.RemoveAt(i);
                 }
             }
@@ -49,13 +47,12 @@ namespace SimplyBudgetShared.Utilities
 
         public static void PostEvent<T>(T @event) where T : Event
         {
-            List<WeakReference<object>> list;
-            if (Instance._listeners.TryGetValue(typeof(T), out list) && list != null)
+            if (Instance._listeners.TryGetValue(typeof(T), out List<WeakReference<object>>? list) 
+                && list != null)
             {
                 for (int i = list.Count - 1; i >= 0; i--)
                 {
-                    object listener;
-                    if (list[i].TryGetTarget(out listener))
+                    if (list[i].TryGetTarget(out object? listener))
                         ((IEventListener<T>)listener).HandleEvent(@event);
                     else
                         list.RemoveAt(i);

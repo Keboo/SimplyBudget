@@ -4,7 +4,6 @@ namespace SimplyBudgetShared.Data
 {
     public abstract class BaseItem
     {
-        //[PrimaryKey, AutoIncrement]
         public int ID { get; set; }
 
         public override bool Equals(object? obj)
@@ -16,7 +15,7 @@ namespace SimplyBudgetShared.Data
 
         protected bool Equals(BaseItem other)
         {
-            return ID == other.ID;
+            return ID == other?.ID;
         }
 
         public override int GetHashCode()

@@ -19,8 +19,7 @@ namespace SimplyBudgetShared.Data
 
         public BudgetContext(DbContextOptions options)
             : base(options)
-        {
-        }
+        { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -29,6 +28,7 @@ namespace SimplyBudgetShared.Data
 
             modelBuilder.Entity<Account>()
                 .Property(x => x.IsDefault)
+                
                 .UsePropertyAccessMode(PropertyAccessMode.Property);
         }
 

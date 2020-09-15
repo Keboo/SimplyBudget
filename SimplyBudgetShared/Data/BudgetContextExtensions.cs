@@ -33,6 +33,15 @@ namespace SimplyBudgetShared.Data
             return account;
         }
 
+        public static async Task<Account?> GetDefaultAccountAsync(this BudgetContext context)
+        {
+            if (context is null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            return await context.Accounts.FirstOrDefaultAsync(x => x.IsDefault);
+        }
 
         public static async Task<int> GetCurrentAmount(this BudgetContext context, int accountId)
         {

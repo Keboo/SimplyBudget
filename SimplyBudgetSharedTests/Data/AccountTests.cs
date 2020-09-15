@@ -72,38 +72,7 @@ namespace SimplyBudgetSharedTests.Data
             });
         }
 
-        [TestMethod]
-        public async Task CreateAsDefaultClearsPreviousDefault()
-        {
-            //Arrange
-            var fixture = new DatabaseFixture<BudgetContext>();
-            var account = new Account();
-            var previousDefault = new Account ();
-
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Accounts.Add(previousDefault);
-                await context.SaveChangesAsync();
-            });
-
-
-            //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Accounts.Add(account);
-                await context.SaveChangesAsync();
-            });
-
-
-            //Assert
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                Assert.IsFalse((await context.Accounts.SingleAsync(x => x.ID == previousDefault.ID)).IsDefault);
-                Assert.IsTrue((await context.Accounts.SingleAsync(x => x.ID == account.ID)).IsDefault);
-            });
-        }
-
-        [TestMethod]
+        [TestMethod, Ignore]
         public async Task TestCreatePostsNotification()
         {
             //Arrange
@@ -118,69 +87,7 @@ namespace SimplyBudgetSharedTests.Data
             //Mock.Assert(() => NotificationCenter.PostEvent(Arg.Matches<AccountEvent>(x => ReferenceEquals(x.Account, account) && x.Type == EventType.Created)));
         }
 
-        [TestMethod]
-        public async Task TestUpdateAsDefaultClearsPreviousDefault()
-        {
-            //Arrange
-            var account = new Account { ID = 1 };
-            var previousDefault = new Account { ID = 2 };
-
-            //Mock.Arrange(() => connection.UpdateAsync(account)).Returns(Task.FromResult(0));
-
-            //Mock.SetupStatic<Account>(Behavior.Strict);
-            //Mock.Arrange(() => Account.GetDefault()).Returns(Task.FromResult(previousDefault));
-            //Mock.Arrange(() => connection.UpdateAsync(previousDefault)).Returns(Task.FromResult(0));
-
-            //Act
-            await account.Save();
-
-            //Assert
-            Assert.IsFalse(previousDefault.IsDefault);
-            Assert.IsTrue(account.IsDefault);
-            //Mock.Assert(() => connection.UpdateAsync(account), Occurs.Once());
-            //Mock.Assert(() => connection.UpdateAsync(previousDefault), Occurs.Once());
-        }
-
-        [TestMethod]
-        public async Task TestUpdateAsDefaultHandlesNoPreviousDefault()
-        {
-            //Arrange
-            var account = new Account { ID = 1 };
-
-            //Mock.Arrange(() => connection.UpdateAsync(account)).Returns(Task.FromResult(0));
-
-            //Mock.SetupStatic<Account>(Behavior.Strict);
-            //Mock.Arrange(() => Account.GetDefault()).Returns(Task.FromResult((Account)null));
-
-            //Act
-            await account.Save();
-
-            //Assert
-            Assert.IsTrue(account.IsDefault);
-            //Mock.Assert(() => connection.UpdateAsync(account), Occurs.Once());
-        }
-
-        [TestMethod]
-        public async Task TestUpdateAsDefaultHandlesItselfBeingTheDefault()
-        {
-            //Arrange
-            var account = new Account { ID = 1 };
-            var duplicateAccount = new Account { ID = 1 };
-
-            //Mock.Arrange(() => connection.UpdateAsync(account)).Returns(Task.FromResult(0));
-
-            //Mock.SetupStatic<Account>(Behavior.Strict);
-            //Mock.Arrange(() => Account.GetDefault()).Returns(Task.FromResult(duplicateAccount));
-
-            //Act
-            await account.Save();
-
-            //Assert
-            Assert.IsTrue(account.IsDefault);
-            //Mock.Assert(() => connection.UpdateAsync(account), Occurs.Once());
-        }
-
-        [TestMethod]
+        [TestMethod, Ignore]
         public async Task TestUpdatePostsNotification()
         {
             //Arrange
@@ -196,48 +103,36 @@ namespace SimplyBudgetSharedTests.Data
         }
 
         [TestMethod]
-        public async Task TestDeletingDefaultSelectsFirstAccountAsNewDefault()
+        public async Task DeletingDefaultAccount_SelectsFirstAccountAsNewDefault()
         {
             //Arrange
-            var account = new Account { ID = 1 };
-            var firstAccount = new Account { ID = 2 };
-            //Mock.Arrange(() => connection.DeleteAsync(account)).Returns(Task.FromResult(0));
+            var fixture = new DatabaseFixture<BudgetContext>();
+            var account = new Account();
+            var firstAccount = new Account();
 
-            //var tableQuery = Mock.Create<AsyncTableQuery<Account>>();
-            //Mock.Arrange(() => connection.Table<Account>()).Returns(tableQuery);
-            //Mock.Arrange(() => tableQuery.FirstOrDefaultAsync()).Returns(Task.FromResult(firstAccount));
-            //Mock.Arrange(() => connection.UpdateAsync(firstAccount)).Returns(Task.FromResult(0));
-            //Mock.SetupStatic<Account>();
-            //Mock.Arrange(() => Account.GetDefault()).Returns(Task.FromResult((Account) null));
-
-            //Act
-            await account.Delete();
-
-            //Assert
-            Assert.IsTrue(firstAccount.IsDefault);
-            //Mock.Assert(() => connection.DeleteAsync(account), Occurs.Once());
-            //Mock.Assert(() => connection.UpdateAsync(firstAccount), Occurs.Once());
-        }
-
-        [TestMethod]
-        public async Task TestDeletingDefaultWhenItIsTheLastAccount()
-        {
-            //Arrange
-            var account = new Account { ID = 1 };
-            //Mock.Arrange(() => connection.DeleteAsync(account)).Returns(Task.FromResult(0));
-
-            //var tableQuery = Mock.Create<AsyncTableQuery<Account>>();
-            //Mock.Arrange(() => connection.Table<Account>()).Returns(tableQuery);
-            //Mock.Arrange(() => tableQuery.FirstOrDefaultAsync()).Returns(Task.FromResult((Account)null));
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.Accounts.Add(account);
+                context.Accounts.Add(firstAccount);
+                account = await context.SetAsDefaultAsync(account);
+                await context.SaveChangesAsync();
+            });
 
             //Act
-            await account.Delete();
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.Accounts.Remove(account);
+                await context.SaveChangesAsync();
+            });
 
             //Assert
-            //Mock.Assert(() => connection.DeleteAsync(account), Occurs.Once());
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                Assert.IsTrue((await context.Accounts.SingleAsync(x => x.ID == firstAccount.ID)).IsDefault);
+            });
         }
 
-        [TestMethod]
+        [TestMethod, Ignore]
         public async Task TestDeletePostsNotification()
         {
             //Arrange
@@ -253,20 +148,28 @@ namespace SimplyBudgetSharedTests.Data
         }
 
         [TestMethod]
-        public async Task TestGetDefault()
+        public async Task GetDefaultAccountAsync_ReturnsDefaultAccount()
         {
             //Arrange
-            var account = new Account();
-            //var tableQuery = Mock.Create<AsyncTableQuery<Account>>();
-            //Mock.Arrange(() => connection.Table<Account>()).Returns(tableQuery);
-            //Mock.Arrange(() => tableQuery.Where(Arg.IsAny<Expression<Func<Account, bool>>>())).Returns(tableQuery);
-            //Mock.Arrange(() => tableQuery.FirstOrDefaultAsync()).Returns(Task.FromResult(account));
+            var fixture = new DatabaseFixture<BudgetContext>();
+            var account1 = new Account();
+            var account2 = new Account();
 
-            //Act
-            var defaultAccount = await Account.GetDefault();
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.Accounts.Add(account1);
+                context.Accounts.Add(account2);
+                account2 = await context.SetAsDefaultAsync(account2);
+                await context.SaveChangesAsync();
+            });
 
-            //Assert
-            Assert.IsTrue(ReferenceEquals(account, defaultAccount));
+
+            //Act, Assert
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                var defaultAccount = await context.GetDefaultAccountAsync();
+                Assert.AreEqual(account2.ID, defaultAccount.ID);
+            });
         }
     }
 }
