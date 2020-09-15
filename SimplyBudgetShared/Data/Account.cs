@@ -19,10 +19,9 @@ namespace SimplyBudgetShared.Data
             set => _validatedDate = value.Date;  //Ensure we only capture the date
         }
 
-        //[Indexed]
-        public bool IsDefault { get; set; }
+        public bool IsDefault { get; internal set; }
 
-        public List<ExpenseCategory> ExpenseCategories { get; set; }
+        public List<ExpenseCategory>? ExpenseCategories { get; set; }
 
         protected override async Task Create()
         {

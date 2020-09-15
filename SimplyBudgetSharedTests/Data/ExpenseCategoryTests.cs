@@ -190,7 +190,7 @@ namespace SimplyBudgetSharedTests.Data
         {
             //Arrange
             var category = new ExpenseCategory();
-            var defaultAccount = new Account { ID = 1, IsDefault = true };
+            var defaultAccount = new Account { ID = 1 };
             //Mock.SetupStatic<Account>();
             //Mock.Arrange(() => connection.InsertAsync(category)).Returns(Task.FromResult(0));
             //Mock.Arrange(() => Account.GetDefault()).Returns(Task.FromResult(defaultAccount));

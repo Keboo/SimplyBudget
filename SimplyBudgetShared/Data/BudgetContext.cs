@@ -1,4 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SimplyBudgetShared.Data
 {
@@ -13,10 +17,36 @@ namespace SimplyBudgetShared.Data
         public DbSet<TransactionItem> TransactionItems => Set<TransactionItem>();
         public DbSet<Transfer> Transfers => Set<Transfer>();
 
-        public BudgetContext(DbContextOptions<BudgetContext> options)
+        public BudgetContext(DbContextOptions options)
             : base(options)
-        { }
+        {
+        }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Account>()
+                .HasIndex(b => b.IsDefault);
 
+            modelBuilder.Entity<Account>()
+                .Property(x => x.IsDefault)
+                .UsePropertyAccessMode(PropertyAccessMode.Property);
+        }
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            //foreach(var account in ChangeTracker.Entries<Account>())
+            //{
+            //    var isDefaultProperty = account.Property<bool>(nameof(Account.IsDefault));
+            //    if (isDefaultProperty.CurrentValue && 
+            //        (isDefaultProperty.IsModified || account.State == EntityState.Added))
+            //    {
+            //        if (await Accounts.FirstOrDefaultAsync(x => x.IsDefault && x.ID != account.Entity.ID) is { } previousDefault)
+            //        {
+            //            previousDefault.IsDefault = false;
+            //        }
+            //    }
+            //}
+            return await base.SaveChangesAsync(cancellationToken);
+        }
     }
 }
