@@ -24,12 +24,12 @@ namespace SimplyBudgetShared.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Account>()
-                .HasIndex(b => b.IsDefault);
+                .HasIndex(x => x.IsDefault);
 
-            modelBuilder.Entity<Account>()
-                .Property(x => x.IsDefault)
-                
-                .UsePropertyAccessMode(PropertyAccessMode.Property);
+            modelBuilder.Entity<TransactionItem>()
+                .HasIndex(x => x.TransactionID);
+            modelBuilder.Entity<TransactionItem>()
+                .HasIndex(x => x.ExpenseCategoryID);
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

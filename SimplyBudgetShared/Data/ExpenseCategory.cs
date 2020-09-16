@@ -32,7 +32,7 @@ namespace SimplyBudgetShared.Data
         {
             var transaction = new Transaction { Description = description };
 
-            var transactionDate = date.HasValue ? date.Value : DateTime.Now;
+            var transactionDate = date ?? DateTime.Now;
             transaction.Date = transactionDate.Date;
 
             await transaction.Save();

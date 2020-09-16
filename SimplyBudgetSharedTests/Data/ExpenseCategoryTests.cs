@@ -1,4 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using IntelliTect.TestTools.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
@@ -16,28 +18,41 @@ namespace SimplyBudgetSharedTests.Data
         public async Task TestAddTransactionNoDate()
         {
             //Arrange
+            var fixture = new DatabaseFixture<BudgetContext>();
+
             const string DESCRIPTION = "Test Description";
             const int AMOUNT = 100;
-            var category = new ExpenseCategory { ID = 1 };
-            
-            //Mock.Arrange(() => connection.InsertAsync(Arg.Matches<Transaction>(
-            //    x => x.Date.Date == DateTime.Today)))
-            //    .Returns(Task.FromResult(0)).MustBeCalled();
-            //
-            //Mock.Arrange(() => connection.InsertAsync(Arg.Matches<TransactionItem>(
-            //    x => x.ExpenseCategoryID == category.ID &&
-            //         x.Description == DESCRIPTION &&
-            //         x.Amount == AMOUNT)))
-            //         .Returns(Task.FromResult(0)).MustBeCalled();
-            //
-            //Mock.Arrange(() => connection.GetAsync<ExpenseCategory>(Arg.AnyObject)).Returns(Task.FromResult<ExpenseCategory>(null));
+            var category = new ExpenseCategory 
+            {
+                Account = new Account()
+            };
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.ExpenseCategories.Add(category);
+                await context.SaveChangesAsync();
+            });
 
             //Act
-            var transaction = await category.AddTransaction(AMOUNT, DESCRIPTION);
+            Transaction? transaction = null;
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                transaction = await context.AddTransaction(category, AMOUNT, DESCRIPTION);
+            });
 
             //Assert
             Assert.IsNotNull(transaction);
-            //Mock.Assert(() => connection.InsertAsync(Arg.AnyObject), Occurs.Exactly(2));
+            
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                var foundTransaction = context.Transactions.SingleOrDefault(x => x.ID == transaction!.ID);
+                Assert.AreEqual(DESCRIPTION, transaction!.Description);
+
+                var foundTransactionItem = await context.TransactionItems.SingleOrDefaultAsync(x => x.TransactionID == transaction.ID);
+                Assert.AreEqual(AMOUNT, foundTransactionItem.Amount);
+                Assert.AreEqual(DESCRIPTION, foundTransactionItem.Description);
+                Assert.AreEqual(category.ID, foundTransactionItem.ExpenseCategoryID);
+            });
         }
 
         [TestMethod]

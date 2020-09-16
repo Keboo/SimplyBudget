@@ -7,7 +7,6 @@ namespace SimplyBudgetShared.Data
 {
     public class TransactionItem : BaseItem
     {
-        //[Indexed]
         public int TransactionID { get; set; }
 
         //[Indexed]

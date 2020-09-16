@@ -40,7 +40,8 @@ namespace SimplyBudgetShared.Data
                 throw new ArgumentNullException(nameof(context));
             }
 
-            return await context.Accounts.FirstOrDefaultAsync(x => x.IsDefault);
+            return await context.Accounts.FirstOrDefaultAsync(x => x.IsDefault) ??
+                   await context.Accounts.FirstOrDefaultAsync();
         }
 
         public static async Task<int> GetCurrentAmount(this BudgetContext context, int accountId)
@@ -55,6 +56,32 @@ namespace SimplyBudgetShared.Data
                 .FirstOrDefaultAsync(x => x.ID == accountId);
 
             return account?.ExpenseCategories.Sum(x => x.CurrentBalance) ?? 0;
+        }
+
+        public static async Task<Transaction> AddTransaction(this BudgetContext context, 
+            ExpenseCategory expenseCategory,
+            int amount, string description, DateTime? date = null)
+        {
+            var transaction = new Transaction { Description = description };
+
+            var transactionDate = date ?? DateTime.Now;
+            transaction.Date = transactionDate.Date;
+
+            context.Transactions.Add(transaction);
+            await context.SaveChangesAsync();
+
+            var transactionItem = new TransactionItem
+            {
+                Description = description,
+                Amount = amount,
+                ExpenseCategoryID = expenseCategory.ID,
+                TransactionID = transaction.ID
+            };
+
+            context.TransactionItems.Add(transactionItem);
+            await context.SaveChangesAsync();
+
+            return transaction;
         }
     }
 }

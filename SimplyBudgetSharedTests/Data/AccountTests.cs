@@ -128,7 +128,7 @@ namespace SimplyBudgetSharedTests.Data
             //Assert
             await fixture.PerformDatabaseOperation(async context =>
             {
-                Assert.IsTrue((await context.Accounts.SingleAsync(x => x.ID == firstAccount.ID)).IsDefault);
+                Assert.AreEqual(firstAccount.ID, (await context.GetDefaultAccountAsync()).ID);
             });
         }
 
