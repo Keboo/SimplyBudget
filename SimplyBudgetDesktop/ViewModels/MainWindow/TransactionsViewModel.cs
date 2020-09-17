@@ -61,7 +61,7 @@ namespace SimplyBudget.ViewModels.MainWindow
                                          .ToListAsync();
             // ReSharper disable LoopCanBeConvertedToQuery
             foreach (var transaction in transactions)
-                rv.Add(await TransactionViewModel.Create(transaction));
+                rv.Add(await TransactionViewModel.Create(Context, transaction));
             // ReSharper restore LoopCanBeConvertedToQuery
 
             var transfers = await Context.Transfers

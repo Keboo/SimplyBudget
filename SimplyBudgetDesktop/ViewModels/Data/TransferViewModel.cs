@@ -64,7 +64,7 @@ namespace SimplyBudget.ViewModels.Data
 
         public async Task<BaseItem> GetItem()
         {
-            return await DatabaseManager.GetAsync<Transfer>(TransferID);
+            return await Context.Transfers.FindAsync(TransferID);
         }
     }
 }

@@ -8,7 +8,7 @@ namespace SimplyBudget.ViewModels.Data
 {
     internal class TransactionViewModel : ViewModelBase, ITransactionItem
     {
-        public static async Task<TransactionViewModel> Create(Transaction transaction)
+        public static async Task<TransactionViewModel> Create(BudgetContext context, Transaction transaction)
         {
             if (transaction is null) throw new ArgumentNullException("transaction");
 
@@ -17,7 +17,7 @@ namespace SimplyBudget.ViewModels.Data
             string expenseCategoryName = "(none)";
             if (items.Count == 1)
             {
-                var expenseCategory = await DatabaseManager.GetAsync<ExpenseCategory>(items[0].ExpenseCategoryID);
+                var expenseCategory = await context.ExpenseCategories.FindAsync(items[0].ExpenseCategoryID);
                 if (expenseCategory != null)
                     expenseCategoryName = expenseCategory.CategoryName;
             }
@@ -35,6 +35,8 @@ namespace SimplyBudget.ViewModels.Data
                            Amount = items.Sum(x => x.Amount)
                        };
         }
+
+        private BudgetContext Context { get; } = BudgetContext.Instance;
 
         private TransactionViewModel(int transactionID)
         {
@@ -80,7 +82,7 @@ namespace SimplyBudget.ViewModels.Data
 
         public async Task<BaseItem> GetItem()
         {
-            return await DatabaseManager.GetAsync<Transaction>(TransactionID);
+            return await Context.Transactions.FindAsync(TransactionID);
         }
     }
 }

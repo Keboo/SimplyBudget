@@ -28,7 +28,7 @@ namespace SimplyBudget.ViewModels.MainWindow
 
         protected override async Task<IEnumerable<ExpenseCategoryViewModel>> GetItems()
         {
-            var account = await DatabaseManager.GetAsync<Account>(_accountID);
+            var account = await Context.Accounts.FindAsync(_accountID);
             if (account is null) return null;
             _accountName = account.Name;
             OnPropertyChanged(nameof(Title));

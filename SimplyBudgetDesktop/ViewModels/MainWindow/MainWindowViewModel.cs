@@ -28,6 +28,8 @@ namespace SimplyBudget.ViewModels.MainWindow
         private readonly RelayCommand _showIncomeItemsCommand;
         private readonly RelayCommand _showAccountInformationCommand;
 
+        private BudgetContext Context { get; } = BudgetContext.Instance;
+
         public MainWindowViewModel()
         {
             _viewStack = new Stack<ViewModelBase>();
@@ -111,7 +113,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             var transactionVM = viewModel as TransactionViewModel;
             if (transactionVM is null) return;
 
-            var transaction = await DatabaseManager.GetAsync<Transaction>(transactionVM.TransactionID);
+            var transaction = await Context.Transactions.FindAsync(transactionVM.TransactionID);
             
             if (transaction != null)
                 PushView(new TransactionDetailsViewModel(transaction));

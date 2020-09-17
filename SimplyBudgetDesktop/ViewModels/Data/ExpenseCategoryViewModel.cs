@@ -1,6 +1,5 @@
-﻿using System;
-using JetBrains.Annotations;
-using SimplyBudgetShared.Data;
+﻿using SimplyBudgetShared.Data;
+using System;
 using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.Data
@@ -25,6 +24,8 @@ namespace SimplyBudget.ViewModels.Data
             viewModel.BudgetedPercentage = expenseCategory.BudgetedPercentage;
             viewModel.CategoryName = expenseCategory.CategoryName ?? string.Empty;
         }
+
+        private BudgetContext Context { get; } = BudgetContext.Instance;
 
         public ExpenseCategoryViewModel(int expenseCategoryID)
         {
@@ -70,7 +71,7 @@ namespace SimplyBudget.ViewModels.Data
 
         async Task<BaseItem> IDatabaseItem.GetItem()
         {
-            return await DatabaseManager.GetAsync<ExpenseCategory>(ExpenseCategoryID);
+            return await Context.ExpenseCategories.FindAsync(ExpenseCategoryID);
         }
     }
 }

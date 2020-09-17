@@ -221,7 +221,7 @@ namespace SimplyBudget.ViewModels.Windows
                 foreach (var item in incomeItems)
                 {
                     expenseCategoryIds.Add(item.ExpenseCategoryID);
-                    var incomeViewModel = await IncomeExpenseCategoryViewModel.Create(await DatabaseManager.GetAsync<ExpenseCategory>(item.ExpenseCategoryID));
+                    var incomeViewModel = await IncomeExpenseCategoryViewModel.Create(await Context.ExpenseCategories.FindAsync(item.ExpenseCategoryID));
                     _incomeItems.Add(new IncomeItemDetailsViewModel(item, incomeViewModel, this));
                 }
             }

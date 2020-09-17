@@ -1,19 +1,18 @@
-﻿using System;
+﻿using SimplyBudgetShared.Data;
+using System;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
-using SimplyBudgetShared.Data;
 
 namespace SimplyBudget.ViewModels.Data
 {
     internal class TransactionItemViewModel : ViewModelBase, IDatabaseItem
     {
-        public static async Task<TransactionItemViewModel> Create(TransactionItem transactionItem)
+        public static async Task<TransactionItemViewModel> Create(BudgetContext context, TransactionItem transactionItem)
         {
             if (transactionItem is null) throw new ArgumentNullException("transactionItem");
 
-            var transaction = await DatabaseManager.GetAsync<Transaction>(transactionItem.TransactionID);
+            var transaction = await context.Transactions.FindAsync(transactionItem.TransactionID);
 
-            var expenseCategory = await DatabaseManager.GetAsync<ExpenseCategory>(transactionItem.ExpenseCategoryID);
+            var expenseCategory = await context.ExpenseCategories.FindAsync(transactionItem.ExpenseCategoryID);
 
             if (transaction != null)
                 return Create(transactionItem, transaction, expenseCategory);
@@ -31,9 +30,11 @@ namespace SimplyBudget.ViewModels.Data
                            Amount = transactionItem.Amount,
                            Description = transactionItem.Description,
                            Date = transaction.Date,
-                           ExpenseCategoryName = expenseCategory != null ? expenseCategory.Name : null
+                           ExpenseCategoryName = expenseCategory?.Name
                        };
         }
+
+        private BudgetContext Context { get; } = BudgetContext.Instance;
 
         private TransactionItemViewModel(int transactionItemID)
         {
@@ -72,7 +73,7 @@ namespace SimplyBudget.ViewModels.Data
 
         public async Task<BaseItem> GetItem()
         {
-            return await DatabaseManager.GetAsync<TransactionItem>(TransactionItemID);
+            return await Context.TransactionItems.FindAsync(TransactionItemID);
         }
     }
 }

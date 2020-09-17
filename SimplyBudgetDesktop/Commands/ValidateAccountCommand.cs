@@ -15,7 +15,7 @@ namespace SimplyBudget.Commands
             var accountVM = parameter as AccountViewModel;
             if (accountVM != null)
             {
-                var account = await DatabaseManager.GetAsync<Account>(accountVM.AccountID);
+                var account = await BudgetContext.Instance.Accounts.FindAsync(accountVM.AccountID);
                 if (account != null)
                 {
                     account.ValidatedDate = DateTime.Today;

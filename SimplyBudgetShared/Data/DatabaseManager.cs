@@ -27,14 +27,6 @@ namespace SimplyBudgetShared.Data
             //await _connection.CreateTablesAsync(typeof(ExpenseCategory), typeof(Transaction),
             //                                    typeof(TransactionItem), typeof(Income), typeof(IncomeItem),
             //                                    typeof(Account), typeof(Transfer), typeof(MetaData));
-            
-            await DatabaseMigrations.MigrateDatabaseIfNesscary();
-        }
-
-        public static async Task<T> GetAsync<T>(int id) where T : BaseItem, new()
-        {
-            return default!;
-            //return await Instance.Connection.GetAsync<T>(id);
         }
     }
 }
