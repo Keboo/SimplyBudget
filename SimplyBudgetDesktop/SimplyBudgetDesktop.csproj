@@ -6,6 +6,7 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>SimplyBudget</RootNamespace>
     <AssemblyName>SimplyBudget</AssemblyName>
+    <StartupObject>SimplyBudget.App</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
