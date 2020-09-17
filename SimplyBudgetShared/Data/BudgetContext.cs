@@ -26,10 +26,19 @@ namespace SimplyBudgetShared.Data
             modelBuilder.Entity<Account>()
                 .HasIndex(x => x.IsDefault);
 
+            modelBuilder.Entity<ExpenseCategory>()
+                .HasIndex(x => x.CategoryName);
+
             modelBuilder.Entity<TransactionItem>()
                 .HasIndex(x => x.TransactionID);
             modelBuilder.Entity<TransactionItem>()
                 .HasIndex(x => x.ExpenseCategoryID);
+
+            modelBuilder.Entity<Transaction>()
+                .HasIndex(x => x.Date);
+
+            modelBuilder.Entity<Transfer>()
+                .HasIndex(x => x.Date);
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
