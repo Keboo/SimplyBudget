@@ -13,78 +13,73 @@ namespace SimplyBudget.ViewModels.Windows
     {
         public event EventHandler<EventArgs> RequestClose;
 
-        private readonly ICollectionView _expenseCategoriesView;
-
         private Transfer _existingsTransfer;
 
         public EditTransferViewModel()
         {
-            _expenseCategoriesView = CollectionViewSource.GetDefaultView(ExpenseCategoryCollection.Instance);
+            ExpenseCategories = CollectionViewSource.GetDefaultView(ExpenseCategoryCollection.Instance);
             
-            _expenseCategoriesView.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
+            ExpenseCategories.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
 
             _date = DateTime.Today;
         }
 
-        public ICollectionView ExpenseCategories
-        {
-            get { return _expenseCategoriesView; }
-        }
+        public ICollectionView ExpenseCategories { get; }
 
         private int _amount;
         public int Amount
         {
-            get { return _amount; }
-            set { SetProperty(ref _amount, value); }
+            get => _amount;
+            set => SetProperty(ref _amount, value);
         }
 
         private string _amountError;
         public string AmountError
         {
-            get { return _amountError; }
-            set { SetProperty(ref _amountError, value); }
+            get => _amountError;
+            set => SetProperty(ref _amountError, value);
         }
 
         private int _fromExpenseCategoryID;
         public int FromExpenseCategoryID
         {
-            get { return _fromExpenseCategoryID; }
-            set { SetProperty(ref _fromExpenseCategoryID, value); }
+            get => _fromExpenseCategoryID;
+            set => SetProperty(ref _fromExpenseCategoryID, value);
         }
 
         private string _fromError;
         public string FromError
         {
-            get { return _fromError; }
-            set { SetProperty(ref _fromError, value); }
+            get => _fromError;
+            set => SetProperty(ref _fromError, value);
         }
 
         private int _toExpenseCategoryID;
         public int ToExpenseCategoryID
         {
-            get { return _toExpenseCategoryID; }
-            set { SetProperty(ref _toExpenseCategoryID, value); }
+            get => _toExpenseCategoryID;
+            set => SetProperty(ref _toExpenseCategoryID, value);
         }
 
         private string _toError;
         public string ToError
         {
-            get { return _toError; }
-            set { SetProperty(ref _toError, value); }
+            get => _toError;
+            set => SetProperty(ref _toError, value);
         }
 
         private string _description;
         public string Description
         {
-            get { return _description; }
-            set { SetProperty(ref _description, value); }
+            get => _description;
+            set => SetProperty(ref _description, value);
         }
 
         private DateTime _date;
         public DateTime Date
         {
-            get { return _date; }
-            set { SetProperty(ref _date, value); }
+            get => _date;
+            set => SetProperty(ref _date, value);
         }
 
         protected override async Task CreateAsync()
@@ -145,9 +140,9 @@ namespace SimplyBudget.ViewModels.Windows
             return rv;
         }
 
-        protected override Task SetPropertiesToEditAsync([NotNull] Transfer transfer)
+        protected override Task SetPropertiesToEditAsync(Transfer transfer)
         {
-            if (transfer == null) throw new ArgumentNullException("transfer");
+            if (transfer is null) throw new ArgumentNullException("transfer");
             Amount = transfer.Amount;
             Date = transfer.Date;
             Description = transfer.Description;

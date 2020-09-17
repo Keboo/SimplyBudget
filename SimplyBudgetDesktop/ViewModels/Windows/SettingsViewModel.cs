@@ -1,8 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Windows.Forms;
 using System.Windows.Input;
-using Microsoft.Practices.Prism.Commands;
+using Microsoft.Toolkit.Mvvm.Input;
 using SimplyBudget.Properties;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
@@ -13,62 +12,51 @@ namespace SimplyBudget.ViewModels.Windows
     {
         public event EventHandler<EventArgs> RequestClose;
 
-        private readonly ICommand _pickDirectoryCommand;
-        private readonly DelegateCommand _saveCommand;
+        private readonly RelayCommand _saveCommand;
 
         public SettingsViewModel()
         {
-            _dataDirectory = Settings.Default.DataDirectory;
+            DataDirectory = Settings.Default.DataDirectory;
             if (string.IsNullOrWhiteSpace(DataDirectory))
-                _dataDirectory = Path.GetDirectoryName(DatabaseManager.Instance.CurrentDatabasePath);
+                DataDirectory = Path.GetDirectoryName(DatabaseManager.Instance.CurrentDatabasePath);
             if (string.IsNullOrWhiteSpace(DataDirectory))
-                _dataDirectory = Path.GetFullPath(".");
+                DataDirectory = Path.GetFullPath(".");
 
-            _pickDirectoryCommand = new DelegateCommand(OnPickDirectory);
-            _saveCommand = new DelegateCommand(OnSave, CanSave);
+            PickDirectoryCommand = new RelayCommand(OnPickDirectory);
+            _saveCommand = new RelayCommand(OnSave, CanSave);
         }
 
-        private readonly string _dataDirectory;
-        public string DataDirectory
-        {
-            get { return _dataDirectory; }
-        }
+        public string DataDirectory { get; }
 
-        public ICommand PickDirectoryCommand
-        {
-            get { return _pickDirectoryCommand; }
-        }
+        public ICommand PickDirectoryCommand { get; }
 
-        public ICommand SaveCommand
-        {
-            get { return _saveCommand; }
-        }
+        public ICommand SaveCommand => _saveCommand;
 
         private string _newDataDirectory;
         public string NewDataDirectory
         {
-            get { return _newDataDirectory; }
+            get => _newDataDirectory;
             set
             {
                 if (SetProperty(ref _newDataDirectory, value))
-                    _saveCommand.RaiseCanExecuteChanged();
+                    _saveCommand.NotifyCanExecuteChanged();
             }
         }
 
         private bool _overwriteWithCurrent;
         public bool OverwriteWithCurrent
         {
-            get { return _overwriteWithCurrent; }
-            set { SetProperty(ref _overwriteWithCurrent, value); }
+            get => _overwriteWithCurrent;
+            set => SetProperty(ref _overwriteWithCurrent, value);
         }
 
         private void OnPickDirectory()
         {
-            var diaglog = new FolderBrowserDialog();
-            if (diaglog.ShowDialog() == DialogResult.OK)
-            {
-                NewDataDirectory = diaglog.SelectedPath;
-            }
+            //var diaglog = new FolderBrowserDialog();
+            //if (diaglog.ShowDialog() == DialogResult.OK)
+            //{
+            //    NewDataDirectory = diaglog.SelectedPath;
+            //}
         }
 
         private bool CanSave()

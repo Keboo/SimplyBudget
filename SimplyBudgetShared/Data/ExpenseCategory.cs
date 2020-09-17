@@ -22,10 +22,7 @@ namespace SimplyBudgetShared.Data
         public int BudgetedAmount { get; set; }
         public int CurrentBalance { get; set; }
 
-        public bool UsePercentage
-        {
-            get { return BudgetedPercentage > 0; }
-        }
+        public bool UsePercentage => BudgetedPercentage > 0;
 
         public async Task<IList<IncomeItem>> GetIncomeItems(DateTime? queryStart = null, DateTime? queryEnd = null)
         {
@@ -49,29 +46,23 @@ namespace SimplyBudgetShared.Data
                        : BudgetedAmount.FormatCurrency();
         }
 
-        public override async Task Delete()
-        {
-            await base.Delete();
-            NotificationCenter.PostEvent(new ExpenseCategoryEvent(this, EventType.Deleted));
-        }
+        //protected override async Task Create()
+        //{
+        //    if (AccountID == 0)
+        //    {
+        //        var defaultAccount = await Account.GetDefault();
+        //        if (defaultAccount != null)
+        //            AccountID = defaultAccount.ID;
+        //    }
+        //
+        //    await base.Create();
+        //    NotificationCenter.PostEvent(new ExpenseCategoryEvent(this, EventType.Created));
+        //}
 
-        protected override async Task Create()
-        {
-            if (AccountID == 0)
-            {
-                var defaultAccount = await Account.GetDefault();
-                if (defaultAccount != null)
-                    AccountID = defaultAccount.ID;
-            }
-
-            await base.Create();
-            NotificationCenter.PostEvent(new ExpenseCategoryEvent(this, EventType.Created));
-        }
-
-        protected override async Task Update()
-        {
-            await base.Update();
-            NotificationCenter.PostEvent(new ExpenseCategoryEvent(this, EventType.Updated));
-        }
+        //protected override async Task Update()
+        //{
+        //    await base.Update();
+        //    NotificationCenter.PostEvent(new ExpenseCategoryEvent(this, EventType.Updated));
+        //}
     }
 }

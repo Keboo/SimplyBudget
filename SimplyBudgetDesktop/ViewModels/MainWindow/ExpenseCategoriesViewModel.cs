@@ -1,14 +1,13 @@
-﻿using System;
+﻿using SimplyBudget.ViewModels.Data;
+using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
+using SimplyBudgetShared.Utilities.Events;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data;
-using JetBrains.Annotations;
-using SimplyBudget.ViewModels.Data;
-using SimplyBudgetShared.Data;
-using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
@@ -30,15 +29,12 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
         }
 
-        public string Title
-        {
-            get { return "Budget for " + DateTime.Today.ToString("MMMM"); }
-        }
+        public string Title => "Budget for " + DateTime.Today.ToString("MMMM");
 
         private bool _groupItems;
         public bool GroupItems
         {
-            get { return _groupItems; }
+            get => _groupItems;
             set
             {
                 if (SetProperty(ref _groupItems, value))
@@ -67,11 +63,11 @@ namespace SimplyBudget.ViewModels.MainWindow
             switch (@event.Type)
             {
                 case EventType.Created:
-                    _items.Add(await ExpenseCategoryViewModelEx.Create(expenseCategory));
+                    _items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
                     break;
                 case EventType.Updated:
                     _items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
-                    _items.Add(await ExpenseCategoryViewModelEx.Create(expenseCategory));
+                    _items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
                     break;
                 case EventType.Deleted:
                     _items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
@@ -95,16 +91,21 @@ namespace SimplyBudget.ViewModels.MainWindow
 
     internal class ExpenseCategoryViewModelEx : ExpenseCategoryViewModel
     {
-        public static new async Task<ExpenseCategoryViewModelEx> Create([NotNull] ExpenseCategory expenseCategory)
+        public static async Task<ExpenseCategoryViewModelEx> Create(BudgetContext context, ExpenseCategory expenseCategory)
         {
-            return await Create(expenseCategory, DateTime.Today);
+            return await Create(context, expenseCategory, DateTime.Today);
         }
 
-        public static async Task<ExpenseCategoryViewModelEx> Create([NotNull] ExpenseCategory expenseCategory, DateTime month )
+        public static async Task<ExpenseCategoryViewModelEx> Create(BudgetContext context, ExpenseCategory expenseCategory, DateTime month )
         {
-            if (expenseCategory == null) throw new ArgumentNullException("expenseCategory");
-            var transactions = await expenseCategory.GetTransactionItems(month.StartOfMonth(), month.EndOfMonth());
-            var incomeItems = await expenseCategory.GetIncomeItems(month.StartOfMonth(), month.EndOfMonth());
+            if (context is null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (expenseCategory is null) throw new ArgumentNullException(nameof(expenseCategory));
+            var transactions = await context.GetTransactionItems(expenseCategory, month.StartOfMonth(), month.EndOfMonth());
+            var incomeItems = await context.GetIncomeItems(expenseCategory, month.StartOfMonth(), month.EndOfMonth());
 
             var rv = new ExpenseCategoryViewModelEx(expenseCategory.ID);
             SetProperties(expenseCategory, rv);
@@ -121,22 +122,22 @@ namespace SimplyBudget.ViewModels.MainWindow
         private int _monthlyExpenses;
         public int MonthlyExpenses
         {
-            get { return _monthlyExpenses; }
-            set { SetProperty(ref _monthlyExpenses, value); }
+            get => _monthlyExpenses;
+            set => SetProperty(ref _monthlyExpenses, value);
         }
 
         private int _monthlyAllocations;
         public int MonthlyAllocations
         {
-            get { return _monthlyAllocations; }
-            set { SetProperty(ref _monthlyAllocations, value); }
+            get => _monthlyAllocations;
+            set => SetProperty(ref _monthlyAllocations, value);
         }
 
         private string _budgetedAmountDisplay;
         public string BudgetedAmountDisplay
         {
-            get { return _budgetedAmountDisplay; }
-            set { SetProperty(ref _budgetedAmountDisplay, value); }
+            get => _budgetedAmountDisplay;
+            set => SetProperty(ref _budgetedAmountDisplay, value);
         }
     }
 }

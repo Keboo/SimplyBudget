@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using Microsoft.Practices.Prism.Commands;
+using Microsoft.Toolkit.Mvvm.Input;
 using SimplyBudget.Utilities;
 using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using System.Collections.ObjectModel;
 using System.Linq;
 using SimplyBudgetShared.Utilities;
+using Microsoft.EntityFrameworkCore;
 
 namespace SimplyBudget.ViewModels.Windows
 {
@@ -15,22 +16,22 @@ namespace SimplyBudget.ViewModels.Windows
     {
         public event EventHandler<EventArgs> RequestClose;
 
-        private readonly ObservableCollection<string> _categories;
-        private readonly ObservableCollection<AccountViewModel> _accounts;
-        private readonly DelegateCommand _toggleCreateCommand;
-        private readonly DelegateCommand _toggleUsePercentageCommand;
-        private readonly DelegateCommand _editAmountCommand;
+        private readonly RelayCommand _toggleCreateCommand;
+        private readonly RelayCommand _toggleUsePercentageCommand;
+        private readonly RelayCommand _editAmountCommand;
 
         private ExpenseCategory _existingExpenseCategory;
 
+        private BudgetContext Context { get; } = BudgetContext.Instance;
+
         public EditExpenseCategoryViewModel()
         {
-            _toggleCreateCommand = new DelegateCommand(OnToggleCreate);
-            _toggleUsePercentageCommand = new DelegateCommand(OnToggleUsePercentage);
-            _editAmountCommand = new DelegateCommand(() => EditingAmount = true);
+            _toggleCreateCommand = new RelayCommand(OnToggleCreate);
+            _toggleUsePercentageCommand = new RelayCommand(OnToggleUsePercentage);
+            _editAmountCommand = new RelayCommand(() => EditingAmount = true);
 
-            _categories = new ObservableCollection<string>();
-            _accounts = new ObservableCollection<AccountViewModel>();
+            Categories = new ObservableCollection<string>();
+            Accounts = new ObservableCollection<AccountViewModel>();
             if (DesignerHelper.IsDesignMode == false)
             {
                 LoadCategories();
@@ -38,35 +39,20 @@ namespace SimplyBudget.ViewModels.Windows
             }
         }
 
-        public ICommand ToggleCreateCommand
-        {
-            get { return _toggleCreateCommand; }
-        }
+        public ICommand ToggleCreateCommand => _toggleCreateCommand;
 
-        public ICommand TogglePercentageCommand
-        {
-            get { return _toggleUsePercentageCommand; }
-        }
+        public ICommand TogglePercentageCommand => _toggleUsePercentageCommand;
 
-        public ICommand EditAmountCommand
-        {
-            get { return _editAmountCommand; }
-        }
+        public ICommand EditAmountCommand => _editAmountCommand;
 
-        public ObservableCollection<string> Categories
-        {
-            get { return _categories; }
-        }
+        public ObservableCollection<string> Categories { get; }
 
-        public ObservableCollection<AccountViewModel> Accounts
-        {
-            get { return _accounts; }
-        }
+        public ObservableCollection<AccountViewModel> Accounts { get; }
 
         private string _name;
         public string Name
         {
-            get { return _name; }
+            get => _name;
             set
             {
                 if (SetProperty(ref _name, value))
@@ -77,14 +63,14 @@ namespace SimplyBudget.ViewModels.Windows
         private string _nameError;
         public string NameError
         {
-            get { return _nameError; }
-            set { SetProperty(ref _nameError, value); }
+            get => _nameError;
+            set => SetProperty(ref _nameError, value);
         }
 
         private int _budgetedAmount;
         public int BudgetedAmount
         {
-            get { return _budgetedAmount; }
+            get => _budgetedAmount;
             set
             {
                 if (SetProperty(ref _budgetedAmount, value))
@@ -95,35 +81,35 @@ namespace SimplyBudget.ViewModels.Windows
         private string _amountError;
         public string AmountError
         {
-            get { return _amountError; }
-            set { SetProperty(ref _amountError, value); }
+            get => _amountError;
+            set => SetProperty(ref _amountError, value);
         }
 
         private string _categoryName;
         public string CategoryName
         {
-            get { return _categoryName; }
-            set { SetProperty(ref _categoryName, value); }
+            get => _categoryName;
+            set => SetProperty(ref _categoryName, value);
         }
 
         private bool _isCreateCategory;
         public bool IsCreateCategory
         {
-            get { return _isCreateCategory; }
-            set { SetProperty(ref _isCreateCategory, value); }
+            get => _isCreateCategory;
+            set => SetProperty(ref _isCreateCategory, value);
         }
 
         private int? _selectedAccountId;
         public int? SelectedAccountID
         {
-            get { return _selectedAccountId; }
-            set { SetProperty(ref _selectedAccountId, value); }
+            get => _selectedAccountId;
+            set => SetProperty(ref _selectedAccountId, value);
         }
 
         private bool _isPercentage;
         public bool IsPercentage
         {
-            get { return _isPercentage; }
+            get => _isPercentage;
             set
             {
                 if (SetProperty(ref _isPercentage, value))
@@ -134,7 +120,7 @@ namespace SimplyBudget.ViewModels.Windows
         private int _percentage;
         public int Percentage
         {
-            get { return _percentage; }
+            get => _percentage;
             set
             {
                 if (SetProperty(ref _percentage, value))
@@ -145,15 +131,15 @@ namespace SimplyBudget.ViewModels.Windows
         private bool _editingAmount = true;
         public bool EditingAmount
         {
-            get { return _editingAmount; }
-            set { SetProperty(ref _editingAmount, value); }
+            get => _editingAmount;
+            set => SetProperty(ref _editingAmount, value);
         }
 
         private int _currentBalance;
         public int CurrentBalance
         {
-            get { return _currentBalance; }
-            set { SetProperty(ref _currentBalance, value); }
+            get => _currentBalance;
+            set => SetProperty(ref _currentBalance, value);
         }
 
         protected async override Task CreateAsync()
@@ -180,7 +166,7 @@ namespace SimplyBudget.ViewModels.Windows
 
         protected override async Task SaveAsync()
         {
-            if (_existingExpenseCategory == null) return;
+            if (_existingExpenseCategory is null) return;
 
             if (HasErrors()) return;
 
@@ -230,31 +216,31 @@ namespace SimplyBudget.ViewModels.Windows
 
         private async void LoadCategories()
         {
-            var expenseCategories = await GetDatabaseConnection().Table<ExpenseCategory>().ToListAsync();
-            _categories.Clear();
-            _categories.AddRange(expenseCategories.Select(x => x.CategoryName).Distinct().OrderBy(x => x));
+            var expenseCategories = await Context.ExpenseCategories.ToListAsync();
+            Categories.Clear();
+            Categories.AddRange(expenseCategories.Select(x => x.CategoryName).Distinct().OrderBy(x => x));
 
             if (string.IsNullOrWhiteSpace(CategoryName))
-                CategoryName = _categories.FirstOrDefault();
+                CategoryName = Categories.FirstOrDefault();
         }
 
         private async void LoadAccounts()
         {
-            var accounts = await GetDatabaseConnection().Table<Account>().ToListAsync();
-            _accounts.Clear();
+            var accounts = await Context.Accounts.ToListAsync();
+            Accounts.Clear();
 
             var none = AccountViewModel.CreateEmpty();
             none.Name = "None";
-            _accounts.Add(none);
+            Accounts.Add(none);
 
             foreach (var account in accounts.OrderBy(x => x.IsDefault).ThenBy(x => x.Name))
             {
-                _accounts.Add(await AccountViewModel.Create(account));
+                Accounts.Add(await AccountViewModel.Create(Context, account));
             }
 
-            if (SelectedAccountID == null)
+            if (SelectedAccountID is null)
             {
-                var account = _accounts.FirstOrDefault(x => x.IsDefault) ?? none;
+                var account = Accounts.FirstOrDefault(x => x.IsDefault) ?? none;
                 SelectedAccountID = account.AccountID;
             }
                 

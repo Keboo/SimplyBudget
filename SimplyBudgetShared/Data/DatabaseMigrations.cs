@@ -49,7 +49,7 @@ namespace SimplyBudgetShared.Data
         //{
         //    var rows = await connection.QueryAsync<object>("SELECT * FROM sqlite_sequence");
         //
-        //    if (rows == null || rows.Count == 0)
+        //    if (rows is null || rows.Count == 0)
         //    {
         //        await DefaultBudget.CreateDefaultBudget();
         //    }

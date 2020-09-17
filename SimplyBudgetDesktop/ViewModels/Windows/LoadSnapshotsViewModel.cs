@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Input;
-using Microsoft.Practices.Prism.Commands;
+using Microsoft.Toolkit.Mvvm.Input;
 using SimplyBudget.Utilities;
 using System;
 using System.Collections.ObjectModel;
@@ -14,19 +14,18 @@ namespace SimplyBudget.ViewModels.Windows
     {
         public event EventHandler<EventArgs> RequestClose;
 
-        private readonly ObservableCollection<SnapshotViewModel> _snapshots;
-        private readonly DelegateCommand _loadCommand;
+        private readonly RelayCommand _loadCommand;
 
         public LoadSnapshotsViewModel()
         {
-            _loadCommand = new DelegateCommand(OnLoadCommand, CanLoadCommand);
-            _snapshots = new ObservableCollection<SnapshotViewModel>();
+            _loadCommand = new RelayCommand(OnLoadCommand, CanLoadCommand);
+            Snapshots = new ObservableCollection<SnapshotViewModel>();
             Init();
         }
 
         public void Init()
         {
-            _snapshots.Clear();
+            Snapshots.Clear();
             foreach (var vm in SnapshotManager.Instance.GetSnapshotFiles()
                                               .Select(x => new SnapshotViewModel
                                                                {
@@ -34,28 +33,22 @@ namespace SimplyBudget.ViewModels.Windows
                                                                    FilePath = x
                                                                }).OrderByDescending(x => x.DateTime))
             {
-                _snapshots.Add(vm);
+                Snapshots.Add(vm);
             }
         }
 
-        public ObservableCollection<SnapshotViewModel> Snapshots
-        {
-            get { return _snapshots; }
-        }
+        public ObservableCollection<SnapshotViewModel> Snapshots { get; }
 
-        public ICommand LoadCommand
-        {
-            get { return _loadCommand; }
-        }
+        public ICommand LoadCommand => _loadCommand;
 
         private SnapshotViewModel _selectedSnapshot;
         public SnapshotViewModel SelectedSnapshot
         {
-            get { return _selectedSnapshot; }
+            get => _selectedSnapshot;
             set
             {
                 if (SetProperty(ref _selectedSnapshot, value))
-                    _loadCommand.RaiseCanExecuteChanged();
+                    _loadCommand.NotifyCanExecuteChanged();
             }
         }
 
@@ -89,15 +82,15 @@ namespace SimplyBudget.ViewModels.Windows
             private DateTime _dateTime;
             public DateTime DateTime
             {
-                get { return _dateTime; }
-                set { SetProperty(ref _dateTime, value); }
+                get => _dateTime;
+                set => SetProperty(ref _dateTime, value);
             }
 
             private string _filePath;
             public string FilePath
             {
-                get { return _filePath; }
-                set { SetProperty(ref _filePath, value); }
+                get => _filePath;
+                set => SetProperty(ref _filePath, value);
             }
         }
     }

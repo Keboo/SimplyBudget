@@ -1,9 +1,9 @@
-﻿using SimplyBudget.Controls;
+﻿using Microsoft.Xaml.Behaviors;
+using SimplyBudget.Controls;
 using SimplyBudget.Properties;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Interactivity;
 
 namespace SimplyBudget.Behaviors
 {

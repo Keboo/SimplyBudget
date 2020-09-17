@@ -5,7 +5,7 @@
         private T _value;
         public T Value
         {
-            get { return _value; }
+            get => _value;
             set
             {
                 if (SetProperty(ref _value, value))
@@ -13,32 +13,24 @@
             }
         }
 
-        private bool _isError;
-        public bool IsError
-        {
-            get { return _isError; }
-        }
+        public bool IsError { get; private set; }
 
-        private string _message;
-        public string Message
-        {
-            get { return _message; }
-        }
+        public string Message { get; private set; }
 
         public void ClearError()
         {
-            _message = null;
-            _isError = false;
-            RaisePropertyChanged(() => IsError);
-            RaisePropertyChanged(() => Message);
+            Message = null;
+            IsError = false;
+            OnPropertyChanged(nameof(IsError));
+            OnPropertyChanged(nameof(Message));
         }
 
         public void SetError(string errorMessage)
         {
-            _message = errorMessage;
-            _isError = true;
-            RaisePropertyChanged(() => IsError);
-            RaisePropertyChanged(() => Message);
+            Message = errorMessage;
+            IsError = true;
+            OnPropertyChanged(nameof(IsError));
+            OnPropertyChanged(nameof(Message));
         }
     }
 }

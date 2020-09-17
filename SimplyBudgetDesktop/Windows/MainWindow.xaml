@@ -26,52 +26,52 @@
             <RowDefinition />
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <telerik:RadMenu>
-            <telerik:RadMenuItem Header="_File">
-                <telerik:RadMenuItem Header="_Create snapshot" Command="{commands:CreateSnapshotCommand}"/>
-                <telerik:RadMenuItem Header="_Load snapshot" Command="{commands:ShowLoadSnapshotWindow}"/>
-                <telerik:RadMenuSeparatorItem />
-                <telerik:RadMenuItem Header="_Settings" Command="{commands:ShowSettingsCommand}"/>
-                <telerik:RadMenuSeparatorItem />
-                <telerik:RadMenuItem Header="_Exit" Command="ApplicationCommands.Close"/>
-            </telerik:RadMenuItem>
-            <telerik:RadMenuItem Header="_Add">
-                <telerik:RadMenuItem Header="_Transaction" Command="{commands:ShowAddTransactionCommand}">
-                    <telerik:RadMenuItem.Icon>
+        <Menu>
+            <MenuItem Header="_File">
+                <MenuItem Header="_Create snapshot" Command="{commands:CreateSnapshotCommand}"/>
+                <MenuItem Header="_Load snapshot" Command="{commands:ShowLoadSnapshotWindow}"/>
+                <Separator />
+                <MenuItem Header="_Settings" Command="{commands:ShowSettingsCommand}"/>
+                <Separator />
+                <MenuItem Header="_Exit" Command="ApplicationCommands.Close"/>
+            </MenuItem>
+            <MenuItem Header="_Add">
+                <MenuItem Header="_Transaction" Command="{commands:ShowAddTransactionCommand}">
+                    <MenuItem.Icon>
                         <Path Style="{StaticResource TransactionIcon}"/>
-                    </telerik:RadMenuItem.Icon>
-                </telerik:RadMenuItem>
-                <telerik:RadMenuItem Header="_Income" Command="{commands:ShowAddIncomeItemCommand}">
-                    <telerik:RadMenuItem.Icon>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="_Income" Command="{commands:ShowAddIncomeItemCommand}">
+                    <MenuItem.Icon>
                         <Path Style="{StaticResource IncomeIcon}"/>
-                    </telerik:RadMenuItem.Icon>
-                </telerik:RadMenuItem>
-                <telerik:RadMenuSeparatorItem />
-                <telerik:RadMenuItem Header="T_ransfer" Command="{commands:ShowAddTransferCommand}">
-                    <telerik:RadMenuItem.Icon>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator />
+                <MenuItem Header="T_ransfer" Command="{commands:ShowAddTransferCommand}">
+                    <MenuItem.Icon>
                         <Path Style="{StaticResource TransferIcon}"/>
-                    </telerik:RadMenuItem.Icon>
-                </telerik:RadMenuItem>
-                <telerik:RadMenuItem Header="_Expense Category" Command="{commands:ShowAddExpenseCategoryCommand}">
-                    <telerik:RadMenuItem.Icon>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="_Expense Category" Command="{commands:ShowAddExpenseCategoryCommand}">
+                    <MenuItem.Icon>
                         <Path Style="{StaticResource ExpenseCategoryIcon}"/>
-                    </telerik:RadMenuItem.Icon>
-                </telerik:RadMenuItem>
-                <telerik:RadMenuItem Header="_Account" Command="{commands:ShowAddAccountCommand}">
-                    <telerik:RadMenuItem.Icon>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="_Account" Command="{commands:ShowAddAccountCommand}">
+                    <MenuItem.Icon>
                         <Path Style="{StaticResource AccountIcon}"/>
-                    </telerik:RadMenuItem.Icon>
-                </telerik:RadMenuItem>
-            </telerik:RadMenuItem>
-            <telerik:RadMenuItem Header="_View">
-                <telerik:RadMenuItem Header="_Transaction History" Command="{Binding ShowTransactionsCommand}"/>
-                <telerik:RadMenuItem Header="_Income History" Command="{Binding ShowIncomeItemsCommand}"/>
-                <telerik:RadMenuItem Header="A_ccount Information" Command="{Binding ShowAccountInformationCommand}"/>
-            </telerik:RadMenuItem>
-            <telerik:RadMenuItem Header="_Help">
-                <telerik:RadMenuItem Header="_About" Command="{commands:ShowAboutWindowCommand}"/>
-            </telerik:RadMenuItem>
-        </telerik:RadMenu>
+                    </MenuItem.Icon>
+                </MenuItem>
+            </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="_Transaction History" Command="{Binding ShowTransactionsCommand}"/>
+                <MenuItem Header="_Income History" Command="{Binding ShowIncomeItemsCommand}"/>
+                <MenuItem Header="A_ccount Information" Command="{Binding ShowAccountInformationCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_About" Command="{commands:ShowAboutWindowCommand}"/>
+            </MenuItem>
+        </Menu>
         <!--<ToolBar Grid.Row="1">
             <Button Content="Add Transaction"/>
         </ToolBar>-->

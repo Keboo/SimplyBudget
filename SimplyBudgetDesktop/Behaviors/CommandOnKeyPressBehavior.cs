@@ -1,6 +1,6 @@
-﻿using System.Windows;
+﻿using Microsoft.Xaml.Behaviors;
+using System.Windows;
 using System.Windows.Input;
-using System.Windows.Interactivity;
 
 namespace SimplyBudget.Behaviors
 {
@@ -12,8 +12,8 @@ namespace SimplyBudget.Behaviors
 
         public ICommand Command
         {
-            get { return (ICommand)GetValue(CommandProperty); }
-            set { SetValue(CommandProperty, value); }
+            get => (ICommand)GetValue(CommandProperty);
+            set => SetValue(CommandProperty, value);
         }
 
         public static readonly DependencyProperty CommandParameterProperty =
@@ -22,8 +22,8 @@ namespace SimplyBudget.Behaviors
 
         public object CommandParameter
         {
-            get { return GetValue(CommandParameterProperty); }
-            set { SetValue(CommandParameterProperty, value); }
+            get => GetValue(CommandParameterProperty);
+            set => SetValue(CommandParameterProperty, value);
         }
 
         public Key Key { get; set; }

@@ -19,9 +19,9 @@ namespace SimplyBudget.Properties {
     {
         public DataGridSettings[] GridSettings { get; set; }
 
-        public static void SaveSettings([NotNull] DataGrid dataGrid)
+        public static void SaveSettings(DataGrid dataGrid)
         {
-            if (dataGrid == null) throw new ArgumentNullException("dataGrid");
+            if (dataGrid is null) throw new ArgumentNullException("dataGrid");
             var manager = Settings.Default.DataGridSettingsManager ??
                           (Settings.Default.DataGridSettingsManager = new DataGridSettingsManager());
 
@@ -32,9 +32,9 @@ namespace SimplyBudget.Properties {
             Settings.Default.Save();
         }
 
-        public static DataGridSettings GetSettings([NotNull] DataGrid dataGrid)
+        public static DataGridSettings GetSettings(DataGrid dataGrid)
         {
-            if (dataGrid == null) throw new ArgumentNullException("dataGrid");
+            if (dataGrid is null) throw new ArgumentNullException("dataGrid");
             var manager = Settings.Default.DataGridSettingsManager;
             if (manager != null && manager.GridSettings != null)
                 return manager.GridSettings.FirstOrDefault(x => x.Name == dataGrid.Name);
@@ -45,9 +45,9 @@ namespace SimplyBudget.Properties {
     [Serializable]
     public class DataGridSettings
     {
-        public static DataGridSettings Create([NotNull] DataGrid dataGrid)
+        public static DataGridSettings Create(DataGrid dataGrid)
         {
-            if (dataGrid == null) throw new ArgumentNullException("dataGrid");
+            if (dataGrid is null) throw new ArgumentNullException("dataGrid");
             if (string.IsNullOrWhiteSpace(dataGrid.Name)) throw new InvalidDataException("DataGrid must have a name");
 
             return new DataGridSettings
@@ -57,9 +57,9 @@ namespace SimplyBudget.Properties {
                        };
         }
 
-        public void LoadSettings([NotNull] DataGrid dataGrid)
+        public void LoadSettings(DataGrid dataGrid)
         {
-            if (dataGrid == null) throw new ArgumentNullException("dataGrid");
+            if (dataGrid is null) throw new ArgumentNullException("dataGrid");
             if (dataGrid.Name != Name) throw new InvalidOperationException("Settings are not for this DataGrid");
 
             var columns = Columns;
@@ -90,10 +90,10 @@ namespace SimplyBudget.Properties {
     [Serializable]
     public class DataGridColumnSettings
     {
-        public static DataGridColumnSettings Create([NotNull] DataGridColumn column)
+        public static DataGridColumnSettings Create(DataGridColumn column)
         {
-            if (column == null) throw new ArgumentNullException("column");
-            if (column.Header == null) throw new InvalidDataException("Column must have a header");
+            if (column is null) throw new ArgumentNullException("column");
+            if (column.Header is null) throw new InvalidDataException("Column must have a header");
         
             return new DataGridColumnSettings
                        {

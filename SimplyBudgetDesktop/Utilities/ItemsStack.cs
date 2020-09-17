@@ -18,14 +18,11 @@ namespace SimplyBudget.Utilities
             _collectionsStack = new Stack<ICollection<T>>();
         }
 
-        public int CollectionsCount
-        {
-            get { return _collectionsStack.Count; }
-        }
+        public int CollectionsCount => _collectionsStack.Count;
 
-        public void PushCollection([NotNull] ICollection<T> collection)
+        public void PushCollection(ICollection<T> collection)
         {
-            if (collection == null) throw new ArgumentNullException("collection");
+            if (collection is null) throw new ArgumentNullException("collection");
             _collectionsStack.Push(collection);
 
             _blockCollectionChanged = true;

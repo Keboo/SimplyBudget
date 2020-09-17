@@ -5,44 +5,36 @@ namespace SimplyBudgetShared.Data
 {
     internal class DBProp<T>
     {
-        private T _originalValue;
         private T _value;
-        private bool _modified;
 
         public DBProp(T initialValue)
         {
-            _originalValue = _value = initialValue;
+            OriginalValue = _value = initialValue;
         }
 
-        public bool Modified
-        {
-            get { return _modified; }
-        }
+        public bool Modified { get; private set; }
 
-        public T OriginalValue
-        {
-            get { return _originalValue; }
-        }
+        public T OriginalValue { get; private set; }
 
         public T Value
         {
-            get { return _value; }
+            get => _value;
             set
             {
-                _modified = EqualityComparer<T>.Default.Equals(_originalValue, value) == false;
+                Modified = EqualityComparer<T>.Default.Equals(OriginalValue, value) == false;
                 _value = value;
             }
         }
 
         public void Saved()
         {
-            _modified = false;
-            _originalValue = _value;
+            Modified = false;
+            OriginalValue = _value;
         }
 
         public static implicit operator T(DBProp<T> property)
         {
-            if (property == null)
+            if (property is null)
                 return default(T);
             return property.Value;
         }

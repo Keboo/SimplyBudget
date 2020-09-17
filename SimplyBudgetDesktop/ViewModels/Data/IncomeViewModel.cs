@@ -7,9 +7,9 @@ namespace SimplyBudget.ViewModels.Data
 {
     internal class IncomeViewModel : ViewModelBase, IDatabaseItem
     {
-        public static IncomeViewModel Create([NotNull] Income income)
+        public static IncomeViewModel Create(Income income)
         {
-            if (income == null) throw new ArgumentNullException("income");
+            if (income is null) throw new ArgumentNullException("income");
 
             return new IncomeViewModel(income.ID)
                        {
@@ -19,37 +19,32 @@ namespace SimplyBudget.ViewModels.Data
                        };
         }
 
-        private readonly int _incomeID;
-
         private IncomeViewModel(int incomeID)
         {
-            _incomeID = incomeID;
+            IncomeID = incomeID;
         }
 
-        public int IncomeID
-        {
-            get { return _incomeID; }
-        }
+        public int IncomeID { get; }
 
         private DateTime _date;
         public DateTime Date
         {
-            get { return _date; }
-            set { SetProperty(ref _date, value); }
+            get => _date;
+            set => SetProperty(ref _date, value);
         }
 
         private string _description;
         public string Description
         {
-            get { return _description; }
-            set { SetProperty(ref _description, value); }
+            get => _description;
+            set => SetProperty(ref _description, value);
         }
 
         private int _totalAmount;
         public int TotalAmount
         {
-            get { return _totalAmount; }
-            set { SetProperty(ref _totalAmount, value); }
+            get => _totalAmount;
+            set => SetProperty(ref _totalAmount, value);
         }
 
         public async Task<BaseItem> GetItem()

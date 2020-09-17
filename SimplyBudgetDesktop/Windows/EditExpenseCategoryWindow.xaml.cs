@@ -21,9 +21,6 @@ namespace SimplyBudget.Windows
             Loaded += loadedHandler;
         }
 
-        public EditExpenseCategoryViewModel ViewModel
-        {
-            get { return (EditExpenseCategoryViewModel) DataContext; }
-        }
+        public EditExpenseCategoryViewModel ViewModel => (EditExpenseCategoryViewModel)DataContext;
     }
 }

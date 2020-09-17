@@ -19,22 +19,16 @@ namespace SimplyBudget.ViewModels.MainWindow
             _accountID = accountID;
         }
 
-        public ICollectionView ExpenseCategoriesView
-        {
-            get { return _view; }
-        }
+        public ICollectionView ExpenseCategoriesView => _view;
 
-        public string Title
-        {
-            get { return "Expense Categories for " + _accountName; }
-        }
+        public string Title => "Expense Categories for " + _accountName;
 
         protected override async Task<IEnumerable<ExpenseCategoryViewModel>> GetItems()
         {
             var account = await DatabaseManager.GetAsync<Account>(_accountID);
-            if (account == null) return null;
+            if (account is null) return null;
             _accountName = account.Name;
-            RaisePropertyChanged(() => Title);
+            OnPropertyChanged(nameof(Title));
 
             var expenseCategories = await GetDatabaseConnection().Table<ExpenseCategory>().Where(x => x.AccountID == _accountID).ToListAsync();
             return expenseCategories.Select(ExpenseCategoryViewModel.Create);

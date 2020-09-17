@@ -1,6 +1,4 @@
 ﻿using System.Collections.Generic;
-using JetBrains.Annotations;
-using Microsoft.Practices.Prism.Commands;
 using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
@@ -12,6 +10,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
+using Microsoft.Toolkit.Mvvm.Input;
+using Microsoft.EntityFrameworkCore;
 
 namespace SimplyBudget.ViewModels.Windows
 {
@@ -21,17 +21,17 @@ namespace SimplyBudget.ViewModels.Windows
         public event EventHandler<EventArgs> RequestClose;
 
         private readonly ObservableCollection<IncomeItemDetailsViewModel> _incomeItems;
-        private readonly ICollectionView _incomeItemsView;
-
-        private readonly DelegateCommand _clearCommand;
+        private readonly RelayCommand _clearCommand;
 
         private Income _existingIncome;
+
+        private BudgetContext Context { get; } = BudgetContext.Instance;
 
         public EditIncomeItemViewModel()
         {
             _incomeItems = new ObservableCollection<IncomeItemDetailsViewModel>();
-            _incomeItemsView = CollectionViewSource.GetDefaultView(_incomeItems);
-            _incomeItemsView.Filter = x =>
+            IncomeItems = CollectionViewSource.GetDefaultView(_incomeItems);
+            IncomeItems.Filter = x =>
                                           {
                                               if (ShowAll == false)
                                               {
@@ -41,47 +41,41 @@ namespace SimplyBudget.ViewModels.Windows
                                               }
                                               return true;
                                           };
-            _incomeItemsView.SortDescriptions.Add(new SortDescription("ExpenseCategory.Name", ListSortDirection.Ascending));
-            _clearCommand = new DelegateCommand(OnClear);
+            IncomeItems.SortDescriptions.Add(new SortDescription("ExpenseCategory.Name", ListSortDirection.Ascending));
+            _clearCommand = new RelayCommand(OnClear);
 
             _date = DateTime.Today;
         }
 
-        public ICollectionView IncomeItems
-        {
-            get { return _incomeItemsView; }
-        }
+        public ICollectionView IncomeItems { get; }
 
-        public ICommand ClearCommand
-        {
-            get { return _clearCommand; }
-        }
+        public ICommand ClearCommand => _clearCommand;
 
         private string _incomeItemsError;
         public string IncomeItemsError
         {
-            get { return _incomeItemsError; }
-            set { SetProperty(ref _incomeItemsError, value); }
+            get => _incomeItemsError;
+            set => SetProperty(ref _incomeItemsError, value);
         }
 
         private DateTime _date;
         public DateTime Date
         {
-            get { return _date; }
-            set { SetProperty(ref _date, value); }
+            get => _date;
+            set => SetProperty(ref _date, value);
         }
 
         private string _description;
         public string Description
         {
-            get { return _description; }
-            set { SetProperty(ref _description, value); }
+            get => _description;
+            set => SetProperty(ref _description, value);
         }
 
         private int _totalAmount;
         public int TotalAmount
         {
-            get { return _totalAmount; }
+            get => _totalAmount;
             set
             {
                 if (SetProperty(ref _totalAmount, value))
@@ -92,7 +86,7 @@ namespace SimplyBudget.ViewModels.Windows
         private int _remainingAmount;
         public int RemainingAmount
         {
-            get { return _remainingAmount; }
+            get => _remainingAmount;
             set
             {
                 if (SetProperty(ref _remainingAmount, value))
@@ -103,18 +97,18 @@ namespace SimplyBudget.ViewModels.Windows
         private string _remainingAmountError;
         public string RemainingAmountError
         {
-            get { return _remainingAmountError; }
-            set { SetProperty(ref _remainingAmountError, value); }
+            get => _remainingAmountError;
+            set => SetProperty(ref _remainingAmountError, value);
         }
 
         private bool _showAll;
         public bool ShowAll
         {
-            get { return _showAll; }
+            get => _showAll;
             set
             {
                 if (SetProperty(ref _showAll, value))
-                    _incomeItemsView.Refresh();
+                    IncomeItems.Refresh();
             }
         }
 
@@ -148,7 +142,7 @@ namespace SimplyBudget.ViewModels.Windows
 
         protected override async Task SaveAsync()
         {
-            if (_existingIncome == null) return;
+            if (_existingIncome is null) return;
 
             if (HasErrors()) return;
 
@@ -232,7 +226,7 @@ namespace SimplyBudget.ViewModels.Windows
                 }
             }
             //Add in remaining expense categories
-            var expenseCategories = await DatabaseManager.Instance.Connection.Table<ExpenseCategory>().Where(x => expenseCategoryIds.Contains(x.ID) == false).ToListAsync();
+            var expenseCategories = await Context.ExpenseCategories.Where(x => expenseCategoryIds.Contains(x.ID) == false).ToListAsync();
             foreach (var expenseCategory in expenseCategories)
             {
                 var vm = await IncomeExpenseCategoryViewModel.Create(expenseCategory);
@@ -264,7 +258,7 @@ namespace SimplyBudget.ViewModels.Windows
         public override async Task LoadDefaultView()
         {
             _incomeItems.Clear();
-            var expenseCategories = await DatabaseManager.Instance.Connection.Table<ExpenseCategory>().ToListAsync();
+            var expenseCategories = await Context.ExpenseCategories.ToListAsync();
             foreach (var expenseCategory in expenseCategories)
             {
                 var vm = await IncomeExpenseCategoryViewModel.Create(expenseCategory);
@@ -275,48 +269,38 @@ namespace SimplyBudget.ViewModels.Windows
 
     internal class IncomeItemDetailsViewModel : ViewModelBase
     {
-        private readonly int _existingIncomeItemID;
-        private readonly IncomeExpenseCategoryViewModel _expenseCategory;
         private readonly EditIncomeItemViewModel _editIncomeItemViewModel;
 
-        private readonly ICommand _setAmountCommand;
-
-        public IncomeItemDetailsViewModel([NotNull] EditIncomeItemViewModel parent,
-                                          [NotNull] IncomeExpenseCategoryViewModel expenseCategory)
+        public IncomeItemDetailsViewModel(EditIncomeItemViewModel parent,
+                                          IncomeExpenseCategoryViewModel expenseCategory)
         {
-            if (parent == null) throw new ArgumentNullException("parent");
-            if (expenseCategory == null) throw new ArgumentNullException("expenseCategory");
+            if (parent is null) throw new ArgumentNullException(nameof(parent));
+            if (expenseCategory is null) throw new ArgumentNullException(nameof(expenseCategory));
 
             _editIncomeItemViewModel = parent;
-            _expenseCategory = expenseCategory;
+            ExpenseCategory = expenseCategory;
 
-            _setAmountCommand = new DelegateCommand(OnSetAmount);
+            SetAmountCommand = new RelayCommand(OnSetAmount);
         }
 
-        public IncomeItemDetailsViewModel([NotNull] IncomeItem incomeItem,
-            [NotNull] IncomeExpenseCategoryViewModel expenseCategory,
-            [NotNull] EditIncomeItemViewModel parent)
+        public IncomeItemDetailsViewModel(IncomeItem incomeItem,
+            IncomeExpenseCategoryViewModel expenseCategory,
+            EditIncomeItemViewModel parent)
             : this(parent, expenseCategory)
         {
-            if (incomeItem == null) throw new ArgumentNullException("incomeItem");
-            _existingIncomeItemID = incomeItem.ID;
+            if (incomeItem is null) throw new ArgumentNullException(nameof(incomeItem));
+            ExistingIncomeItemID = incomeItem.ID;
             Amount = incomeItem.Amount;
         }
 
-        public ICommand SetAmountCommand
-        {
-            get { return _setAmountCommand; }
-        }
+        public ICommand SetAmountCommand { get; }
 
-        public int ExistingIncomeItemID
-        {
-            get { return _existingIncomeItemID; }
-        }
+        public int ExistingIncomeItemID { get; }
 
         private int? _amount;
         public int Amount
         {
-            get { return _amount ?? 0; }
+            get => _amount ?? 0;
             set
             {
                 if (SetProperty(ref _amount, value))
@@ -326,10 +310,7 @@ namespace SimplyBudget.ViewModels.Windows
             }
         }
 
-        public IncomeExpenseCategoryViewModel ExpenseCategory
-        {
-            get { return _expenseCategory; }
-        }
+        public IncomeExpenseCategoryViewModel ExpenseCategory { get; }
 
         public void SetAmountWithoutUpdate(int amount)
         {
@@ -393,8 +374,8 @@ namespace SimplyBudget.ViewModels.Windows
         private int _remainingAmount;
         public int RemainingAmount
         {
-            get { return _remainingAmount; }
-            set { SetProperty(ref _remainingAmount, value); }
+            get => _remainingAmount;
+            set => SetProperty(ref _remainingAmount, value);
         }
     }
 }

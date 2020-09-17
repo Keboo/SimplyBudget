@@ -6,7 +6,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
-using Microsoft.Practices.Prism.Commands;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Toolkit.Mvvm.Input;
 using SimplyBudget.Collections;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
@@ -17,41 +18,36 @@ namespace SimplyBudget.ViewModels.Windows
     {
         public event EventHandler<EventArgs> RequestClose;
 
-        private readonly ICollectionView _expenseCategories;
-        private readonly DelegateCommand _marAsValidatedCommand;
+        private readonly RelayCommand _markAsValidatedCommand;
         private Account _existingAccount;
+
+        private BudgetContext Context { get; } = BudgetContext.Instance;
         
         public EditAccountViewModel()
         {
             _selectedItems = new ArrayList();
-            _marAsValidatedCommand = new DelegateCommand(() => LastValidatedDate = DateTime.Today);
+            _markAsValidatedCommand = new RelayCommand(() => LastValidatedDate = DateTime.Today);
 
-            _expenseCategories = CollectionViewSource.GetDefaultView(ExpenseCategoryCollection.Instance);
+            ExpenseCategories = CollectionViewSource.GetDefaultView(ExpenseCategoryCollection.Instance);
 
-            _expenseCategories.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
+            ExpenseCategories.SortDescriptions.Add(new SortDescription(nameof(ExpenseCategory.Name), ListSortDirection.Ascending));
         }
 
-        public ICollectionView ExpenseCategories
-        {
-            get { return _expenseCategories; }
-        }
+        public ICollectionView ExpenseCategories { get; }
 
-        public ICommand MarkAsValidatedCommand
-        {
-            get { return _marAsValidatedCommand; }
-        }
+        public ICommand MarkAsValidatedCommand => _markAsValidatedCommand;
 
         private IList _selectedItems;
         public IList SelectedItems
         {
-            get { return _selectedItems; }
-            set { SetProperty(ref _selectedItems, value); }
+            get => _selectedItems;
+            set => SetProperty(ref _selectedItems, value);
         }
 
         private string _name;
         public string Name
         {
-            get { return _name; }
+            get => _name;
             set
             {
                 if (SetProperty(ref _name, value))
@@ -62,22 +58,22 @@ namespace SimplyBudget.ViewModels.Windows
         private string _nameError;
         public string NameError
         {
-            get { return _nameError; }
-            set { SetProperty(ref _nameError, value); }
+            get => _nameError;
+            set => SetProperty(ref _nameError, value);
         }
 
         private DateTime _lastValidatedDate;
         public DateTime LastValidatedDate
         {
-            get { return _lastValidatedDate; }
-            set { SetProperty(ref _lastValidatedDate, value); }
+            get => _lastValidatedDate;
+            set => SetProperty(ref _lastValidatedDate, value);
         }
 
         private bool _isDefault;
         public bool IsDefault
         {
-            get { return _isDefault; }
-            set { SetProperty(ref _isDefault, value); }
+            get => _isDefault;
+            set => SetProperty(ref _isDefault, value);
         }
 
         protected override async Task CreateAsync()
@@ -90,15 +86,20 @@ namespace SimplyBudget.ViewModels.Windows
             var account = new Account
             {
                 Name = Name,
-                IsDefault = IsDefault,
+                //IsDefault = IsDefault,
                 ValidatedDate = DateTime.Today
             };
-            await account.Save();
+            Context.Accounts.Add(account);
+            await Context.SaveChangesAsync();
+            if (IsDefault)
+            {
+                await Context.SetAsDefaultAsync(account);
+            }
 
             foreach (var expenseCategory in selectedExpenseCategories)
             {
                 expenseCategory.AccountID = account.ID;
-                await expenseCategory.Save();
+                await Context.SaveChangesAsync();
             }
 
             RequestClose.Raise(this, EventArgs.Empty);
@@ -109,15 +110,20 @@ namespace SimplyBudget.ViewModels.Windows
             if (HasErrors()) return;
 
             _existingAccount.Name = Name;
-            _existingAccount.IsDefault = IsDefault;
+            //_existingAccount.IsDefault = IsDefault;
             _existingAccount.ValidatedDate = LastValidatedDate;
-            await _existingAccount.Save();
+            await BudgetContext.Instance.SaveChangesAsync();
+            if (IsDefault)
+            {
+                await BudgetContext.Instance.SetAsDefaultAsync(_existingAccount);
+            }
+
 
             //Copy the selected items
             var selectedExpenseCategories = new HashSet<ExpenseCategory>(_selectedItems.OfType<ExpenseCategory>());
 
             var modifiedItems = new HashSet<ExpenseCategory>(selectedExpenseCategories);
-            modifiedItems.SymmetricExceptWith(await _existingAccount.GetExpenseCategories());
+            modifiedItems.SymmetricExceptWith(await BudgetContext.Instance.ExpenseCategories.Where(x => x.AccountID == _existingAccount.ID).ToListAsync());
 
             //Get a fallback account id to move the items to
             int fallbackAccountID = 0;
@@ -155,7 +161,7 @@ namespace SimplyBudget.ViewModels.Windows
             LastValidatedDate = account.ValidatedDate;
             IsDefault = account.IsDefault;
 
-            var expenseCategories = await account.GetExpenseCategories();
+            var expenseCategories = await BudgetContext.Instance.ExpenseCategories.Where(x => x.AccountID == account.ID).ToListAsync();
             if (expenseCategories != null && expenseCategories.Count > 0)
             {
                 var arrayList = new ArrayList(expenseCategories.Count);

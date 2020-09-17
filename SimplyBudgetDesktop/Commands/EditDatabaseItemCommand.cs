@@ -13,7 +13,7 @@ namespace SimplyBudget.Commands
         public override async void Execute(object parameter)
         {
             var databaseItem = parameter as BaseItem;
-            if (databaseItem == null)
+            if (databaseItem is null)
             {
                 var dbItem = parameter as IDatabaseItem;
                 if (dbItem != null)

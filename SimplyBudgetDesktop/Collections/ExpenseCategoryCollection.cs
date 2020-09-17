@@ -1,4 +1,5 @@
-﻿using SimplyBudget.Utilities;
+﻿using Microsoft.EntityFrameworkCore;
+using SimplyBudget.Utilities;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
@@ -11,10 +12,9 @@ namespace SimplyBudget.Collections
     {
         private static readonly Lazy<ExpenseCategoryCollection> _instance = new Lazy<ExpenseCategoryCollection>(() => new ExpenseCategoryCollection());
 
-        public static ExpenseCategoryCollection Instance
-        {
-            get { return _instance.Value; }
-        }
+        public static ExpenseCategoryCollection Instance => _instance.Value;
+
+        private BudgetContext Context { get; } = BudgetContext.Instance;
 
         private ExpenseCategoryCollection()
         {
@@ -27,7 +27,7 @@ namespace SimplyBudget.Collections
 
         private async void ReloadItems()
         {
-            var expenseCategories = await DatabaseManager.Instance.Connection.Table<ExpenseCategory>().ToListAsync();
+            var expenseCategories = await Context.ExpenseCategories.ToListAsync();
             Clear();
             foreach(var item in expenseCategories)
                 Add(item);

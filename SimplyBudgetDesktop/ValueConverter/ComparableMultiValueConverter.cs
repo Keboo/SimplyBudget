@@ -12,12 +12,12 @@ namespace SimplyBudget.ValueConverter
 
         public override object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
-            if (values == null || values.Length != 2)
+            if (values is null || values.Length != 2)
                 return DependencyProperty.UnsetValue;
 
             var first = values[0] as IComparable;
             var second = values[1] as IComparable;
-            if (first == null || second == null)
+            if (first is null || second is null)
                 return DependencyProperty.UnsetValue;
             var rv = first.CompareTo(second);
             return Math.Max(-1, Math.Min(1, rv));

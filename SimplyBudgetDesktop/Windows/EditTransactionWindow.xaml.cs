@@ -21,9 +21,6 @@ namespace SimplyBudget.Windows
             Loaded += loadedHandler;
         }
 
-        public EditTransactionViewModel ViewModel
-        {
-            get { return (EditTransactionViewModel) DataContext; }
-        }
+        public EditTransactionViewModel ViewModel => (EditTransactionViewModel)DataContext;
     }
 }

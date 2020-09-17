@@ -1,13 +1,12 @@
-﻿using System.Text;
-using JetBrains.Annotations;
-using SimplyBudget.ViewModels.Data;
+﻿using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
+using SimplyBudgetShared.Utilities.Events;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Text;
 using System.Threading.Tasks;
-using SimplyBudgetShared.Utilities.Events;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
@@ -16,6 +15,8 @@ namespace SimplyBudget.ViewModels.MainWindow
     {
         private readonly int _expenseCategoryID;
         private string _expenseCategoryName;
+
+        private BudgetContext Context { get; } = BudgetContext.Instance;
 
         public ExpenseCategoryDetailsViewModel(int expenseCategoryID)
         {
@@ -29,20 +30,17 @@ namespace SimplyBudget.ViewModels.MainWindow
             get
             {
                 if (_view.SortDescriptions.Count == 0)
-                    _view.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Ascending));
+                    _view.SortDescriptions.Add(new SortDescription(nameof(ExpenseCategory.Date), ListSortDirection.Ascending));
                 return _view;
             }
         }
 
-        public string Title
-        {
-            get { return "Details for " + _expenseCategoryName; }
-        }
+        public string Title => "Details for " + _expenseCategoryName;
 
         private DateTime _queryStart = DateTime.Now.StartOfMonth();
         public DateTime QueryStart
         {
-            get { return _queryStart; }
+            get => _queryStart;
             set
             {
                 if (SetProperty(ref _queryStart, value))
@@ -53,7 +51,7 @@ namespace SimplyBudget.ViewModels.MainWindow
         private DateTime _queryEnd = DateTime.Now.EndOfMonth();
         public DateTime QueryEnd
         {
-            get { return _queryEnd; }
+            get => _queryEnd;
             set
             {
                 if (SetProperty(ref _queryEnd, value))
@@ -63,12 +61,12 @@ namespace SimplyBudget.ViewModels.MainWindow
 
         protected override async Task<IEnumerable<ExpenseCategoryItemViewModel>> GetItems()
         {
-            var expenseCategory = await DatabaseManager.GetAsync<ExpenseCategory>(_expenseCategoryID);
-            if (expenseCategory == null) return null;
+            var expenseCategory = await Context.ExpenseCategories.FindAsync(_expenseCategoryID);
+            if (expenseCategory is null) return null;
             _expenseCategoryName = expenseCategory.Name;
-            RaisePropertyChanged(() => Title);
+            OnPropertyChanged(nameof(Title));
 
-            var transactions = await expenseCategory.GetTransactionItems(QueryStart, QueryEnd);
+            var transactions = await Context.GetTransactionItems(expenseCategory, QueryStart, QueryEnd);
 
             var rv = new List<ExpenseCategoryItemViewModel>();
             // ReSharper disable LoopCanBeConvertedToQuery
@@ -77,7 +75,7 @@ namespace SimplyBudget.ViewModels.MainWindow
                     rv.Add(await ExpenseCategoryItemViewModel.Create(transaction));
             // ReSharper restore LoopCanBeConvertedToQuery
 
-            var transfers = await expenseCategory.GetTransfers(QueryStart, QueryEnd);
+            var transfers = await Context.GetTransfers(expenseCategory, QueryStart, QueryEnd);
             // ReSharper disable LoopCanBeConvertedToQuery
             if (transfers != null)
                 foreach(var transfer in transfers)
@@ -107,11 +105,11 @@ namespace SimplyBudget.ViewModels.MainWindow
 
     internal class ExpenseCategoryItemViewModel : ViewModelBase, IDatabaseItem
     {
-        public static async Task<ExpenseCategoryItemViewModel> Create([NotNull] TransactionItem transactionItem)
+        public static async Task<ExpenseCategoryItemViewModel> Create(TransactionItem transactionItem)
         {
-            if (transactionItem == null) throw new ArgumentNullException("transactionItem");
+            if (transactionItem is null) throw new ArgumentNullException(nameof(transactionItem));
             var transaction = await DatabaseManager.Instance.Connection.GetAsync<Transaction>(transactionItem.TransactionID);
-            if (transaction == null) return null;
+            if (transaction is null) return null;
             return new ExpenseCategoryItemViewModel(transactionItem)
                        {
                            Amount = transactionItem.Amount,
@@ -120,9 +118,9 @@ namespace SimplyBudget.ViewModels.MainWindow
                        };
         }
 
-        public static async Task<ExpenseCategoryItemViewModel> Create([NotNull] Transfer transfer, int expenseCategoryID)
+        public static async Task<ExpenseCategoryItemViewModel> Create(Transfer transfer, int expenseCategoryID)
         {
-            if (transfer == null) throw new ArgumentNullException("transfer");
+            if (transfer is null) throw new ArgumentNullException(nameof(transfer));
 
             var amount = transfer.Amount;
 
@@ -149,9 +147,9 @@ namespace SimplyBudget.ViewModels.MainWindow
                        };
         }
 
-        public static async Task<ExpenseCategoryItemViewModel> Create([NotNull] IncomeItem incomeItem)
+        public static async Task<ExpenseCategoryItemViewModel> Create(IncomeItem incomeItem)
         {
-            if (incomeItem == null) throw new ArgumentNullException("incomeItem");
+            if (incomeItem is null) throw new ArgumentNullException("incomeItem");
             var income = await DatabaseManager.GetAsync<Income>(incomeItem.IncomeID);
 
             return new ExpenseCategoryItemViewModel(incomeItem)
@@ -162,59 +160,46 @@ namespace SimplyBudget.ViewModels.MainWindow
                        };
         }
 
-        private readonly int _transactionItemID;
-        private readonly int _transferID;
-        private readonly int _incomeItemID;
-
         private ExpenseCategoryItemViewModel(TransactionItem transactionItem)
         {
-            _transactionItemID = transactionItem.ID;
+            TransactionItemID = transactionItem.ID;
         }
 
         private ExpenseCategoryItemViewModel(Transfer transfer)
         {
-            _transferID = transfer.ID;
+            TransferID = transfer.ID;
         }
 
         private ExpenseCategoryItemViewModel(IncomeItem incomeItem)
         {
-            _incomeItemID = incomeItem.ID;
+            IncomeItemID = incomeItem.ID;
         }
 
-        public int TransactionItemID
-        {
-            get { return _transactionItemID; }
-        }
+        public int TransactionItemID { get; }
 
-        public int TransferID
-        {
-            get { return _transferID; }
-        }
+        public int TransferID { get; }
 
-        public int IncomeItemID
-        {
-            get { return _incomeItemID; }
-        }
+        public int IncomeItemID { get; }
 
         private int _amount;
         public int Amount
         {
-            get { return _amount; }
-            set { SetProperty(ref _amount, value); }
+            get => _amount;
+            set => SetProperty(ref _amount, value);
         }
 
         private string _description;
         public string Description
         {
-            get { return _description; }
-            set { SetProperty(ref _description, value); }
+            get => _description;
+            set => SetProperty(ref _description, value);
         }
 
         private DateTime _date;
         public DateTime Date
         {
-            get { return _date; }
-            set { SetProperty(ref _date, value); }
+            get => _date;
+            set => SetProperty(ref _date, value);
         }
 
 

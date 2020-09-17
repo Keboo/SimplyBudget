@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
+using SimplyBudgetShared.Utilities;
+using SimplyBudgetShared.Utilities.Events;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,6 +9,16 @@ namespace SimplyBudgetShared.Data
 {
     public class BudgetContext : DbContext
     {
+        static BudgetContext()
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<BudgetContext>();
+            optionsBuilder.UseSqlite("Data Source=data.db");
+
+            Instance = new BudgetContext(optionsBuilder.Options);
+        }
+
+        public static BudgetContext Instance { get; }
+
         public DbSet<Account> Accounts => Set<Account>();
         public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
         public DbSet<Income> Incomes => Set<Income>();
@@ -43,10 +54,10 @@ namespace SimplyBudgetShared.Data
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            //foreach(var account in ChangeTracker.Entries<Account>())
+            //foreach (var account in ChangeTracker.Entries<Account>())
             //{
             //    var isDefaultProperty = account.Property<bool>(nameof(Account.IsDefault));
-            //    if (isDefaultProperty.CurrentValue && 
+            //    if (isDefaultProperty.CurrentValue &&
             //        (isDefaultProperty.IsModified || account.State == EntityState.Added))
             //    {
             //        if (await Accounts.FirstOrDefaultAsync(x => x.IsDefault && x.ID != account.Entity.ID) is { } previousDefault)
@@ -55,6 +66,27 @@ namespace SimplyBudgetShared.Data
             //        }
             //    }
             //}
+
+            var notifications = new List<Event>();
+            foreach (var entity in ChangeTracker.Entries())
+            {
+                EventType type = entity.State switch
+                {
+                    EntityState.Added => EventType.Created,
+                    EntityState.Deleted => EventType.Deleted,
+                    EntityState.Modified => EventType.Updated,
+                    _ => EventType.None
+                };
+                if (type == EventType.None) continue;
+
+                switch(entity.Entity)
+                {
+                    case ExpenseCategory category:
+                        notifications.Add(new ExpenseCategoryEvent(this, category, type));
+                        break;
+                }
+            }
+
             return await base.SaveChangesAsync(cancellationToken);
         }
     }

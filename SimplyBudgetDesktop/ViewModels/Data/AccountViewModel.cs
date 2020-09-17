@@ -1,16 +1,15 @@
-﻿using System;
+﻿using SimplyBudgetShared.Data;
+using System;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
-using SimplyBudgetShared.Data;
 
 namespace SimplyBudget.ViewModels.Data
 {
     internal class AccountViewModel : ViewModelBase, IDatabaseItem
     {
-        public static async Task<AccountViewModel> Create([NotNull] Account account)
+        public static async Task<AccountViewModel> Create(BudgetContext context, Account account)
         {
-            if (account == null) throw new ArgumentNullException("account");
-            var currentAmount = await account.GetCurrentAmount();
+            if (account is null) throw new ArgumentNullException(nameof(account));
+            var currentAmount = await context.GetCurrentAmount(account.ID);
             return new AccountViewModel(account.ID)
                        {
                            Name = account.Name,
@@ -25,44 +24,39 @@ namespace SimplyBudget.ViewModels.Data
             return new AccountViewModel(0);
         }
 
-        private readonly int _accountID;
-
         private AccountViewModel(int accountID)
         {
-            _accountID = accountID;
+            AccountID = accountID;
         }
 
-        public int AccountID
-        {
-            get { return _accountID; }
-        }
+        public int AccountID { get; }
 
         private string _name;
         public string Name
         {
-            get { return _name; }
-            set { SetProperty(ref _name, value); }
+            get => _name;
+            set => _ = SetProperty(ref _name, value);
         }
 
         private DateTime _lastValidatedDate;
         public DateTime LastValidatedDate
         {
-            get { return _lastValidatedDate; }
-            set { SetProperty(ref _lastValidatedDate, value); }
+            get => _lastValidatedDate;
+            set => SetProperty(ref _lastValidatedDate, value);
         }
 
         private int _currentAmount;
         public int CurrentAmount
         {
-            get { return _currentAmount; }
-            set { SetProperty(ref _currentAmount, value); }
+            get => _currentAmount;
+            set => SetProperty(ref _currentAmount, value);
         }
 
         private bool _isDefault;
         public bool IsDefault
         {
-            get { return _isDefault; }
-            set { SetProperty(ref _isDefault, value); }
+            get => _isDefault;
+            set => SetProperty(ref _isDefault, value);
         }
 
         public async Task<BaseItem> GetItem()

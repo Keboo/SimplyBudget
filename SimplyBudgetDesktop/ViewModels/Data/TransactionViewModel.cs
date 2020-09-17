@@ -8,9 +8,9 @@ namespace SimplyBudget.ViewModels.Data
 {
     internal class TransactionViewModel : ViewModelBase, ITransactionItem
     {
-        public static async Task<TransactionViewModel> Create([NotNull] Transaction transaction)
+        public static async Task<TransactionViewModel> Create(Transaction transaction)
         {
-            if (transaction == null) throw new ArgumentNullException("transaction");
+            if (transaction is null) throw new ArgumentNullException("transaction");
 
             var items = await transaction.GetTransactionItems();
 
@@ -36,50 +36,46 @@ namespace SimplyBudget.ViewModels.Data
                        };
         }
 
-        private readonly int _transactionID;
         private TransactionViewModel(int transactionID)
         {
-            _transactionID = transactionID;
+            TransactionID = transactionID;
         }
 
-        public int TransactionID
-        {
-            get { return _transactionID; }
-        }
+        public int TransactionID { get; }
 
         private int _amount;
         public int Amount
         {
-            get { return _amount; }
-            set { SetProperty(ref _amount, value); }
+            get => _amount;
+            set => SetProperty(ref _amount, value);
         }
 
         private string _description;
         public string Description
         {
-            get { return _description; }
-            set { SetProperty(ref _description, value); }
+            get => _description;
+            set => SetProperty(ref _description, value);
         }
 
         private string _expenseCategoryName;
         public string ExpenseCategoryName
         {
-            get { return _expenseCategoryName; }
-            set { SetProperty(ref _expenseCategoryName, value); }
+            get => _expenseCategoryName;
+            set => SetProperty(ref _expenseCategoryName, value);
         }
 
         private DateTime _date;
         public DateTime Date
         {
-            get { return _date; }
-            set { SetProperty(ref _date, value); }
+            get => _date;
+            set => SetProperty(ref _date, value);
         }
 
         private int _numItems;
         public int NumItems
         {
-            get { return _numItems; }
-            set { SetProperty(ref _numItems, value); }
+            get => _numItems;
+            set => SetProperty(ref _numItems, value);
         }
 
         public async Task<BaseItem> GetItem()

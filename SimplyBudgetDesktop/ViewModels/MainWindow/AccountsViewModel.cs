@@ -18,15 +18,9 @@ namespace SimplyBudget.ViewModels.MainWindow
             NotificationCenter.Register<AccountEvent>(this);
         }
 
-        public ICollectionView AccountsView
-        {
-            get { return _view; }
-        }
+        public ICollectionView AccountsView => _view;
 
-        public string Title
-        {
-            get { return "Account Information"; }
-        }
+        public string Title => "Account Information";
 
         protected override async Task<IEnumerable<AccountViewModel>> GetItems()
         {

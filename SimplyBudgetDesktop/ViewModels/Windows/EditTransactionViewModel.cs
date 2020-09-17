@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
 using JetBrains.Annotations;
-using Microsoft.Practices.Prism.Commands;
+using Microsoft.Toolkit.Mvvm.Input;
 using SimplyBudget.Collections;
 using SimplyBudgetShared.Data;
 using System;
@@ -17,82 +17,71 @@ namespace SimplyBudget.ViewModels.Windows
     {
         public event EventHandler<EventArgs> RequestClose;
 
-        private readonly ObservableCollection<TransactionItemDetailsViewModel> _transactions;
-
-        private readonly DelegateCommand _addTransactionCommand;
-        private readonly DelegateCommand<TransactionItemDetailsViewModel> _removeTransactionCommand; 
+        private readonly RelayCommand _addTransactionCommand;
+        private readonly RelayCommand<TransactionItemDetailsViewModel> _removeTransactionCommand; 
 
         private Transaction _existingTransaction;
 
         public EditTransactionViewModel()
         {
-            _transactions = new ObservableCollection<TransactionItemDetailsViewModel>
+            Transactions = new ObservableCollection<TransactionItemDetailsViewModel>
                                 {
                                     new TransactionItemDetailsViewModel(UpdateRemaining)
                                 };
 
-            _addTransactionCommand = new DelegateCommand(OnAddTransaction);
-            _removeTransactionCommand = new DelegateCommand<TransactionItemDetailsViewModel>(OnRemoveTransaction,
+            _addTransactionCommand = new RelayCommand(OnAddTransaction);
+            _removeTransactionCommand = new RelayCommand<TransactionItemDetailsViewModel>(OnRemoveTransaction,
                                                                                              CanRemoveTransaction);
 
             _date = DateTime.Today;
         }
 
-        public ObservableCollection<TransactionItemDetailsViewModel> Transactions
-        {
-            get { return _transactions; }
-        }
+        public ObservableCollection<TransactionItemDetailsViewModel> Transactions { get; }
 
-        public ICommand AddTransactionCommand
-        {
-            get { return _addTransactionCommand; }
-        }
+        public ICommand AddTransactionCommand => _addTransactionCommand;
 
-        public ICommand RemoveTransactionCommand
-        {
-            get { return _removeTransactionCommand; }
-        }
+        public ICommand RemoveTransactionCommand => _removeTransactionCommand;
 
         private DateTime _date;
         public DateTime Date
         {
-            get { return _date; }
-            set { SetProperty(ref _date, value); }
+            get => _date;
+            set => SetProperty(ref _date, value);
         }
 
         private string _description;
         public string Description
         {
-            get { return _description; }
-            set { SetProperty(ref _description, value); }
+            get => _description;
+            set => SetProperty(ref _description, value);
         }
 
         private string _errorMessage;
         public string ErrorMessage
         {
-            get { return _errorMessage; }
-            set { SetProperty(ref _errorMessage, value); }
+            get => _errorMessage;
+            set => SetProperty(ref _errorMessage, value);
         }
 
         private string _errorRemainingAmount;
         public string ErrorRemainingAmount
         {
-            get { return _errorRemainingAmount; }
-            set { SetProperty(ref _errorRemainingAmount, value); }
+            get => _errorRemainingAmount;
+            set => SetProperty(ref _errorRemainingAmount, value);
         }
 
         private int _total;
         public int Total
         {
-            get { return _total; }
-            set { SetProperty(ref _total, value); }
+            get => _total;
+            set => SetProperty(ref _total, value);
         }
 
         private int _remainingAmount;
         public int RemainingAmount
         {
-            get { return _remainingAmount; }
-            set { SetProperty(ref _remainingAmount, value); }
+            get => _remainingAmount;
+            set => SetProperty(ref _remainingAmount, value);
         }
 
         protected override async Task CreateAsync()
@@ -146,7 +135,7 @@ namespace SimplyBudget.ViewModels.Windows
 
         protected override async Task SaveAsync()
         {
-            if (_existingTransaction == null) return;
+            if (_existingTransaction is null) return;
 
             var transactionItemVMs = Transactions.Where(x => x.IsEmpty() == false).ToArray();
             if (transactionItemVMs.Length == 0) //This case should be blocked by the UI
@@ -208,13 +197,13 @@ namespace SimplyBudget.ViewModels.Windows
             Date = transaction.Date;
             Description = transaction.Description;
 
-            _transactions.Clear();
+            Transactions.Clear();
             var transactionItems = await transaction.GetTransactionItems();
             if (transactionItems != null)
             {
                 foreach (var transactionItem in transactionItems)
-                    _transactions.Add(new TransactionItemDetailsViewModel(transactionItem, UpdateRemaining));
-                Total = _transactions.Sum(x => x.Amount);
+                    Transactions.Add(new TransactionItemDetailsViewModel(transactionItem, UpdateRemaining));
+                Total = Transactions.Sum(x => x.Amount);
             }
 
             UpdateRemaining();
@@ -224,19 +213,19 @@ namespace SimplyBudget.ViewModels.Windows
 
         private void OnAddTransaction()
         {
-            if (_transactions.Count == 1 && Total == 0)
-                Total = _transactions[0].Amount;
+            if (Transactions.Count == 1 && Total == 0)
+                Total = Transactions[0].Amount;
             
-            _transactions.Add(new TransactionItemDetailsViewModel(UpdateRemaining));
+            Transactions.Add(new TransactionItemDetailsViewModel(UpdateRemaining));
 
             UpdateRemaining();
         }
 
         private void OnRemoveTransaction(TransactionItemDetailsViewModel viewModel)
         {
-            _transactions.Remove(viewModel);
-            if (_transactions.Count == 1 && _transactions[0].Amount == 0)
-                _transactions[0].Amount = Total;
+            Transactions.Remove(viewModel);
+            if (Transactions.Count == 1 && Transactions[0].Amount == 0)
+                Transactions[0].Amount = Total;
             
             UpdateRemaining();
         }
@@ -256,44 +245,36 @@ namespace SimplyBudget.ViewModels.Windows
 
     internal class TransactionItemDetailsViewModel : ViewModelBase
     {
-        private readonly int _existingTransactionItemID;
         private readonly Action _itemUpdated;
-        private readonly ICollectionView _expenseCategoriesView;
 
-        public TransactionItemDetailsViewModel([NotNull] Action itemUpdated)
+        public TransactionItemDetailsViewModel(Action itemUpdated)
         {
-            if (itemUpdated == null) throw new ArgumentNullException("itemUpdated");
+            if (itemUpdated is null) throw new ArgumentNullException("itemUpdated");
             _itemUpdated = itemUpdated;
 
-            _expenseCategoriesView = CollectionViewSource.GetDefaultView(ExpenseCategoryCollection.Instance);
-            _expenseCategoriesView.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
+            ExpenseCategories = CollectionViewSource.GetDefaultView(ExpenseCategoryCollection.Instance);
+            ExpenseCategories.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
         }
 
-        public TransactionItemDetailsViewModel([NotNull] TransactionItem transactionItem,
-            [NotNull] Action amountUpdated)
+        public TransactionItemDetailsViewModel(TransactionItem transactionItem,
+            Action amountUpdated)
             : this(amountUpdated)
         {
-            if (transactionItem == null) throw new ArgumentNullException("transactionItem");
-            _existingTransactionItemID = transactionItem.ID;
+            if (transactionItem is null) throw new ArgumentNullException("transactionItem");
+            ExistingTransactionItemID = transactionItem.ID;
             ExpenseCategoryID = transactionItem.ExpenseCategoryID;
             Amount = transactionItem.Amount;
             Description = transactionItem.Description;
         }
 
-        public int ExistingTransactionItemID
-        {
-            get { return _existingTransactionItemID; }
-        }
+        public int ExistingTransactionItemID { get; }
 
-        public ICollectionView ExpenseCategories
-        {
-            get { return _expenseCategoriesView; }
-        }
+        public ICollectionView ExpenseCategories { get; }
 
         private int _amount;
         public int Amount
         {
-            get { return _amount; }
+            get => _amount;
             set
             {
                 if (SetProperty(ref _amount, value))
@@ -307,14 +288,14 @@ namespace SimplyBudget.ViewModels.Windows
         private string _description;
         public string Description
         {
-            get { return _description; }
-            set { SetProperty(ref _description, value); }
+            get => _description;
+            set => SetProperty(ref _description, value);
         }
 
         private int _expenseCategoryID;
         public int ExpenseCategoryID
         {
-            get { return _expenseCategoryID; }
+            get => _expenseCategoryID;
             set
             {
                 if (SetProperty(ref _expenseCategoryID, value))
@@ -328,8 +309,8 @@ namespace SimplyBudget.ViewModels.Windows
         private string _errorMessage;
         public string ErrorMessage
         {
-            get { return _errorMessage; }
-            set { SetProperty(ref _errorMessage, value); }
+            get => _errorMessage;
+            set => SetProperty(ref _errorMessage, value);
         }
 
         public bool IsEmpty()

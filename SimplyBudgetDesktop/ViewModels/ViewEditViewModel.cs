@@ -1,28 +1,25 @@
-﻿using System.Threading.Tasks;
+﻿using Microsoft.Toolkit.Mvvm.Input;
+using System.Threading.Tasks;
 using System.Windows.Input;
-using Microsoft.Practices.Prism.Commands;
 
 namespace SimplyBudget.ViewModels
 {
     internal abstract class ViewEditViewModel<T> : ViewModelBase
     {
-        private readonly DelegateCommand _saveCommand;
+        private readonly RelayCommand _saveCommand;
 
         protected ViewEditViewModel()
         {
-            _saveCommand = new DelegateCommand(OnSaveCommand);
+            _saveCommand = new RelayCommand(OnSaveCommand);
         }
 
-        public ICommand SaveCommand
-        {
-            get { return _saveCommand; }
-        }
+        public ICommand SaveCommand => _saveCommand;
 
         private bool _isEditing;
         public bool IsEditing
         {
-            get { return _isEditing; }
-            private set { SetProperty(ref _isEditing, value); }
+            get => _isEditing;
+            private set => SetProperty(ref _isEditing, value);
         }
 
         public async Task SetItemToEditAsync(T itemToEdit)

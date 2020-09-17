@@ -18,10 +18,7 @@ namespace SimplyBudget.Utilities
 
         private static readonly Lazy<SnapshotManager> _instance = new Lazy<SnapshotManager>(() => new SnapshotManager());
 
-        public static SnapshotManager Instance
-        {
-            get { return _instance.Value; }
-        }
+        public static SnapshotManager Instance => _instance.Value;
 
         private SnapshotManager()
         { }

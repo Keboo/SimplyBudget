@@ -15,10 +15,10 @@ namespace SimplyBudgetShared.Data
         private DBProp<int> _ammount; 
         public int Amount
         {
-            get { return _ammount; }
+            get => _ammount;
             set
             {
-                if (_ammount == null)
+                if (_ammount is null)
                     _ammount = new DBProp<int>(value);
                 else
                     _ammount.Value = value;

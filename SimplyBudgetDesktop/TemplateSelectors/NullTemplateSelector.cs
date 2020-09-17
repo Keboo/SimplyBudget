@@ -10,7 +10,7 @@ namespace SimplyBudget.TemplateSelectors
 
         public override DataTemplate SelectTemplate(object item, DependencyObject container)
         {
-            if (item == null)
+            if (item is null)
                 return NullTemplate;
             return DefaultTemplate;
         }

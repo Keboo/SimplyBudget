@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-using SimplyBudgetShared.Utilities;
+﻿using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace SimplyBudgetShared.Data
 {

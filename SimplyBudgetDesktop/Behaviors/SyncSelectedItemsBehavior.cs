@@ -1,8 +1,8 @@
 ﻿
+using Microsoft.Xaml.Behaviors;
 using System.Collections;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Interactivity;
 
 namespace SimplyBudget.Behaviors
 {
@@ -41,8 +41,8 @@ namespace SimplyBudget.Behaviors
 
         public IList SelectedItems
         {
-            get { return (IList)GetValue(SelectedItemsProperty); }
-            set { SetValue(SelectedItemsProperty, value); }
+            get => (IList)GetValue(SelectedItemsProperty);
+            set => SetValue(SelectedItemsProperty, value);
         }
 
         protected override void OnAttached()
@@ -67,7 +67,7 @@ namespace SimplyBudget.Behaviors
         private void UpdateSelections(SelectionChangedEventArgs e)
         {
             var selections = SelectedItems;
-            if (selections == null) return;
+            if (selections is null) return;
             
             foreach (var item in e.AddedItems)
             {

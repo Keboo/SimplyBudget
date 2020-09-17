@@ -7,9 +7,9 @@ namespace SimplyBudget.ViewModels.Data
 {
     internal class TransactionItemViewModel : ViewModelBase, IDatabaseItem
     {
-        public static async Task<TransactionItemViewModel> Create([NotNull] TransactionItem transactionItem)
+        public static async Task<TransactionItemViewModel> Create(TransactionItem transactionItem)
         {
-            if (transactionItem == null) throw new ArgumentNullException("transactionItem");
+            if (transactionItem is null) throw new ArgumentNullException("transactionItem");
 
             var transaction = await DatabaseManager.GetAsync<Transaction>(transactionItem.TransactionID);
 
@@ -20,12 +20,12 @@ namespace SimplyBudget.ViewModels.Data
             return null;
         }
 
-        public static TransactionItemViewModel Create([NotNull] TransactionItem transactionItem,
-                                                      [NotNull] Transaction transaction,
-                                                      [CanBeNull] ExpenseCategory expenseCategory)
+        public static TransactionItemViewModel Create(TransactionItem transactionItem,
+                                                      Transaction transaction,
+                                                      ExpenseCategory expenseCategory)
         {
-            if (transactionItem == null) throw new ArgumentNullException("transactionItem");
-            if (transaction == null) throw new ArgumentNullException("transaction");
+            if (transactionItem is null) throw new ArgumentNullException("transactionItem");
+            if (transaction is null) throw new ArgumentNullException("transaction");
             return new TransactionItemViewModel(transactionItem.ID)
                        {
                            Amount = transactionItem.Amount,
@@ -35,43 +35,39 @@ namespace SimplyBudget.ViewModels.Data
                        };
         }
 
-        private readonly int _transactionItemID;
         private TransactionItemViewModel(int transactionItemID)
         {
-            _transactionItemID = transactionItemID;
+            TransactionItemID = transactionItemID;
         }
 
-        public int TransactionItemID
-        {
-            get { return _transactionItemID; }
-        }
+        public int TransactionItemID { get; }
 
         private int _amount;
         public int Amount
         {
-            get { return _amount; }
-            set { SetProperty(ref _amount, value); }
+            get => _amount;
+            set => SetProperty(ref _amount, value);
         }
 
         private string _description;
         public string Description
         {
-            get { return _description; }
-            set { SetProperty(ref _description, value); }
+            get => _description;
+            set => SetProperty(ref _description, value);
         }
 
         private DateTime _date;
         public DateTime Date
         {
-            get { return _date; }
-            set { SetProperty(ref _date, value); }
+            get => _date;
+            set => SetProperty(ref _date, value);
         }
 
         private string _expenseCategoryName;
         public string ExpenseCategoryName
         {
-            get { return _expenseCategoryName; }
-            set { SetProperty(ref _expenseCategoryName, value); }
+            get => _expenseCategoryName;
+            set => SetProperty(ref _expenseCategoryName, value);
         }
 
         public async Task<BaseItem> GetItem()

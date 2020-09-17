@@ -3,9 +3,11 @@ using SimplyBudgetShared.Data;
 
 namespace SimplyBudgetShared.Utilities.Events
 {
-    public class ExpenseCategoryEvent : Event
+
+    public class ExpenseCategoryEvent : DatabaseEvent
     {
-        public ExpenseCategoryEvent(ExpenseCategory expenseCategory, EventType type)
+        public ExpenseCategoryEvent(BudgetContext context, ExpenseCategory expenseCategory, EventType type)
+            : base(context)
         {
             if (expenseCategory is null) throw new ArgumentNullException(nameof(expenseCategory));
             if (type == EventType.None) throw new ArgumentException(@"A type must be specified", nameof(type));

@@ -8,27 +8,19 @@ namespace SimplyBudgetShared.Data
 {
     public class DatabaseManager
     {
-        private string _databasePath;
-
         private static readonly Lazy<DatabaseManager> _instance = new Lazy<DatabaseManager>(() => new DatabaseManager());
 
-        
-        public static DatabaseManager Instance
-        {
-            get { return _instance.Value; }
-        }
 
-        public string CurrentDatabasePath
-        {
-            get { return _databasePath; }
-        }
+        public static DatabaseManager Instance => _instance.Value;
+
+        public string CurrentDatabasePath { get; private set; }
 
         private DatabaseManager()
         { }
 
         public async Task InitDatabase(string storageFolder, string? dbFileName = null)
         {
-            _databasePath = Path.Combine(storageFolder, dbFileName ?? "data.db");
+            CurrentDatabasePath = Path.Combine(storageFolder, dbFileName ?? "data.db");
             //_connection = new SQLiteAsyncConnection(_databasePath);
             
             //Create all of the require table if they don't exist

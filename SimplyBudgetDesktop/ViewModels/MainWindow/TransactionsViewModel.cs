@@ -23,20 +23,14 @@ namespace SimplyBudget.ViewModels.MainWindow
             NotificationCenter.Register<TransactionItemEvent>(this);
         }
 
-        public ICollectionView TransactionsView
-        {
-            get { return _view; }
-        }
+        public ICollectionView TransactionsView => _view;
 
-        public string Title
-        {
-            get { return "Transaction History"; }
-        }
+        public string Title => "Transaction History";
 
         private DateTime _queryStart = DateTime.Now.StartOfMonth();
         public DateTime QueryStart
         {
-            get { return _queryStart; }
+            get => _queryStart;
             set
             {
                 if (SetProperty(ref _queryStart, value))
@@ -47,7 +41,7 @@ namespace SimplyBudget.ViewModels.MainWindow
         private DateTime _queryEnd = DateTime.Now.EndOfMonth();
         public DateTime QueryEnd
         {
-            get { return _queryEnd; }
+            get => _queryEnd;
             set
             {
                 if (SetProperty(ref _queryEnd, value))

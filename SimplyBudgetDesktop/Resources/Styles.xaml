@@ -2,8 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:utilities="clr-namespace:SimplyBudget.Utilities"
                     xmlns:controls="clr-namespace:SimplyBudget.Controls"
-                    xmlns:vc="clr-namespace:SimplyBudget.ValueConverter"
-                    xmlns:telerik="clr-namespace:Telerik.Windows.Controls;assembly=Telerik.Windows.Controls">
+                    xmlns:vc="clr-namespace:SimplyBudget.ValueConverter">
 
     <Style TargetType="Hyperlink" x:Key="DeleteHyperlink">
         <Setter Property="Foreground" Value="Red"/>
@@ -23,12 +22,7 @@
         <Setter Property="MinWidth" Value="60"/>
     </Style>
 
-    <Style TargetType="telerik:RadButton">
-        <Setter Property="Padding" Value="12,1"/>
-        <Setter Property="MinWidth" Value="60"/>
-    </Style>
-    
-    <Style TargetType="telerik:RadButton" x:Key="SaveButton" BasedOn="{StaticResource {x:Type telerik:RadButton}}">
+    <Style TargetType="Button" x:Key="SaveButton" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="Content" Value="Save" />
         <Setter Property="Command" Value="{Binding SaveCommand}"/>
         <Setter Property="HorizontalAlignment" Value="Right"/>

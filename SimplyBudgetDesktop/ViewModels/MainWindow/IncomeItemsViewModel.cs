@@ -21,20 +21,14 @@ namespace SimplyBudget.ViewModels.MainWindow
             NotificationCenter.Register<IncomeItemEvent>(this);
         }
 
-        public ICollectionView IncomeItemsView
-        {
-            get { return _view; }
-        }
+        public ICollectionView IncomeItemsView => _view;
 
-        public string Title
-        {
-            get { return "Income Items"; }
-        }
+        public string Title => "Income Items";
 
         private DateTime _queryStart = DateTime.Now.StartOfMonth();
         public DateTime QueryStart
         {
-            get { return _queryStart; }
+            get => _queryStart;
             set
             {
                 if (SetProperty(ref _queryStart, value))
@@ -45,7 +39,7 @@ namespace SimplyBudget.ViewModels.MainWindow
         private DateTime _queryEnd = DateTime.Now.EndOfMonth();
         public DateTime QueryEnd
         {
-            get { return _queryEnd; }
+            get => _queryEnd;
             set
             {
                 if (SetProperty(ref _queryEnd, value))

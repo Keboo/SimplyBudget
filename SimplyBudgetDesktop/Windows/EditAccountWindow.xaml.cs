@@ -12,9 +12,6 @@ namespace SimplyBudget.Windows
             InitializeComponent();
         }
 
-        public EditAccountViewModel ViewModel
-        {
-            get { return (EditAccountViewModel) DataContext; }
-        }
+        public EditAccountViewModel ViewModel => (EditAccountViewModel)DataContext;
     }
 }

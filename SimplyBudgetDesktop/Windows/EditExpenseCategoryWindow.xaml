@@ -6,11 +6,10 @@
     xmlns:vc="clr-namespace:SimplyBudget.ValueConverter" 
     xmlns:windows="clr-namespace:SimplyBudget.Windows" 
     xmlns:utilities="clr-namespace:SimplyBudget.Utilities"
-    xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
     xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors" xmlns:data="clr-namespace:SimplyBudget.ViewModels.Data"
     xmlns:templateSelectors="clr-namespace:SimplyBudget.TemplateSelectors"
     xmlns:windowsVM="clr-namespace:SimplyBudget.ViewModels.Windows"
-    xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation" SizeToContent="Height" Width="300">
+    xmlns:i="http://schemas.microsoft.com/xaml/behaviors" SizeToContent="Height" Width="300">
     <Window.DataContext>
         <windowsVM:EditExpenseCategoryViewModel />
     </Window.DataContext>
@@ -88,14 +87,14 @@
                     <ColumnDefinition />
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <telerik:RadComboBox ItemsSource="{Binding Categories}"
+                <ComboBox ItemsSource="{Binding Categories}"
                           SelectedValue="{Binding CategoryName, Mode=TwoWay}"
                           utilities:AttachedProperties.BooleanVisibility="{Binding IsCreateCategory, Converter={vc:InvertBoolValueConverter}}"/>
                 <TextBox Text="{Binding CategoryName, UpdateSourceTrigger=PropertyChanged}"
                          utilities:AttachedProperties.BooleanVisibility="{Binding IsCreateCategory}"/>
-                <telerik:RadButton Grid.Column="1" Width="25" Command="{Binding ToggleCreateCommand}" Margin="3,0,0,0">
-                    <telerik:RadButton.Style>
-                        <Style TargetType="telerik:RadButton">
+                <Button Grid.Column="1" Width="25" Command="{Binding ToggleCreateCommand}" Margin="3,0,0,0">
+                    <Button.Style>
+                        <Style TargetType="Button">
                             <Setter Property="Content" Value="+"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsCreateCategory}" Value="True">
@@ -103,8 +102,8 @@
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </telerik:RadButton.Style>
-                </telerik:RadButton>
+                    </Button.Style>
+                </Button>
             </Grid>
 
             <TextBlock Text="Expense Account:" Margin="0,5,0,3"/>
@@ -113,10 +112,10 @@
                     <ColumnDefinition />
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <telerik:RadComboBox ItemsSource="{Binding Accounts}"
+                <ComboBox ItemsSource="{Binding Accounts}"
                           SelectedValue="{Binding SelectedAccountID, Mode=TwoWay}"
                           SelectedValuePath="AccountID">
-                    <telerik:RadComboBox.ItemTemplateSelector>
+                    <ComboBox.ItemTemplateSelector>
                         <templateSelectors:NullTemplateSelector>
                             <templateSelectors:NullTemplateSelector.NullTemplate>
                                 <DataTemplate>
@@ -132,9 +131,9 @@
                                 </DataTemplate>
                             </templateSelectors:NullTemplateSelector.DefaultTemplate>
                         </templateSelectors:NullTemplateSelector>
-                    </telerik:RadComboBox.ItemTemplateSelector>
+                    </ComboBox.ItemTemplateSelector>
 
-                </telerik:RadComboBox>
+                </ComboBox>
             </Grid>
 
             <Grid Margin="0,5">
@@ -159,7 +158,7 @@
                 </TextBlock>
             </Grid>
 
-            <telerik:RadButton Style="{StaticResource SaveButton}" />
+            <Button Style="{StaticResource SaveButton}" />
 
         </StackPanel>
     </Grid>

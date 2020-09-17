@@ -13,14 +13,14 @@ namespace SimplyBudget.Commands
         public override async void Execute(object parameter)
         {
             var category = parameter as ExpenseCategory;
-            if (category == null)
+            if (category is null)
             {
                 var databaseItem = parameter as IDatabaseItem;
                 if (databaseItem != null)
                     category = await databaseItem.GetItem() as ExpenseCategory;
             }
 
-            if (category == null) return;
+            if (category is null) return;
 
             var window = new ExpenseCategoryHistory();
             window.Show();

@@ -6,12 +6,14 @@ namespace SimplyBudget.ViewModels.Data
 {
     internal class TransferViewModel : ViewModelBase, ITransactionItem
     {
+        private BudgetContext Context { get; } = BudgetContext.Instance;
+
         public static async Task<TransferViewModel> Create(Transfer transfer)
         {
-            if (transfer == null) throw new ArgumentNullException("transfer");
+            if (transfer is null) throw new ArgumentNullException(nameof(transfer));
 
-            var fromExpenseCategory = await DatabaseManager.Instance.Connection.GetAsync<ExpenseCategory>(transfer.FromExpenseCategoryID);
-            var toExpenseCategory = await DatabaseManager.Instance.Connection.GetAsync<ExpenseCategory>(transfer.ToExpenseCategoryID);
+            var fromExpenseCategory = await BudgetContext.Instance.ExpenseCategories.FindAsync(transfer.FromExpenseCategoryID);
+            var toExpenseCategory = await BudgetContext.Instance.ExpenseCategories.FindAsync(transfer.ToExpenseCategoryID);
 
             string from = fromExpenseCategory != null ? fromExpenseCategory.Name : "(unknown)";
             string to = toExpenseCategory != null ? toExpenseCategory.Name : "(unknown)";
@@ -25,43 +27,39 @@ namespace SimplyBudget.ViewModels.Data
             };
         }
 
-        private readonly int _transferID;
         private TransferViewModel(int transferID)
         {
-            _transferID = transferID;
+            TransferID = transferID;
         }
 
-        public int TransferID
-        {
-            get { return _transferID; }
-        }
+        public int TransferID { get; }
 
         private int _amount;
         public int Amount
         {
-            get { return _amount; }
-            set { SetProperty(ref _amount, value); }
+            get => _amount;
+            set => SetProperty(ref _amount, value);
         }
 
         private string _expenseCategoryName;
         public string ExpenseCategoryName
         {
-            get { return _expenseCategoryName; }
-            set { SetProperty(ref _expenseCategoryName, value); }
+            get => _expenseCategoryName;
+            set => SetProperty(ref _expenseCategoryName, value);
         }
 
         private string _description;
         public string Description
         {
-            get { return _description; }
-            set { SetProperty(ref _description, value); }
+            get => _description;
+            set => SetProperty(ref _description, value);
         }
 
         private DateTime _date;
         public DateTime Date
         {
-            get { return _date; }
-            set { SetProperty(ref _date, value); }
+            get => _date;
+            set => SetProperty(ref _date, value);
         }
 
         public async Task<BaseItem> GetItem()

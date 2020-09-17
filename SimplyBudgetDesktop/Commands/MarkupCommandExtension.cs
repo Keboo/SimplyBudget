@@ -21,7 +21,7 @@ namespace SimplyBudget.Commands
 
         public abstract void Execute(object parameter);
 
-        public void RaiseCanExecuteChanged()
+        public void NotifyCanExecuteChanged()
         {
             var @event = CanExecuteChanged;
             if (@event != null)

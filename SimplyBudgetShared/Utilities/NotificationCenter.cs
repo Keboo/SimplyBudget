@@ -10,10 +10,7 @@ namespace SimplyBudgetShared.Utilities
         private static readonly Lazy<NotificationCenter> _lazyInstance =
             new Lazy<NotificationCenter>(() => new NotificationCenter());
 
-        private static NotificationCenter Instance
-        {
-            get { return _lazyInstance.Value; }
-        }
+        private static NotificationCenter Instance => _lazyInstance.Value;
 
         private NotificationCenter()
         { }

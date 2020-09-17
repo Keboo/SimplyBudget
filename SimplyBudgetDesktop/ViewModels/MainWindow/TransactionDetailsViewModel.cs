@@ -15,22 +15,16 @@ namespace SimplyBudget.ViewModels.MainWindow
     {
         private readonly Transaction _transaction;
 
-        public TransactionDetailsViewModel([NotNull] Transaction transaction)
+        public TransactionDetailsViewModel(Transaction transaction)
         {
-            if (transaction == null) throw new ArgumentNullException("transaction");
+            if (transaction is null) throw new ArgumentNullException("transaction");
             _transaction = transaction;
             NotificationCenter.Register(this);
         }
 
-        public ICollectionView TransactionItemsView
-        {
-            get { return _view; }
-        }
+        public ICollectionView TransactionItemsView => _view;
 
-        public string Title
-        {
-            get { return "Transaction Details"; }
-        }
+        public string Title => "Transaction Details";
 
         protected override async Task<IEnumerable<TransactionItemViewModel>> GetItems()
         {

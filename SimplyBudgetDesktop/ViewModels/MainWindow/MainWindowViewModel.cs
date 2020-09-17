@@ -1,5 +1,5 @@
-﻿using SimplyBudget.Events;
-using Microsoft.Practices.Prism.Commands;
+﻿using Microsoft.Toolkit.Mvvm.Input;
+using SimplyBudget.Events;
 using SimplyBudget.Properties;
 using SimplyBudget.Utilities;
 using SimplyBudget.ViewModels.Data;
@@ -21,25 +21,24 @@ namespace SimplyBudget.ViewModels.MainWindow
     {
         private readonly Stack<ViewModelBase> _viewStack;
 
-        private readonly DelegateCommand<ExpenseCategoryViewModel> _showExpenseCategoryDetailsCommand;
-        private readonly DelegateCommand<ITransactionItem> _showTransactionDetailsCommand;
-        private readonly DelegateCommand<AccountViewModel> _showAccountDetailsCommand; 
-        private readonly DelegateCommand _backCommand;
-        private readonly DelegateCommand _showTransactionItemsCommand;
-        private readonly DelegateCommand _showIncomeItemsCommand;
-        private readonly DelegateCommand _showAccountInformationCommand;
+        private readonly RelayCommand<ExpenseCategoryViewModel> _showExpenseCategoryDetailsCommand;
+        private readonly RelayCommand<AccountViewModel> _showAccountDetailsCommand; 
+        private readonly RelayCommand _backCommand;
+        private readonly RelayCommand _showTransactionItemsCommand;
+        private readonly RelayCommand _showIncomeItemsCommand;
+        private readonly RelayCommand _showAccountInformationCommand;
 
         public MainWindowViewModel()
         {
             _viewStack = new Stack<ViewModelBase>();
 
-            _showExpenseCategoryDetailsCommand = new DelegateCommand<ExpenseCategoryViewModel>(OnShowExpenseCategoryDetails);
-            _showTransactionDetailsCommand = new DelegateCommand<ITransactionItem>(OnShowTransactionDetails);
-            _showAccountDetailsCommand = new DelegateCommand<AccountViewModel>(OnShowAccountDetails);
-            _backCommand = new DelegateCommand(OnBack, CanBack);
-            _showTransactionItemsCommand = new DelegateCommand(OnShowTransactionItems);
-            _showIncomeItemsCommand = new DelegateCommand(OnShowIncomeItems);
-            _showAccountInformationCommand = new DelegateCommand(OnShowAccountInformation);
+            _showExpenseCategoryDetailsCommand = new RelayCommand<ExpenseCategoryViewModel>(OnShowExpenseCategoryDetails);
+            ShowTransactionDetailsCommand = new RelayCommand<ITransactionItem>(OnShowTransactionDetails);
+            _showAccountDetailsCommand = new RelayCommand<AccountViewModel>(OnShowAccountDetails);
+            _backCommand = new RelayCommand(OnBack, CanBack);
+            _showTransactionItemsCommand = new RelayCommand(OnShowTransactionItems);
+            _showIncomeItemsCommand = new RelayCommand(OnShowIncomeItems);
+            _showAccountInformationCommand = new RelayCommand(OnShowAccountInformation);
 
             NotificationCenter.Register<SnapshotLoadedEvent>(this);
             NotificationCenter.Register<SnapshotCreatedEvent>(this);
@@ -48,35 +47,17 @@ namespace SimplyBudget.ViewModels.MainWindow
                 LoadBudget();
         }
 
-        public ICommand ShowExpenseCategoryDetailsCommand
-        {
-            get { return _showExpenseCategoryDetailsCommand; }
-        }
+        public ICommand ShowExpenseCategoryDetailsCommand => _showExpenseCategoryDetailsCommand;
 
-        public ICommand ShowTransactionsCommand
-        {
-            get { return _showTransactionItemsCommand; }
-        }
+        public ICommand ShowTransactionsCommand => _showTransactionItemsCommand;
 
-        public ICommand ShowAccountDetailsCommand
-        {
-            get { return _showAccountDetailsCommand; }
-        }
+        public ICommand ShowAccountDetailsCommand => _showAccountDetailsCommand;
 
-        public ICommand ShowIncomeItemsCommand
-        {
-            get { return _showIncomeItemsCommand; }
-        }
+        public ICommand ShowIncomeItemsCommand => _showIncomeItemsCommand;
 
-        public ICommand ShowAccountInformationCommand
-        {
-            get { return _showAccountInformationCommand; }
-        }
+        public ICommand ShowAccountInformationCommand => _showAccountInformationCommand;
 
-        public DelegateCommand<ITransactionItem> ShowTransactionDetailsCommand
-        {
-            get { return _showTransactionDetailsCommand; }
-        }
+        public RelayCommand<ITransactionItem> ShowTransactionDetailsCommand { get; }
 
         public ViewModelBase TopView
         {
@@ -88,16 +69,13 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
         }
 
-        public ICommand BackCommand
-        {
-            get { return _backCommand; }
-        }
+        public ICommand BackCommand => _backCommand;
 
         private string _statusMessage;
         public string StatusMessage
         {
-            get { return _statusMessage; }
-            set { SetProperty(ref _statusMessage, value); }
+            get => _statusMessage;
+            set => SetProperty(ref _statusMessage, value);
         }
 
         private async void LoadBudget()
@@ -123,15 +101,15 @@ namespace SimplyBudget.ViewModels.MainWindow
 
         private void OnShowExpenseCategoryDetails(ExpenseCategoryViewModel viewModel)
         {
-            if (viewModel == null) return;
+            if (viewModel is null) return;
             PushView(new ExpenseCategoryDetailsViewModel(viewModel.ExpenseCategoryID));
         }
 
         private async void OnShowTransactionDetails(ITransactionItem viewModel)
         {
-            if (viewModel == null) return;
+            if (viewModel is null) return;
             var transactionVM = viewModel as TransactionViewModel;
-            if (transactionVM == null) return;
+            if (transactionVM is null) return;
 
             var transaction = await DatabaseManager.GetAsync<Transaction>(transactionVM.TransactionID);
             
@@ -141,7 +119,7 @@ namespace SimplyBudget.ViewModels.MainWindow
 
         private void OnShowAccountDetails(AccountViewModel viewModel)
         {
-            if (viewModel == null) return;
+            if (viewModel is null) return;
             PushView(new AccountExpenseCategoriesViewModel(viewModel.AccountID));
         }
 
@@ -175,8 +153,8 @@ namespace SimplyBudget.ViewModels.MainWindow
             if (dataGridViewModel != null)
                 dataGridViewModel.LoadItemsAsync();
             _viewStack.Push(viewModel);
-            _backCommand.RaiseCanExecuteChanged();
-            RaisePropertyChanged(() => TopView);
+            _backCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(() => TopView);
         }
 
         private void OnBack()
@@ -185,8 +163,8 @@ namespace SimplyBudget.ViewModels.MainWindow
             var dataGridViewModel = vm as CollectionViewModelBase;
             if (dataGridViewModel != null)
                 dataGridViewModel.UnloadItems();
-            _backCommand.RaiseCanExecuteChanged();
-            RaisePropertyChanged(() => TopView);
+            _backCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(() => TopView);
         }
 
         public void HandleEvent(SnapshotLoadedEvent @event)

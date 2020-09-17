@@ -5,11 +5,10 @@
                     xmlns:windows="clr-namespace:SimplyBudget.Windows"
                     xmlns:vc="clr-namespace:SimplyBudget.ValueConverter"
                     xmlns:data="clr-namespace:SimplyBudgetShared.Data;assembly=SimplyBudgetShared"
-                    xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
                     xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors"
                     xmlns:utilities="clr-namespace:SimplyBudget.Utilities"
                     xmlns:windowsVM="clr-namespace:SimplyBudget.ViewModels.Windows"
-                    xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation" SizeToContent="Height" Width="300">
+                    xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation" xmlns:i="http://schemas.microsoft.com/xaml/behaviors" SizeToContent="Height" Width="300">
     <Window.Resources>
         <windowsVM:EditAccountViewModel x:Key="MainViewModel" />
     </Window.Resources>
@@ -71,7 +70,7 @@
             </i:Interaction.Behaviors>
         </ListBox>
 
-        <telerik:RadButton Style="{StaticResource SaveButton}" Margin="0,5" Grid.Row="2"/>
+        <Button Style="{StaticResource SaveButton}" Margin="0,5" Grid.Row="2"/>
 
     </Grid>
 </windows:BaseWindow>

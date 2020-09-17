@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.Toolkit.Mvvm.Input;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -6,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
-using Microsoft.Practices.Prism.Commands;
 
 namespace SimplyBudget.ViewModels
 {
@@ -21,7 +21,7 @@ namespace SimplyBudget.ViewModels
     {
         protected readonly ObservableCollection<T> _items;
         protected readonly ICollectionView _view;
-        private readonly DelegateCommand<string> _sortCommand;
+        private readonly RelayCommand<string> _sortCommand;
 
         private long _loadInProgress;
 
@@ -29,7 +29,7 @@ namespace SimplyBudget.ViewModels
         {
             _items = new ObservableCollection<T>();
             _view = CollectionViewSource.GetDefaultView(_items);
-            _sortCommand = new DelegateCommand<string>(OnSort);
+            _sortCommand = new RelayCommand<string>(OnSort);
         }
 
         private void OnSort(string sortProperty)
@@ -66,10 +66,7 @@ namespace SimplyBudget.ViewModels
             await ReloadItemsAsync();
         }
 
-        public ICommand SortCommand
-        {
-            get { return _sortCommand; }
-        }
+        public ICommand SortCommand => _sortCommand;
 
         protected abstract Task<IEnumerable<T>> GetItems();
 

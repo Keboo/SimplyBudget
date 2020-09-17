@@ -1,12 +1,11 @@
 ﻿<windows:BaseWindow x:Class="SimplyBudget.Windows.EditTransferWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
         xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors"
         xmlns:valueConverter="clr-namespace:SimplyBudget.ValueConverter"
         xmlns:windows="clr-namespace:SimplyBudget.Windows"
                     xmlns:editWindows="clr-namespace:SimplyBudget.ViewModels.Windows"
-                    xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation" SizeToContent="Height" Width="300">
+                    xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation" xmlns:i="http://schemas.microsoft.com/xaml/behaviors" SizeToContent="Height" Width="300">
     <Window.Resources>
         <editWindows:EditTransferViewModel x:Key="MainViewModel" />
     </Window.Resources>
@@ -61,7 +60,7 @@
 
             <TextBlock Style="{StaticResource ErrorIndicator}" ToolTip="{Binding FromError}" />
             <TextBlock Text="From:" Margin="0,0,5,0" VerticalAlignment="Center" Grid.Column="1"/>
-            <telerik:RadComboBox ItemsSource="{Binding ExpenseCategories}" 
+            <ComboBox ItemsSource="{Binding ExpenseCategories}" 
                       DisplayMemberPath="Name" 
                       SelectedValuePath="ID" 
                       SelectedValue="{Binding FromExpenseCategoryID, Mode=TwoWay}"
@@ -69,7 +68,7 @@
 
             <TextBlock Style="{StaticResource ErrorIndicator}" ToolTip="{Binding ToError}" Grid.Row="1" />
             <TextBlock Text="To:" Margin="0,0,5,0" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center"/>
-            <telerik:RadComboBox ItemsSource="{Binding ExpenseCategories}" 
+            <ComboBox ItemsSource="{Binding ExpenseCategories}" 
                       DisplayMemberPath="Name" 
                       SelectedValuePath="ID" 
                       SelectedValue="{Binding ToExpenseCategoryID, Mode=TwoWay}"
@@ -82,7 +81,7 @@
             </i:Interaction.Behaviors>
         </TextBox>
         <TextBlock Text="Date:"/>
-        <telerik:RadDatePicker SelectedValue="{Binding Date, Mode=TwoWay}" />
-        <telerik:RadButton Style="{StaticResource SaveButton}" Margin="0,5"/>
+        <DatePicker SelectedDate="{Binding Date, Mode=TwoWay}" />
+        <Button Style="{StaticResource SaveButton}" Margin="0,5"/>
     </StackPanel>
 </windows:BaseWindow>

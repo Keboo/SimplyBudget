@@ -1,7 +1,10 @@
-﻿namespace SimplyBudget.Commands
+﻿using System;
+
+namespace SimplyBudget.Commands
 {
+    [Obsolete("Use IRelayCommand")]
     public interface IRaiseCanExecute
     {
-        void RaiseCanExecuteChanged();
+        void NotifyCanExecuteChanged();
     }
 }

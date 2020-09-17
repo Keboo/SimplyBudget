@@ -3,7 +3,6 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
                     xmlns:windows="clr-namespace:SimplyBudget.Windows"
                     xmlns:windowsVM="clr-namespace:SimplyBudget.ViewModels.Windows"
-                    xmlns:telerik="clr-namespace:Telerik.Windows.Controls;assembly=Telerik.Windows.Controls"
                     Title="Load Snapshots" Height="300" Width="300">
     <Window.Resources>
         <windowsVM:LoadSnapshotsViewModel x:Key="MainViewModel"/>
@@ -33,7 +32,7 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <telerik:RadButton Style="{StaticResource SaveButton}" Grid.Row="2" 
+        <Button Style="{StaticResource SaveButton}" Grid.Row="2" 
                 Content="_Load" Command="{Binding LoadCommand}" Margin="0,5,0,0"/>
     </Grid>
 </windows:BaseWindow>

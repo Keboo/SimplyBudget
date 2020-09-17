@@ -16,6 +16,6 @@
         <TextBlock Margin="10,3" Grid.Row="2">
             <Hyperlink Click="EmailLinkOnClick" NavigateUri="mailto:simplybudget@outlook.com">simplybudget@outlook.com</Hyperlink>
         </TextBlock>
-        <telerik:RadButton Content="OK" HorizontalAlignment="Right"  Grid.Row="4" Click="OKButtonClicked"/>
+        <Button Content="OK" HorizontalAlignment="Right"  Grid.Row="4" Click="OKButtonClicked"/>
     </Grid>
 </Window>

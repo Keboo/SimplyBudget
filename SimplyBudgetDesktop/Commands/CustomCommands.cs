@@ -5,24 +5,13 @@ namespace SimplyBudget.Commands
 {
     public static class CustomCommands
     {
-        private static readonly RoutedUICommand _closePopup = new RoutedUICommand("Close", "ClosePopup", typeof(CustomCommands));
+        public static RoutedUICommand ClosePopup { get; } = new RoutedUICommand("Close", "ClosePopup", typeof(CustomCommands));
 
-        private static readonly ExecutedRoutedEventHandler _onClosePopup =
-            (sender, e) =>
-                {
-                    var popup = e.Source as Popup;
-                    if (popup != null)
-                        popup.IsOpen = false;
-                };
-
-        public static RoutedUICommand ClosePopup
+        public static ExecutedRoutedEventHandler OnClosePopup { get; } = (sender, e) =>
         {
-            get { return _closePopup; }
-        }
-
-        public static ExecutedRoutedEventHandler OnClosePopup
-        {
-            get { return _onClosePopup; }
-        }
+            var popup = e.Source as Popup;
+            if (popup != null)
+                popup.IsOpen = false;
+        };
     }
 }

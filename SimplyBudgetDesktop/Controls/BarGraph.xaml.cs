@@ -14,8 +14,8 @@ namespace SimplyBudget.Controls
 
         public IEnumerable<IBarGraphItem> Items
         {
-            get { return (IEnumerable<IBarGraphItem>) GetValue(ItemsProperty); }
-            set { SetValue(ItemsProperty, value); }
+            get => (IEnumerable<IBarGraphItem>)GetValue(ItemsProperty);
+            set => SetValue(ItemsProperty, value);
         }
 
         public static readonly DependencyProperty BarBrushProperty = DependencyProperty.Register(
@@ -23,8 +23,8 @@ namespace SimplyBudget.Controls
 
         public Brush BarBrush
         {
-            get { return (Brush) GetValue(BarBrushProperty); }
-            set { SetValue(BarBrushProperty, value); }
+            get => (Brush)GetValue(BarBrushProperty);
+            set => SetValue(BarBrushProperty, value);
         }
 
         public static readonly DependencyProperty LineBrushProperty = DependencyProperty.Register(
@@ -32,8 +32,8 @@ namespace SimplyBudget.Controls
 
         public Brush LineBrush
         {
-            get { return (Brush) GetValue(LineBrushProperty); }
-            set { SetValue(LineBrushProperty, value); }
+            get => (Brush)GetValue(LineBrushProperty);
+            set => SetValue(LineBrushProperty, value);
         }
 
         public static readonly DependencyProperty BarItemDisplayTemplateProperty = DependencyProperty.Register(
@@ -41,8 +41,8 @@ namespace SimplyBudget.Controls
 
         public DataTemplate BarItemDisplayTemplate
         {
-            get { return (DataTemplate) GetValue(BarItemDisplayTemplateProperty); }
-            set { SetValue(BarItemDisplayTemplateProperty, value); }
+            get => (DataTemplate)GetValue(BarItemDisplayTemplateProperty);
+            set => SetValue(BarItemDisplayTemplateProperty, value);
         }
 
         public BarGraph()

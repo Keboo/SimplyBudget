@@ -5,10 +5,9 @@
                     xmlns:valueConverter="clr-namespace:SimplyBudget.ValueConverter"
                     xmlns:windows="clr-namespace:SimplyBudget.Windows"
                     xmlns:utilities="clr-namespace:SimplyBudget.Utilities"
-                    xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
                     xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors"
                     xmlns:windowsVM="clr-namespace:SimplyBudget.ViewModels.Windows"
-                    xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation" Width="300" SizeToContent="Height">
+                    xmlns:telerik="http://schemas.telerik.com/2008/xaml/presentation" xmlns:i="http://schemas.microsoft.com/xaml/behaviors" Width="300" SizeToContent="Height">
     <Window.Resources>
         <windowsVM:EditTransactionViewModel x:Key="MainViewModel" />
 
@@ -33,7 +32,7 @@
                     </i:Interaction.Behaviors>
                 </TextBox>
                 <TextBlock Text="from" Margin="3,0" Grid.Column="2" VerticalAlignment="Center"/>
-                <telerik:RadComboBox ItemsSource="{Binding ExpenseCategories}" 
+                <ComboBox ItemsSource="{Binding ExpenseCategories}" 
                                       DisplayMemberPath="Name" 
                                       SelectedValuePath="ID" 
                                       SelectedValue="{Binding ExpenseCategoryID, Mode=TwoWay}"
@@ -137,7 +136,7 @@
             </i:Interaction.Behaviors>
         </TextBox>
         <TextBlock Text="Date:"/>
-        <telerik:RadDatePicker SelectedValue="{Binding Date, Mode=TwoWay}" />
-        <telerik:RadButton Style="{StaticResource SaveButton}" Margin="0,5"/>
+        <DatePicker SelectedDate="{Binding Date, Mode=TwoWay}" />
+        <Button Style="{StaticResource SaveButton}" Margin="0,5"/>
     </StackPanel>
 </windows:BaseWindow>

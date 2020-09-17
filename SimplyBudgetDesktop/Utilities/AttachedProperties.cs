@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Specialized;
-using System.Linq;
-using System.Windows.Media;
-using Microsoft.Practices.Prism.Commands;
+﻿using Microsoft.Toolkit.Mvvm.Input;
 using SimplyBudget.Commands;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -25,12 +22,12 @@ namespace SimplyBudget.Utilities
             if (commandSource != null)
             {
                 ((dynamic)commandSource).CommandParameter = e.NewValue;
-                var command = commandSource.Command as DelegateCommandBase;
+                var command = commandSource.Command as IRelayCommand;
                 if (command != null)
-                    command.RaiseCanExecuteChanged();
+                    command.NotifyCanExecuteChanged();
                 var raiseCanExecute = commandSource.Command as IRaiseCanExecute;
                 if (raiseCanExecute != null)
-                    raiseCanExecute.RaiseCanExecuteChanged();
+                    raiseCanExecute.NotifyCanExecuteChanged();
             }
         }
 
@@ -138,7 +135,7 @@ namespace SimplyBudget.Utilities
         private static void OnSortPropertyNameChanged(DependencyObject @do, DependencyPropertyChangedEventArgs e)
         {
             var column = @do as GridViewColumn;
-            if (column == null) return;
+            if (column is null) return;
 
             //TODO: This will break if I ever move the style
             var existingStyle = Application.Current.Resources[typeof (GridViewColumnHeader)] as Style;

@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using JetBrains.Annotations;
 using SimplyBudget.Properties;
 using SimplyBudgetShared.Utilities;
 
@@ -21,8 +20,8 @@ namespace SimplyBudget.Controls
 
         public DateTime Start
         {
-            get { return (DateTime)GetValue(StartProperty); }
-            set { SetValue(StartProperty, value); }
+            get => (DateTime)GetValue(StartProperty);
+            set => SetValue(StartProperty, value);
         }
 
         public static readonly DependencyProperty EndProperty =
@@ -32,8 +31,8 @@ namespace SimplyBudget.Controls
 
         public DateTime End
         {
-            get { return (DateTime)GetValue(EndProperty); }
-            set { SetValue(EndProperty, value); }
+            get => (DateTime)GetValue(EndProperty);
+            set => SetValue(EndProperty, value);
         }
 
         public static readonly DependencyProperty SimpleModeProperty =
@@ -46,8 +45,8 @@ namespace SimplyBudget.Controls
 
         public bool SimpleMode
         {
-            get { return (bool)GetValue(SimpleModeProperty); }
-            set { SetValue(SimpleModeProperty, value); }
+            get => (bool)GetValue(SimpleModeProperty);
+            set => SetValue(SimpleModeProperty, value);
         }
 
         public IEnumerable<object> SimpleModeOptions
@@ -111,24 +110,15 @@ namespace SimplyBudget.Controls
 
         private class DateRange
         {
-            private readonly DateTime _start;
-            private readonly DateTime _end;
-
             public DateRange(DateTime start, DateTime end)
             {
-                _start = start;
-                _end = end;
+                Start = start;
+                End = end;
             }
 
-            public DateTime Start
-            {
-                get { return _start; }
-            }
+            public DateTime Start { get; }
 
-            public DateTime End
-            {
-                get { return _end; }
-            }
+            public DateTime End { get; }
         }
 
         private class SimpleModeOption
@@ -136,9 +126,9 @@ namespace SimplyBudget.Controls
             private readonly string _title;
             private readonly Func<DateRange> _getRange;
 
-            public SimpleModeOption(string title, [NotNull] Func<DateRange> getRange)
+            public SimpleModeOption(string title, Func<DateRange> getRange)
             {
-                if (getRange == null) throw new ArgumentNullException("getRange");
+                if (getRange is null) throw new ArgumentNullException("getRange");
                 _title = title;
                 _getRange = getRange;
             }
