@@ -7,12 +7,15 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
+using Microsoft.EntityFrameworkCore;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
     internal class IncomeItemsViewModel : CollectionViewModelBase<IncomeViewModel>, 
         IEventListener<IncomeEvent>, IEventListener<IncomeItemEvent>
     {
+        private BudgetContext Context { get; } = BudgetContext.Instance;
+
         public IncomeItemsViewModel()
         {
             _view.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Descending));
@@ -49,8 +52,7 @@ namespace SimplyBudget.ViewModels.MainWindow
 
         protected override async Task<IEnumerable<IncomeViewModel>> GetItems()
         {
-            var incomeItems = await GetDatabaseConnection()
-                                        .Table<Income>()
+            var incomeItems = await Context.Incomes
                                         .Where(x => x.Date >= QueryStart && x.Date <= QueryEnd)
                                         .ToListAsync();
             return incomeItems.Select(IncomeViewModel.Create);

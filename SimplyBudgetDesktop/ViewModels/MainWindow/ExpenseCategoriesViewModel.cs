@@ -1,4 +1,5 @@
-﻿using SimplyBudget.ViewModels.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
@@ -14,6 +15,8 @@ namespace SimplyBudget.ViewModels.MainWindow
     internal class ExpenseCategoriesViewModel : CollectionViewModelBase<ExpenseCategoryViewModelEx>,
         IEventListener<ExpenseCategoryEvent>
     {
+        private BudgetContext Context { get; } = BudgetContext.Instance;
+
         public ExpenseCategoriesViewModel()
         {
             NotificationCenter.Register(this);
@@ -46,12 +49,12 @@ namespace SimplyBudget.ViewModels.MainWindow
 
         protected override async Task<IEnumerable<ExpenseCategoryViewModelEx>> GetItems()
         {
-            var expenseCategories = await GetDatabaseConnection().Table<ExpenseCategory>().ToListAsync();
+            var expenseCategories = await Context.ExpenseCategories.ToListAsync();
 
             var rv = new List<ExpenseCategoryViewModelEx>();
             // ReSharper disable LoopCanBeConvertedToQuery
             foreach (var item in expenseCategories)
-                rv.Add(await ExpenseCategoryViewModelEx.Create(item));
+                rv.Add(await ExpenseCategoryViewModelEx.Create(Context, item));
             // ReSharper restore LoopCanBeConvertedToQuery
             return rv;
         }

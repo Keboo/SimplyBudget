@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
@@ -13,6 +14,8 @@ namespace SimplyBudget.ViewModels.MainWindow
     {
         private readonly int _accountID;
         private string _accountName;
+
+        private BudgetContext Context { get; } = BudgetContext.Instance;
 
         public AccountExpenseCategoriesViewModel(int accountID)
         {
@@ -30,7 +33,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             _accountName = account.Name;
             OnPropertyChanged(nameof(Title));
 
-            var expenseCategories = await GetDatabaseConnection().Table<ExpenseCategory>().Where(x => x.AccountID == _accountID).ToListAsync();
+            var expenseCategories = await Context.ExpenseCategories.Where(x => x.AccountID == _accountID).ToListAsync();
             return expenseCategories.Select(ExpenseCategoryViewModel.Create);
         }
 

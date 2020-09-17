@@ -61,7 +61,7 @@ namespace SimplyBudget.ViewModels.Data
 
         public async Task<BaseItem> GetItem()
         {
-            return await DatabaseManager.Instance.Connection.GetAsync<Account>(AccountID);
+            return await BudgetContext.Instance.Accounts.FindAsync(AccountID);
         }
     }
 }

@@ -24,6 +24,8 @@ namespace SimplyBudget.ViewModels.Windows
             set => SetProperty(ref _BudgettedAmount, value);
         }
 
+        private BudgetContext Context { get; } = BudgetContext.Instance;
+
         public async Task LoadItemsAsync(ExpenseCategory expenseCategory)
         {
             ExpenseCategoryName = expenseCategory.Name;
@@ -31,7 +33,7 @@ namespace SimplyBudget.ViewModels.Windows
 
             foreach (var month in Enumerable.Range(0, 12).Reverse().Select(x => DateTime.Today.AddMonths(-x)))
             {
-                var transactions = await expenseCategory.GetTransactionItems(month.StartOfMonth(), month.EndOfMonth());
+                var transactions = await Context.GetTransactionItems(expenseCategory, month.StartOfMonth(), month.EndOfMonth());
                 Months.Add(new MonthHistoryViewModel
                 {
                     BarTitle = month.ToString("MMM yyyy"),

@@ -154,7 +154,7 @@ namespace SimplyBudget.ViewModels.MainWindow
                 dataGridViewModel.LoadItemsAsync();
             _viewStack.Push(viewModel);
             _backCommand.NotifyCanExecuteChanged();
-            OnPropertyChanged(() => TopView);
+            OnPropertyChanged(nameof(TopView));
         }
 
         private void OnBack()
@@ -164,7 +164,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             if (dataGridViewModel != null)
                 dataGridViewModel.UnloadItems();
             _backCommand.NotifyCanExecuteChanged();
-            OnPropertyChanged(() => TopView);
+            OnPropertyChanged(nameof(TopView));
         }
 
         public void HandleEvent(SnapshotLoadedEvent @event)

@@ -19,6 +19,8 @@ namespace SimplyBudget.ViewModels.Data
                        };
         }
 
+        private BudgetContext Context { get; } = BudgetContext.Instance;
+
         private IncomeViewModel(int incomeID)
         {
             IncomeID = incomeID;
@@ -49,7 +51,7 @@ namespace SimplyBudget.ViewModels.Data
 
         public async Task<BaseItem> GetItem()
         {
-            return await GetDatabaseConnection().GetAsync<Income>(IncomeID);
+            return await Context.Incomes.FindAsync(IncomeID);
         }
     }
 }

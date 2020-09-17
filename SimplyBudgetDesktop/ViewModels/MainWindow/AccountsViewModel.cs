@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
@@ -11,6 +12,8 @@ namespace SimplyBudget.ViewModels.MainWindow
     internal class AccountsViewModel : CollectionViewModelBase<AccountViewModel>, 
         IEventListener<ExpenseCategoryEvent>, IEventListener<AccountEvent>
     {
+        private BudgetContext Context { get; } = BudgetContext.Instance;
+
         public AccountsViewModel()
         {
             _view.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
@@ -24,11 +27,11 @@ namespace SimplyBudget.ViewModels.MainWindow
 
         protected override async Task<IEnumerable<AccountViewModel>> GetItems()
         {
-            var accounts = await GetDatabaseConnection().Table<Account>().ToListAsync();
+            var accounts = await Context.Accounts.ToListAsync();
             var rv = new List<AccountViewModel>();
             // ReSharper disable LoopCanBeConvertedToQuery
             foreach (var account in accounts)
-                rv.Add(await AccountViewModel.Create(account));
+                rv.Add(await AccountViewModel.Create(Context, account));
             // ReSharper restore LoopCanBeConvertedToQuery
             return rv;
         }

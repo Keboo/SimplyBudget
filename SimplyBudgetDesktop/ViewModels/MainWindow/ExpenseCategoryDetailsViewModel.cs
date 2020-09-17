@@ -30,7 +30,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             get
             {
                 if (_view.SortDescriptions.Count == 0)
-                    _view.SortDescriptions.Add(new SortDescription(nameof(ExpenseCategory.Date), ListSortDirection.Ascending));
+                    _view.SortDescriptions.Add(new SortDescription(nameof(ExpenseCategoryItemViewModel.Date), ListSortDirection.Ascending));
                 return _view;
             }
         }
@@ -72,14 +72,14 @@ namespace SimplyBudget.ViewModels.MainWindow
             // ReSharper disable LoopCanBeConvertedToQuery
             if (transactions != null)
                 foreach (var transaction in transactions)
-                    rv.Add(await ExpenseCategoryItemViewModel.Create(transaction));
+                    rv.Add(await ExpenseCategoryItemViewModel.Create(Context, transaction));
             // ReSharper restore LoopCanBeConvertedToQuery
 
             var transfers = await Context.GetTransfers(expenseCategory, QueryStart, QueryEnd);
             // ReSharper disable LoopCanBeConvertedToQuery
             if (transfers != null)
                 foreach(var transfer in transfers)
-                    rv.Add(await ExpenseCategoryItemViewModel.Create(transfer, expenseCategory.ID));
+                    rv.Add(await ExpenseCategoryItemViewModel.Create(Context, transfer, expenseCategory.ID));
             // ReSharper restore LoopCanBeConvertedToQuery
 
             var incomeItems = await expenseCategory.GetIncomeItems(QueryStart, QueryEnd);
@@ -105,10 +105,10 @@ namespace SimplyBudget.ViewModels.MainWindow
 
     internal class ExpenseCategoryItemViewModel : ViewModelBase, IDatabaseItem
     {
-        public static async Task<ExpenseCategoryItemViewModel> Create(TransactionItem transactionItem)
+        public static async Task<ExpenseCategoryItemViewModel> Create(BudgetContext context, TransactionItem transactionItem)
         {
             if (transactionItem is null) throw new ArgumentNullException(nameof(transactionItem));
-            var transaction = await DatabaseManager.Instance.Connection.GetAsync<Transaction>(transactionItem.TransactionID);
+            var transaction = await context.Transactions.FindAsync(transactionItem.TransactionID);
             if (transaction is null) return null;
             return new ExpenseCategoryItemViewModel(transactionItem)
                        {
@@ -118,7 +118,7 @@ namespace SimplyBudget.ViewModels.MainWindow
                        };
         }
 
-        public static async Task<ExpenseCategoryItemViewModel> Create(Transfer transfer, int expenseCategoryID)
+        public static async Task<ExpenseCategoryItemViewModel> Create(BudgetContext context, Transfer transfer, int expenseCategoryID)
         {
             if (transfer is null) throw new ArgumentNullException(nameof(transfer));
 
@@ -128,12 +128,12 @@ namespace SimplyBudget.ViewModels.MainWindow
             sb.Append("Transfer");
             if (transfer.FromExpenseCategoryID == expenseCategoryID)
             {
-                var toExpenseCategory = await DatabaseManager.Instance.Connection.GetAsync<ExpenseCategory>(transfer.ToExpenseCategoryID);
+                var toExpenseCategory = await context.ExpenseCategories.FindAsync(transfer.ToExpenseCategoryID);
                 sb.AppendFormat(" to {0}", toExpenseCategory != null ? toExpenseCategory.Name : "(unknown)");
             }
             else if (transfer.ToExpenseCategoryID == expenseCategoryID)
             {
-                var fromExpenseCategory = await DatabaseManager.Instance.Connection.GetAsync<ExpenseCategory>(transfer.ToExpenseCategoryID);
+                var fromExpenseCategory = await context.ExpenseCategories.FindAsync(transfer.ToExpenseCategoryID);
                 sb.AppendFormat(" from {0}", fromExpenseCategory != null ? fromExpenseCategory.Name : "(unknown)");
                 amount *= -1;
             }

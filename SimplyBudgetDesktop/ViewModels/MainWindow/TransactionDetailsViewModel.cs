@@ -15,6 +15,8 @@ namespace SimplyBudget.ViewModels.MainWindow
     {
         private readonly Transaction _transaction;
 
+        private BudgetContext Context { get; } = BudgetContext.Instance;
+
         public TransactionDetailsViewModel(Transaction transaction)
         {
             if (transaction is null) throw new ArgumentNullException("transaction");
@@ -31,7 +33,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             var rv = new List<TransactionItemViewModel>();
             foreach (var item in await _transaction.GetTransactionItems())
             {
-                var expenseCategory = await GetDatabaseConnection().GetAsync<ExpenseCategory>(item.ExpenseCategoryID);
+                var expenseCategory = await Context.ExpenseCategories.FindAsync(item.ExpenseCategoryID);
                 rv.Add(TransactionItemViewModel.Create(item, _transaction, expenseCategory));
             }
             return rv;

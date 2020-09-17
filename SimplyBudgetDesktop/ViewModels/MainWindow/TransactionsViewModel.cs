@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
@@ -14,6 +16,8 @@ namespace SimplyBudget.ViewModels.MainWindow
         IEventListener<TransactionEvent>,
         IEventListener<TransactionItemEvent>
     {
+        private BudgetContext Context { get; } = BudgetContext.Instance;
+
         public TransactionsViewModel()
         {
             _view.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Descending));
@@ -52,8 +56,7 @@ namespace SimplyBudget.ViewModels.MainWindow
         protected override async Task<IEnumerable<ITransactionItem>> GetItems()
         {
             var rv = new List<ITransactionItem>();
-            var transactions = await GetDatabaseConnection()
-                                         .Table<Transaction>()
+            var transactions = await Context.Transactions
                                          .Where(x => x.Date >= QueryStart && x.Date <= QueryEnd)
                                          .ToListAsync();
             // ReSharper disable LoopCanBeConvertedToQuery
@@ -61,8 +64,7 @@ namespace SimplyBudget.ViewModels.MainWindow
                 rv.Add(await TransactionViewModel.Create(transaction));
             // ReSharper restore LoopCanBeConvertedToQuery
 
-            var transfers = await GetDatabaseConnection()
-                                      .Table<Transfer>()
+            var transfers = await Context.Transfers
                                       .Where(x => x.Date >= QueryStart && x.Date <= QueryEnd)
                                       .ToListAsync();
 
