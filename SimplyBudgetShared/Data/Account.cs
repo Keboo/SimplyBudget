@@ -2,10 +2,12 @@
 using SimplyBudgetShared.Utilities.Events;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetShared.Data
 {
+    [Table("Account")]
     public class Account : BaseItem
     {
         public string? Name { get; set; }

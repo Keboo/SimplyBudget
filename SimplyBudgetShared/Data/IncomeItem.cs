@@ -1,11 +1,12 @@
 ﻿
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Threading.Tasks;
-
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
 
 namespace SimplyBudgetShared.Data
 {
+    [Table("IncomeItem")]
     public class IncomeItem : BaseItem
     {
         //[Indexed]

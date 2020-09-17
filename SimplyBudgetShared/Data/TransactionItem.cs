@@ -1,10 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Threading.Tasks;
 
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
 
 namespace SimplyBudgetShared.Data
 {
+    [Table("TransactionItem")]
     public class TransactionItem : BaseItem
     {
         public int TransactionID { get; set; }

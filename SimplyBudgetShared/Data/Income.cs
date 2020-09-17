@@ -1,13 +1,14 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Threading.Tasks;
-
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
 
 namespace SimplyBudgetShared.Data
 {
+    [Table("Income")]
     public class Income : BaseItem
     {
         private DateTime _date;

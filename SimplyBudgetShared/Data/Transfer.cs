@@ -1,11 +1,12 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Threading.Tasks;
-
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
 
 namespace SimplyBudgetShared.Data
 {
+    [Table("Transfer")]
     public class Transfer : BaseItem
     {
         public int FromExpenseCategoryID { get; set; }

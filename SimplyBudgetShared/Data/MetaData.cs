@@ -1,7 +1,10 @@
 ﻿
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SimplyBudgetShared.Data
 {
+    [Table("MetaData")]
     public class MetaData : BaseItem
     {
         public const string VERSION_KEY = "Version";
