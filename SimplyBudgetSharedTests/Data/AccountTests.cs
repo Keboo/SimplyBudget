@@ -1,7 +1,9 @@
-﻿using IntelliTect.TestTools.Data;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities.Events;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetSharedTests.Data
@@ -13,7 +15,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task SetAsDefault_SetsDefaultAccount()
         {
             //Arrange
-            var fixture = new DatabaseFixture<BudgetContext>();
+            var fixture = new BudgetDatabaseContext();
             var account = new Account();
 
             await fixture.PerformDatabaseOperation(async context =>
@@ -43,7 +45,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task SetAsDefault_UpdatesPreviousDefaultAccount()
         {
             //Arrange
-            var fixture = new DatabaseFixture<BudgetContext>();
+            var fixture = new BudgetDatabaseContext();
             var account = new Account();
             var previousAccount = new Account();
 
@@ -72,41 +74,11 @@ namespace SimplyBudgetSharedTests.Data
             });
         }
 
-        [TestMethod, Ignore]
-        public async Task TestCreatePostsNotification()
-        {
-            //Arrange
-            var account = new Account();
-            //Mock.SetupStatic<NotificationCenter>();
-            //Mock.Arrange(() => connection.InsertAsync(account)).Returns(Task.FromResult(0));
-
-            //Act
-            await account.Save();
-
-            //Assert
-            //Mock.Assert(() => NotificationCenter.PostEvent(Arg.Matches<AccountEvent>(x => ReferenceEquals(x.Account, account) && x.Type == EventType.Created)));
-        }
-
-        [TestMethod, Ignore]
-        public async Task TestUpdatePostsNotification()
-        {
-            //Arrange
-            var account = new Account { ID = 1 };
-            //Mock.SetupStatic<NotificationCenter>();
-            //Mock.Arrange(() => connection.UpdateAsync(account)).Returns(Task.FromResult(0));
-
-            //Act
-            await account.Save();
-
-            //Assert
-            //Mock.Assert(() => NotificationCenter.PostEvent(Arg.Matches<AccountEvent>(x => ReferenceEquals(x.Account, account) && x.Type == EventType.Updated)));
-        }
-
         [TestMethod]
         public async Task DeletingDefaultAccount_SelectsFirstAccountAsNewDefault()
         {
             //Arrange
-            var fixture = new DatabaseFixture<BudgetContext>();
+            var fixture = new BudgetDatabaseContext();
             var account = new Account();
             var firstAccount = new Account();
 
@@ -128,30 +100,15 @@ namespace SimplyBudgetSharedTests.Data
             //Assert
             await fixture.PerformDatabaseOperation(async context =>
             {
-                Assert.AreEqual(firstAccount.ID, (await context.GetDefaultAccountAsync()).ID);
+                Assert.AreEqual(firstAccount.ID, (await context.GetDefaultAccountAsync())!.ID);
             });
-        }
-
-        [TestMethod, Ignore]
-        public async Task TestDeletePostsNotification()
-        {
-            //Arrange
-            var account = new Account { ID = 1 };
-            //Mock.SetupStatic<NotificationCenter>();
-            //Mock.Arrange(() => connection.DeleteAsync(account)).Returns(Task.FromResult(0));
-
-            //Act
-            await account.Delete();
-
-            //Assert
-            //Mock.Assert(() => NotificationCenter.PostEvent(Arg.Matches<AccountEvent>(x => ReferenceEquals(x.Account, account) && x.Type == EventType.Deleted)));
         }
 
         [TestMethod]
         public async Task GetDefaultAccountAsync_ReturnsDefaultAccount()
         {
             //Arrange
-            var fixture = new DatabaseFixture<BudgetContext>();
+            var fixture = new BudgetDatabaseContext();
             var account1 = new Account();
             var account2 = new Account();
 
@@ -168,8 +125,93 @@ namespace SimplyBudgetSharedTests.Data
             await fixture.PerformDatabaseOperation(async context =>
             {
                 var defaultAccount = await context.GetDefaultAccountAsync();
-                Assert.AreEqual(account2.ID, defaultAccount.ID);
+                Assert.AreEqual(account2.ID, defaultAccount?.ID);
             });
+        }
+
+        [TestMethod]
+        public async Task CreateAccount_PostsNotification()
+        {
+            //Arrange
+            var watcher = new MessageWatcher<AccountEvent>();
+            var fixture = new BudgetDatabaseContext();
+            fixture.Messenger.Register(watcher);
+
+            var account1 = new Account();
+
+            //Act
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.Accounts.Add(account1);
+                await context.SaveChangesAsync();
+            });
+
+            //Assert
+            AccountEvent? message = watcher.Messages.Last();
+            Assert.AreEqual(account1.ID, message.Account.ID);
+            Assert.AreEqual(EventType.Created, message.Type);
+        }
+
+        [TestMethod]
+        public async Task UpdateAccount_PostsNotification()
+        {
+            //Arrange
+            var messenger = new Messenger();
+            var watcher = new MessageWatcher<AccountEvent>();
+            var fixture = new BudgetDatabaseContext();
+            fixture.Messenger.Register(watcher);
+
+            var account1 = new Account();
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.Accounts.Add(account1);
+                await context.SaveChangesAsync();
+            });
+
+            //Act
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                var account = await context.Accounts.FindAsync(account1.ID);
+                account.Name += "-Edited";
+                await context.SaveChangesAsync();
+            });
+
+            //Assert
+            AccountEvent? message = watcher.Messages.Last();
+            Assert.AreEqual(account1.ID, message.Account.ID);
+            Assert.AreEqual(EventType.Updated, message.Type);
+        }
+
+        [TestMethod]
+        public async Task DeleteAccount_PostsNotification()
+        {
+            //Arrange
+            var messenger = new Messenger();
+            var watcher = new MessageWatcher<AccountEvent>();
+            var fixture = new BudgetDatabaseContext();
+            fixture.Messenger.Register(watcher);
+
+            var account1 = new Account();
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.Accounts.Add(account1);
+                await context.SaveChangesAsync();
+            });
+
+            //Act
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                var account = await context.Accounts.FindAsync(account1.ID);
+                context.Accounts.Remove(account);
+                await context.SaveChangesAsync();
+            });
+
+            //Assert
+            AccountEvent? message = watcher.Messages.Last();
+            Assert.AreEqual(account1.ID, message.Account.ID);
+            Assert.AreEqual(EventType.Deleted, message.Type);
         }
     }
 }

@@ -30,7 +30,7 @@ namespace SimplyBudgetShared.Data
             {
                 await ClearCurrentDefault();
             }
-            NotificationCenter.PostEvent(new AccountEvent(this, EventType.Created));
+            //NotificationCenter.PostEvent(new AccountEvent(this, EventType.Created));
         }
 
         protected override async Task Update()
@@ -40,7 +40,7 @@ namespace SimplyBudgetShared.Data
             {
                 await ClearCurrentDefault();
             }
-            NotificationCenter.PostEvent(new AccountEvent(this, EventType.Updated));
+            //NotificationCenter.PostEvent(new AccountEvent(this, EventType.Updated));
         }
 
         public override async Task Delete()
@@ -56,7 +56,7 @@ namespace SimplyBudgetShared.Data
                 //    await firstAccount.Save();
                 //}
             }
-            NotificationCenter.PostEvent(new AccountEvent(this, EventType.Deleted));
+            //NotificationCenter.PostEvent(new AccountEvent(this, EventType.Deleted));
         }
 
         private async Task ClearCurrentDefault()

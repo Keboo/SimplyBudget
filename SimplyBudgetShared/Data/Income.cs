@@ -50,19 +50,19 @@ namespace SimplyBudgetShared.Data
             foreach (var item in await GetIncomeItems())
                 await item.Delete();
 
-            NotificationCenter.PostEvent(new IncomeEvent(this, EventType.Deleted));
+            //NotificationCenter.PostEvent(new IncomeEvent(this, EventType.Deleted));
         }
 
-        protected override async Task Create()
-        {
-            await base.Create();
-            NotificationCenter.PostEvent(new IncomeEvent(this, EventType.Created));
-        }
+        //protected override async Task Create()
+        //{
+        //    await base.Create();
+        //    NotificationCenter.PostEvent(new IncomeEvent(this, EventType.Created));
+        //}
 
-        protected override async Task Update()
-        {
-            await base.Update();
-            NotificationCenter.PostEvent(new IncomeEvent(this, EventType.Updated));
-        }
+        //protected override async Task Update()
+        //{
+        //    await base.Update();
+        //    NotificationCenter.PostEvent(new IncomeEvent(this, EventType.Updated));
+        //}
     }
 }

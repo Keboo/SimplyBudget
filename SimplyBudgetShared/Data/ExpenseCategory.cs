@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace SimplyBudgetShared.Data
 {
     [Table("ExpenseCategory")]
-    public class ExpenseCategory : BaseItem
+    public class ExpenseCategory : BaseItem, IBeforeCreate
     {
         public string? CategoryName { get; set; }
 
@@ -44,6 +44,14 @@ namespace SimplyBudgetShared.Data
             return UsePercentage
                        ? BudgetedPercentage.FormatPercentage()
                        : BudgetedAmount.FormatCurrency();
+        }
+
+        public async Task BeforeCreate(BudgetContext context)
+        {
+            if (AccountID == 0)
+            {
+                Account = await context.GetDefaultAccountAsync();
+            }
         }
 
         //protected override async Task Create()

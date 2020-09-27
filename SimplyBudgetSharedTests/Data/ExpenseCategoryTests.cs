@@ -1,7 +1,9 @@
 ﻿using IntelliTect.TestTools.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +18,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task AddTransactionWithoutDate_CreatesTransaction()
         {
             //Arrange
-            var fixture = new DatabaseFixture<BudgetContext>();
+            var fixture = new BudgetDatabaseContext();
 
             const string description = "Test Description";
             const int amount = 100;
@@ -57,7 +59,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task AddTransactionWithDate_CreatesTransaction()
         {
             //Arrange
-            var fixture = new DatabaseFixture<BudgetContext>();
+            var fixture = new BudgetDatabaseContext();
 
             const string description = "Test Description";
             const int amount = 100;
@@ -100,7 +102,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task GetTransfersWithoutDateRange_ReturnsTransfersForCategory()
         {
             //Arrange
-            var fixture = new DatabaseFixture<BudgetContext>();
+            var fixture = new BudgetDatabaseContext();
 
             var account = new Account();
             var category1 = new ExpenseCategory { Account = account };
@@ -145,7 +147,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task GetTransfersWithDateRange_ReturnsTransfersForCategory()
         {
             //Arrange
-            var fixture = new DatabaseFixture<BudgetContext>();
+            var fixture = new BudgetDatabaseContext();
 
             var account = new Account();
             var category1 = new ExpenseCategory { Account = account };
@@ -190,7 +192,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task GetTransactionItemsWithoutDateRange_ReturnsTransactionItems()
         {
             // Arrange
-            var fixture = new DatabaseFixture<BudgetContext>();
+            var fixture = new BudgetDatabaseContext();
 
             var account = new Account();
             var category1 = new ExpenseCategory { Account = account };
@@ -233,7 +235,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task GetTransactionItemsWithDateRange_ReturnsTransactionItems()
         {
             // Arrange
-            var fixture = new DatabaseFixture<BudgetContext>();
+            var fixture = new BudgetDatabaseContext();
 
             var account = new Account();
             var category1 = new ExpenseCategory { Account = account };
@@ -273,121 +275,253 @@ namespace SimplyBudgetSharedTests.Data
         }
 
         [TestMethod]
-        public async Task TestGetIncomeItemsNoDateRange()
+        public async Task GetIncomeItems_WithoutDateRange_ReturnsIncomeItems()
         {
-            //Arrange
+            // Arrange
+            var fixture = new BudgetDatabaseContext();
+
+            var account = new Account();
+            var category1 = new ExpenseCategory { Account = account };
+
+            DateTime now = DateTime.Now;
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.ExpenseCategories.AddRange(category1);
+                var income = new Income
+                {
+                    Date = now.AddDays(-1),
+                    TotalAmount = 300,
+                    Description = "Income description"
+                };
+                context.Incomes.Add(income);
+                await context.SaveChangesAsync();
+
+                await context.AddIncomeItem(category1, income, 100, "Income item 1");
+                await context.AddIncomeItem(category1, income, 200);
+            });
+
+            //Act
+            IList<IncomeItem>? incomeItems = null;
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                incomeItems = await context.GetIncomeItems(category1);
+            });
+
+            //Assert
+            Assert.IsNotNull(incomeItems);
+            Assert.AreEqual(2, incomeItems!.Count);
+
+            Assert.AreEqual(100, incomeItems[0].Amount);
+            Assert.AreEqual("Income item 1", incomeItems[0].Description);
+
+            Assert.AreEqual(200, incomeItems[1].Amount);
+            Assert.AreEqual("Income description", incomeItems[1].Description);
+        }
+
+        [TestMethod]
+        public async Task GetIncomeItems_WithDateRange_ReturnsIncomeItems()
+        {
+            // Arrange
+            var fixture = new BudgetDatabaseContext();
+
+            var account = new Account();
+            var category1 = new ExpenseCategory { Account = account };
+
+            DateTime now = DateTime.Today;
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.ExpenseCategories.AddRange(category1);
+                var income1 = new Income
+                {
+                    Date = now.AddDays(-1),
+                    TotalAmount = 300,
+                    Description = "Income 1 description"
+                };
+                context.Incomes.Add(income1);
+                var income2 = new Income
+                {
+                    Date = now.AddDays(-2),
+                    TotalAmount = 500,
+                    Description = "Income 2 description"
+                };
+                context.Incomes.Add(income2);
+                await context.SaveChangesAsync();
+
+                await context.AddIncomeItem(category1, income1, 100, "Income item 1");
+                await context.AddIncomeItem(category1, income1, 200);
+
+                await context.AddIncomeItem(category1, income2, 200, "Income item 3");
+                await context.AddIncomeItem(category1, income2, 300);
+
+            });
+
+            //Act
+            IList<IncomeItem>? incomeItems = null;
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                incomeItems = await context.GetIncomeItems(category1, now.AddDays(-3), now.AddDays(-2));
+            });
+
+            //Assert
+            Assert.IsNotNull(incomeItems);
+            Assert.AreEqual(2, incomeItems!.Count);
+
+            Assert.AreEqual(200, incomeItems[0].Amount);
+            Assert.AreEqual("Income item 3", incomeItems[0].Description);
+
+            Assert.AreEqual(300, incomeItems[1].Amount);
+            Assert.AreEqual("Income 2 description", incomeItems[1].Description);
+        }
+
+        [TestMethod]
+        public async Task CreateExpenseCategory_WithoutAccount_SetsAccountToDefaultAccount()
+        {
+            // Arrange
+            var fixture = new BudgetDatabaseContext();
+
+            var account = new Account();
             var category = new ExpenseCategory();
-            //var expectedItems = connection.MockQuery<IncomeItem>();
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.Accounts.Add(account);
+                await context.SaveChangesAsync();
+                await context.SetAsDefaultAsync(account);
+            });
 
             //Act
-            var items = await category.GetIncomeItems();
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.ExpenseCategories.Add(category);
+                await context.SaveChangesAsync();
+            });
 
             //Assert
-            //Assert.IsTrue(ReferenceEquals(expectedItems, items));
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                var expenseCategory = await context.ExpenseCategories.FindAsync(category.ID);
+                Assert.AreEqual(account.ID, expenseCategory.AccountID);
+            });
         }
 
         [TestMethod]
-        public async Task TestGetIncomeItemsWithDateRange()
+        public async Task CreateExpenseCategory_AllowsNullDefaultAccount()
         {
-            //Arrange
-            var category = new ExpenseCategory { ID = 1 };
-            //var expectedIncome = Mock.Create<Income>();
-            var expectedIncomeItem1 = new IncomeItem { ExpenseCategoryID = 1 };
-            var expectedIncomeItem2 = new IncomeItem { ExpenseCategoryID = 2 };
-            
-            //var expectedIncomes = connection.MockQuery<Income>();
-            //expectedIncomes.Add(expectedIncome);
+            // Arrange
+            var fixture = new BudgetDatabaseContext();
 
-            //Mock.Arrange(() => expectedIncome.GetIncomeItems()).Returns(Task.FromResult<IList<IncomeItem>>(new[] { expectedIncomeItem1, expectedIncomeItem2 }));
-
-            //Act
-            var items = await category.GetIncomeItems(DateTime.Now, DateTime.Now);
-
-            //Assert
-            CollectionAssert.AreEqual(new[] { expectedIncomeItem1 }, items.ToList());
-        }
-
-        [TestMethod]
-        public async Task TestDeletePostsNotification()
-        {
-            //Arrange
-            var category = new ExpenseCategory { ID = 1 };
-            //Mock.SetupStatic<NotificationCenter>();
-            //Mock.Arrange(() => connection.DeleteAsync(category)).Returns(Task.FromResult(0));
-
-            //Act
-            await category.Delete();
-
-            //Assert
-            //Mock.Assert(() => NotificationCenter.PostEvent(Arg.Matches<ExpenseCategoryEvent>(x => ReferenceEquals(x.ExpenseCategory, category) && x.Type == EventType.Deleted)));
-            //Mock.Assert(() => connection.DeleteAsync(category), Occurs.Once());
-        }
-
-        [TestMethod]
-        public async Task TestCreateSetsAccountIDToDefaultAccount()
-        {
-            //Arrange
             var category = new ExpenseCategory();
-            var defaultAccount = new Account { ID = 1 };
-            //Mock.SetupStatic<Account>();
-            //Mock.Arrange(() => connection.InsertAsync(category)).Returns(Task.FromResult(0));
-            //Mock.Arrange(() => Account.GetDefault()).Returns(Task.FromResult(defaultAccount));
 
             //Act
-            await category.Save();
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.ExpenseCategories.Add(category);
+                await context.SaveChangesAsync();
+            });
 
             //Assert
-            Assert.AreEqual(defaultAccount.ID, category.AccountID);
-            //Mock.Assert(() => connection.InsertAsync(category), Occurs.Once());
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                var expenseCategory = await context.ExpenseCategories.FindAsync(category.ID);
+                Assert.AreEqual(0, expenseCategory.AccountID);
+            });
         }
 
         [TestMethod]
-        public async Task TestCreateHandlesNullDefaultAccount()
+        public async Task DeleteExpenseCategory_PostsNotification()
         {
             //Arrange
-            var category = new ExpenseCategory();
-            //Mock.SetupStatic<Account>();
-            //Mock.Arrange(() => connection.InsertAsync(category)).Returns(Task.FromResult(0));
-            //Mock.Arrange(() => Account.GetDefault()).Returns(Task.FromResult<Account>(null));
+            var messenger = new Messenger();
+            var watcher = new MessageWatcher<ExpenseCategoryEvent>();
+            var fixture = new BudgetDatabaseContext();
+            fixture.Messenger.Register(watcher);
+
+            var expenseCategory = new ExpenseCategory
+            {
+                Account = new Account()
+            };
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.ExpenseCategories.Add(expenseCategory);
+                await context.SaveChangesAsync();
+            });
 
             //Act
-            await category.Save();
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                var category = await context.ExpenseCategories.FindAsync(expenseCategory.ID);
+                context.ExpenseCategories.Remove(category);
+                await context.SaveChangesAsync();
+            });
 
             //Assert
-            Assert.AreEqual(0, category.AccountID);
-            //Mock.Assert(() => connection.InsertAsync(category), Occurs.Once());
+            ExpenseCategoryEvent? message = watcher.Messages.Last();
+            Assert.AreEqual(expenseCategory.ID, message.ExpenseCategory.ID);
+            Assert.AreEqual(EventType.Deleted, message.Type);
         }
 
         [TestMethod]
-        public async Task TestCreatePostsNotification()
+        public async Task CreateExpenseCategory_PostsNotification()
         {
             //Arrange
-            var category = new ExpenseCategory { AccountID = 1 };
-            //Mock.SetupStatic<NotificationCenter>();
-            //Mock.Arrange(() => connection.InsertAsync(category)).Returns(Task.FromResult(0));
+            var messenger = new Messenger();
+            var watcher = new MessageWatcher<ExpenseCategoryEvent>();
+            var fixture = new BudgetDatabaseContext();
+            fixture.Messenger.Register(watcher);
+
+            var expenseCategory = new ExpenseCategory
+            {
+                Account = new Account()
+            };
 
             //Act
-            await category.Save();
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.ExpenseCategories.Add(expenseCategory);
+                await context.SaveChangesAsync();
+            });
 
             //Assert
-            //Mock.Assert(() => NotificationCenter.PostEvent(Arg.Matches<ExpenseCategoryEvent>(x => ReferenceEquals(x.ExpenseCategory, category) && x.Type == EventType.Created)));
-            //Mock.Assert(() => connection.InsertAsync(category), Occurs.Once());
+            ExpenseCategoryEvent? message = watcher.Messages.Last();
+            Assert.AreEqual(expenseCategory.ID, message.ExpenseCategory.ID);
+            Assert.AreEqual(EventType.Created, message.Type);
         }
 
         [TestMethod]
-        public async Task TestUpdatePostsNotification()
+        public async Task UpdateExpenseCategory_PostsNotification()
         {
             //Arrange
-            var category = new ExpenseCategory { ID = 1 };
-            //Mock.SetupStatic<NotificationCenter>();
-            //Mock.Arrange(() => connection.UpdateAsync(category)).Returns(Task.FromResult(0));
+            var messenger = new Messenger();
+            var watcher = new MessageWatcher<ExpenseCategoryEvent>();
+            var fixture = new BudgetDatabaseContext();
+            fixture.Messenger.Register(watcher);
+
+            var expenseCategory = new ExpenseCategory
+            {
+                Account = new Account()
+            };
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.ExpenseCategories.Add(expenseCategory);
+                await context.SaveChangesAsync();
+            });
 
             //Act
-            await category.Save();
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                var category = await context.ExpenseCategories.FindAsync(expenseCategory.ID);
+                category.CategoryName += "-Edited";
+                await context.SaveChangesAsync();
+            });
 
             //Assert
-            //Mock.Assert(() => NotificationCenter.PostEvent(Arg.Matches<ExpenseCategoryEvent>(x => ReferenceEquals(x.ExpenseCategory, category) && x.Type == EventType.Updated)));
-            //Mock.Assert(() => connection.UpdateAsync(category), Occurs.Once());
+            ExpenseCategoryEvent? message = watcher.Messages.Last();
+            Assert.AreEqual(expenseCategory.ID, message.ExpenseCategory.ID);
+            Assert.AreEqual(EventType.Updated, message.Type);
         }
 
     }

@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -57,6 +59,38 @@ namespace SimplyBudgetShared.Data
                 .FirstOrDefaultAsync(x => x.ID == accountId);
 
             return account?.ExpenseCategories.Sum(x => x.CurrentBalance) ?? 0;
+        }
+
+        public static async Task<IncomeItem> AddIncomeItem(this BudgetContext context,
+            ExpenseCategory expenseCategory, Income income,
+            int amount, string? description = null)
+        {
+            if (context is null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (expenseCategory is null)
+            {
+                throw new ArgumentNullException(nameof(expenseCategory));
+            }
+
+            if (income is null)
+            {
+                throw new ArgumentNullException(nameof(income));
+            }
+
+            var incomeItem = new IncomeItem
+            {
+                Amount = amount,
+                Description = description ?? income.Description,
+                ExpenseCategoryID = expenseCategory.ID,
+                IncomeID = income.ID
+            };
+            context.IncomeItems.Add(incomeItem);
+            await context.SaveChangesAsync();
+
+            return incomeItem;
         }
 
         public static async Task<Transaction> AddTransaction(this BudgetContext context,
@@ -122,6 +156,14 @@ namespace SimplyBudgetShared.Data
                 incomeItemsQuery = incomeItemsQuery.Where(x => incomes.Contains(x.IncomeID));
             }
             return await incomeItemsQuery.ToListAsync();
+        }
+
+        public static async Task InitDatabase(this BudgetContext context, string storageFolder, string? dbFileName = null)
+        {
+            var builder = new DbContextOptionsBuilder<BudgetContext>()
+                .UseSqlite($"Data Source={Path.Combine(storageFolder, dbFileName ?? "data.db")}");
+
+            new BudgetContext(Messenger.Default, builder.Options);
         }
     }
 }

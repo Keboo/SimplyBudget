@@ -10,7 +10,7 @@ namespace SimplyBudgetShared.Data
             var optionsBuilder = new DbContextOptionsBuilder<BudgetContext>();
             optionsBuilder.UseSqlite("Data Source=data.db");
 
-            return new BudgetContext(optionsBuilder.Options);
+            return new BudgetContext(Microsoft.Toolkit.Mvvm.Messaging.Messenger.Default, optionsBuilder.Options);
         }
     }
 }

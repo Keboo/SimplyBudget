@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SimplyBudgetShared.Utilities;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudgetShared.Utilities.Events;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +15,7 @@ namespace SimplyBudgetShared.Data
             var optionsBuilder = new DbContextOptionsBuilder<BudgetContext>();
             optionsBuilder.UseSqlite("Data Source=data.db");
 
-            Instance = new BudgetContext(optionsBuilder.Options);
+            Instance = new BudgetContext(Microsoft.Toolkit.Mvvm.Messaging.Messenger.Default, optionsBuilder.Options);
         }
 
         public static BudgetContext Instance { get; }
@@ -28,9 +29,13 @@ namespace SimplyBudgetShared.Data
         public DbSet<TransactionItem> TransactionItems => Set<TransactionItem>();
         public DbSet<Transfer> Transfers => Set<Transfer>();
 
-        public BudgetContext(DbContextOptions options)
+        private IMessenger Messenger { get; }
+
+        public BudgetContext(IMessenger messenger, DbContextOptions options)
             : base(options)
-        { }
+        {
+            Messenger = messenger ?? throw new System.ArgumentNullException(nameof(messenger));
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -54,22 +59,15 @@ namespace SimplyBudgetShared.Data
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            //foreach (var account in ChangeTracker.Entries<Account>())
-            //{
-            //    var isDefaultProperty = account.Property<bool>(nameof(Account.IsDefault));
-            //    if (isDefaultProperty.CurrentValue &&
-            //        (isDefaultProperty.IsModified || account.State == EntityState.Added))
-            //    {
-            //        if (await Accounts.FirstOrDefaultAsync(x => x.IsDefault && x.ID != account.Entity.ID) is { } previousDefault)
-            //        {
-            //            previousDefault.IsDefault = false;
-            //        }
-            //    }
-            //}
-
-            var notifications = new List<Event>();
+            var notifications = new List<Action>();
             foreach (var entity in ChangeTracker.Entries())
             {
+                if (entity.Entity is IBeforeCreate beforeCreate &&
+                    entity.State == EntityState.Added)
+                {
+                    await beforeCreate.BeforeCreate(this);
+                }
+
                 EventType type = entity.State switch
                 {
                     EntityState.Added => EventType.Created,
@@ -82,12 +80,25 @@ namespace SimplyBudgetShared.Data
                 switch(entity.Entity)
                 {
                     case ExpenseCategory category:
-                        notifications.Add(new ExpenseCategoryEvent(this, category, type));
+                        notifications.Add(() => Messenger.Send(new ExpenseCategoryEvent(this, category, type)));
+                        break;
+                    case Account account:
+                        notifications.Add(() => Messenger.Send(new AccountEvent(this, account, type)));
+                        break;
+                    case Income income:
+                        notifications.Add(() => Messenger.Send(new IncomeEvent(this, income, type)));
                         break;
                 }
             }
 
-            return await base.SaveChangesAsync(cancellationToken);
+            var rv = await base.SaveChangesAsync(cancellationToken);
+
+            foreach(var notification in notifications)
+            {
+                notification.Invoke();
+            }
+
+            return rv;
         }
     }
 }
