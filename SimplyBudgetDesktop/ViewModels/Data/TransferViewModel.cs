@@ -4,7 +4,7 @@ using SimplyBudgetShared.Data;
 
 namespace SimplyBudget.ViewModels.Data
 {
-    internal class TransferViewModel : ViewModelBase, ITransactionItem
+    internal class TransferViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, ITransactionItem
     {
         private BudgetContext Context { get; } = BudgetContext.Instance;
 

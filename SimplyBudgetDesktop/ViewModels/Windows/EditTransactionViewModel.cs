@@ -243,7 +243,7 @@ namespace SimplyBudget.ViewModels.Windows
         }
     }
 
-    internal class TransactionItemDetailsViewModel : ViewModelBase
+    internal class TransactionItemDetailsViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
     {
         private readonly Action _itemUpdated;
 

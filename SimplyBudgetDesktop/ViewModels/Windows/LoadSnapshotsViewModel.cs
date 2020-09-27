@@ -10,7 +10,7 @@ using SimplyBudgetShared.Utilities;
 
 namespace SimplyBudget.ViewModels.Windows
 {
-    internal class LoadSnapshotsViewModel : ViewModelBase, IRequestClose
+    internal class LoadSnapshotsViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, IRequestClose
     {
         public event EventHandler<EventArgs> RequestClose;
 
@@ -77,7 +77,7 @@ namespace SimplyBudget.ViewModels.Windows
             }
         }
 
-        public class SnapshotViewModel : ViewModelBase
+        public class SnapshotViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
         {
             private DateTime _dateTime;
             public DateTime DateTime

@@ -10,14 +10,14 @@ using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
 {
-    internal abstract class CollectionViewModelBase : ViewModelBase
+    public abstract class CollectionViewModelBase : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
     {
         public abstract void LoadItemsAsync();
 
         public abstract void UnloadItems();
     }
 
-    internal abstract class CollectionViewModelBase<T> : CollectionViewModelBase
+    public abstract class CollectionViewModelBase<T> : CollectionViewModelBase
     {
         protected readonly ObservableCollection<T> _items;
         protected readonly ICollectionView _view;
@@ -38,7 +38,7 @@ namespace SimplyBudget.ViewModels
 
             var existingSortDescriptor = _view.SortDescriptions.FirstOrDefault(x => x.PropertyName == sortProperty);
 
-            if (existingSortDescriptor != default(SortDescription))
+            if (existingSortDescriptor != default)
             {
                 var index = _view.SortDescriptions.IndexOf(existingSortDescriptor);
                 _view.SortDescriptions.RemoveAt(index);

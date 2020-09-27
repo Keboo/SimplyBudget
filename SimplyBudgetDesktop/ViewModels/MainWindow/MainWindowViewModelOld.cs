@@ -15,11 +15,11 @@ using System.IO;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class MainWindowViewModel : ViewModelBase, 
+    internal class MainWindowViewModelOld : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, 
         IEventListener<SnapshotLoadedEvent>,
         IEventListener<SnapshotCreatedEvent>
     {
-        private readonly Stack<ViewModelBase> _viewStack;
+        private readonly Stack<Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject> _viewStack;
 
         private readonly RelayCommand<ExpenseCategoryViewModel> _showExpenseCategoryDetailsCommand;
         private readonly RelayCommand<AccountViewModel> _showAccountDetailsCommand; 
@@ -30,9 +30,9 @@ namespace SimplyBudget.ViewModels.MainWindow
 
         private BudgetContext Context { get; } = BudgetContext.Instance;
 
-        public MainWindowViewModel()
+        public MainWindowViewModelOld()
         {
-            _viewStack = new Stack<ViewModelBase>();
+            _viewStack = new Stack<Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject>();
 
             _showExpenseCategoryDetailsCommand = new RelayCommand<ExpenseCategoryViewModel>(OnShowExpenseCategoryDetails);
             ShowTransactionDetailsCommand = new RelayCommand<ITransactionItem>(OnShowTransactionDetails);
@@ -61,7 +61,7 @@ namespace SimplyBudget.ViewModels.MainWindow
 
         public RelayCommand<ITransactionItem> ShowTransactionDetailsCommand { get; }
 
-        public ViewModelBase TopView
+        public Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject TopView
         {
             get
             {
@@ -145,7 +145,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             return _viewStack.Count > 1;
         }
 
-        private void PushView(ViewModelBase viewModel)
+        private void PushView(Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject viewModel)
         {
             //Don't push the view model if it matches the top view model
             if (_viewStack.Count > 0 && _viewStack.Peek().GetType() == viewModel.GetType())

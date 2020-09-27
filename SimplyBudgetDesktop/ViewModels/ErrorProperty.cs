@@ -1,6 +1,6 @@
 ﻿namespace SimplyBudget.ViewModels
 {
-    internal class ErrorProperty<T> : ViewModelBase
+    internal class ErrorProperty<T> : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
     {
         private T _value;
         public T Value

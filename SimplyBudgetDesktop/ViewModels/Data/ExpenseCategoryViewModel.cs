@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.Data
 {
-    internal class ExpenseCategoryViewModel : ViewModelBase, IDatabaseItem
+    public class ExpenseCategoryViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, IDatabaseItem
     {
         public static ExpenseCategoryViewModel Create(ExpenseCategory expenseCategory)
         {

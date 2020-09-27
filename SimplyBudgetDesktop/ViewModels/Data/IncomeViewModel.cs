@@ -5,7 +5,7 @@ using SimplyBudgetShared.Data;
 
 namespace SimplyBudget.ViewModels.Data
 {
-    internal class IncomeViewModel : ViewModelBase, IDatabaseItem
+    internal class IncomeViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, IDatabaseItem
     {
         public static IncomeViewModel Create(Income income)
         {

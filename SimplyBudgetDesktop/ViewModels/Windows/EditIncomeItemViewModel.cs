@@ -267,7 +267,7 @@ namespace SimplyBudget.ViewModels.Windows
         }
     }
 
-    internal class IncomeItemDetailsViewModel : ViewModelBase
+    internal class IncomeItemDetailsViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
     {
         private readonly EditIncomeItemViewModel _editIncomeItemViewModel;
 

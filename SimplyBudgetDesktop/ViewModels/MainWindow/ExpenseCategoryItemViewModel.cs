@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class ExpenseCategoryItemViewModel : ViewModelBase, IDatabaseItem
+    internal class ExpenseCategoryItemViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, IDatabaseItem
     {
         public static async Task<ExpenseCategoryItemViewModel> Create(BudgetContext context, TransactionItem transactionItem)
         {

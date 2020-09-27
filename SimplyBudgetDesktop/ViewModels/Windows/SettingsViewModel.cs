@@ -8,7 +8,7 @@ using SimplyBudgetShared.Utilities;
 
 namespace SimplyBudget.ViewModels.Windows
 {
-    internal class SettingsViewModel : ViewModelBase, IRequestClose
+    internal class SettingsViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, IRequestClose
     {
         public event EventHandler<EventArgs> RequestClose;
 

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.Windows
 {
-    public class ExpenseCategoryHistoryViewModel : ViewModelBase
+    public class ExpenseCategoryHistoryViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
     {
         private string _ExpenseCategoryName;
         public string ExpenseCategoryName
@@ -55,7 +55,7 @@ namespace SimplyBudget.ViewModels.Windows
         public BindingList<IBarGraphItem> Months { get; } = new BindingList<IBarGraphItem>();
     }
 
-    internal class MonthHistoryViewModel : ViewModelBase, IBarGraphItem
+    internal class MonthHistoryViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, IBarGraphItem
     {
         public int MonthlyExpenses { get; set; }
 

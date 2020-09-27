@@ -4,7 +4,7 @@ using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
 {
-    internal abstract class ViewEditViewModel<T> : ViewModelBase
+    internal abstract class ViewEditViewModel<T> : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
     {
         private readonly RelayCommand _saveCommand;
 

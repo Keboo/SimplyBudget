@@ -6,7 +6,7 @@ using SimplyBudgetShared.Data;
 
 namespace SimplyBudget.ViewModels.Data
 {
-    internal class TransactionViewModel : ViewModelBase, ITransactionItem
+    internal class TransactionViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, ITransactionItem
     {
         public static async Task<TransactionViewModel> Create(BudgetContext context, Transaction transaction)
         {
