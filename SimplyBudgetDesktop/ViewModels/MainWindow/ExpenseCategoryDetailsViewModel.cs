@@ -80,7 +80,7 @@ namespace SimplyBudget.ViewModels.MainWindow
                     rv.Add(await ExpenseCategoryItemViewModel.Create(Context, transfer, expenseCategory.ID));
             // ReSharper restore LoopCanBeConvertedToQuery
 
-            var incomeItems = await expenseCategory.GetIncomeItems(QueryStart, QueryEnd);
+            var incomeItems = await Context.GetIncomeItems(expenseCategory, QueryStart, QueryEnd);
             // ReSharper disable LoopCanBeConvertedToQuery
             if (incomeItems != null)
                 foreach(var incomeItem in incomeItems)

@@ -425,7 +425,7 @@ namespace SimplyBudgetSharedTests.Data
             await fixture.PerformDatabaseOperation(async context =>
             {
                 var expenseCategory = await context.ExpenseCategories.FindAsync(category.ID);
-                Assert.AreEqual(0, expenseCategory.AccountID);
+                Assert.AreEqual(null, expenseCategory.AccountID);
             });
         }
 

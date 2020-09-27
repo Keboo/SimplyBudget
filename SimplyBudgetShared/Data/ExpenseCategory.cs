@@ -1,8 +1,6 @@
 ﻿
 
 using SimplyBudgetShared.Utilities;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Threading.Tasks;
 
@@ -13,8 +11,7 @@ namespace SimplyBudgetShared.Data
     {
         public string? CategoryName { get; set; }
 
-        //[Indexed]
-        public int AccountID { get; set; }
+        public int? AccountID { get; set; }
         public Account? Account { get; set; }
 
         public string? Name { get; set; }
@@ -23,21 +20,6 @@ namespace SimplyBudgetShared.Data
         public int CurrentBalance { get; set; }
 
         public bool UsePercentage => BudgetedPercentage > 0;
-
-        public async Task<IList<IncomeItem>> GetIncomeItems(DateTime? queryStart = null, DateTime? queryEnd = null)
-        {
-            return default!;
-            //if (queryStart != null && queryEnd != null)
-            //{
-            //    var transactions = await GetConnection().Table<Income>().Where(x => x.Date >= queryStart && x.Date <= queryEnd).ToListAsync();
-            //    var rv = new List<IncomeItem>();
-            //    foreach (var transaction in transactions)
-            //        rv.AddRange((await transaction.GetIncomeItems()).Where(x => x.ExpenseCategoryID == ID));
-            //    return rv;
-            //}
-            //return await GetConnection().Table<IncomeItem>().Where(
-            //    x => x.ExpenseCategoryID == ID).ToListAsync();
-        }
 
         public string GetBudgetedDisplayString()
         {
@@ -48,29 +30,10 @@ namespace SimplyBudgetShared.Data
 
         public async Task BeforeCreate(BudgetContext context)
         {
-            if (AccountID == 0)
+            if (AccountID is null)
             {
                 Account = await context.GetDefaultAccountAsync();
             }
         }
-
-        //protected override async Task Create()
-        //{
-        //    if (AccountID == 0)
-        //    {
-        //        var defaultAccount = await Account.GetDefault();
-        //        if (defaultAccount != null)
-        //            AccountID = defaultAccount.ID;
-        //    }
-        //
-        //    await base.Create();
-        //    NotificationCenter.PostEvent(new ExpenseCategoryEvent(this, EventType.Created));
-        //}
-
-        //protected override async Task Update()
-        //{
-        //    await base.Update();
-        //    NotificationCenter.PostEvent(new ExpenseCategoryEvent(this, EventType.Updated));
-        //}
     }
 }

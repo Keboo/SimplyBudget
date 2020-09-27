@@ -221,7 +221,7 @@ namespace SimplyBudget.ViewModels.Windows
                 foreach (var item in incomeItems)
                 {
                     expenseCategoryIds.Add(item.ExpenseCategoryID);
-                    var incomeViewModel = await IncomeExpenseCategoryViewModel.Create(await Context.ExpenseCategories.FindAsync(item.ExpenseCategoryID));
+                    var incomeViewModel = await IncomeExpenseCategoryViewModel.Create(await Context.ExpenseCategories.FindAsync(item.ExpenseCategoryID), Context);
                     _incomeItems.Add(new IncomeItemDetailsViewModel(item, incomeViewModel, this));
                 }
             }
@@ -229,7 +229,7 @@ namespace SimplyBudget.ViewModels.Windows
             var expenseCategories = await Context.ExpenseCategories.Where(x => expenseCategoryIds.Contains(x.ID) == false).ToListAsync();
             foreach (var expenseCategory in expenseCategories)
             {
-                var vm = await IncomeExpenseCategoryViewModel.Create(expenseCategory);
+                var vm = await IncomeExpenseCategoryViewModel.Create(expenseCategory, Context);
                 _incomeItems.Add(new IncomeItemDetailsViewModel(this, vm));
             }
 
@@ -261,7 +261,7 @@ namespace SimplyBudget.ViewModels.Windows
             var expenseCategories = await Context.ExpenseCategories.ToListAsync();
             foreach (var expenseCategory in expenseCategories)
             {
-                var vm = await IncomeExpenseCategoryViewModel.Create(expenseCategory);
+                var vm = await IncomeExpenseCategoryViewModel.Create(expenseCategory, Context);
                 _incomeItems.Add(new IncomeItemDetailsViewModel(this, vm));
             }
         }
@@ -346,14 +346,14 @@ namespace SimplyBudget.ViewModels.Windows
 
     internal class IncomeExpenseCategoryViewModel : ExpenseCategoryViewModel
     {
-        public new static async Task<IncomeExpenseCategoryViewModel> Create(ExpenseCategory expenseCategory)
+        public new static async Task<IncomeExpenseCategoryViewModel> Create(ExpenseCategory expenseCategory, BudgetContext context)
         {
             var rv = new IncomeExpenseCategoryViewModel(expenseCategory.ID);
 
             SetProperties(expenseCategory, rv);
 
-            var incomeItems = await expenseCategory.GetIncomeItems(DateTime.Today.StartOfMonth(), DateTime.Today.EndOfMonth());
-
+            var incomeItems = await context.GetIncomeItems(expenseCategory, DateTime.Today.StartOfMonth(), DateTime.Today.EndOfMonth());
+            
             if (expenseCategory.UsePercentage)
             {
                 rv.RemainingAmount = 0;
