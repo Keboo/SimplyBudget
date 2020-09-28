@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Windows;
-using SimplyBudget.ViewModels.MainWindow;
+using SimplyBudget.ViewModels;
 
 namespace SimplyBudget.ValueConverter
 {

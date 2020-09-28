@@ -88,6 +88,10 @@ namespace SimplyBudgetShared.Data
                 IncomeID = income.ID
             };
             context.IncomeItems.Add(incomeItem);
+
+            var category = await context.ExpenseCategories.FindAsync(expenseCategory.ID);
+            category.CurrentBalance += amount;
+
             await context.SaveChangesAsync();
 
             return incomeItem;
@@ -114,6 +118,9 @@ namespace SimplyBudgetShared.Data
             };
 
             context.TransactionItems.Add(transactionItem);
+            var category = await context.ExpenseCategories.FindAsync(expenseCategory.ID);
+            category.CurrentBalance -= amount;
+            
             await context.SaveChangesAsync();
 
             return transaction;

@@ -34,7 +34,7 @@ namespace SimplyBudgetShared.Data
         public BudgetContext(IMessenger messenger, DbContextOptions options)
             : base(options)
         {
-            Messenger = messenger ?? throw new System.ArgumentNullException(nameof(messenger));
+            Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

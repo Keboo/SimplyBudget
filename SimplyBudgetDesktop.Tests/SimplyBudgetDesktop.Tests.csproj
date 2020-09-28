@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SimplyBudgetDesktop\SimplyBudgetDesktop.csproj" />
+    <ProjectReference Include="..\SimplyBudgetSharedTests\SimplyBudgetSharedTests.csproj" />
   </ItemGroup>
 
 </Project>
