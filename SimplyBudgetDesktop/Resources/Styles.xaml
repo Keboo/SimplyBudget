@@ -44,9 +44,9 @@
         <Setter Property="FontWeight" Value="Bold" />
     </Style>
 
-    <Style TargetType="controls:DataGridEx">
+    <!--<Style TargetType="controls:DataGridEx">
         <Setter Property="AlternatingRowBackground" Value="{StaticResource AlternateRowBrush}"/>
-    </Style>
+    </Style>-->
 
     <Style TargetType="GridViewColumnHeader">
         <Setter Property="Padding" Value="8,0"/>
@@ -61,7 +61,7 @@
     <Style x:Key="MainWindowListViewItem" TargetType="ListViewItem">
         <Style.Triggers>
             <Trigger Property="ItemsControl.AlternationIndex" Value="1">
-                <Setter Property="Background" Value="{StaticResource AlternateRowBrush}"/>
+                <!--<Setter Property="Background" Value="{StaticResource AlternateRowBrush}"/>-->
             </Trigger>
         </Style.Triggers>
     </Style>

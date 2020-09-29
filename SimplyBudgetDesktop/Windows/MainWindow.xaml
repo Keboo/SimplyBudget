@@ -19,9 +19,44 @@
         FontFamily="{materialDesign:MaterialDesignFont}" 
         Title="Simply Budget" Height="450" Width="800"
         d:DataContext="{d:DesignInstance Type={x:Type vm:MainWindowViewModel}}">
-    <Grid Tag="{Binding B}">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Resources/DrawerHost.CustomTemplate.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <materialDesign:DrawerHost>
+        <materialDesign:DrawerHost.Style>
+            <Style TargetType="materialDesign:DrawerHost" BasedOn="{StaticResource MaterialDesignPushDrawerHost}">
+                <Setter Property="IsRightDrawerOpen" Value="True" />
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding AddItem}" Value="{x:Null}">
+                        <Setter Property="IsRightDrawerOpen" Value="False" />
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </materialDesign:DrawerHost.Style>
+        <materialDesign:DrawerHost.RightDrawerContent>
+            <DockPanel MinWidth="300" DataContext="{Binding AddItem}">
+                <StackPanel>
+                    <TextBlock Text="Add" />
+                    <ComboBox />
+                </StackPanel>
+
+                <Button Content="Close" Command="{Binding SubmitCommand}" />
+            </DockPanel>
+        </materialDesign:DrawerHost.RightDrawerContent>
+        
         <TabControl Style="{StaticResource MaterialDesignNavigatilRailTabControl}"
                     materialDesign:ColorZoneAssist.Mode="PrimaryMid">
+            <materialDesign:NavigationRailAssist.FloatingContent>
+                <Button Style="{StaticResource MaterialDesignFloatingActionAccentButton}"
+                        Margin="0,8" Command="{Binding ShowAddCommand}">
+                    <materialDesign:PackIcon Kind="Plus" Width="30" Height="30" Margin="13,13,0,0"/>
+                </Button>
+            </materialDesign:NavigationRailAssist.FloatingContent>
+
             <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
                 <TabItem.Header>
                     <materialDesign:PackIcon Kind="FormatListBulletedSquare" Width="30" Height="30" />
@@ -154,7 +189,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition />
                     </Grid.RowDefinitions>
-                
+
                     <ListView ItemsSource="{Binding HistoryView}" Style="{StaticResource MainWindowListViewStyle}" Grid.Row="1"
                               materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
                         <ListView.ItemContainerStyle>
@@ -175,5 +210,5 @@
                 </Grid>
             </TabItem>
         </TabControl>
-    </Grid>
+    </materialDesign:DrawerHost>
 </Window>
