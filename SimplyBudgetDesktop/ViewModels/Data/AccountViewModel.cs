@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.Data
 {
-    internal class AccountViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, IDatabaseItem
+    public class AccountViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, IDatabaseItem
     {
         public static async Task<AccountViewModel> Create(BudgetContext context, Account account)
         {

@@ -7,6 +7,7 @@
         xmlns:vm="clr-namespace:SimplyBudget.ViewModels"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" 
         xmlns:commands="clr-namespace:SimplyBudget.Commands" 
+        xmlns:vmData="clr-namespace:SimplyBudget.ViewModels.Data" 
         xmlns:valueConverter="clr-namespace:SimplyBudget.ValueConverter"
         xmlns:utilities="clr-namespace:SimplyBudget.Utilities"
         mc:Ignorable="d"
@@ -26,189 +27,214 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
-    <materialDesign:DrawerHost>
-        <materialDesign:DrawerHost.Style>
-            <Style TargetType="materialDesign:DrawerHost" BasedOn="{StaticResource MaterialDesignPushDrawerHost}">
-                <Setter Property="IsRightDrawerOpen" Value="True" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding AddItem}" Value="{x:Null}">
-                        <Setter Property="IsRightDrawerOpen" Value="False" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-        </materialDesign:DrawerHost.Style>
-        <materialDesign:DrawerHost.RightDrawerContent>
-            <DockPanel MinWidth="300" DataContext="{Binding AddItem}">
-                <StackPanel>
-                    <TextBlock Text="Add" />
-                    <ComboBox />
-                </StackPanel>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <materialDesign:DrawerHost>
+            <materialDesign:DrawerHost.Style>
+                <Style TargetType="materialDesign:DrawerHost" BasedOn="{StaticResource MaterialDesignPushDrawerHost}">
+                    <Setter Property="IsRightDrawerOpen" Value="True" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding AddItem}" Value="{x:Null}">
+                            <Setter Property="IsRightDrawerOpen" Value="False" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </materialDesign:DrawerHost.Style>
+            <materialDesign:DrawerHost.RightDrawerContent>
+                <DockPanel MinWidth="300" DataContext="{Binding AddItem}">
+                    <StackPanel>
+                        <TextBlock Text="Add" />
+                        <ComboBox />
+                    </StackPanel>
 
-                <Button Content="Close" Command="{Binding SubmitCommand}" />
-            </DockPanel>
-        </materialDesign:DrawerHost.RightDrawerContent>
-        
-        <TabControl Style="{StaticResource MaterialDesignNavigatilRailTabControl}"
+                    <Button Content="Close" Command="{Binding SubmitCommand}" />
+                </DockPanel>
+            </materialDesign:DrawerHost.RightDrawerContent>
+
+            <TabControl Style="{StaticResource MaterialDesignNavigatilRailTabControl}"
                     materialDesign:ColorZoneAssist.Mode="PrimaryMid">
-            <materialDesign:NavigationRailAssist.FloatingContent>
-                <Button Style="{StaticResource MaterialDesignFloatingActionAccentButton}"
+                <materialDesign:NavigationRailAssist.FloatingContent>
+                    <Button Style="{StaticResource MaterialDesignFloatingActionAccentButton}"
                         Margin="0,8" Command="{Binding ShowAddCommand}">
-                    <materialDesign:PackIcon Kind="Plus" Width="30" Height="30" Margin="13,13,0,0"/>
-                </Button>
-            </materialDesign:NavigationRailAssist.FloatingContent>
+                        <materialDesign:PackIcon Kind="Plus" Width="30" Height="30" Margin="13,13,0,0"/>
+                    </Button>
+                </materialDesign:NavigationRailAssist.FloatingContent>
 
-            <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
-                <TabItem.Header>
-                    <materialDesign:PackIcon Kind="FormatListBulletedSquare" Width="30" Height="30" />
-                </TabItem.Header>
-                <Grid DataContext="{Binding Budget}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition />
-                    </Grid.RowDefinitions>
+                <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
+                    <TabItem.Header>
+                        <materialDesign:PackIcon Kind="FormatListBulletedSquare" Width="30" Height="30" />
+                    </TabItem.Header>
+                    <Grid DataContext="{Binding Budget}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
 
-                    <Grid Margin="5,3" Grid.Row="0">
-                        <CheckBox IsChecked="{Binding GroupItems}" Content="Group Items"/>
+                        <Grid Margin="5,3" Grid.Row="0">
+                            <CheckBox IsChecked="{Binding GroupItems}" Content="Group Items"/>
+                        </Grid>
+                        <ListView ItemsSource="{Binding ExpenseCategoriesView}" Style="{StaticResource MainWindowListViewStyle}" Grid.Row="1"
+                              materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource MainWindowListViewItem}">
+                                    <!--<Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{Binding DataContext.ShowExpenseCategoryDetailsCommand, RelativeSource={RelativeSource AncestorType=windows:MainWindow}}"/>-->
+                                    <Setter Property="utilities:AttachedProperties.DoubleClickCommandParameter" Value="{Binding}"/>
+                                    <Setter Property="ContextMenu">
+                                        <Setter.Value>
+                                            <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                <MenuItem Header="_Edit" Command="{commands:EditDatabaseItemCommand}" 
+                                                              utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
+                                                    <MenuItem.Icon>
+                                                        <Path Style="{StaticResource EditIcon}"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="_Delete" Command="{commands:DeleteDatabaseItemCommand}"
+                                                              utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
+                                                    <MenuItem.Icon>
+                                                        <Path Style="{StaticResource DeleteIcon}"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <Separator />
+                                                <MenuItem Header="Transaction _History" Command="{commands:ShowExpenseCategoryHistory}"
+                                                              utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
+
+                                                </MenuItem>
+                                            </ContextMenu>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+
+                            <ListView.GroupStyle>
+                                <GroupStyle HidesIfEmpty="True">
+                                    <GroupStyle.HeaderTemplate>
+                                        <DataTemplate>
+                                            <Grid Background="{StaticResource HeaderBackgroundBrush}">
+                                                <TextBlock Text="{Binding Name}" Margin="15,3,3,3"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </GroupStyle.HeaderTemplate>
+                                </GroupStyle>
+                            </ListView.GroupStyle>
+
+                            <ListView.View>
+                                <GridView AllowsColumnReorder="False" >
+                                    <GridViewColumn DisplayMemberBinding="{Binding Name}" Header="Expense Category" utilities:AttachedProperties.SortPropertyName="Name"/>
+                                    <GridViewColumn DisplayMemberBinding="{Binding BudgetedAmountDisplay}" Header="Budgeted Amount" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
+                                    <GridViewColumn Header="Current Balance" utilities:AttachedProperties.SortPropertyName="Balance">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Balance, Converter={valueConverter:CurrencyValueConverter}}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Balance, Converter={valueConverter:IsNegativeValueConverter}}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Monthly Expenses" utilities:AttachedProperties.SortPropertyName="MonthlyExpenses">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding MonthlyExpenses, Converter={valueConverter:CurrencyValueConverter}}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Value="True" Binding="{Binding Converter={valueConverter:ExpenseCategoryMonthlyExpensesExceeded}}">
+                                                                    <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Monthly Allocations" utilities:AttachedProperties.SortPropertyName="MonthlyAllocations">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding MonthlyAllocations, Converter={valueConverter:CurrencyValueConverter}}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="0">
+                                                                    <Setter Property="Foreground" Value="{StaticResource IgnoreBrush}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="1">
+                                                                    <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="-1">
+                                                                    <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
                     </Grid>
-                    <ListView ItemsSource="{Binding ExpenseCategoriesView}" Style="{StaticResource MainWindowListViewStyle}" Grid.Row="1"
+                </TabItem>
+                <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
+                    <TabItem.Header>
+                        <materialDesign:PackIcon Kind="History" Width="30" Height="30" />
+                    </TabItem.Header>
+                    <Grid DataContext="{Binding History}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+
+                        <ListView ItemsSource="{Binding HistoryView}" Style="{StaticResource MainWindowListViewStyle}" Grid.Row="1"
                               materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem" BasedOn="{StaticResource MainWindowListViewItem}">
-                                <!--<Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{Binding DataContext.ShowExpenseCategoryDetailsCommand, RelativeSource={RelativeSource AncestorType=windows:MainWindow}}"/>-->
-                                <Setter Property="utilities:AttachedProperties.DoubleClickCommandParameter" Value="{Binding}"/>
-                                <Setter Property="ContextMenu">
-                                    <Setter.Value>
-                                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                            <MenuItem Header="_Edit" Command="{commands:EditDatabaseItemCommand}" 
-                                                              utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
-                                                <MenuItem.Icon>
-                                                    <Path Style="{StaticResource EditIcon}"/>
-                                                </MenuItem.Icon>
-                                            </MenuItem>
-                                            <MenuItem Header="_Delete" Command="{commands:DeleteDatabaseItemCommand}"
-                                                              utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
-                                                <MenuItem.Icon>
-                                                    <Path Style="{StaticResource DeleteIcon}"/>
-                                                </MenuItem.Icon>
-                                            </MenuItem>
-                                            <Separator />
-                                            <MenuItem Header="Transaction _History" Command="{commands:ShowExpenseCategoryHistory}"
-                                                              utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem" BasedOn="{StaticResource MainWindowListViewItem}">
+                                    <!--<Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{Binding DataContext.ShowExpenseCategoryDetailsCommand, RelativeSource={RelativeSource AncestorType=windows:MainWindow}}"/>-->
+                                    <Setter Property="utilities:AttachedProperties.DoubleClickCommandParameter" Value="{Binding}"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
 
-                                            </MenuItem>
-                                        </ContextMenu>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView AllowsColumnReorder="False" >
+                                    <GridViewColumn DisplayMemberBinding="{Binding Date, StringFormat='d'}" Header="Date" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
+                                    <GridViewColumn DisplayMemberBinding="{Binding Description}" Header="Description" utilities:AttachedProperties.SortPropertyName="Name"/>
+                                    <GridViewColumn DisplayMemberBinding="{Binding Amount, Converter={valueConverter:CurrencyValueConverter}}" Header="Amount" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </materialDesign:DrawerHost>
 
-                        <ListView.GroupStyle>
-                            <GroupStyle HidesIfEmpty="True">
-                                <GroupStyle.HeaderTemplate>
-                                    <DataTemplate>
-                                        <Grid Background="{StaticResource HeaderBackgroundBrush}">
-                                            <TextBlock Text="{Binding Name}" Margin="15,3,3,3"/>
-                                        </Grid>
-                                    </DataTemplate>
-                                </GroupStyle.HeaderTemplate>
-                            </GroupStyle>
-                        </ListView.GroupStyle>
+        <ItemsControl DataContext="{Binding Accounts}"
+                      ItemsSource="{Binding AccountsView}" Grid.Row="1"
+                      HorizontalAlignment="Right">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
 
-                        <ListView.View>
-                            <GridView AllowsColumnReorder="False" >
-                                <GridViewColumn DisplayMemberBinding="{Binding Name}" Header="Expense Category" utilities:AttachedProperties.SortPropertyName="Name"/>
-                                <GridViewColumn DisplayMemberBinding="{Binding BudgetedAmountDisplay}" Header="Budgeted Amount" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
-                                <GridViewColumn Header="Current Balance" utilities:AttachedProperties.SortPropertyName="Balance">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding Balance, Converter={valueConverter:CurrencyValueConverter}}">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Balance, Converter={valueConverter:IsNegativeValueConverter}}" Value="True">
-                                                                <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Monthly Expenses" utilities:AttachedProperties.SortPropertyName="MonthlyExpenses">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding MonthlyExpenses, Converter={valueConverter:CurrencyValueConverter}}">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Value="True" Binding="{Binding Converter={valueConverter:ExpenseCategoryMonthlyExpensesExceeded}}">
-                                                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Monthly Allocations" utilities:AttachedProperties.SortPropertyName="MonthlyAllocations">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding MonthlyAllocations, Converter={valueConverter:CurrencyValueConverter}}">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="0">
-                                                                <Setter Property="Foreground" Value="{StaticResource IgnoreBrush}"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="1">
-                                                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
-                                                            </DataTrigger>
-                                                            <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="-1">
-                                                                <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
-                </Grid>
-            </TabItem>
-            <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
-                <TabItem.Header>
-                    <materialDesign:PackIcon Kind="History" Width="30" Height="30" />
-                </TabItem.Header>
-                <Grid DataContext="{Binding History}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition />
-                    </Grid.RowDefinitions>
-
-                    <ListView ItemsSource="{Binding HistoryView}" Style="{StaticResource MainWindowListViewStyle}" Grid.Row="1"
-                              materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem" BasedOn="{StaticResource MainWindowListViewItem}">
-                                <!--<Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{Binding DataContext.ShowExpenseCategoryDetailsCommand, RelativeSource={RelativeSource AncestorType=windows:MainWindow}}"/>-->
-                                <Setter Property="utilities:AttachedProperties.DoubleClickCommandParameter" Value="{Binding}"/>
-                            </Style>
-                        </ListView.ItemContainerStyle>
-
-                        <ListView.View>
-                            <GridView AllowsColumnReorder="False" >
-                                <GridViewColumn DisplayMemberBinding="{Binding Date, StringFormat='d'}" Header="Date" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
-                                <GridViewColumn DisplayMemberBinding="{Binding Description}" Header="Description" utilities:AttachedProperties.SortPropertyName="Name"/>
-                                <GridViewColumn DisplayMemberBinding="{Binding Amount, Converter={valueConverter:CurrencyValueConverter}}" Header="Amount" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
-                </Grid>
-            </TabItem>
-        </TabControl>
-    </materialDesign:DrawerHost>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type vmData:AccountViewModel}">
+                    <TextBlock Margin="10,0">
+                        <Run Text="{Binding Name}" />
+                        <Run Text="{Binding CurrentAmount, Converter={valueConverter:CurrencyValueConverter}}" />
+                    </TextBlock>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
 </Window>

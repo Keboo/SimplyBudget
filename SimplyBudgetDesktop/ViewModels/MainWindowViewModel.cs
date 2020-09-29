@@ -16,6 +16,8 @@ namespace SimplyBudget.ViewModels
 
         public HistoryViewModel History { get; }
 
+        public AccountsViewModel Accounts { get; }
+
         private AddItemViewModel _addItem;
         public AddItemViewModel AddItem
         {
@@ -36,9 +38,11 @@ namespace SimplyBudget.ViewModels
 
             Budget = new BudgetViewModel(messenger);
             History = new HistoryViewModel(context);
+            Accounts = new AccountsViewModel(context, messenger);
 
             Budget.LoadItemsAsync();
             History.LoadItemsAsync();
+            Accounts.LoadItemsAsync();
 
             messenger.Register(this);
         }
