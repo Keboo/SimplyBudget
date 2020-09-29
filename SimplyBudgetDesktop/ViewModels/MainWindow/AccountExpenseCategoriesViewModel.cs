@@ -10,7 +10,7 @@ using SimplyBudgetShared.Utilities.Events;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class AccountExpenseCategoriesViewModel : CollectionViewModelBase<ExpenseCategoryViewModel>, IEventListener<ExpenseCategoryEvent>
+    internal class AccountExpenseCategoriesViewModel : CollectionViewModelBaseOld<ExpenseCategoryViewModel>, IEventListener<ExpenseCategoryEvent>
     {
         private readonly int _accountID;
         private string _accountName;

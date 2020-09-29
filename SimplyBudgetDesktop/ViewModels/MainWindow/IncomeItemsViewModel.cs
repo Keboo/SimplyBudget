@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class IncomeItemsViewModel : CollectionViewModelBase<IncomeViewModel>, 
+    internal class IncomeItemsViewModel : CollectionViewModelBaseOld<IncomeViewModel>, 
         IEventListener<IncomeEvent>, IEventListener<IncomeItemEvent>
     {
         private BudgetContext Context { get; } = BudgetContext.Instance;

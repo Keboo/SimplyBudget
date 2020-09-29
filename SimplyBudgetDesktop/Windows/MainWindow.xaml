@@ -149,8 +149,31 @@
                 <TabItem.Header>
                     <materialDesign:PackIcon Kind="History" Width="30" Height="30" />
                 </TabItem.Header>
+                <Grid DataContext="{Binding History}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                
+                    <ListView ItemsSource="{Binding HistoryView}" Style="{StaticResource MainWindowListViewStyle}" Grid.Row="1"
+                              materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem" BasedOn="{StaticResource MainWindowListViewItem}">
+                                <!--<Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{Binding DataContext.ShowExpenseCategoryDetailsCommand, RelativeSource={RelativeSource AncestorType=windows:MainWindow}}"/>-->
+                                <Setter Property="utilities:AttachedProperties.DoubleClickCommandParameter" Value="{Binding}"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+
+                        <ListView.View>
+                            <GridView AllowsColumnReorder="False" >
+                                <GridViewColumn DisplayMemberBinding="{Binding Date, StringFormat='d'}" Header="Date" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
+                                <GridViewColumn DisplayMemberBinding="{Binding Description}" Header="Description" utilities:AttachedProperties.SortPropertyName="Name"/>
+                                <GridViewColumn DisplayMemberBinding="{Binding Amount, Converter={valueConverter:CurrencyValueConverter}}" Header="Amount" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Grid>
             </TabItem>
-            
         </TabControl>
     </Grid>
 </Window>

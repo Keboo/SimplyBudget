@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class ExpenseCategoryDetailsViewModel : CollectionViewModelBase<ExpenseCategoryItemViewModel>, 
+    internal class ExpenseCategoryDetailsViewModel : CollectionViewModelBaseOld<ExpenseCategoryItemViewModel>, 
         IEventListener<TransactionItemEvent>, IEventListener<TransferEvent>
     {
         private readonly int _expenseCategoryID;

@@ -10,7 +10,7 @@ using System.Windows.Data;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    public class ExpenseCategoriesViewModel : CollectionViewModelBase<ExpenseCategoryViewModelEx>,
+    public class ExpenseCategoriesViewModel : CollectionViewModelBaseOld<ExpenseCategoryViewModelEx>,
         IEventListener<ExpenseCategoryEvent>
     {
         private BudgetContext Context { get; } = BudgetContext.Instance;

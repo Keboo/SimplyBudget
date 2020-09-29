@@ -1,6 +1,7 @@
 ﻿using AutoDI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Toolkit.Mvvm.Messaging;
+using SimplyBudgetShared.Data;
 
 namespace SimplyBudget.Properties
 {
@@ -13,6 +14,7 @@ namespace SimplyBudget.Properties
             application.ConfigureServices(collection =>
             {
                 collection.AddSingleton<IMessenger, Messenger>();
+                collection.AddSingleton(BudgetContext.Instance);
             });
         }
     }

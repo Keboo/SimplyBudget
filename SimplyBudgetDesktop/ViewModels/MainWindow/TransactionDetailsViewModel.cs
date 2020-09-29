@@ -1,16 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Threading.Tasks;
-using JetBrains.Annotations;
-using SimplyBudget.ViewModels.Data;
+﻿using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetShared.Utilities.Events;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class TransactionDetailsViewModel : CollectionViewModelBase<TransactionItemViewModel>, 
+    internal class TransactionDetailsViewModel : CollectionViewModelBaseOld<TransactionItemViewModel>, 
         IEventListener<TransactionItemEvent>
     {
         private readonly Transaction _transaction;

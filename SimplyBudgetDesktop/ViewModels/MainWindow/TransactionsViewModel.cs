@@ -12,7 +12,7 @@ using SimplyBudgetShared.Utilities.Events;
 namespace SimplyBudget.ViewModels.MainWindow
 {
     internal class TransactionsViewModel :
-        CollectionViewModelBase<ITransactionItem>,
+        CollectionViewModelBaseOld<ITransactionItem>,
         IEventListener<TransactionEvent>,
         IEventListener<TransactionItemEvent>
     {

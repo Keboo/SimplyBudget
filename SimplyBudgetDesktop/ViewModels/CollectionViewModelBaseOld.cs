@@ -4,29 +4,24 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
 {
-    public abstract class CollectionViewModelBase : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
-    {
-        public abstract void LoadItemsAsync();
-
-        public abstract void UnloadItems();
-    }
-
-    public abstract class CollectionViewModelBase<T> : CollectionViewModelBase
+    public abstract class CollectionViewModelBaseOld<T> : CollectionViewModelBase
     {
         protected readonly ObservableCollection<T> _items;
         protected readonly ICollectionView _view;
         private readonly RelayCommand<string> _sortCommand;
 
-        protected CollectionViewModelBase()
+        private long _loadInProgress;
+
+        protected CollectionViewModelBaseOld()
         {
             _items = new ObservableCollection<T>();
-            BindingOperations.EnableCollectionSynchronization(_items, new object());
             _view = CollectionViewSource.GetDefaultView(_items);
             _sortCommand = new RelayCommand<string>(OnSort);
         }
@@ -45,7 +40,7 @@ namespace SimplyBudget.ViewModels
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
-
+            
             var existingSortDescriptor = _view.SortDescriptions.FirstOrDefault(x => x.PropertyName == propertyName);
 
             if (existingSortDescriptor != default)
@@ -80,15 +75,18 @@ namespace SimplyBudget.ViewModels
 
         public ICommand SortCommand => _sortCommand;
 
-        protected abstract IAsyncEnumerable<T> GetItems();
+        protected abstract Task<IEnumerable<T>> GetItems();
 
         protected async Task ReloadItemsAsync()
         {
-            _items.Clear();
-
-            await foreach (var item in GetItems())
+            var currentId = Interlocked.Increment(ref _loadInProgress);
+            var items = await GetItems();
+            if (Interlocked.Read(ref _loadInProgress) == currentId)
             {
-                _items.Add(item);
+                _items.Clear();
+                if (items != null)
+                    foreach (var item in items)
+                        _items.Add(item);
             }
         }
     }

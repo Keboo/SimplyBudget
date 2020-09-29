@@ -50,16 +50,12 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
         }
 
-        protected override async Task<IEnumerable<ExpenseCategoryViewModelEx>> GetItems()
+        protected override async IAsyncEnumerable<ExpenseCategoryViewModelEx> GetItems()
         {
-            var expenseCategories = await Context.ExpenseCategories.ToListAsync();
-
-            var rv = new List<ExpenseCategoryViewModelEx>();
-            // ReSharper disable LoopCanBeConvertedToQuery
-            foreach (var item in expenseCategories)
-                rv.Add(await ExpenseCategoryViewModelEx.Create(Context, item));
-            // ReSharper restore LoopCanBeConvertedToQuery
-            return rv;
+            await foreach(var category in Context.ExpenseCategories)
+            {
+                yield return await ExpenseCategoryViewModelEx.Create(Context, category);
+            }
         }
 
         public async void HandleEvent(ExpenseCategoryEvent @event)

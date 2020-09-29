@@ -1,7 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudget.ViewModels;
 using SimplyBudgetShared.Data;
-using SimplyBudgetShared.Utilities;
 using SimplyBudgetSharedTests.Data;
 using System;
 using System.Threading.Tasks;
@@ -17,7 +16,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             var fixture = new BudgetDatabaseContext();
             var expenseCategory = new ExpenseCategory();
             var now = DateTime.Now;
-            
+
             var twoMonthsAgo = now.AddMonths(-2);
             var lastMonth = now.AddMonths(-1);
 
@@ -27,8 +26,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
                 var income2 = new Income { Date = lastMonth };
                 var income3 = new Income { Date = now };
 
-                context.ExpenseCategories.Add(expenseCategory);
-                context.Incomes.AddRange(income1, income2, income3);
+                context.AddRange(expenseCategory, income1, income2, income3);
                 await context.SaveChangesAsync();
                 
                 await context.AddTransaction(expenseCategory, 100, "Transaction 1", twoMonthsAgo);
