@@ -1,6 +1,8 @@
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudget.ViewModels;
+using SimplyBudgetSharedTests.Data;
+using System.Threading.Tasks;
 
 namespace SimplyBudgetDesktop.Tests.ViewModels
 {
@@ -10,10 +12,19 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         [TestMethod]
         public void Constructor_CreatesDependencies()
         {
-            var messenger = new Messenger();
-            var vm = new MainWindowViewModel(messenger);
+            var fixture = new BudgetDatabaseContext();
 
-            Assert.IsNotNull(vm.Budget);
+            var messenger = new Messenger();
+
+            fixture.PerformDatabaseOperation(context =>
+            {
+                var vm = new MainWindowViewModel(messenger, context);
+                Assert.IsNotNull(vm.Budget);
+                Assert.IsNotNull(vm.History);
+                Assert.IsNotNull(vm.Accounts);
+
+                return Task.CompletedTask;
+            });
         }
     }
 }

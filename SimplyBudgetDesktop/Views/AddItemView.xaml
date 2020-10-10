@@ -1,0 +1,60 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:SimplyBudget.ViewModels"
+                    xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+    <DataTemplate DataType="{x:Type vm:AddItemViewModel}">
+        <Grid MinWidth="300" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            
+            <StackPanel DockPanel.Dock="Top">
+                <TextBlock Text="Add" />
+                <ComboBox ItemsSource="{Binding AddTypes}" 
+                          SelectedItem="{Binding SelectedType}"
+                          HorizontalAlignment="Stretch"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="1">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedType}" Value="Transaction">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+
+                <TextBox Text="{Binding Description}"
+                         materialDesign:HintAssist.IsFloating="True"
+                         materialDesign:HintAssist.Hint="Description" />
+
+                <DatePicker SelectedDate="{Binding Date}"
+                            materialDesign:HintAssist.IsFloating="True"
+                            materialDesign:HintAssist.Hint="Date" />
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding LineItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:LineItemViewModel}">
+                                <Grid>
+                                    <TextBox Text="{Binding Description}" 
+                                             materialDesign:HintAssist.Hint="Description"
+                                             materialDesign:HintAssist.IsFloating="True"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </StackPanel>
+
+            <Button Content="Submit"
+                    Command="{Binding SubmitCommand}" 
+                    Grid.Row="2" />
+        </Grid>
+    </DataTemplate>
+</ResourceDictionary>

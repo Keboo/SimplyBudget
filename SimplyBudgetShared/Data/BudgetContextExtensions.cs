@@ -98,7 +98,7 @@ namespace SimplyBudgetShared.Data
         }
 
         public static async Task<Transaction> AddTransaction(this BudgetContext context,
-            ExpenseCategory expenseCategory,
+            int expenseCategoryId,
             int amount, string description, DateTime? date = null)
         {
             var transaction = new Transaction { Description = description };
@@ -113,12 +113,12 @@ namespace SimplyBudgetShared.Data
             {
                 Description = description,
                 Amount = amount,
-                ExpenseCategoryID = expenseCategory.ID,
+                ExpenseCategoryID = expenseCategoryId,
                 TransactionID = transaction.ID
             };
 
             context.TransactionItems.Add(transactionItem);
-            var category = await context.ExpenseCategories.FindAsync(expenseCategory.ID);
+            var category = await context.ExpenseCategories.FindAsync(expenseCategoryId);
             category.CurrentBalance -= amount;
             
             await context.SaveChangesAsync();

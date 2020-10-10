@@ -29,13 +29,13 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
                 context.AddRange(expenseCategory, income1, income2, income3);
                 await context.SaveChangesAsync();
                 
-                await context.AddTransaction(expenseCategory, 100, "Transaction 1", twoMonthsAgo);
+                await context.AddTransaction(expenseCategory.ID, 100, "Transaction 1", twoMonthsAgo);
                 await context.AddIncomeItem(expenseCategory, income1, 300);
                 
-                await context.AddTransaction(expenseCategory, 200, "Transaction 2", lastMonth);
+                await context.AddTransaction(expenseCategory.ID, 200, "Transaction 2", lastMonth);
                 await context.AddIncomeItem(expenseCategory, income2, 300);
 
-                await context.AddTransaction(expenseCategory, 300, "Transaction 3", now);
+                await context.AddTransaction(expenseCategory.ID, 300, "Transaction 3", now);
                 await context.AddIncomeItem(expenseCategory, income3, 300);
             });
 

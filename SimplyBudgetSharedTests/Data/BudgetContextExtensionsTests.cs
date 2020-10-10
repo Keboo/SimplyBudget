@@ -1,8 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetSharedTests.Data
@@ -61,7 +59,7 @@ namespace SimplyBudgetSharedTests.Data
             //Act
             await fixture.PerformDatabaseOperation(async context =>
             {
-                await context.AddTransaction(expenseCategory, 80, "transaction description");
+                await context.AddTransaction(expenseCategory.ID, 80, "transaction description");
             });
 
             //Assert

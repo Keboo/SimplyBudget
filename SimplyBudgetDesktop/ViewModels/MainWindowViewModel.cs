@@ -27,6 +27,7 @@ namespace SimplyBudget.ViewModels
 
         public ICommand ShowAddCommand { get; }
         public IMessenger Messenger { get; }
+        private BudgetContext Context { get; }
 
         public MainWindowViewModel(
             [Dependency]IMessenger messenger = null, 
@@ -35,7 +36,7 @@ namespace SimplyBudget.ViewModels
             ShowAddCommand = new RelayCommand(OnShowAdd);
 
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
-
+            Context = context ?? throw new ArgumentNullException(nameof(context));
             Budget = new BudgetViewModel(messenger);
             History = new HistoryViewModel(context);
             Accounts = new AccountsViewModel(context, messenger);
@@ -49,7 +50,7 @@ namespace SimplyBudget.ViewModels
 
         private void OnShowAdd()
         {
-            AddItem = new AddItemViewModel(Messenger);
+            AddItem = new AddItemViewModel(Context, Messenger);
         }
 
         public void Receive(AddItemViewModel.ItemAddedMessage message)

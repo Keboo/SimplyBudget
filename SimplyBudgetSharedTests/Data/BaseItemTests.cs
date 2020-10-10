@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
 
 namespace SimplyBudgetSharedTests.Data
@@ -34,48 +33,6 @@ namespace SimplyBudgetSharedTests.Data
 
             Assert.AreEqual(1, item1.GetHashCode());
             Assert.AreEqual(2, item2.GetHashCode());
-        }
-
-        [TestMethod]
-        public async Task TestDelete()
-        {
-            //Arrange
-            var item = new TestableBaseItem();
-            //Mock.Arrange(() => connection.DeleteAsync(item)).Returns(Task.FromResult(0));
-
-            //Act
-            await item.Delete();
-
-            //Assert
-            //Mock.Assert(() => connection.DeleteAsync(item), Occurs.Once());
-        }
-
-        [TestMethod]
-        public async Task SaveInsertsTransientItem()
-        {
-            //Arrange
-            var item = new TestableBaseItem();
-            //Mock.Arrange(() => connection.InsertAsync(item)).Returns(Task.FromResult(0));
-
-            //Act
-            await item.Save();
-
-            //Assert
-            //Mock.Assert(() => connection.InsertAsync(item), Occurs.Once());
-        }
-
-        [TestMethod]
-        public async Task SaveUpdatesExistingItem()
-        {
-            //Arrange
-            var item = new TestableBaseItem { ID = 1 };
-            //Mock.Arrange(() => connection.UpdateAsync(item)).Returns(Task.FromResult(0));
-
-            //Act
-            await item.Save();
-
-            //Assert
-            //Mock.Assert(() => connection.UpdateAsync(item), Occurs.Once());
         }
 
         private class TestableBaseItem : BaseItem

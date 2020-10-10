@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:SimplyBudget.Windows"
         xmlns:vm="clr-namespace:SimplyBudget.ViewModels"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" 
         xmlns:commands="clr-namespace:SimplyBudget.Commands" 
@@ -24,6 +23,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="../Resources/DrawerHost.CustomTemplate.xaml" />
+                <ResourceDictionary Source="../Views/AddItemView.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
@@ -44,14 +44,7 @@
                 </Style>
             </materialDesign:DrawerHost.Style>
             <materialDesign:DrawerHost.RightDrawerContent>
-                <DockPanel MinWidth="300" DataContext="{Binding AddItem}">
-                    <StackPanel>
-                        <TextBlock Text="Add" />
-                        <ComboBox />
-                    </StackPanel>
-
-                    <Button Content="Close" Command="{Binding SubmitCommand}" />
-                </DockPanel>
+                <ContentControl Content="{Binding AddItem}" />
             </materialDesign:DrawerHost.RightDrawerContent>
 
             <TabControl Style="{StaticResource MaterialDesignNavigatilRailTabControl}"

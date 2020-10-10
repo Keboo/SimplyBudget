@@ -37,7 +37,7 @@ namespace SimplyBudgetSharedTests.Data
             Transaction? transaction = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
-                transaction = await context.AddTransaction(category, amount, description);
+                transaction = await context.AddTransaction(category.ID, amount, description);
             });
 
             //Assert
@@ -79,7 +79,7 @@ namespace SimplyBudgetSharedTests.Data
             Transaction? transaction = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
-                transaction = await context.AddTransaction(category, amount, description, transactionDate);
+                transaction = await context.AddTransaction(category.ID, amount, description, transactionDate);
             });
 
             //Assert
@@ -207,9 +207,9 @@ namespace SimplyBudgetSharedTests.Data
                 context.ExpenseCategories.AddRange(category1, category2);
                 await context.SaveChangesAsync();
 
-                transaction1 = await context.AddTransaction(category1, 100, "Transaction 1");
-                transaction2 = await context.AddTransaction(category2, 200, "Transaction 2");
-                transaction3 = await context.AddTransaction(category1, 300, "Transaction 3");
+                transaction1 = await context.AddTransaction(category1.ID, 100, "Transaction 1");
+                transaction2 = await context.AddTransaction(category2.ID, 200, "Transaction 2");
+                transaction3 = await context.AddTransaction(category1.ID, 300, "Transaction 3");
 
             });
 
@@ -250,9 +250,9 @@ namespace SimplyBudgetSharedTests.Data
                 context.ExpenseCategories.AddRange(category1);
                 await context.SaveChangesAsync();
 
-                transaction1 = await context.AddTransaction(category1, 100, "Transaction 1", now.AddDays(-1).Date);
-                transaction2 = await context.AddTransaction(category1, 200, "Transaction 2", now.AddDays(-2).Date);
-                transaction3 = await context.AddTransaction(category1, 300, "Transaction 3", now.AddDays(-3).Date);
+                transaction1 = await context.AddTransaction(category1.ID, 100, "Transaction 1", now.AddDays(-1).Date);
+                transaction2 = await context.AddTransaction(category1.ID, 200, "Transaction 2", now.AddDays(-2).Date);
+                transaction3 = await context.AddTransaction(category1.ID, 300, "Transaction 3", now.AddDays(-3).Date);
 
             });
 
