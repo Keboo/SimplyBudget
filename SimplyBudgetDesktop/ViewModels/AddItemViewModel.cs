@@ -4,6 +4,7 @@ using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
 using SimplyBudget.Validation;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -23,12 +24,18 @@ namespace SimplyBudget.ViewModels
 
     public class LineItemViewModel : ObservableObject
     {
+        public ICommand SetAmountCommand { get; }
+
         public IList<ExpenseCategory> ExpenseCategories { get; }
 
         public LineItemViewModel(IList<ExpenseCategory> expenseCategories)
         {
             ExpenseCategories = expenseCategories ?? throw new ArgumentNullException(nameof(expenseCategories));
+
+            SetAmountCommand = new RelayCommand<int>(OnSetAmount);
         }
+
+        private void OnSetAmount(int amount) => Amount = amount;
 
         private int _amount;
         public int Amount
@@ -36,13 +43,6 @@ namespace SimplyBudget.ViewModels
             get => _amount;
             set => SetProperty(ref _amount, value);
         }
-
-        //private string _description;
-        //public string Description
-        //{
-        //    get => _description;
-        //    set => SetProperty(ref _description, value);
-        //}
 
         private ExpenseCategory _selectedCategory;
         public ExpenseCategory SelectedCategory
@@ -71,11 +71,29 @@ namespace SimplyBudget.ViewModels
             AddType.Transfer
         };
 
-        private AddType _selectedType = AddType.Transaction;
+        private AddType _selectedType;
         public AddType SelectedType
         {
             get => _selectedType;
-            set => SetProperty(ref _selectedType, value);
+            set
+            {
+                if (SetProperty(ref _selectedType, value))
+                {
+                    LineItems.Clear();
+                    switch(value)
+                    {
+                        case AddType.Transaction:
+                            LineItems.Add(new LineItemViewModel(ExpenseCategories));
+                            break;
+                        case AddType.Income:
+                            LineItems.AddRange(ExpenseCategories.Select(x => new LineItemViewModel(ExpenseCategories)
+                            {
+                                SelectedCategory = x
+                            }));
+                            break;
+                    }
+                }
+            }
         }
 
         private string _description;
@@ -107,7 +125,7 @@ namespace SimplyBudget.ViewModels
 
             ExpenseCategories = context.ExpenseCategories.OrderBy(x => x.Name).ToList();
 
-            LineItems.Add(new LineItemViewModel(ExpenseCategories));
+            SelectedType = AddType.Transaction;
         }
 
         private void OnCancel()
@@ -117,7 +135,7 @@ namespace SimplyBudget.ViewModels
 
         private void OnRemoveItem(LineItemViewModel item)
         {
-            if (LineItems.Count > 1)
+            if (SelectedType == AddType.Transaction && LineItems.Count > 1)
             {
                 LineItems.Remove(item);
             }
