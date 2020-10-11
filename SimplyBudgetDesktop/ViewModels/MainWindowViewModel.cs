@@ -10,7 +10,7 @@ using System.Windows.Input;
 namespace SimplyBudget.ViewModels
 {
     public class MainWindowViewModel : ObservableObject,
-        IRecipient<AddItemViewModel.ItemAddedMessage>
+        IRecipient<DoneAddingItemMessage>
     {
         public BudgetViewModel Budget { get; }
 
@@ -38,7 +38,7 @@ namespace SimplyBudget.ViewModels
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
             Context = context ?? throw new ArgumentNullException(nameof(context));
             Budget = new BudgetViewModel(messenger);
-            History = new HistoryViewModel(context);
+            History = new HistoryViewModel(context, messenger);
             Accounts = new AccountsViewModel(context, messenger);
 
             Budget.LoadItemsAsync();
@@ -53,7 +53,7 @@ namespace SimplyBudget.ViewModels
             AddItem = new AddItemViewModel(Context, Messenger);
         }
 
-        public void Receive(AddItemViewModel.ItemAddedMessage message)
+        public void Receive(DoneAddingItemMessage message)
         {
             AddItem = null;
         }

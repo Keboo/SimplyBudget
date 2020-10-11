@@ -57,7 +57,7 @@ namespace SimplyBudgetShared.Data
                 .HasIndex(x => x.Date);
         }
 
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
         {
             var notifications = new List<Action>();
             foreach (var entity in ChangeTracker.Entries())
@@ -88,10 +88,19 @@ namespace SimplyBudgetShared.Data
                     case Income income:
                         notifications.Add(() => Messenger.Send(new IncomeEvent(this, income, type)));
                         break;
+                    case IncomeItem incomeItem:
+                        notifications.Add(() => Messenger.Send(new IncomeItemEvent(this, incomeItem, type)));
+                        break;
+                    case Transaction transaction:
+                        notifications.Add(() => Messenger.Send(new TransactionEvent(this, transaction, type)));
+                        break;
+                    case TransactionItem transactionItem:
+                        notifications.Add(() => Messenger.Send(new TransactionItemEvent(this, transactionItem, type)));
+                        break;
                 }
             }
 
-            var rv = await base.SaveChangesAsync(cancellationToken);
+            var rv = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
 
             foreach(var notification in notifications)
             {
@@ -100,5 +109,9 @@ namespace SimplyBudgetShared.Data
 
             return rv;
         }
+
+        public override int SaveChanges() => throw new InvalidOperationException($"Must use {nameof(SaveChangesAsync)}");
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess) => throw new InvalidOperationException($"Must use {nameof(SaveChangesAsync)}");
     }
 }

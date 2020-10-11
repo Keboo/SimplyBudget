@@ -1,8 +1,7 @@
-﻿using System;
+﻿using SimplyBudgetShared.Data;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
-using SimplyBudgetShared.Data;
 
 namespace SimplyBudget.ViewModels.Data
 {
@@ -10,7 +9,7 @@ namespace SimplyBudget.ViewModels.Data
     {
         public static async Task<TransactionViewModel> Create(BudgetContext context, Transaction transaction)
         {
-            if (transaction is null) throw new ArgumentNullException("transaction");
+            if (transaction is null) throw new ArgumentNullException(nameof(transaction));
 
             var items = await transaction.GetTransactionItems();
 

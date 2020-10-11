@@ -98,32 +98,41 @@ namespace SimplyBudgetShared.Data
         }
 
         public static async Task<Transaction> AddTransaction(this BudgetContext context,
-            int expenseCategoryId,
-            int amount, string description, DateTime? date = null)
+            string description, DateTime date, params (int amount, int expenseCategory)[] items)
         {
-            var transaction = new Transaction { Description = description };
-
-            var transactionDate = date ?? DateTime.Now;
-            transaction.Date = transactionDate.Date;
-
+            var transaction = new Transaction 
+            { 
+                Description = description,
+                Date = date.Date
+            };
             context.Transactions.Add(transaction);
             await context.SaveChangesAsync();
-
-            var transactionItem = new TransactionItem
+            
+            foreach((int amount, int expenseCategoryId) in items)
             {
-                Description = description,
-                Amount = amount,
-                ExpenseCategoryID = expenseCategoryId,
-                TransactionID = transaction.ID
-            };
-
-            context.TransactionItems.Add(transactionItem);
-            var category = await context.ExpenseCategories.FindAsync(expenseCategoryId);
-            category.CurrentBalance -= amount;
+                var category = await context.ExpenseCategories.FindAsync(expenseCategoryId);
+                category.CurrentBalance -= amount;
+                
+                var transactionItem = new TransactionItem
+                {
+                    Description = description,
+                    Amount = amount,
+                    ExpenseCategoryID = category.ID,
+                    TransactionID = transaction.ID
+                };
+                context.TransactionItems.Add(transactionItem);
+            }
             
             await context.SaveChangesAsync();
 
             return transaction;
+        }
+
+        public static async Task<Transaction> AddTransaction(this BudgetContext context,
+            int expenseCategoryId,
+            int amount, string description, DateTime? date = null)
+        {
+            return await AddTransaction(context, description, date ?? DateTime.Today, (amount, expenseCategoryId));
         }
 
         public static async Task<IList<Transfer>> GetTransfers(this BudgetContext context, ExpenseCategory expenseCategory, DateTime? queryStart = null, DateTime? queryEnd = null)

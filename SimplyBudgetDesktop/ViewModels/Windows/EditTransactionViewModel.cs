@@ -174,8 +174,8 @@ namespace SimplyBudget.ViewModels.Windows
                 else
                 {
                     //Add new item
-                    await _existingTransaction.AddTransactionItem(transactionItemVM.ExpenseCategoryID, transactionItemVM.Amount,
-                                                                transactionItemVM.Description);
+                    //await _existingTransaction.AddTransactionItem(transactionItemVM.ExpenseCategoryID, transactionItemVM.Amount,
+                    //                                            transactionItemVM.Description);
                 }
             }
 

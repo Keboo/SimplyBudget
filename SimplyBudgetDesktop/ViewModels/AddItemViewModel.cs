@@ -1,10 +1,14 @@
 ﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
+using SimplyBudget.Validation;
 using SimplyBudgetShared.Data;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
@@ -16,15 +20,45 @@ namespace SimplyBudget.ViewModels
         Income,
         Transfer
     }
+    public class DoneAddingItemMessage { }
 
     public class LineItemViewModel : ObservableObject
     {
-        
+        public IList<ExpenseCategory> ExpenseCategories { get; }
+
+        public LineItemViewModel(IList<ExpenseCategory> expenseCategories)
+        {
+            ExpenseCategories = expenseCategories ?? throw new ArgumentNullException(nameof(expenseCategories));
+        }
+
+        private int _amount;
+        public int Amount
+        {
+            get => _amount;
+            set => SetProperty(ref _amount, value);
+        }
+
+        //private string _description;
+        //public string Description
+        //{
+        //    get => _description;
+        //    set => SetProperty(ref _description, value);
+        //}
+
+        private ExpenseCategory _selectedCategory;
+        public ExpenseCategory SelectedCategory
+        {
+            get => _selectedCategory;
+            set => SetProperty(ref _selectedCategory, value);
+        }
     }
 
-    public class AddItemViewModel : ObservableObject
+    public class AddItemViewModel : ValidationViewModel
     {
         public ICommand SubmitCommand { get; }
+        public ICommand AddItemCommand { get; }
+        public ICommand RemoveItemCommand { get; }
+        public ICommand CancelCommand { get; }
         public BudgetContext Context { get; }
         public IMessenger Messenger { get; }
 
@@ -53,18 +87,46 @@ namespace SimplyBudget.ViewModels
         }
 
         private DateTime? _date;
+        [ReasonableDate]
         public DateTime? Date
         {
             get => _date;
             set => SetProperty(ref _date, value);
         }
 
+        private IList<ExpenseCategory> ExpenseCategories { get; }
+
         public AddItemViewModel(BudgetContext context, IMessenger messenger)
         {
             Context = context ?? throw new ArgumentNullException(nameof(context));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
-            
-            SubmitCommand = new RelayCommand(OnSubmit, CanSubmit);
+
+            SubmitCommand = new AsyncRelayCommand(OnSubmit, CanSubmit);
+            AddItemCommand = new RelayCommand(OnAddItem);
+            RemoveItemCommand = new RelayCommand<LineItemViewModel>(OnRemoveItem);
+            CancelCommand = new RelayCommand(OnCancel);
+
+            ExpenseCategories = context.ExpenseCategories.OrderBy(x => x.Name).ToList();
+
+            LineItems.Add(new LineItemViewModel(ExpenseCategories));
+        }
+
+        private void OnCancel()
+        {
+            Messenger.Send(new DoneAddingItemMessage());
+        }
+
+        private void OnRemoveItem(LineItemViewModel item)
+        {
+            if (LineItems.Count > 1)
+            {
+                LineItems.Remove(item);
+            }
+        }
+
+        private void OnAddItem()
+        {
+            LineItems.Add(new LineItemViewModel(ExpenseCategories));
         }
 
         private bool CanSubmit()
@@ -73,11 +135,34 @@ namespace SimplyBudget.ViewModels
             return true;
         }
 
-        private void OnSubmit()
+        private async Task OnSubmit()
         {
-            Messenger.Send(new ItemAddedMessage());
+            bool result = SelectedType switch
+            {
+                AddType.Transaction => await TrySubmitTransaction(),
+                _ => false
+            };
+
+            if (result)
+            {
+                Messenger.Send(new DoneAddingItemMessage());
+            }
         }
 
-        public class ItemAddedMessage { }
+        private async Task<bool> TrySubmitTransaction()
+        {
+            if (Date is null) return false;
+
+            var items = GetValidLineItems().ToList();
+            if (!items.Any()) return false;
+
+            await Context.AddTransaction(Description, Date.Value, items.Select(vm => (vm.Amount, vm.SelectedCategory.ID)).ToArray());
+
+            return true;
+        }
+
+        private IEnumerable<LineItemViewModel> GetValidLineItems() 
+            => LineItems.Where(x => x.SelectedCategory != null && x.Amount > 0);
     }
+
 }

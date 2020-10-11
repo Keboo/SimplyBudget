@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -22,7 +23,7 @@ namespace SimplyBudget.ViewModels
         protected ObservableCollection<T> Items { get; }
         protected readonly ICollectionView _view;
         private readonly RelayCommand<string> _sortCommand;
-
+        private SemaphoreSlim LoadLock { get; } = new SemaphoreSlim(1);
         protected CollectionViewModelBase()
         {
             Items = new ObservableCollection<T>();
@@ -84,11 +85,19 @@ namespace SimplyBudget.ViewModels
 
         protected virtual async Task ReloadItemsAsync()
         {
-            Items.Clear();
-
-            await foreach (var item in GetItems())
+            await LoadLock.WaitAsync();
+            try
             {
-                Items.Add(item);
+                Items.Clear();
+
+                await foreach (var item in GetItems())
+                {
+                    Items.Add(item);
+                }
+            }
+            finally
+            {
+                LoadLock.Release();
             }
         }
     }

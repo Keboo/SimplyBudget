@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
+using SimplyBudgetShared.Utilities.Events;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,7 +10,12 @@ using System.Linq;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>
+
+    public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
+        IRecipient<TransactionEvent>,
+        IRecipient<TransactionItemEvent>,
+        IRecipient<IncomeEvent>,
+        IRecipient<IncomeItemEvent>
     {
         public BudgetContext Context { get; }
 
@@ -16,11 +23,16 @@ namespace SimplyBudget.ViewModels.MainWindow
 
         public ICollectionView HistoryView => _view;
 
-        public HistoryViewModel(BudgetContext context)
+        public HistoryViewModel(BudgetContext context, IMessenger messenger)
         {
             Context = context ?? throw new ArgumentNullException(nameof(context));
             OldestTime = DateTime.Now.AddMonths(-2).StartOfMonth();
             Sort(nameof(BudgetHistoryViewModel.Date), ListSortDirection.Descending);
+
+            messenger.Register<TransactionEvent>(this);
+            messenger.Register<TransactionItemEvent>(this);
+            messenger.Register<IncomeEvent>(this);
+            messenger.Register<IncomeItemEvent>(this);
         }
 
         protected override async IAsyncEnumerable<BudgetHistoryViewModel> GetItems()
@@ -35,5 +47,13 @@ namespace SimplyBudget.ViewModels.MainWindow
                 yield return BudgetHistoryViewModel.Create(item, total);
             }
         }
+
+        public void Receive(IncomeItemEvent message) => LoadItemsAsync();
+
+        public void Receive(IncomeEvent message) => LoadItemsAsync();
+
+        public void Receive(TransactionEvent message) => LoadItemsAsync();
+
+        public void Receive(TransactionItemEvent message) => LoadItemsAsync();
     }
 }

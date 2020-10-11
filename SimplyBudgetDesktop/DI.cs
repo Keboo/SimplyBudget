@@ -8,12 +8,12 @@ namespace SimplyBudget.Properties
     public static class DI
     {
         [SetupMethod]
-        public static void Initialize(AutoDI.IApplicationBuilder application)
+        public static void Initialize(IApplicationBuilder application)
         {
             //Any needed run-time configuration here
             application.ConfigureServices(collection =>
             {
-                collection.AddSingleton<IMessenger, Messenger>();
+                collection.AddSingleton<IMessenger>(Messenger.Default);
                 collection.AddSingleton(BudgetContext.Instance);
             });
         }

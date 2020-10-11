@@ -3,9 +3,10 @@ using SimplyBudgetShared.Data;
 
 namespace SimplyBudgetShared.Utilities.Events
 {
-    public class TransactionItemEvent : Event
+    public class TransactionItemEvent : DatabaseEvent
     {
-        public TransactionItemEvent(TransactionItem transactionItem, EventType type)
+        public TransactionItemEvent(BudgetContext context, TransactionItem transactionItem, EventType type)
+            : base (context)
         {
             if (type == EventType.None) throw new ArgumentException(@"A type must be specified", nameof(type));
             TransactionItem = transactionItem ?? throw new ArgumentNullException(nameof(transactionItem));

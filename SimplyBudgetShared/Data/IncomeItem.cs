@@ -1,8 +1,6 @@
 ﻿
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Threading.Tasks;
-using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
 
 namespace SimplyBudgetShared.Data
 {
@@ -33,8 +31,7 @@ namespace SimplyBudgetShared.Data
         public override async Task Delete()
         {
             await base.Delete();
-            NotificationCenter.PostEvent(new IncomeItemEvent(this, EventType.Deleted));
-
+            
             //var expenseCategory = await GetConnection().GetAsync<ExpenseCategory>(ExpenseCategoryID);
             //if (expenseCategory != null)
             //{
@@ -46,8 +43,7 @@ namespace SimplyBudgetShared.Data
         protected override async Task Create()
         {
             await base.Create();
-            NotificationCenter.PostEvent(new IncomeItemEvent(this, EventType.Created));
-
+            
             //var expenseCategory = await GetConnection().GetAsync<ExpenseCategory>(ExpenseCategoryID);
             //if (expenseCategory != null)
             //{
@@ -59,8 +55,7 @@ namespace SimplyBudgetShared.Data
         protected override async Task Update()
         {
             await base.Update();
-            NotificationCenter.PostEvent(new IncomeItemEvent(this, EventType.Updated));
-
+            
 
             if (_ammount != null && _ammount.Modified)
             {
