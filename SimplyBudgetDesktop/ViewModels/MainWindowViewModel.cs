@@ -2,6 +2,7 @@
 using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
+using SimplyBudget.Messaging;
 using SimplyBudget.ViewModels.MainWindow;
 using SimplyBudgetShared.Data;
 using System;

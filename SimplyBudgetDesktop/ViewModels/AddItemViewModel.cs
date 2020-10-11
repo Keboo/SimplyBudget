@@ -1,12 +1,12 @@
 ﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
+using SimplyBudget.Messaging;
 using SimplyBudget.Validation;
 using SimplyBudgetShared.Data;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -20,7 +20,6 @@ namespace SimplyBudget.ViewModels
         Income,
         Transfer
     }
-    public class DoneAddingItemMessage { }
 
     public class LineItemViewModel : ObservableObject
     {
