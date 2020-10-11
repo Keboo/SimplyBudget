@@ -32,16 +32,27 @@ namespace SimplyBudget.ViewModels
         {
             ExpenseCategories = expenseCategories ?? throw new ArgumentNullException(nameof(expenseCategories));
 
-            SetAmountCommand = new RelayCommand<int>(OnSetAmount);
+            SetAmountCommand = new RelayCommand(OnSetAmount);
         }
 
-        private void OnSetAmount(int amount) => Amount = amount;
+        private void OnSetAmount()
+        {
+            Amount = DesiredAmount;
+        }
 
         private int _amount;
         public int Amount
         {
             get => _amount;
             set => SetProperty(ref _amount, value);
+        }
+
+
+        private int _desiredAmount;
+        public int DesiredAmount
+        {
+            get => _desiredAmount;
+            set => SetProperty(ref _desiredAmount, value);
         }
 
         private ExpenseCategory _selectedCategory;
@@ -90,7 +101,36 @@ namespace SimplyBudget.ViewModels
                             {
                                 SelectedCategory = x
                             }));
+                            LoadDesiredAmounts();
                             break;
+                    }
+                }
+            }
+        }
+
+        private async void LoadDesiredAmounts()
+        {
+            foreach(var lineItem in LineItems)
+            {
+                lineItem.DesiredAmount = await Context.GetRemainingBudgetAmount(lineItem.SelectedCategory, DateTime.Today);
+            }
+        }
+
+
+        private int _totalAmount;
+        public int TotalAmount
+        {
+            get => _totalAmount;
+            set
+            {
+                if (SetProperty(ref _totalAmount, value))
+                {
+                    if (SelectedType == AddType.Income)
+                    {
+                        foreach(var lineItem in LineItems.Where(x => x.SelectedCategory?.UsePercentage == true))
+                        {
+                            lineItem.DesiredAmount = (int)(value * lineItem.SelectedCategory.BudgetedPercentage / 100.0);
+                        }
                     }
                 }
             }
@@ -118,7 +158,7 @@ namespace SimplyBudget.ViewModels
             Context = context ?? throw new ArgumentNullException(nameof(context));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
 
-            SubmitCommand = new AsyncRelayCommand(OnSubmit, CanSubmit);
+            SubmitCommand = new AsyncRelayCommand(OnSubmit);
             AddItemCommand = new RelayCommand(OnAddItem);
             RemoveItemCommand = new RelayCommand<LineItemViewModel>(OnRemoveItem);
             CancelCommand = new RelayCommand(OnCancel);
@@ -146,17 +186,12 @@ namespace SimplyBudget.ViewModels
             LineItems.Add(new LineItemViewModel(ExpenseCategories));
         }
 
-        private bool CanSubmit()
-        {
-
-            return true;
-        }
-
         private async Task OnSubmit()
         {
             bool result = SelectedType switch
             {
                 AddType.Transaction => await TrySubmitTransaction(),
+                AddType.Income => await TrySubmitIncome(),
                 _ => false
             };
 
@@ -164,6 +199,19 @@ namespace SimplyBudget.ViewModels
             {
                 Messenger.Send(new DoneAddingItemMessage());
             }
+        }
+
+        private async Task<bool> TrySubmitIncome()
+        {
+            if (Date is null) return false;
+            if (TotalAmount <= 0) return false;
+
+            var items = GetValidLineItems().ToList();
+            if (items.Sum(x => x.Amount) != TotalAmount) return false;
+
+            await Context.AddIncome(Description, Date.Value, items.Select(x => (x.Amount, x.SelectedCategory.ID)).ToArray());
+
+            return true;
         }
 
         private async Task<bool> TrySubmitTransaction()

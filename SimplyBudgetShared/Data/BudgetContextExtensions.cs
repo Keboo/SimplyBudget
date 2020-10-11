@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Toolkit.Mvvm.Messaging;
+using SimplyBudgetShared.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -97,6 +98,42 @@ namespace SimplyBudgetShared.Data
             return incomeItem;
         }
 
+        public static async Task<Income> AddIncome(this BudgetContext context,
+            string description, DateTime date,
+            params (int amount, int expenseCategory)[] items)
+        {
+            if (context is null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            var income = new Income
+            {
+                Date = date,
+                Description = description,
+                TotalAmount = items.Sum(x => x.amount)
+            };
+            context.Add(income);
+            await context.SaveChangesAsync();
+
+            foreach((int amount, int expenseCategoryId) in items)
+            {
+                var incomeItem = new IncomeItem
+                {
+                    Amount = amount,
+                    Description = description ?? income.Description,
+                    ExpenseCategoryID = expenseCategoryId,
+                    IncomeID = income.ID
+                };
+                context.Add(incomeItem);
+                var category = await context.ExpenseCategories.FindAsync(expenseCategoryId);
+                category.CurrentBalance += amount;
+            }
+            await context.SaveChangesAsync();
+
+            return income;
+        }
+
         public static async Task<Transaction> AddTransaction(this BudgetContext context,
             string description, DateTime date, params (int amount, int expenseCategory)[] items)
         {
@@ -172,6 +209,29 @@ namespace SimplyBudgetShared.Data
                 incomeItemsQuery = incomeItemsQuery.Where(x => incomes.Contains(x.IncomeID));
             }
             return await incomeItemsQuery.ToListAsync();
+        }
+
+        public static async Task<int> GetRemainingBudgetAmount(this BudgetContext context, ExpenseCategory expenseCategory, DateTime month)
+        {
+            if (context is null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (expenseCategory is null)
+            {
+                throw new ArgumentNullException(nameof(expenseCategory));
+            }
+
+            if (expenseCategory.UsePercentage) return 0;
+
+            var start = month.StartOfMonth();
+            var end = month.EndOfMonth();
+            var incomeIds = await context.Incomes.Where(x => x.Date >= start && x.Date <= end).Select(x => x.ID).ToListAsync();
+            var allocatedAMount = (await context.IncomeItems.Where(x => x.ExpenseCategoryID == expenseCategory.ID && incomeIds.Contains(x.IncomeID))
+                .ToListAsync())
+                .Sum(x => x.Amount);
+            return Math.Max(0, expenseCategory.BudgetedAmount - allocatedAMount);
         }
 
         public static async Task InitDatabase(this BudgetContext context, string storageFolder, string? dbFileName = null)

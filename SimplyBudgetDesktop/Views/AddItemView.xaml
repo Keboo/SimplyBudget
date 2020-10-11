@@ -4,7 +4,10 @@
                     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" 
                     xmlns:valueconverter="clr-namespace:SimplyBudget.ValueConverter" 
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors" 
-                    xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors" xmlns:system="clr-namespace:System;assembly=mscorlib">
+                    xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Button.xaml" />
+    </ResourceDictionary.MergedDictionaries>
     <DataTemplate DataType="{x:Type vm:AddItemViewModel}">
         <DataTemplate.Resources>
             <valueconverter:ExpenseCategoryBudgettedDisplayStringConverter x:Key="BudgettedDisplayStringConverter"/>
@@ -55,9 +58,26 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Text="{Binding SelectedCategory.Name}" VerticalAlignment="Center" />
 
-                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="5,0">
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="5,0"
+                               Visibility="{Binding SelectedCategory.UsePercentage, Converter={StaticResource InverseBoolToVisConverter}}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DesiredAmount}" Value="0">
+                                        <Setter Property="IsEnabled" Value="False" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
                         <Hyperlink Command="{Binding SetAmountCommand}">
-                            <Run Text="{Binding SelectedCategory, Converter={StaticResource BudgettedDisplayStringConverter}}" />
+                            <Run Text="{Binding DesiredAmount, Converter={StaticResource CurrentValueConverter}}" />
+                        </Hyperlink>
+                    </TextBlock>
+
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Margin="5,0"
+                               Visibility="{Binding SelectedCategory.UsePercentage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Hyperlink Command="{Binding SetAmountCommand}">
+                            <Run Text="{Binding SelectedCategory.BudgetedPercentage, StringFormat='{}{0}%'}" />
                         </Hyperlink>
                     </TextBlock>
 
@@ -151,7 +171,18 @@
 
                 <TextBox Text="{Binding TotalAmount, Converter={StaticResource CurrentValueConverter}}" 
                          materialDesign:HintAssist.Hint="Total Amount"
-                         materialDesign:HintAssist.IsFloating="True">
+                         materialDesign:HintAssist.IsFloating="True"
+                         Grid.Row="2">
+                    <TextBox.Style>
+                        <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedType}" Value="Income">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
                     <i:Interaction.Behaviors>
                         <behaviors:SelectAllOnFocusBehavior />
                     </i:Interaction.Behaviors>

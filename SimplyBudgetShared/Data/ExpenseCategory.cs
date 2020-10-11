@@ -30,7 +30,7 @@ namespace SimplyBudgetShared.Data
 
         public async Task BeforeCreate(BudgetContext context)
         {
-            if (AccountID is null)
+            if (AccountID is null && Account is null)
             {
                 Account = await context.GetDefaultAccountAsync();
             }

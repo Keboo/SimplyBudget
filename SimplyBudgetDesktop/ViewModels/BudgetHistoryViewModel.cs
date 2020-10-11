@@ -1,5 +1,6 @@
 ﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
 using System;
 
 namespace SimplyBudget.ViewModels.MainWindow
@@ -12,7 +13,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             {
                 Date = income.Date,
                 Description = income.Description,
-                Amount = income.TotalAmount
+                DisplayAmount = $"({income.TotalAmount.FormatCurrency()})"
             };
         }
 
@@ -22,7 +23,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             {
                 Date = transaction.Date,
                 Description = transaction.Description,
-                Amount = totalAmount
+                DisplayAmount = totalAmount.FormatCurrency()
             };
         }
 
@@ -43,11 +44,12 @@ namespace SimplyBudget.ViewModels.MainWindow
             private set => SetProperty(ref _description, value);
         }
 
-        private int _amount;
-        public int Amount
+        private string _displayAmount;
+        public string DisplayAmount
         {
-            get => _amount;
-            private set => SetProperty(ref _amount, value);
+            get => _displayAmount;
+            private set => SetProperty(ref _displayAmount, value);
         }
+
     }
 }

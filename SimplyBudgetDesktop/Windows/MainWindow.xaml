@@ -17,7 +17,7 @@
         TextOptions.TextRenderingMode="Auto"
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{materialDesign:MaterialDesignFont}" 
-        Title="Simply Budget" Height="450" Width="800"
+        Title="Simply Budget" Height="800" Width="1200"
         d:DataContext="{d:DesignInstance Type={x:Type vm:MainWindowViewModel}}">
     <Window.Resources>
         <ResourceDictionary>
@@ -203,7 +203,7 @@
                                 <GridView AllowsColumnReorder="False" >
                                     <GridViewColumn DisplayMemberBinding="{Binding Date, StringFormat='d'}" Header="Date" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
                                     <GridViewColumn DisplayMemberBinding="{Binding Description}" Header="Description" utilities:AttachedProperties.SortPropertyName="Name"/>
-                                    <GridViewColumn DisplayMemberBinding="{Binding Amount, Converter={valueConverter:CurrencyValueConverter}}" Header="Amount" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
+                                    <GridViewColumn DisplayMemberBinding="{Binding DisplayAmount}" Header="Amount" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
                                 </GridView>
                             </ListView.View>
                         </ListView>
