@@ -211,23 +211,27 @@
             </TabControl>
         </materialDesign:DrawerHost>
 
-        <ItemsControl DataContext="{Binding Accounts}"
-                      ItemsSource="{Binding AccountsView}" Grid.Row="1"
-                      HorizontalAlignment="Right">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Right">
 
-            <ItemsControl.ItemTemplate>
-                <DataTemplate DataType="{x:Type vmData:AccountViewModel}">
-                    <TextBlock Margin="10,0">
+            <TextBlock Text="{Binding Budget.TotalBudget, StringFormat='Total Monthly Budget: {0}', Converter={valueConverter:CurrencyValueConverter}}" />
+            <ItemsControl DataContext="{Binding Accounts}"
+                          ItemsSource="{Binding AccountsView}"
+                          HorizontalAlignment="Right">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vmData:AccountViewModel}">
+                        <TextBlock Margin="10,0">
                         <Run Text="{Binding Name}" />
                         <Run Text="{Binding CurrentAmount, Converter={valueConverter:CurrencyValueConverter}}" />
-                    </TextBlock>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+                        </TextBlock>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
     </Grid>
 </Window>

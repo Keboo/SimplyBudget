@@ -26,6 +26,14 @@ namespace SimplyBudget.ViewModels.MainWindow
             GroupItems = true;
         }
 
+
+        private int _totalBudget;
+        public int TotalBudget
+        {
+            get => _totalBudget;
+            private set => SetProperty(ref _totalBudget, value);
+        }
+
         public ICollectionView ExpenseCategoriesView
         {
             get
@@ -65,14 +73,14 @@ namespace SimplyBudget.ViewModels.MainWindow
             switch (@event.Type)
             {
                 case EventType.Created:
-                    _items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
+                    Items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
                     break;
                 case EventType.Updated:
-                    _items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
-                    _items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
+                    Items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
+                    Items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
                     break;
                 case EventType.Deleted:
-                    _items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
+                    Items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
                     break;
             }
         }
@@ -88,6 +96,34 @@ namespace SimplyBudget.ViewModels.MainWindow
 
             if (GroupItems)
                 _view.GroupDescriptions.Add(new PropertyGroupDescription("CategoryName"));
+        }
+
+        protected override async Task ReloadItemsAsync()
+        {
+            TotalBudget = 0;
+            await base.ReloadItemsAsync();
+            int percentage = 0;
+            int total = 0;
+            foreach(var category in Items)
+            {
+                if (category.BudgetedPercentage > 0)
+                {
+                    percentage += category.BudgetedPercentage;
+                }
+                else
+                {
+                    total += category.BudgetedAmount;
+                }
+            }
+            //TODO: percentage > 100
+            //Let x be to total budget
+            //Let t = total budgeted
+            //Let p = total percentage
+            //x - (x * p)/100 = t
+            //100x - (x * p) = 100t
+            //x(100 - p) = 100t
+            //x = 100t/(100 - p)
+            TotalBudget = total * 100 / (100 - percentage);
         }
     }
 }

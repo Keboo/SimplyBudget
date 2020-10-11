@@ -19,15 +19,15 @@ namespace SimplyBudget.ViewModels
 
     public abstract class CollectionViewModelBase<T> : CollectionViewModelBase
     {
-        protected readonly ObservableCollection<T> _items;
+        protected ObservableCollection<T> Items { get; }
         protected readonly ICollectionView _view;
         private readonly RelayCommand<string> _sortCommand;
 
         protected CollectionViewModelBase()
         {
-            _items = new ObservableCollection<T>();
-            BindingOperations.EnableCollectionSynchronization(_items, new object());
-            _view = CollectionViewSource.GetDefaultView(_items);
+            Items = new ObservableCollection<T>();
+            BindingOperations.EnableCollectionSynchronization(Items, new object());
+            _view = CollectionViewSource.GetDefaultView(Items);
             _sortCommand = new RelayCommand<string>(OnSort);
         }
 
@@ -70,7 +70,7 @@ namespace SimplyBudget.ViewModels
 
         public override void UnloadItems()
         {
-            _items.Clear();
+            Items.Clear();
         }
 
         public override async void LoadItemsAsync()
@@ -82,13 +82,13 @@ namespace SimplyBudget.ViewModels
 
         protected abstract IAsyncEnumerable<T> GetItems();
 
-        protected async Task ReloadItemsAsync()
+        protected virtual async Task ReloadItemsAsync()
         {
-            _items.Clear();
+            Items.Clear();
 
             await foreach (var item in GetItems())
             {
-                _items.Add(item);
+                Items.Add(item);
             }
         }
     }
