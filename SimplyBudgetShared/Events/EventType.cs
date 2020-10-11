@@ -1,4 +1,4 @@
-﻿namespace SimplyBudgetShared.Utilities.Events
+﻿namespace SimplyBudgetShared.Events
 {
     public enum EventType
     {

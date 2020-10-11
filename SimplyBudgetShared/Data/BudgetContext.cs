@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Toolkit.Mvvm.Messaging;
-using SimplyBudgetShared.Utilities.Events;
+using SimplyBudgetShared.Events;
 using System;
 using System.Collections.Generic;
 using System.Threading;

@@ -1,9 +1,8 @@
-﻿using IntelliTect.TestTools.Data;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
-using SimplyBudgetShared.Utilities.Events;
+using SimplyBudgetShared.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;

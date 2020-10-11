@@ -1,7 +1,7 @@
 ﻿using System;
 using SimplyBudgetShared.Data;
 
-namespace SimplyBudgetShared.Utilities.Events
+namespace SimplyBudgetShared.Events
 {
     public class AccountEvent : DatabaseEvent
     {

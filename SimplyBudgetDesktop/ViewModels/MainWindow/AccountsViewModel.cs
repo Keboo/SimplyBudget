@@ -1,24 +1,22 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class AccountsViewModel : CollectionViewModelBaseOld<AccountViewModel>, 
-        IEventListener<ExpenseCategoryEvent>, IEventListener<AccountEvent>
+    internal class AccountsViewModel : CollectionViewModelBaseOld<AccountViewModel>
     {
         private BudgetContext Context { get; } = BudgetContext.Instance;
 
         public AccountsViewModel()
         {
             _view.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
-            NotificationCenter.Register<ExpenseCategoryEvent>(this);
-            NotificationCenter.Register<AccountEvent>(this);
+            //NotificationCenter.Register<ExpenseCategoryEvent>(this);
+            //NotificationCenter.Register<AccountEvent>(this);
         }
 
         public ICollectionView AccountsView => _view;
@@ -36,14 +34,14 @@ namespace SimplyBudget.ViewModels.MainWindow
             return rv;
         }
 
-        public async void HandleEvent(ExpenseCategoryEvent @event)
-        {
-            await ReloadItemsAsync();
-        }
+        //public async void HandleEvent(ExpenseCategoryEvent @event)
+        //{
+        //    await ReloadItemsAsync();
+        //}
 
-        public async void HandleEvent(AccountEvent @event)
-        {
-            await ReloadItemsAsync();
-        }
+        //public async void HandleEvent(AccountEvent @event)
+        //{
+        //    await ReloadItemsAsync();
+        //}
     }
 }

@@ -1,6 +1,4 @@
-﻿using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Threading.Tasks;

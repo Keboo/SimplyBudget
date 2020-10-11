@@ -2,7 +2,7 @@
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
-using SimplyBudgetShared.Utilities.Events;
+using SimplyBudgetShared.Events;
 using System.Linq;
 using System.Threading.Tasks;
 

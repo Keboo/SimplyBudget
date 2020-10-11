@@ -1,6 +1,5 @@
 ﻿using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -8,8 +7,7 @@ using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class ExpenseCategoryDetailsViewModel : CollectionViewModelBaseOld<ExpenseCategoryItemViewModel>, 
-        IEventListener<TransactionItemEvent>, IEventListener<TransferEvent>
+    internal class ExpenseCategoryDetailsViewModel : CollectionViewModelBaseOld<ExpenseCategoryItemViewModel> 
     {
         private readonly int _expenseCategoryID;
         private string _expenseCategoryName;
@@ -19,8 +17,8 @@ namespace SimplyBudget.ViewModels.MainWindow
         public ExpenseCategoryDetailsViewModel(int expenseCategoryID)
         {
             _expenseCategoryID = expenseCategoryID;
-            NotificationCenter.Register<TransferEvent>(this);
-            NotificationCenter.Register<TransactionItemEvent>(this);
+            //NotificationCenter.Register<TransferEvent>(this);
+            //NotificationCenter.Register<TransactionItemEvent>(this);
         }
 
         public ICollectionView ExpenseCategoryTransactionsView
@@ -90,14 +88,14 @@ namespace SimplyBudget.ViewModels.MainWindow
             return rv;
         }
 
-        public async void HandleEvent(TransactionItemEvent @event)
-        {
-            await ReloadItemsAsync();
-        }
+        //public async void HandleEvent(TransactionItemEvent @event)
+        //{
+        //    await ReloadItemsAsync();
+        //}
 
-        public async void HandleEvent(TransferEvent @event)
-        {
-            await ReloadItemsAsync();
-        }
+        //public async void HandleEvent(TransferEvent @event)
+        //{
+        //    await ReloadItemsAsync();
+        //}
     }
 }

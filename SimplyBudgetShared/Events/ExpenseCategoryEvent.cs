@@ -1,9 +1,8 @@
 ﻿using System;
 using SimplyBudgetShared.Data;
 
-namespace SimplyBudgetShared.Utilities.Events
+namespace SimplyBudgetShared.Events
 {
-
     public class ExpenseCategoryEvent : DatabaseEvent
     {
         public ExpenseCategoryEvent(BudgetContext context, ExpenseCategory expenseCategory, EventType type)

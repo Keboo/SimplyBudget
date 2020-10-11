@@ -1,8 +1,7 @@
-﻿using System;
+﻿using SimplyBudgetShared.Utilities;
+using System;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Threading.Tasks;
-using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
 
 namespace SimplyBudgetShared.Data
 {
@@ -46,7 +45,6 @@ namespace SimplyBudgetShared.Data
             //    await fromExpenseCategory.Save();
             //    await toExpenseCategory.Save();
             //}
-            NotificationCenter.PostEvent(new TransferEvent(this, EventType.Created));
         }
 
         protected override async Task Update()
@@ -64,7 +62,6 @@ namespace SimplyBudgetShared.Data
             //    await toExpenseCategory.Save();
             //    _ammount.Saved();
             //}
-            NotificationCenter.PostEvent(new TransferEvent(this, EventType.Updated));
         }
 
         public override async Task Delete()
@@ -80,7 +77,6 @@ namespace SimplyBudgetShared.Data
             //    await fromExpenseCategory.Save();
             //    await toExpenseCategory.Save();
             //}
-            NotificationCenter.PostEvent(new TransferEvent(this, EventType.Deleted));
         }
     }
 }

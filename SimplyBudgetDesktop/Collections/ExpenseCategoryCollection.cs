@@ -2,13 +2,12 @@
 using SimplyBudget.Utilities;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
 using System;
 using System.Collections.ObjectModel;
 
 namespace SimplyBudget.Collections
 {
-    public class ExpenseCategoryCollection : ObservableCollection<ExpenseCategory>, IEventListener<ExpenseCategoryEvent>
+    public class ExpenseCategoryCollection : ObservableCollection<ExpenseCategory>
     {
         private static readonly Lazy<ExpenseCategoryCollection> _instance = new Lazy<ExpenseCategoryCollection>(() => new ExpenseCategoryCollection());
 
@@ -21,7 +20,7 @@ namespace SimplyBudget.Collections
             if (DesignerHelper.IsDesignMode == false)
             {
                 ReloadItems();
-                NotificationCenter.Register(this);
+                //NotificationCenter.Register(this);
             }
         }
 
@@ -33,9 +32,9 @@ namespace SimplyBudget.Collections
                 Add(item);
         }
 
-        public void HandleEvent(ExpenseCategoryEvent @event)
-        {
-            ReloadItems();
-        }
+        //public void HandleEvent(ExpenseCategoryEvent @event)
+        //{
+        //    ReloadItems();
+        //}
     }
 }

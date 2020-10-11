@@ -1,20 +1,17 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using SimplyBudget.ViewModels.Data;
+using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using SimplyBudget.ViewModels.Data;
-using SimplyBudgetShared.Data;
-using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
     internal class TransactionsViewModel :
-        CollectionViewModelBaseOld<ITransactionItem>,
-        IEventListener<TransactionEvent>,
-        IEventListener<TransactionItemEvent>
+        CollectionViewModelBaseOld<ITransactionItem>
     {
         private BudgetContext Context { get; } = BudgetContext.Instance;
 
@@ -23,8 +20,8 @@ namespace SimplyBudget.ViewModels.MainWindow
             _view.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Descending));
             _view.SortDescriptions.Add(new SortDescription("TransactionID", ListSortDirection.Descending));
 
-            NotificationCenter.Register<TransactionEvent>(this);
-            NotificationCenter.Register<TransactionItemEvent>(this);
+            //NotificationCenter.Register<TransactionEvent>(this);
+            //NotificationCenter.Register<TransactionItemEvent>(this);
         }
 
         public ICollectionView TransactionsView => _view;
@@ -76,14 +73,14 @@ namespace SimplyBudget.ViewModels.MainWindow
             return rv;
         }
 
-        public async void HandleEvent(TransactionEvent @event)
-        {
-            await ReloadItemsAsync();
-        }
+        //public async void HandleEvent(TransactionEvent @event)
+        //{
+        //    await ReloadItemsAsync();
+        //}
 
-        public async void HandleEvent(TransactionItemEvent @event)
-        {
-            await ReloadItemsAsync();
-        }
+        //public async void HandleEvent(TransactionItemEvent @event)
+        //{
+        //    await ReloadItemsAsync();
+        //}
     }
 }

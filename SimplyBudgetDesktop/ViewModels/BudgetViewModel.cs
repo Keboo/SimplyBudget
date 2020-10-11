@@ -1,8 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Toolkit.Mvvm.Messaging;
+﻿using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Events;
 using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -25,7 +24,6 @@ namespace SimplyBudget.ViewModels.MainWindow
             messenger.Register<ExpenseCategoryEvent>(this, HandleEvent);
             GroupItems = true;
         }
-
 
         private int _totalBudget;
         public int TotalBudget

@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
-using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -10,14 +8,13 @@ using System.Windows.Data;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    public class ExpenseCategoriesViewModel : CollectionViewModelBaseOld<ExpenseCategoryViewModelEx>,
-        IEventListener<ExpenseCategoryEvent>
+    public class ExpenseCategoriesViewModel : CollectionViewModelBaseOld<ExpenseCategoryViewModelEx>
     {
         private BudgetContext Context { get; } = BudgetContext.Instance;
 
         public ExpenseCategoriesViewModel()
         {
-            NotificationCenter.Register(this);
+            //NotificationCenter.Register(this);
             GroupItems = true;
         }
 
@@ -57,24 +54,24 @@ namespace SimplyBudget.ViewModels.MainWindow
             return rv;
         }
 
-        public async void HandleEvent(ExpenseCategoryEvent @event)
-        {
-            var expenseCategory = @event.ExpenseCategory;
+        //public async void HandleEvent(ExpenseCategoryEvent @event)
+        //{
+        //    var expenseCategory = @event.ExpenseCategory;
 
-            switch (@event.Type)
-            {
-                case EventType.Created:
-                    _items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
-                    break;
-                case EventType.Updated:
-                    _items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
-                    _items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
-                    break;
-                case EventType.Deleted:
-                    _items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
-                    break;
-            }
-        }
+        //    switch (@event.Type)
+        //    {
+        //        case EventType.Created:
+        //            _items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
+        //            break;
+        //        case EventType.Updated:
+        //            _items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
+        //            _items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
+        //            break;
+        //        case EventType.Deleted:
+        //            _items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
+        //            break;
+        //    }
+        //}
 
         private void SetDescriptors()
         {

@@ -1,9 +1,9 @@
-﻿using System;
-using SimplyBudgetShared.Data;
+﻿using SimplyBudgetShared.Data;
+using System;
 
-namespace SimplyBudgetShared.Utilities.Events
+namespace SimplyBudgetShared.Events
 {
-    public abstract class DatabaseEvent : Event
+    public abstract class DatabaseEvent
     {
         protected DatabaseEvent(BudgetContext context)
         {

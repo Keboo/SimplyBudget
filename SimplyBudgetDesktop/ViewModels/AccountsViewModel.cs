@@ -1,11 +1,10 @@
 ﻿using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
-using SimplyBudgetShared.Utilities.Events;
+using SimplyBudgetShared.Events;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Text;
 
 namespace SimplyBudget.ViewModels
 {

@@ -1,18 +1,16 @@
-﻿using System.ComponentModel;
-using System.Linq;
+﻿using Microsoft.EntityFrameworkCore;
 using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
-using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
-using Microsoft.EntityFrameworkCore;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class IncomeItemsViewModel : CollectionViewModelBaseOld<IncomeViewModel>, 
-        IEventListener<IncomeEvent>, IEventListener<IncomeItemEvent>
+    internal class IncomeItemsViewModel : CollectionViewModelBaseOld<IncomeViewModel>
     {
         private BudgetContext Context { get; } = BudgetContext.Instance;
 
@@ -20,8 +18,8 @@ namespace SimplyBudget.ViewModels.MainWindow
         {
             _view.SortDescriptions.Add(new SortDescription("Date", ListSortDirection.Descending));
 
-            NotificationCenter.Register<IncomeEvent>(this);
-            NotificationCenter.Register<IncomeItemEvent>(this);
+            //NotificationCenter.Register<IncomeEvent>(this);
+            //NotificationCenter.Register<IncomeItemEvent>(this);
         }
 
         public ICollectionView IncomeItemsView => _view;
@@ -58,14 +56,14 @@ namespace SimplyBudget.ViewModels.MainWindow
             return incomeItems.Select(IncomeViewModel.Create);
         }
 
-        public async void HandleEvent(IncomeEvent @event)
-        {
-            await ReloadItemsAsync();
-        }
+        //public async void HandleEvent(IncomeEvent @event)
+        //{
+        //    await ReloadItemsAsync();
+        //}
 
-        public async void HandleEvent(IncomeItemEvent @event)
-        {
-            await ReloadItemsAsync();
-        }
+        //public async void HandleEvent(IncomeItemEvent @event)
+        //{
+        //    await ReloadItemsAsync();
+        //}
     }
 }

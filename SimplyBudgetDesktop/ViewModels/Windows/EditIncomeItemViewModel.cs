@@ -1,22 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Toolkit.Mvvm.Input;
 using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
-using Microsoft.Toolkit.Mvvm.Input;
-using Microsoft.EntityFrameworkCore;
 
 namespace SimplyBudget.ViewModels.Windows
 {
-    internal class EditIncomeItemViewModel : ViewEditViewModel<Income>, IRequestClose,
-        IEventListener<ExpenseCategoryEvent>, IEventListener<IncomeItemEvent>
+    internal class EditIncomeItemViewModel : ViewEditViewModel<Income>, IRequestClose
     {
         public event EventHandler<EventArgs> RequestClose;
 
@@ -243,17 +241,17 @@ namespace SimplyBudget.ViewModels.Windows
             RemainingAmount = TotalAmount - _incomeItems.Select(x => x.Amount).Sum();
         }
 
-        public async void HandleEvent(ExpenseCategoryEvent @event)
-        {
-            //This is likley wrong.... consider the case where we were editing an existing income item :/
-            await LoadDefaultView();
-        }
+        //public async void HandleEvent(ExpenseCategoryEvent @event)
+        //{
+        //    //This is likley wrong.... consider the case where we were editing an existing income item :/
+        //    await LoadDefaultView();
+        //}
 
-        public async void HandleEvent(IncomeItemEvent @event)
-        {
-            //This is likley wrong.... consider the case where we were editing an existing income item :/
-            await LoadDefaultView();
-        }
+        //public async void HandleEvent(IncomeItemEvent @event)
+        //{
+        //    //This is likley wrong.... consider the case where we were editing an existing income item :/
+        //    await LoadDefaultView();
+        //}
 
         public override async Task LoadDefaultView()
         {

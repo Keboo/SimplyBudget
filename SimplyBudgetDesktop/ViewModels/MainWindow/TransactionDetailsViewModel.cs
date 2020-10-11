@@ -1,7 +1,6 @@
 ﻿using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,8 +8,7 @@ using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class TransactionDetailsViewModel : CollectionViewModelBaseOld<TransactionItemViewModel>, 
-        IEventListener<TransactionItemEvent>
+    internal class TransactionDetailsViewModel : CollectionViewModelBaseOld<TransactionItemViewModel> 
     {
         private readonly Transaction _transaction;
 
@@ -20,7 +18,7 @@ namespace SimplyBudget.ViewModels.MainWindow
         {
             if (transaction is null) throw new ArgumentNullException("transaction");
             _transaction = transaction;
-            NotificationCenter.Register(this);
+            //NotificationCenter.Register(this);
         }
 
         public ICollectionView TransactionItemsView => _view;
@@ -38,9 +36,9 @@ namespace SimplyBudget.ViewModels.MainWindow
             return rv;
         }
 
-        public async void HandleEvent(TransactionItemEvent @event)
-        {
-            await ReloadItemsAsync();
-        }
+        //public async void HandleEvent(TransactionItemEvent @event)
+        //{
+        //    await ReloadItemsAsync();
+        //}
     }
 }

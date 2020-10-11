@@ -1,16 +1,15 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
-using SimplyBudgetShared.Utilities.Events;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class AccountExpenseCategoriesViewModel : CollectionViewModelBaseOld<ExpenseCategoryViewModel>, IEventListener<ExpenseCategoryEvent>
+    internal class AccountExpenseCategoriesViewModel : CollectionViewModelBaseOld<ExpenseCategoryViewModel>
     {
         private readonly int _accountID;
         private string _accountName;
@@ -37,9 +36,9 @@ namespace SimplyBudget.ViewModels.MainWindow
             return expenseCategories.Select(ExpenseCategoryViewModel.Create);
         }
 
-        public async void HandleEvent(ExpenseCategoryEvent @event)
-        {
-            await ReloadItemsAsync();
-        }
+    //    public async void HandleEvent(ExpenseCategoryEvent @event)
+    //    {
+    //        await ReloadItemsAsync();
+    //    }
     }
 }
