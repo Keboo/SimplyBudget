@@ -15,7 +15,7 @@ namespace SimplyBudgetShared.Data
             var optionsBuilder = new DbContextOptionsBuilder<BudgetContext>();
             optionsBuilder.UseSqlite("Data Source=data.db");
 
-            Instance = new BudgetContext(Microsoft.Toolkit.Mvvm.Messaging.Messenger.Default, optionsBuilder.Options);
+            Instance = new BudgetContext(WeakReferenceMessenger.Default, optionsBuilder.Options);
         }
 
         public static BudgetContext Instance { get; }

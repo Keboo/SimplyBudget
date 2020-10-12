@@ -156,7 +156,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task UpdateAccount_PostsNotification()
         {
             //Arrange
-            var messenger = new Messenger();
+            var messenger = new WeakReferenceMessenger();
             var watcher = new MessageWatcher<AccountEvent>();
             var fixture = new BudgetDatabaseContext();
             fixture.Messenger.Register(watcher);
@@ -187,7 +187,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task DeleteAccount_PostsNotification()
         {
             //Arrange
-            var messenger = new Messenger();
+            var messenger = new WeakReferenceMessenger();
             var watcher = new MessageWatcher<AccountEvent>();
             var fixture = new BudgetDatabaseContext();
             fixture.Messenger.Register(watcher);

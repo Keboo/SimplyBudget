@@ -13,7 +13,7 @@ namespace SimplyBudget.Properties
             //Any needed run-time configuration here
             application.ConfigureServices(collection =>
             {
-                collection.AddSingleton<IMessenger>(Messenger.Default);
+                collection.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
                 collection.AddSingleton(BudgetContext.Instance);
             });
         }

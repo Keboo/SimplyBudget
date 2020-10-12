@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Toolkit.Mvvm.Messaging;
 
 namespace SimplyBudgetShared.Data
 {
@@ -10,7 +11,7 @@ namespace SimplyBudgetShared.Data
             var optionsBuilder = new DbContextOptionsBuilder<BudgetContext>();
             optionsBuilder.UseSqlite("Data Source=data.db");
 
-            return new BudgetContext(Microsoft.Toolkit.Mvvm.Messaging.Messenger.Default, optionsBuilder.Options);
+            return new BudgetContext(WeakReferenceMessenger.Default, optionsBuilder.Options);
         }
     }
 }

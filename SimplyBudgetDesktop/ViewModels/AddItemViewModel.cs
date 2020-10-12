@@ -103,19 +103,14 @@ namespace SimplyBudget.ViewModels
                             }));
                             LoadDesiredAmounts();
                             break;
+                        case AddType.Transfer:
+                            LineItems.Add(new LineItemViewModel(ExpenseCategories));
+                            LineItems.Add(new LineItemViewModel(ExpenseCategories) { DesiredAmount = -1 });
+                            break;
                     }
                 }
             }
         }
-
-        private async void LoadDesiredAmounts()
-        {
-            foreach(var lineItem in LineItems)
-            {
-                lineItem.DesiredAmount = await Context.GetRemainingBudgetAmount(lineItem.SelectedCategory, DateTime.Today);
-            }
-        }
-
 
         private int _totalAmount;
         public int TotalAmount
@@ -186,12 +181,21 @@ namespace SimplyBudget.ViewModels
             LineItems.Add(new LineItemViewModel(ExpenseCategories));
         }
 
+        private async void LoadDesiredAmounts()
+        {
+            foreach (var lineItem in LineItems)
+            {
+                lineItem.DesiredAmount = await Context.GetRemainingBudgetAmount(lineItem.SelectedCategory, DateTime.Today);
+            }
+        }
+
         private async Task OnSubmit()
         {
             bool result = SelectedType switch
             {
                 AddType.Transaction => await TrySubmitTransaction(),
                 AddType.Income => await TrySubmitIncome(),
+                AddType.Transfer => await TrySubmitTransfer(),
                 _ => false
             };
 
@@ -199,6 +203,19 @@ namespace SimplyBudget.ViewModels
             {
                 Messenger.Send(new DoneAddingItemMessage());
             }
+        }
+
+        private async Task<bool> TrySubmitTransfer()
+        {
+            if (Date is null) return false;
+            if (TotalAmount <= 0) return false;
+
+            var items = LineItems.Where(x => x.SelectedCategory != null).ToList();
+            if (items.Count != 2) return false;
+
+            await Context.AddTransfer(Description, Date.Value, TotalAmount, items[0].SelectedCategory, items[1].SelectedCategory);
+
+            return true;
         }
 
         private async Task<bool> TrySubmitIncome()

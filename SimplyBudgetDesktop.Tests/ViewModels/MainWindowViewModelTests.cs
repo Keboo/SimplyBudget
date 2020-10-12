@@ -13,8 +13,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public void Constructor_CreatesDependencies()
         {
             var fixture = new BudgetDatabaseContext();
-
-            var messenger = new Messenger();
+            var messenger = new WeakReferenceMessenger();
 
             fixture.PerformDatabaseOperation(context =>
             {

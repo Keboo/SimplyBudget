@@ -62,6 +62,24 @@ namespace SimplyBudgetShared.Data
             return account?.ExpenseCategories.Sum(x => x.CurrentBalance) ?? 0;
         }
 
+        public static async Task<Transfer> AddTransfer(this BudgetContext context,
+            string description, DateTime date, int amount,
+            ExpenseCategory fromCategory, ExpenseCategory toCategory)
+        {
+            var transfer = new Transfer
+            {
+                Amount = amount,
+                Date = date,
+                Description = description,
+                FromExpenseCategoryID = fromCategory.ID,
+                ToExpenseCategoryID = toCategory.ID
+            };
+
+            context.Add(transfer);
+            await context.SaveChangesAsync();
+            return transfer;
+        }
+
         public static async Task<IncomeItem> AddIncomeItem(this BudgetContext context,
             ExpenseCategory expenseCategory, Income income,
             int amount, string? description = null)
@@ -239,7 +257,7 @@ namespace SimplyBudgetShared.Data
             var builder = new DbContextOptionsBuilder<BudgetContext>()
                 .UseSqlite($"Data Source={Path.Combine(storageFolder, dbFileName ?? "data.db")}");
 
-            new BudgetContext(Messenger.Default, builder.Options);
+            new BudgetContext(WeakReferenceMessenger.Default, builder.Options);
         }
     }
 }

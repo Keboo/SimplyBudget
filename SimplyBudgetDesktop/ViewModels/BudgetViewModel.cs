@@ -10,7 +10,8 @@ using System.Windows.Data;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelEx>
+    public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelEx>, 
+        IRecipient<ExpenseCategoryEvent>
     {
         private BudgetContext Context { get; } = BudgetContext.Instance;
 
@@ -21,7 +22,7 @@ namespace SimplyBudget.ViewModels.MainWindow
                 throw new ArgumentNullException(nameof(messenger));
             }
 
-            messenger.Register<ExpenseCategoryEvent>(this, HandleEvent);
+            messenger.Register(this);
             GroupItems = true;
         }
 
@@ -64,7 +65,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
         }
 
-        public async void HandleEvent(ExpenseCategoryEvent @event)
+        public async void Receive(ExpenseCategoryEvent @event)
         {
             var expenseCategory = @event.ExpenseCategory;
 

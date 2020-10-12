@@ -20,8 +20,8 @@ namespace SimplyBudget.ViewModels
         public AccountsViewModel(BudgetContext context, IMessenger messenger)
         {
             Context = context ?? throw new ArgumentNullException(nameof(context));
-            messenger.Register<AccountEvent>(this, Receive);
-            messenger.Register<ExpenseCategoryEvent>(this, Receive);
+            messenger.Register<AccountEvent>(this);
+            messenger.Register<ExpenseCategoryEvent>(this);
         }
 
         protected override async IAsyncEnumerable<AccountViewModel> GetItems()

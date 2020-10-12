@@ -6,7 +6,7 @@ namespace SimplyBudgetSharedTests.Data
 {
     public class BudgetDatabaseContext : DatabaseFixture<BudgetContext>
     {
-        public IMessenger Messenger { get; } = new Messenger();
+        public IMessenger Messenger { get; } = new WeakReferenceMessenger();
 
         public BudgetDatabaseContext()
         {

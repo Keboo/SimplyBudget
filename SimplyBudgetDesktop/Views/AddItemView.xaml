@@ -90,6 +90,30 @@
                     </TextBox>
                 </Grid>
             </DataTemplate>
+
+            <DataTemplate x:Key="TransferLineItem" DataType="{x:Type vm:LineItemViewModel}">
+                <Grid>
+                    <ComboBox ItemsSource="{Binding ExpenseCategories}"
+                              SelectedItem="{Binding SelectedCategory}"
+                              materialDesign:HintAssist.IsFloating="True"
+                              materialDesign:ComboBoxAssist.ClassicMode="True"
+                              DisplayMemberPath="Name" 
+                              Grid.Column="1"
+                              Margin="0">
+                        <ComboBox.Style>
+                            <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                <Setter Property="materialDesign:HintAssist.Hint" Value="From" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DesiredAmount}" Value="-1">
+                                        <Setter Property="materialDesign:HintAssist.Hint" Value="To" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ComboBox.Style>
+                    </ComboBox>
+                </Grid>
+            </DataTemplate>
+
         </DataTemplate.Resources>
         
         <Grid MinWidth="300" Margin="10">
@@ -180,6 +204,9 @@
                                 <DataTrigger Binding="{Binding SelectedType}" Value="Income">
                                     <Setter Property="Visibility" Value="Visible" />
                                 </DataTrigger>
+                                <DataTrigger Binding="{Binding SelectedType}" Value="Transfer">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </TextBox.Style>
@@ -198,6 +225,9 @@
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding SelectedType}" Value="Income">
                                         <Setter Property="ItemTemplate" Value="{StaticResource IncomeLineItem}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding SelectedType}" Value="Transfer">
+                                        <Setter Property="ItemTemplate" Value="{StaticResource TransferLineItem}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>

@@ -432,7 +432,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task DeleteExpenseCategory_PostsNotification()
         {
             //Arrange
-            var messenger = new Messenger();
+            var messenger = new WeakReferenceMessenger();
             var watcher = new MessageWatcher<ExpenseCategoryEvent>();
             var fixture = new BudgetDatabaseContext();
             fixture.Messenger.Register(watcher);
@@ -466,7 +466,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task CreateExpenseCategory_PostsNotification()
         {
             //Arrange
-            var messenger = new Messenger();
+            var messenger = new WeakReferenceMessenger();
             var watcher = new MessageWatcher<ExpenseCategoryEvent>();
             var fixture = new BudgetDatabaseContext();
             fixture.Messenger.Register(watcher);
@@ -493,7 +493,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task UpdateExpenseCategory_PostsNotification()
         {
             //Arrange
-            var messenger = new Messenger();
+            var messenger = new WeakReferenceMessenger();
             var watcher = new MessageWatcher<ExpenseCategoryEvent>();
             var fixture = new BudgetDatabaseContext();
             fixture.Messenger.Register(watcher);
