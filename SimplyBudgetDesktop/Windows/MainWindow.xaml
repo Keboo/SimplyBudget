@@ -190,8 +190,19 @@
                             <RowDefinition />
                         </Grid.RowDefinitions>
 
-                        <ListView ItemsSource="{Binding HistoryView}" Style="{StaticResource MainWindowListViewStyle}" Grid.Row="1"
-                              materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
+                        <ListView ItemsSource="{Binding HistoryView}" 
+                                  Style="{StaticResource MainWindowListViewStyle}" 
+                                  x:Name="HistoryListView"
+                                  Grid.Row="1"
+                                  materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
+                            <ListView.CommandBindings>
+                                <CommandBinding Command="{x:Static ApplicationCommands.Delete}" Executed="DeleteSelectedHistoryItemExecuted" />
+                            </ListView.CommandBindings>
+                            <ListView.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="_Delete" Command="{x:Static ApplicationCommands.Delete}"/>
+                                </ContextMenu>
+                            </ListView.ContextMenu>
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem" BasedOn="{StaticResource MainWindowListViewItem}">
                                     <!--<Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{Binding DataContext.ShowExpenseCategoryDetailsCommand, RelativeSource={RelativeSource AncestorType=windows:MainWindow}}"/>-->

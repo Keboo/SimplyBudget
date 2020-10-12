@@ -67,6 +67,11 @@ namespace SimplyBudgetShared.Data
                 {
                     await beforeCreate.BeforeCreate(this);
                 }
+                else if (entity.Entity is IBeforeRemove beforeRemove &&
+                         entity.State == EntityState.Deleted)
+                {
+                    await beforeRemove.BeforeRemove(this);
+                }
 
                 EventType type = entity.State switch
                 {
@@ -77,7 +82,7 @@ namespace SimplyBudgetShared.Data
                 };
                 if (type == EventType.None) continue;
 
-                switch(entity.Entity)
+                switch (entity.Entity)
                 {
                     case ExpenseCategory category:
                         notifications.Add(() => Messenger.Send(new ExpenseCategoryEvent(this, category, type)));
@@ -102,7 +107,7 @@ namespace SimplyBudgetShared.Data
 
             var rv = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
 
-            foreach(var notification in notifications)
+            foreach (var notification in notifications)
             {
                 notification.Invoke();
             }

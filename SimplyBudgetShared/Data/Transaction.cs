@@ -1,12 +1,14 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetShared.Data
 {
     [Table("Transaction")]
-    public class Transaction : BaseItem
+    public class Transaction : BaseItem, IBeforeRemove
     {
         private DateTime _date;
         //[Indexed]
@@ -24,13 +26,12 @@ namespace SimplyBudgetShared.Data
             //return await GetConnection().Table<TransactionItem>().Where(x => x.TransactionID == ID).ToListAsync();
         }
 
-        public override async Task Delete()
+        public async Task  BeforeRemove(BudgetContext context)
         {
-            await base.Delete();
-
-            //foreach (var item in await GetTransactionItems())
-            //    await item.Delete();
-
+            await foreach (var item in context.TransactionItems.Where(x => x.TransactionID == ID).AsAsyncEnumerable())
+            {
+                context.Remove(item);
+            }
         }
     }
 }

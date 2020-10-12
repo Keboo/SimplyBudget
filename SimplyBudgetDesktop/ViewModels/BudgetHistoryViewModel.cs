@@ -2,33 +2,71 @@
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using System;
+using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    public class BudgetHistoryViewModel : ObservableObject
+    public abstract class BudgetHistoryViewModel : ObservableObject
     {
         internal static BudgetHistoryViewModel Create(Income income)
         {
-            return new BudgetHistoryViewModel
+            if (income is null)
             {
-                Date = income.Date,
-                Description = income.Description,
-                DisplayAmount = $"({income.TotalAmount.FormatCurrency()})"
-            };
+                throw new ArgumentNullException(nameof(income));
+            }
+
+            return new IncomeBudgetHistoryViewModel(income);
         }
 
         internal static BudgetHistoryViewModel Create(Transaction transaction, int totalAmount)
         {
-            return new BudgetHistoryViewModel
+            if (transaction is null)
             {
-                Date = transaction.Date,
-                Description = transaction.Description,
-                DisplayAmount = totalAmount.FormatCurrency()
-            };
+                throw new ArgumentNullException(nameof(transaction));
+            }
+
+            return new TransactionBudgetHistoryViewModel(transaction, totalAmount);
         }
 
-        private BudgetHistoryViewModel()
-        { }
+        private class IncomeBudgetHistoryViewModel : BudgetHistoryViewModel
+        {
+            private Income Income { get; }
+
+            public IncomeBudgetHistoryViewModel(Income income)
+            {
+                Income = income;
+
+                Date = income.Date;
+                Description = income.Description;
+                DisplayAmount = $"({income.TotalAmount.FormatCurrency()})";
+            }
+
+            public override async Task Delete(BudgetContext context)
+            {
+                context.Remove(Income);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        private class TransactionBudgetHistoryViewModel : BudgetHistoryViewModel
+        {
+            private Transaction Transaction { get; }
+
+            public TransactionBudgetHistoryViewModel(Transaction transaction, int totalAmount)
+            {
+                Transaction = transaction;
+
+                Date = transaction.Date;
+                Description = transaction.Description;
+                DisplayAmount = totalAmount.FormatCurrency();
+            }
+
+            public override async Task Delete(BudgetContext context)
+            {
+                context.Remove(Transaction);
+                await context.SaveChangesAsync();
+            }
+        }
 
         private DateTime _date;
         public DateTime Date
@@ -51,5 +89,6 @@ namespace SimplyBudget.ViewModels.MainWindow
             private set => SetProperty(ref _displayAmount, value);
         }
 
+        public abstract Task Delete(BudgetContext context);
     }
 }

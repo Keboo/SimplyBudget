@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
@@ -20,6 +21,7 @@ namespace SimplyBudget.ViewModels.MainWindow
         public BudgetContext Context { get; }
 
         private DateTime OldestTime { get; set; }
+
 
         public ICollectionView HistoryView => _view;
 
@@ -45,6 +47,19 @@ namespace SimplyBudget.ViewModels.MainWindow
             {
                 int total = Context.TransactionItems.Where(x => x.TransactionID == item.ID).Select(x => x.Amount).Sum();
                 yield return BudgetHistoryViewModel.Create(item, total);
+            }
+        }
+
+        public async Task DeleteItems(IEnumerable<BudgetHistoryViewModel> items)
+        {
+            if (items is null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+
+            foreach(var item in items.ToList())
+            {
+                await item.Delete(Context);
             }
         }
 

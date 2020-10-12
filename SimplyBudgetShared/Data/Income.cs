@@ -1,13 +1,15 @@
 ﻿
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetShared.Data
 {
     [Table("Income")]
-    public class Income : BaseItem
+    public class Income : BaseItem, IBeforeRemove
     {
         private DateTime _date;
         //[Indexed]
@@ -49,6 +51,14 @@ namespace SimplyBudgetShared.Data
                 await item.Delete();
 
             //NotificationCenter.PostEvent(new IncomeEvent(this, EventType.Deleted));
+        }
+
+        public async Task BeforeRemove(BudgetContext context)
+        {
+            await foreach(var item in context.IncomeItems.Where(x => x.IncomeID == ID).AsAsyncEnumerable())
+            {
+                context.Remove(item);
+            }
         }
 
         //protected override async Task Create()
