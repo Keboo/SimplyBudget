@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
+using System;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetSharedTests.Data
@@ -69,6 +70,46 @@ namespace SimplyBudgetSharedTests.Data
                 Assert.AreEqual(80, transaction.Amount);
                 var category = await context.ExpenseCategories.FindAsync(expenseCategory.ID);
                 Assert.AreEqual(70, category.CurrentBalance);
+            });
+        }
+
+        [TestMethod]
+        public async Task AddTransfer_MovesAmount()
+        {
+            // Arrange
+            var fixture = new BudgetDatabaseContext();
+
+            var category1 = new ExpenseCategory { CurrentBalance = 150 };
+            var category2 = new ExpenseCategory { CurrentBalance = 150 };
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.AddRange(category1, category2);
+                await context.SaveChangesAsync();
+            });
+            var now = DateTime.Now;
+
+            //Act
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                await context.AddTransfer("Test", now, 50, category1, category2);
+            });
+
+            //Assert
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                category1 = await context.FindAsync<ExpenseCategory>(category1.ID);
+                category2 = await context.FindAsync<ExpenseCategory>(category2.ID);
+
+                Assert.AreEqual(100, category1.CurrentBalance);
+                Assert.AreEqual(200, category2.CurrentBalance);
+
+                var transfer = await context.Transfers.SingleAsync();
+                Assert.AreEqual(now, transfer.Date);
+                Assert.AreEqual(50, transfer.Amount);
+                Assert.AreEqual("Test", transfer.Description);
+                Assert.AreEqual(category1.ID, transfer.FromExpenseCategoryID);
+                Assert.AreEqual(category2.ID, transfer.ToExpenseCategoryID);
             });
         }
     }
