@@ -109,9 +109,6 @@ namespace SimplyBudgetShared.Data
             };
             context.IncomeItems.Add(incomeItem);
 
-            var category = await context.ExpenseCategories.FindAsync(expenseCategory.ID);
-            category.CurrentBalance += amount;
-
             await context.SaveChangesAsync();
 
             return incomeItem;
@@ -145,8 +142,6 @@ namespace SimplyBudgetShared.Data
                     IncomeID = income.ID
                 };
                 context.Add(incomeItem);
-                var category = await context.ExpenseCategories.FindAsync(expenseCategoryId);
-                category.CurrentBalance += amount;
             }
             await context.SaveChangesAsync();
 
@@ -166,14 +161,11 @@ namespace SimplyBudgetShared.Data
             
             foreach((int amount, int expenseCategoryId) in items)
             {
-                var category = await context.ExpenseCategories.FindAsync(expenseCategoryId);
-                category.CurrentBalance -= amount;
-                
                 var transactionItem = new TransactionItem
                 {
                     Description = description,
                     Amount = amount,
-                    ExpenseCategoryID = category.ID,
+                    ExpenseCategoryID = expenseCategoryId,
                     TransactionID = transaction.ID
                 };
                 context.TransactionItems.Add(transactionItem);
