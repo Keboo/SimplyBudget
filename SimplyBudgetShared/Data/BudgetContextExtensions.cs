@@ -80,6 +80,7 @@ namespace SimplyBudgetShared.Data
             return transfer;
         }
 
+        [Obsolete("Use AddIncome")]
         public static async Task<IncomeItem> AddIncomeItem(this BudgetContext context,
             ExpenseCategory expenseCategory, Income income,
             int amount, string? description = null)
@@ -246,10 +247,10 @@ namespace SimplyBudgetShared.Data
             var start = month.StartOfMonth();
             var end = month.EndOfMonth();
             var incomeIds = await context.Incomes.Where(x => x.Date >= start && x.Date <= end).Select(x => x.ID).ToListAsync();
-            var allocatedAMount = (await context.IncomeItems.Where(x => x.ExpenseCategoryID == expenseCategory.ID && incomeIds.Contains(x.IncomeID))
+            var allocatedAmount = (await context.IncomeItems.Where(x => x.ExpenseCategoryID == expenseCategory.ID && incomeIds.Contains(x.IncomeID))
                 .ToListAsync())
                 .Sum(x => x.Amount);
-            return Math.Max(0, expenseCategory.BudgetedAmount - allocatedAMount);
+            return Math.Max(0, expenseCategory.BudgetedAmount - allocatedAmount);
         }
 
         public static async Task InitDatabase(this BudgetContext context, string storageFolder, string? dbFileName = null)

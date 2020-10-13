@@ -30,7 +30,6 @@ namespace SimplyBudgetShared.Data
                 fromExpenseCategory.CurrentBalance -= Amount;
                 toExpenseCategory.CurrentBalance += Amount;
             }
-            await context.SaveChangesAsync();
         }
 
         public async Task BeforeRemove(BudgetContext context)
@@ -42,7 +41,6 @@ namespace SimplyBudgetShared.Data
                 fromExpenseCategory.CurrentBalance += Amount;
                 toExpenseCategory.CurrentBalance -= Amount;
             }
-            await context.SaveChangesAsync();
         }
     }
 }
