@@ -9,8 +9,8 @@ using SimplyBudgetShared.Data;
 namespace SimplyBudgetShared.Migrations
 {
     [DbContext(typeof(BudgetContext))]
-    [Migration("20200915051828_Initial")]
-    partial class Initial
+    [Migration("20201013035834_InitialCreate")]
+    partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -35,7 +35,9 @@ namespace SimplyBudgetShared.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Accounts");
+                    b.HasIndex("IsDefault");
+
+                    b.ToTable("Account");
                 });
 
             modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategory", b =>
@@ -44,7 +46,7 @@ namespace SimplyBudgetShared.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("AccountID")
+                    b.Property<int?>("AccountID")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("BudgetedAmount")
@@ -64,7 +66,11 @@ namespace SimplyBudgetShared.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("ExpenseCategories");
+                    b.HasIndex("AccountID");
+
+                    b.HasIndex("CategoryName");
+
+                    b.ToTable("ExpenseCategory");
                 });
 
             modelBuilder.Entity("SimplyBudgetShared.Data.Income", b =>
@@ -84,7 +90,7 @@ namespace SimplyBudgetShared.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Incomes");
+                    b.ToTable("Income");
                 });
 
             modelBuilder.Entity("SimplyBudgetShared.Data.IncomeItem", b =>
@@ -107,7 +113,7 @@ namespace SimplyBudgetShared.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("IncomeItems");
+                    b.ToTable("IncomeItem");
                 });
 
             modelBuilder.Entity("SimplyBudgetShared.Data.MetaData", b =>
@@ -124,7 +130,7 @@ namespace SimplyBudgetShared.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("MetaDatas");
+                    b.ToTable("MetaData");
                 });
 
             modelBuilder.Entity("SimplyBudgetShared.Data.Transaction", b =>
@@ -141,7 +147,9 @@ namespace SimplyBudgetShared.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Transactions");
+                    b.HasIndex("Date");
+
+                    b.ToTable("Transaction");
                 });
 
             modelBuilder.Entity("SimplyBudgetShared.Data.TransactionItem", b =>
@@ -164,7 +172,11 @@ namespace SimplyBudgetShared.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("TransactionItems");
+                    b.HasIndex("ExpenseCategoryID");
+
+                    b.HasIndex("TransactionID");
+
+                    b.ToTable("TransactionItem");
                 });
 
             modelBuilder.Entity("SimplyBudgetShared.Data.Transfer", b =>
@@ -190,7 +202,16 @@ namespace SimplyBudgetShared.Migrations
 
                     b.HasKey("ID");
 
-                    b.ToTable("Transfers");
+                    b.HasIndex("Date");
+
+                    b.ToTable("Transfer");
+                });
+
+            modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategory", b =>
+                {
+                    b.HasOne("SimplyBudgetShared.Data.Account", "Account")
+                        .WithMany("ExpenseCategories")
+                        .HasForeignKey("AccountID");
                 });
 #pragma warning restore 612, 618
         }
