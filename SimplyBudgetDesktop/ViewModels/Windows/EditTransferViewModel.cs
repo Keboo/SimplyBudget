@@ -94,7 +94,7 @@ namespace SimplyBudget.ViewModels.Windows
                                    FromExpenseCategoryID = FromExpenseCategoryID,
                                    ToExpenseCategoryID = ToExpenseCategoryID
                                };
-            await transfer.Save();
+            //await transfer.Save();
 
             RequestClose.Raise(this, EventArgs.Empty);
         }
@@ -110,7 +110,7 @@ namespace SimplyBudget.ViewModels.Windows
             _existingsTransfer.ToExpenseCategoryID = ToExpenseCategoryID;
 
 
-            await _existingsTransfer.Save();
+            //await _existingsTransfer.Save();
 
             RequestClose.Raise(this, EventArgs.Empty);
         }

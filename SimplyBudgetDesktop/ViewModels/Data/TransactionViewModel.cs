@@ -11,28 +11,29 @@ namespace SimplyBudget.ViewModels.Data
         {
             if (transaction is null) throw new ArgumentNullException(nameof(transaction));
 
-            var items = await transaction.GetTransactionItems();
-
-            string expenseCategoryName = "(none)";
-            if (items.Count == 1)
-            {
-                var expenseCategory = await context.ExpenseCategories.FindAsync(items[0].ExpenseCategoryID);
-                if (expenseCategory != null)
-                    expenseCategoryName = expenseCategory.CategoryName;
-            }
-            else if (items.Count > 1)
-            {
-                expenseCategoryName = "(multiple)";
-            }
-
-            return new TransactionViewModel(transaction.ID)
-                       {
-                           Date = transaction.Date,
-                           Description = transaction.Description,
-                           ExpenseCategoryName = expenseCategoryName,
-                           NumItems = items.Count,
-                           Amount = items.Sum(x => x.Amount)
-                       };
+            return default;
+            //var items = await transaction.GetTransactionItems();
+            //
+            //string expenseCategoryName = "(none)";
+            //if (items.Count == 1)
+            //{
+            //    var expenseCategory = await context.ExpenseCategories.FindAsync(items[0].ExpenseCategoryID);
+            //    if (expenseCategory != null)
+            //        expenseCategoryName = expenseCategory.CategoryName;
+            //}
+            //else if (items.Count > 1)
+            //{
+            //    expenseCategoryName = "(multiple)";
+            //}
+            //
+            //return new TransactionViewModel(transaction.ID)
+            //           {
+            //               Date = transaction.Date,
+            //               Description = transaction.Description,
+            //               ExpenseCategoryName = expenseCategoryName,
+            //               NumItems = items.Count,
+            //               Amount = items.Sum(x => x.Amount)
+            //           };
         }
 
         private BudgetContext Context { get; } = BudgetContext.Instance;

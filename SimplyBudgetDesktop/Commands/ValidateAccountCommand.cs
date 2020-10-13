@@ -19,7 +19,7 @@ namespace SimplyBudget.Commands
                 if (account != null)
                 {
                     account.ValidatedDate = DateTime.Today;
-                    await account.Save();
+                    //await account.Save();
                 }
             }
         }

@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
@@ -19,12 +18,6 @@ namespace SimplyBudgetShared.Data
         }
 
         public string? Description { get; set; }
-
-        public async Task<IList<TransactionItem>> GetTransactionItems()
-        {
-            return default!;
-            //return await GetConnection().Table<TransactionItem>().Where(x => x.TransactionID == ID).ToListAsync();
-        }
 
         public async Task  BeforeRemove(BudgetContext context)
         {

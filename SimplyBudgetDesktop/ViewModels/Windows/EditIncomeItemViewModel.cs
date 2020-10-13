@@ -122,7 +122,7 @@ namespace SimplyBudget.ViewModels.Windows
             if (HasErrors()) return;
 
             var income = new Income { Date = Date, TotalAmount = TotalAmount, Description = Description };
-            await income.Save();
+            //await income.Save();
 
             foreach (var transactionItem in _incomeItems.Where(x => x.Amount > 0))
             {
@@ -133,7 +133,7 @@ namespace SimplyBudget.ViewModels.Windows
                     Description = Description,
                     IncomeID = income.ID
                 };
-                await item.Save();
+                //await item.Save();
             }
             RequestClose.Raise(this, EventArgs.Empty);
         }
@@ -147,40 +147,40 @@ namespace SimplyBudget.ViewModels.Windows
             _existingIncome.Date = Date;
             _existingIncome.Description = Description;
             _existingIncome.TotalAmount = TotalAmount;
-            await _existingIncome.Save();
+            //await _existingIncome.Save();
 
-            var existingIncomeItems = await _existingIncome.GetIncomeItems();
-            var existingDic = existingIncomeItems.ToDictionary(x => x.ID);
-
-            foreach (var incomeItemVM in _incomeItems.Where(x => x.Amount > 0))
-            {
-                IncomeItem existingIncomeItem;
-                if (incomeItemVM.ExistingIncomeItemID > 0 &&
-                    existingDic.TryGetValue(incomeItemVM.ExistingIncomeItemID,
-                                                     out existingIncomeItem))
-                {
-                    existingDic.Remove(incomeItemVM.ExistingIncomeItemID);
-                    //Update existing item
-                    existingIncomeItem = existingIncomeItem ?? new IncomeItem();
-                    existingIncomeItem.Amount = incomeItemVM.Amount;
-                    existingIncomeItem.ExpenseCategoryID = incomeItemVM.ExpenseCategory.ExpenseCategoryID;
-                    await existingIncomeItem.Save();
-                }
-                else
-                {
-                    //Add new item
-                    await _existingIncome.AddIncomeItem(incomeItemVM.ExpenseCategory.ExpenseCategoryID, incomeItemVM.Amount);
-                }
-            }
-
-            //Remove any remaining transactions
-            if (existingDic.Count > 0)
-            {
-                foreach (var incomeItem in existingDic.Values)
-                {
-                    await incomeItem.Delete();
-                }
-            }
+           // var existingIncomeItems = await _existingIncome.GetIncomeItems();
+           // var existingDic = existingIncomeItems.ToDictionary(x => x.ID);
+           //
+           // foreach (var incomeItemVM in _incomeItems.Where(x => x.Amount > 0))
+           // {
+           //     IncomeItem existingIncomeItem;
+           //     if (incomeItemVM.ExistingIncomeItemID > 0 &&
+           //         existingDic.TryGetValue(incomeItemVM.ExistingIncomeItemID,
+           //                                          out existingIncomeItem))
+           //     {
+           //         existingDic.Remove(incomeItemVM.ExistingIncomeItemID);
+           //         //Update existing item
+           //         existingIncomeItem = existingIncomeItem ?? new IncomeItem();
+           //         existingIncomeItem.Amount = incomeItemVM.Amount;
+           //         existingIncomeItem.ExpenseCategoryID = incomeItemVM.ExpenseCategory.ExpenseCategoryID;
+           //         await existingIncomeItem.Save();
+           //     }
+           //     else
+           //     {
+           //         //Add new item
+           //         await _existingIncome.AddIncomeItem(incomeItemVM.ExpenseCategory.ExpenseCategoryID, incomeItemVM.Amount);
+           //     }
+           // }
+           //
+           // //Remove any remaining transactions
+           // if (existingDic.Count > 0)
+           // {
+           //     foreach (var incomeItem in existingDic.Values)
+           //     {
+           //         await incomeItem.Delete();
+           //     }
+           // }
 
             RequestClose.Raise(this, EventArgs.Empty);
         }
@@ -213,16 +213,16 @@ namespace SimplyBudget.ViewModels.Windows
             _incomeItems.Clear();
             
             var expenseCategoryIds = new List<int>();
-            var incomeItems = await incomeItem.GetIncomeItems();
-            if (incomeItems != null)
-            {
-                foreach (var item in incomeItems)
-                {
-                    expenseCategoryIds.Add(item.ExpenseCategoryID);
-                    var incomeViewModel = await IncomeExpenseCategoryViewModel.Create(await Context.ExpenseCategories.FindAsync(item.ExpenseCategoryID), Context);
-                    _incomeItems.Add(new IncomeItemDetailsViewModel(item, incomeViewModel, this));
-                }
-            }
+            //var incomeItems = await incomeItem.GetIncomeItems();
+            //if (incomeItems != null)
+            //{
+            //    foreach (var item in incomeItems)
+            //    {
+            //        expenseCategoryIds.Add(item.ExpenseCategoryID);
+            //        var incomeViewModel = await IncomeExpenseCategoryViewModel.Create(await Context.ExpenseCategories.FindAsync(item.ExpenseCategoryID), Context);
+            //        _incomeItems.Add(new IncomeItemDetailsViewModel(item, incomeViewModel, this));
+            //    }
+            //}
             //Add in remaining expense categories
             var expenseCategories = await Context.ExpenseCategories.Where(x => expenseCategoryIds.Contains(x.ID) == false).ToListAsync();
             foreach (var expenseCategory in expenseCategories)

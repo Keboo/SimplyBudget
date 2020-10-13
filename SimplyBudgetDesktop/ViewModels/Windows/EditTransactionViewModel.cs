@@ -117,7 +117,7 @@ namespace SimplyBudget.ViewModels.Windows
 
             var transaction = new Transaction { Date = Date, Description = Description };
 
-            await transaction.Save();
+            //await transaction.Save();
 
             foreach (var transactionItem in transactions)
             {
@@ -128,7 +128,7 @@ namespace SimplyBudget.ViewModels.Windows
                                    Description = Description,
                                    TransactionID = transaction.ID
                                };
-                await item.Save();
+                //await item.Save();
             }
             RequestClose.Raise(this, EventArgs.Empty);
         }
@@ -153,42 +153,42 @@ namespace SimplyBudget.ViewModels.Windows
             _existingTransaction.Date = Date;
             _existingTransaction.Description = Description;
             
-            var existingTransactionItems = await _existingTransaction.GetTransactionItems();
-            var existingDic = existingTransactionItems.ToDictionary(x => x.ID);
-
-            foreach (var transactionItemVM in transactionItemVMs)
-            {
-                TransactionItem existingTransaction;
-                if (transactionItemVM.ExistingTransactionItemID > 0 &&
-                    existingDic.TryGetValue(transactionItemVM.ExistingTransactionItemID,
-                                                     out existingTransaction))
-                {
-                    existingDic.Remove(transactionItemVM.ExistingTransactionItemID);
-                    //Update existing item
-                    existingTransaction = existingTransaction ?? new TransactionItem();
-                    existingTransaction.Amount = transactionItemVM.Amount;
-                    existingTransaction.ExpenseCategoryID = transactionItemVM.ExpenseCategoryID;
-                    existingTransaction.Description = transactionItemVM.Description;
-                    await existingTransaction.Save();
-                }
-                else
-                {
-                    //Add new item
-                    //await _existingTransaction.AddTransactionItem(transactionItemVM.ExpenseCategoryID, transactionItemVM.Amount,
-                    //                                            transactionItemVM.Description);
-                }
-            }
-
-            //Remove any remaining transactions
-            if (existingDic.Count > 0)
-            {
-                foreach (var transactionItem in existingDic.Values)
-                {
-                    await transactionItem.Delete();
-                }
-            }
-
-            await _existingTransaction.Save();
+            //var existingTransactionItems = await _existingTransaction.GetTransactionItems();
+            //var existingDic = existingTransactionItems.ToDictionary(x => x.ID);
+            //
+            //foreach (var transactionItemVM in transactionItemVMs)
+            //{
+            //    TransactionItem existingTransaction;
+            //    if (transactionItemVM.ExistingTransactionItemID > 0 &&
+            //        existingDic.TryGetValue(transactionItemVM.ExistingTransactionItemID,
+            //                                         out existingTransaction))
+            //    {
+            //        existingDic.Remove(transactionItemVM.ExistingTransactionItemID);
+            //        //Update existing item
+            //        existingTransaction = existingTransaction ?? new TransactionItem();
+            //        existingTransaction.Amount = transactionItemVM.Amount;
+            //        existingTransaction.ExpenseCategoryID = transactionItemVM.ExpenseCategoryID;
+            //        existingTransaction.Description = transactionItemVM.Description;
+            //        await existingTransaction.Save();
+            //    }
+            //    else
+            //    {
+            //        //Add new item
+            //        //await _existingTransaction.AddTransactionItem(transactionItemVM.ExpenseCategoryID, transactionItemVM.Amount,
+            //        //                                            transactionItemVM.Description);
+            //    }
+            //}
+            //
+            ////Remove any remaining transactions
+            //if (existingDic.Count > 0)
+            //{
+            //    foreach (var transactionItem in existingDic.Values)
+            //    {
+            //        await transactionItem.Delete();
+            //    }
+            //}
+            //
+            //await _existingTransaction.Save();
             RequestClose.Raise(this, EventArgs.Empty);
         }
 
@@ -198,13 +198,13 @@ namespace SimplyBudget.ViewModels.Windows
             Description = transaction.Description;
 
             Transactions.Clear();
-            var transactionItems = await transaction.GetTransactionItems();
-            if (transactionItems != null)
-            {
-                foreach (var transactionItem in transactionItems)
-                    Transactions.Add(new TransactionItemDetailsViewModel(transactionItem, UpdateRemaining));
-                Total = Transactions.Sum(x => x.Amount);
-            }
+            //var transactionItems = await transaction.GetTransactionItems();
+            //if (transactionItems != null)
+            //{
+            //    foreach (var transactionItem in transactionItems)
+            //        Transactions.Add(new TransactionItemDetailsViewModel(transactionItem, UpdateRemaining));
+            //    Total = Transactions.Sum(x => x.Amount);
+            //}
 
             UpdateRemaining();
 

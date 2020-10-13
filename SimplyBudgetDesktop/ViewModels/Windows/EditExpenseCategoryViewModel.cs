@@ -159,7 +159,7 @@ namespace SimplyBudget.ViewModels.Windows
                                           AccountID = SelectedAccountID ?? 0,
                                           CurrentBalance = CurrentBalance
                                       };
-            await expenseCategory.Save();
+            //await expenseCategory.Save();
 
             RequestClose.Raise(this, EventArgs.Empty);
         }
@@ -181,7 +181,7 @@ namespace SimplyBudget.ViewModels.Windows
             _existingExpenseCategory.AccountID = SelectedAccountID ?? 0;
             _existingExpenseCategory.CurrentBalance = CurrentBalance;
 
-            await _existingExpenseCategory.Save();
+            //await _existingExpenseCategory.Save();
             RequestClose.Raise(this, EventArgs.Empty);
         }
 

@@ -24,7 +24,7 @@ namespace SimplyBudgetShared.Data
         public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
         public DbSet<Income> Incomes => Set<Income>();
         public DbSet<IncomeItem> IncomeItems => Set<IncomeItem>();
-        public DbSet<MetaData> MetaDatas => Set<MetaData>();
+        public DbSet<Metadata> MetaDatas => Set<Metadata>();
         public DbSet<Transaction> Transactions => Set<Transaction>();
         public DbSet<TransactionItem> TransactionItems => Set<TransactionItem>();
         public DbSet<Transfer> Transfers => Set<Transfer>();

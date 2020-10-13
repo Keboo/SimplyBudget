@@ -12,18 +12,18 @@ namespace SimplyBudget.Commands
         public override async void Execute(object parameter)
         {
             var databaseItem = parameter as BaseItem;
-            if (databaseItem != null)
-                await databaseItem.Delete();
-            else
-            {
-                var dbItem = parameter as IDatabaseItem;
-                if (dbItem != null)
-                {
-                    var item = await dbItem.GetItem();
-                    if (item != null)
-                        await item.Delete();
-                }
-            }
+            //if (databaseItem != null)
+            //    await databaseItem.Delete();
+            //else
+            //{
+            //    var dbItem = parameter as IDatabaseItem;
+            //    if (dbItem != null)
+            //    {
+            //        var item = await dbItem.GetItem();
+            //        //if (item != null)
+            //        //    await item.Delete();
+            //    }
+            //}
         }
 
         public override bool CanExecute(object parameter)

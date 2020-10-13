@@ -129,15 +129,15 @@ namespace SimplyBudget.ViewModels.Windows
             int fallbackAccountID = 0;
             if (_existingAccount.IsDefault == false)
             {
-                var defaultAccount = await Account.GetDefault();
-                if (defaultAccount != null)
-                    fallbackAccountID = defaultAccount.ID;
+                //var defaultAccount = await Account.GetDefault();
+                //if (defaultAccount != null)
+                //    fallbackAccountID = defaultAccount.ID;
             }
 
             foreach (var expenseCategory in modifiedItems)
             {
                 expenseCategory.AccountID = selectedExpenseCategories.Contains(expenseCategory) ? _existingAccount.ID : fallbackAccountID;
-                await expenseCategory.Save();
+                //await expenseCategory.Save();
             }
 
             RequestClose.Raise(this, EventArgs.Empty);

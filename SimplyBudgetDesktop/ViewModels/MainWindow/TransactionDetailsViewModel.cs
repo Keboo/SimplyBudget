@@ -28,11 +28,11 @@ namespace SimplyBudget.ViewModels.MainWindow
         protected override async Task<IEnumerable<TransactionItemViewModel>> GetItems()
         {
             var rv = new List<TransactionItemViewModel>();
-            foreach (var item in await _transaction.GetTransactionItems())
-            {
-                var expenseCategory = await Context.ExpenseCategories.FindAsync(item.ExpenseCategoryID);
-                rv.Add(TransactionItemViewModel.Create(item, _transaction, expenseCategory));
-            }
+            //foreach (var item in await _transaction.GetTransactionItems())
+            //{
+            //    var expenseCategory = await Context.ExpenseCategories.FindAsync(item.ExpenseCategoryID);
+            //    rv.Add(TransactionItemViewModel.Create(item, _transaction, expenseCategory));
+            //}
             return rv;
         }
 
