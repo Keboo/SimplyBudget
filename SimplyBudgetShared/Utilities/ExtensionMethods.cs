@@ -1,11 +1,38 @@
 ﻿using System.Globalization;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SimplyBudgetShared.Utilities
 {
     public static class ExtensionMethods
     {
+        public static IEnumerable<T> PumpItems<T>(this IEnumerable<T> items, IEqualityComparer<T>? comparer = null)
+        {
+            if (items is null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+
+            var seen = new HashSet<T>(comparer);
+
+            bool loop;
+            do
+            {
+                loop = false;
+                foreach (var item in items)
+                {
+                    if (seen.Add(item))
+                    {
+                        yield return item;
+                        loop = true;
+                        break;
+                    }
+                }
+            }
+            while (loop);
+        }
+
         public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T>? toAdd)
         {
             if (collection is null) throw new ArgumentNullException(nameof(collection));
@@ -31,7 +58,7 @@ namespace SimplyBudgetShared.Utilities
             }
         }
 
-        public static void Raise<T>(this EventHandler<T> handler, object sender, T args) where T : EventArgs 
+        public static void Raise<T>(this EventHandler<T> handler, object sender, T args) where T : EventArgs
             => handler?.Invoke(sender, args);
 
         public static string FormatCurrency(this int amount)

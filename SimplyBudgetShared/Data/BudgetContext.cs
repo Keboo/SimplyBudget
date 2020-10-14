@@ -1,8 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudgetShared.Events;
+using SimplyBudgetShared.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,7 +64,7 @@ namespace SimplyBudgetShared.Data
         public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
         {
             var notifications = new List<Action>();
-            foreach (var entity in ChangeTracker.Entries().ToList())
+            foreach (var entity in ChangeTracker.Entries().PumpItems(EntityComparer.Instance))
             {
                 if (entity.Entity is IBeforeCreate beforeCreate &&
                     entity.State == EntityState.Added)
@@ -119,5 +122,16 @@ namespace SimplyBudgetShared.Data
         public override int SaveChanges() => throw new InvalidOperationException($"Must use {nameof(SaveChangesAsync)}");
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess) => throw new InvalidOperationException($"Must use {nameof(SaveChangesAsync)}");
+
+        private class EntityComparer : IEqualityComparer<EntityEntry>
+        {
+            public static EntityComparer Instance { get; } = new EntityComparer();
+
+            public bool Equals([AllowNull] EntityEntry x, [AllowNull] EntityEntry y)
+                => Equals(x?.Entity, y?.Entity);
+
+            public int GetHashCode([DisallowNull] EntityEntry obj)
+                => (obj.Entity?.GetHashCode() ?? 0, obj.Entity?.GetType()).GetHashCode();
+        }
     }
 }

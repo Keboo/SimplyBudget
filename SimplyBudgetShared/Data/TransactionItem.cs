@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 namespace SimplyBudgetShared.Data
 {
     [Table("TransactionItem")]
-    public class TransactionItem : BaseItem, IBeforeCreate
+    public class TransactionItem : BaseItem, IBeforeCreate, IBeforeRemove
     {
         public int TransactionID { get; set; }
 
@@ -18,6 +18,12 @@ namespace SimplyBudgetShared.Data
         {
             var category = await context.FindAsync<ExpenseCategory>(ExpenseCategoryID);
             category.CurrentBalance -= Amount;
+        }
+
+        public async Task BeforeRemove(BudgetContext context)
+        {
+            var category = await context.FindAsync<ExpenseCategory>(ExpenseCategoryID);
+            category.CurrentBalance += Amount;
         }
     }
 }

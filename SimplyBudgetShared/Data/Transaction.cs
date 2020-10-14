@@ -19,7 +19,7 @@ namespace SimplyBudgetShared.Data
 
         public string? Description { get; set; }
 
-        public async Task  BeforeRemove(BudgetContext context)
+        public async Task BeforeRemove(BudgetContext context)
         {
             await foreach (var item in context.TransactionItems.Where(x => x.TransactionID == ID).AsAsyncEnumerable())
             {

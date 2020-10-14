@@ -16,9 +16,9 @@ namespace SimplyBudgetSharedTests.Data
             var fixture = new BudgetDatabaseContext();
 
             Transaction? transaction = null;
+            var category = new ExpenseCategory { CurrentBalance = 250 };
             await fixture.PerformDatabaseOperation(async context =>
             {
-                var category = new ExpenseCategory();
                 context.Add(category);
                 await context.SaveChangesAsync();
                 transaction = await context.AddTransaction("Test", DateTime.Now, (100, category.ID));
@@ -37,6 +37,7 @@ namespace SimplyBudgetSharedTests.Data
             {
                 Assert.IsFalse(await context.Transactions.AnyAsync());
                 Assert.IsFalse(await context.TransactionItems.AnyAsync());
+                Assert.AreEqual(250, (await context.FindAsync<ExpenseCategory>(category.ID)).CurrentBalance);
             });
         }
     }
