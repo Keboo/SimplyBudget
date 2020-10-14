@@ -31,9 +31,6 @@ namespace SimplyBudgetShared.Utilities
             }
         }
 
-        public static void Raise(this EventHandler handler, object sender, EventArgs? e = null) 
-            => handler?.Invoke(sender, e ?? EventArgs.Empty);
-
         public static void Raise<T>(this EventHandler<T> handler, object sender, T args) where T : EventArgs 
             => handler?.Invoke(sender, args);
 

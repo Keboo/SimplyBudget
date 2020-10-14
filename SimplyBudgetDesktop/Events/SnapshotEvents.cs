@@ -2,9 +2,9 @@
 
 namespace SimplyBudget.Events
 {
-    public class SnapshotCreatedEvent : Event
+    public class SnapshotCreatedEvent
     { }
 
-    public class SnapshotLoadedEvent : Event
+    public class SnapshotLoadedEvent
     { }
 }

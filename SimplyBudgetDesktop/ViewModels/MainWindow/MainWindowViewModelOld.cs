@@ -15,9 +15,7 @@ using System.IO;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    internal class MainWindowViewModelOld : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, 
-        IEventListener<SnapshotLoadedEvent>,
-        IEventListener<SnapshotCreatedEvent>
+    internal class MainWindowViewModelOld : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
     {
         private readonly Stack<Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject> _viewStack;
 
@@ -42,8 +40,8 @@ namespace SimplyBudget.ViewModels.MainWindow
             _showIncomeItemsCommand = new RelayCommand(OnShowIncomeItems);
             _showAccountInformationCommand = new RelayCommand(OnShowAccountInformation);
 
-            NotificationCenter.Register<SnapshotLoadedEvent>(this);
-            NotificationCenter.Register<SnapshotCreatedEvent>(this);
+            //NotificationCenter.Register<SnapshotLoadedEvent>(this);
+            //NotificationCenter.Register<SnapshotCreatedEvent>(this);
 
             if (DesignerHelper.IsDesignMode == false)
                 LoadBudget();
