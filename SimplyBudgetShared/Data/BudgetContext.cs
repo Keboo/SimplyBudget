@@ -3,6 +3,7 @@ using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudgetShared.Events;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,7 +25,7 @@ namespace SimplyBudgetShared.Data
         public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
         public DbSet<Income> Incomes => Set<Income>();
         public DbSet<IncomeItem> IncomeItems => Set<IncomeItem>();
-        public DbSet<Metadata> MetaDatas => Set<Metadata>();
+        public DbSet<Metadata> Metadatas => Set<Metadata>();
         public DbSet<Transaction> Transactions => Set<Transaction>();
         public DbSet<TransactionItem> TransactionItems => Set<TransactionItem>();
         public DbSet<Transfer> Transfers => Set<Transfer>();
@@ -60,7 +61,7 @@ namespace SimplyBudgetShared.Data
         public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
         {
             var notifications = new List<Action>();
-            foreach (var entity in ChangeTracker.Entries())
+            foreach (var entity in ChangeTracker.Entries().ToList())
             {
                 if (entity.Entity is IBeforeCreate beforeCreate &&
                     entity.State == EntityState.Added)

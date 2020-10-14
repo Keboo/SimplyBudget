@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace SimplyBudgetSharedTests.Data
 {
     [TestClass]
-    public class IncomeTests
+    public class TransactionTests
     {
         [TestMethod]
         public async Task OnRemove_RemovesChildren()
@@ -15,28 +15,28 @@ namespace SimplyBudgetSharedTests.Data
             //Arrange
             var fixture = new BudgetDatabaseContext();
 
-            Income? income = null;
+            Transaction? transaction = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
                 var category = new ExpenseCategory();
                 context.Add(category);
                 await context.SaveChangesAsync();
-                income = await context.AddIncome("Test", DateTime.Now, (100, category.ID));
+                transaction = await context.AddTransaction("Test", DateTime.Now, (100, category.ID));
             });
 
             //Act
             await fixture.PerformDatabaseOperation(async context =>
             {
-                income = await context.FindAsync<Income>(income!.ID);
-                context.Remove(income);
+                transaction = await context.FindAsync<Transaction>(transaction!.ID);
+                context.Remove(transaction);
                 await context.SaveChangesAsync();
             });
 
             //Assert
             await fixture.PerformDatabaseOperation(async context =>
             {
-                Assert.IsFalse(await context.Incomes.AnyAsync());
-                Assert.IsFalse(await context.IncomeItems.AnyAsync());
+                Assert.IsFalse(await context.Transactions.AnyAsync());
+                Assert.IsFalse(await context.TransactionItems.AnyAsync());
             });
         }
     }
