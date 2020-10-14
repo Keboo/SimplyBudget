@@ -96,7 +96,7 @@ namespace SimplyBudget.ViewModels.MainWindow
                 folderPath = Settings.Default.DataDirectory;
             }
 
-            await DatabaseManager.Instance.InitDatabase(folderPath);
+            //await DatabaseManager.Instance.InitDatabase(folderPath);
 
             PushView(new ExpenseCategoriesViewModel());
         }

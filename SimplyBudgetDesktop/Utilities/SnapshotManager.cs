@@ -30,48 +30,48 @@ namespace SimplyBudget.Utilities
 
         public IEnumerable<string> GetSnapshotFiles()
         {
-            var dbPath = DatabaseManager.Instance.CurrentDatabasePath;
-
-            if (dbPath != null)
-            {
-                var directory = Path.GetDirectoryName(dbPath) ?? "";
-                directory = Path.Combine(directory, DIRECTORY);
-                if (Directory.Exists(directory))
-                    return Directory.EnumerateFiles(directory, "*." + EXTENSION);
-            }
+            //var dbPath = DatabaseManager.Instance.CurrentDatabasePath;
+            //
+            //if (dbPath != null)
+            //{
+            //    var directory = Path.GetDirectoryName(dbPath) ?? "";
+            //    directory = Path.Combine(directory, DIRECTORY);
+            //    if (Directory.Exists(directory))
+            //        return Directory.EnumerateFiles(directory, "*." + EXTENSION);
+            //}
             return new string[0];
         }
 
         private void CreateSnapshot()
         {
-            var dbPath = DatabaseManager.Instance.CurrentDatabasePath;
-
-            if (dbPath != null && File.Exists(dbPath))
-            {
-                var directory = Path.GetDirectoryName(dbPath) ?? "";
-                directory = Path.Combine(directory, DIRECTORY);
-                if (Directory.Exists(directory) == false)
-                    Directory.CreateDirectory(directory);
-
-                var snapshotName = DateTime.Now.ToString(CultureInfo.InvariantCulture);
-                snapshotName = Path.GetInvalidFileNameChars().Union(new[] { ' ' }).Aggregate(snapshotName, (current, @char) => current.Replace(@char, REPLACEMENT_CHAR));
-                snapshotName = Path.ChangeExtension(snapshotName, EXTENSION);
-
-                var targetPath = Path.Combine(directory, snapshotName);
-                File.Copy(dbPath, targetPath);
-                NotificationCenter.PostEvent(new SnapshotCreatedEvent());
-            }
+            //var dbPath = DatabaseManager.Instance.CurrentDatabasePath;
+            //
+            //if (dbPath != null && File.Exists(dbPath))
+            //{
+            //    var directory = Path.GetDirectoryName(dbPath) ?? "";
+            //    directory = Path.Combine(directory, DIRECTORY);
+            //    if (Directory.Exists(directory) == false)
+            //        Directory.CreateDirectory(directory);
+            //
+            //    var snapshotName = DateTime.Now.ToString(CultureInfo.InvariantCulture);
+            //    snapshotName = Path.GetInvalidFileNameChars().Union(new[] { ' ' }).Aggregate(snapshotName, (current, @char) => current.Replace(@char, REPLACEMENT_CHAR));
+            //    snapshotName = Path.ChangeExtension(snapshotName, EXTENSION);
+            //
+            //    var targetPath = Path.Combine(directory, snapshotName);
+            //    File.Copy(dbPath, targetPath);
+            //    NotificationCenter.PostEvent(new SnapshotCreatedEvent());
+            //}
         }
 
         public async Task LoadSnapshot(string filePath)
         {
-            var dbPath = DatabaseManager.Instance.CurrentDatabasePath;
-            if (File.Exists(filePath) && File.Exists(dbPath))
-            {
-                File.Copy(filePath, dbPath, overwrite: true);
-                await DatabaseManager.Instance.InitDatabase(Path.GetDirectoryName(dbPath), Path.GetFileName(dbPath));
-                NotificationCenter.PostEvent(new SnapshotLoadedEvent());
-            }
+            //var dbPath = DatabaseManager.Instance.CurrentDatabasePath;
+            //if (File.Exists(filePath) && File.Exists(dbPath))
+            //{
+            //    File.Copy(filePath, dbPath, overwrite: true);
+            //    await DatabaseManager.Instance.InitDatabase(Path.GetDirectoryName(dbPath), Path.GetFileName(dbPath));
+            //    NotificationCenter.PostEvent(new SnapshotLoadedEvent());
+            //}
         }
     }
 }

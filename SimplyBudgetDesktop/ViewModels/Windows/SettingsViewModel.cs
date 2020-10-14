@@ -17,8 +17,8 @@ namespace SimplyBudget.ViewModels.Windows
         public SettingsViewModel()
         {
             DataDirectory = Settings.Default.DataDirectory;
-            if (string.IsNullOrWhiteSpace(DataDirectory))
-                DataDirectory = Path.GetDirectoryName(DatabaseManager.Instance.CurrentDatabasePath);
+            //if (string.IsNullOrWhiteSpace(DataDirectory))
+            //    DataDirectory = Path.GetDirectoryName(DatabaseManager.Instance.CurrentDatabasePath);
             if (string.IsNullOrWhiteSpace(DataDirectory))
                 DataDirectory = Path.GetFullPath(".");
 
@@ -67,8 +67,8 @@ namespace SimplyBudget.ViewModels.Windows
         private async void OnSave()
         {
             Settings.Default.DataDirectory = NewDataDirectory;
-            var dbPath = DatabaseManager.Instance.CurrentDatabasePath;
-            await DatabaseManager.Instance.InitDatabase(NewDataDirectory, Path.GetFileName(dbPath));
+            //var dbPath = DatabaseManager.Instance.CurrentDatabasePath;
+            //await DatabaseManager.Instance.InitDatabase(NewDataDirectory, Path.GetFileName(dbPath));
             //TODO: need to send event.... 
             RequestClose.Raise(this, EventArgs.Empty);
         }
