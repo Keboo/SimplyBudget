@@ -7,6 +7,7 @@
     <RootNamespace>SimplyBudget</RootNamespace>
     <AssemblyName>SimplyBudget</AssemblyName>
     <StartupObject>SimplyBudget.App</StartupObject>
+    <ApplicationIcon>Resources\Icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
