@@ -7,6 +7,7 @@
                     xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Button.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.ValidationErrorTemplate.xaml" />
     </ResourceDictionary.MergedDictionaries>
     <DataTemplate DataType="{x:Type vm:AddItemViewModel}">
         <DataTemplate.Resources>
@@ -241,7 +242,10 @@
 
             <Button Content="Submit"
                     Command="{Binding SubmitCommand}" 
-                    Grid.Row="2" />
+                    Grid.Row="2"
+                    materialDesign:ValidationAssist.PopupPlacement="Top"
+                    materialDesign:ValidationAssist.UsePopup="True"
+                    Validation.ErrorTemplate="{StaticResource MaterialDesignValidationErrorTemplate}"/>
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

@@ -12,13 +12,53 @@ namespace SimplyBudget.ViewModels
 {
     public abstract class ValidationViewModel : ObservableObject, INotifyDataErrorInfo
     {
-        private readonly Dictionary<string, PropertyInfo> _Properties;
-        private readonly Dictionary<string, List<object>> _ValidationErrorsByProperty =
-            new Dictionary<string, List<object>>();
+        private interface IValidator
+        {
+            IEnumerable<object> Validate(ValidationViewModel viewModel);
+        }
+
+        private class ReflectionValidator : IValidator
+        {
+            public PropertyInfo Property { get; }
+
+            public ReflectionValidator(PropertyInfo property)
+            {
+                Property = property;
+            }
+
+            public IEnumerable<object> Validate(ValidationViewModel viewModel)
+            {
+                foreach (var attribute in Property.GetCustomAttributes<ValidationAttribute>())
+                {
+                    if (!attribute.IsValid(Property.GetValue(viewModel)))
+                    {
+                        yield return attribute.FormatErrorMessage(Property.Name);
+                    }
+                }
+            }
+        }
+
+        private class DelegateValidator : IValidator
+        {
+            public DelegateValidator(Func<IEnumerable<object>> validate)
+            {
+                Validate = validate;
+            }
+
+            public Func<IEnumerable<object>> Validate { get; }
+
+            IEnumerable<object> IValidator.Validate(ValidationViewModel _) => Validate();
+        }
+
+        private readonly Dictionary<string, IValidator> _ValidatorsByName;
+        private readonly Dictionary<string, IList<object>> _ValidationErrorsByProperty =
+            new Dictionary<string, IList<object>>();
 
         protected ValidationViewModel()
         {
-            _Properties = GetType().GetProperties().ToDictionary(x => x.Name);
+            _ValidatorsByName = GetType().GetProperties()
+                .Select(x => new ReflectionValidator(x))
+                .ToDictionary(x => x.Property.Name, x => (IValidator)x);
         }
 
         protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
@@ -27,29 +67,22 @@ namespace SimplyBudget.ViewModels
             ValidateProperty(propertyName);
         }
 
-        public bool ValidateModel()
+        protected bool ValidateModel()
         {
             bool rv = true;
-            foreach (string propertyName in _Properties.Keys)
+            foreach (string propertyName in _ValidatorsByName.Keys)
             {
                 rv &= ValidateProperty(propertyName);
             }
             return rv;
         }
 
-        public bool ValidateProperty(string propertyName)
+        protected bool ValidateProperty(string propertyName)
         {
-            if (_Properties.TryGetValue(propertyName, out PropertyInfo propInfo))
+            if (_ValidatorsByName.TryGetValue(propertyName, out IValidator validator))
             {
-                var errors = new List<object>();
-                foreach (var attribute in propInfo.GetCustomAttributes<ValidationAttribute>())
-                {
-                    if (!attribute.IsValid(propInfo.GetValue(this)))
-                    {
-                        errors.Add(attribute.FormatErrorMessage(propertyName));
-                    }
-                }
-
+                var errors = validator.Validate(this).ToList();
+                
                 if (errors.Any())
                 {
                     _ValidationErrorsByProperty[propertyName] = errors;
@@ -65,9 +98,38 @@ namespace SimplyBudget.ViewModels
             return true;
         }
 
+        protected void SetValidationErrors(string propertyName, IEnumerable<object> errors)
+        {
+            if (string.IsNullOrWhiteSpace(propertyName))
+            {
+                throw new ArgumentException($"'{nameof(propertyName)}' cannot be null or whitespace", nameof(propertyName));
+            }
+
+            _ValidationErrorsByProperty[propertyName] = errors?.ToList() ?? (IList<object>)Array.Empty<object>();
+            ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(propertyName));
+        }
+
+        protected void ClearValidationErrors(string propertyName) 
+            => SetValidationErrors(propertyName, Array.Empty<object>());
+
+        protected void AddValidator(string propertyName, Func<IEnumerable<object>> validate)
+        {
+            if (string.IsNullOrWhiteSpace(propertyName))
+            {
+                throw new ArgumentException($"'{nameof(propertyName)}' cannot be null or whitespace", nameof(propertyName));
+            }
+
+            if (validate is null)
+            {
+                throw new ArgumentNullException(nameof(validate));
+            }
+
+            _ValidatorsByName[propertyName] = new DelegateValidator(validate);
+        }
+
         public IEnumerable GetErrors(string propertyName)
         {
-            if (_ValidationErrorsByProperty.TryGetValue(propertyName, out List<object> errors))
+            if (_ValidationErrorsByProperty.TryGetValue(propertyName, out IList<object> errors))
             {
                 return errors;
             }

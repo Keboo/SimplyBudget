@@ -1,12 +1,31 @@
-﻿using System.Globalization;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
+using System.Threading.Tasks;
 
 namespace SimplyBudgetShared.Utilities
 {
     public static class ExtensionMethods
     {
+        public static Task<List<T>> ToListAsync<T>(this IAsyncEnumerable<T> items)
+        {
+            if (items is null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+            return Implementation(items);
+
+            static async Task<List<T>> Implementation(IAsyncEnumerable<T> items)
+            {
+                var rv = new List<T>();
+                await foreach (var item in items)
+                {
+                    rv.Add(item);
+                }
+                return rv;
+            }
+        }
+
         public static IEnumerable<T> PumpItems<T>(this IEnumerable<T> items, IEqualityComparer<T>? comparer = null)
         {
             if (items is null)

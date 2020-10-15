@@ -1,5 +1,4 @@
-﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
-using Microsoft.Toolkit.Mvvm.Input;
+﻿using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
 using SimplyBudget.Validation;
@@ -14,47 +13,6 @@ using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
 {
-    public class LineItemViewModel : ObservableObject
-    {
-        public ICommand SetAmountCommand { get; }
-
-        public IList<ExpenseCategory> ExpenseCategories { get; }
-
-        public LineItemViewModel(IList<ExpenseCategory> expenseCategories)
-        {
-            ExpenseCategories = expenseCategories ?? throw new ArgumentNullException(nameof(expenseCategories));
-
-            SetAmountCommand = new RelayCommand(OnSetAmount);
-        }
-
-        private void OnSetAmount()
-        {
-            Amount = DesiredAmount;
-        }
-
-        private int _amount;
-        public int Amount
-        {
-            get => _amount;
-            set => SetProperty(ref _amount, value);
-        }
-
-
-        private int _desiredAmount;
-        public int DesiredAmount
-        {
-            get => _desiredAmount;
-            set => SetProperty(ref _desiredAmount, value);
-        }
-
-        private ExpenseCategory _selectedCategory;
-        public ExpenseCategory SelectedCategory
-        {
-            get => _selectedCategory;
-            set => SetProperty(ref _selectedCategory, value);
-        }
-    }
-
     public class AddItemViewModel : ValidationViewModel
     {
         public ICommand SubmitCommand { get; }
@@ -83,7 +41,7 @@ namespace SimplyBudget.ViewModels
                 if (SetProperty(ref _selectedType, value))
                 {
                     LineItems.Clear();
-                    switch(value)
+                    switch (value)
                     {
                         case AddType.Transaction:
                             LineItems.Add(new LineItemViewModel(ExpenseCategories));
@@ -98,6 +56,7 @@ namespace SimplyBudget.ViewModels
                         case AddType.Transfer:
                             LineItems.Add(new LineItemViewModel(ExpenseCategories));
                             LineItems.Add(new LineItemViewModel(ExpenseCategories) { DesiredAmount = -1 });
+                            Date = DateTime.Today;
                             break;
                     }
                 }
@@ -114,7 +73,7 @@ namespace SimplyBudget.ViewModels
                 {
                     if (SelectedType == AddType.Income)
                     {
-                        foreach(var lineItem in LineItems.Where(x => x.SelectedCategory?.UsePercentage == true))
+                        foreach (var lineItem in LineItems.Where(x => x.SelectedCategory?.UsePercentage == true))
                         {
                             lineItem.DesiredAmount = (int)(value * lineItem.SelectedCategory.BudgetedPercentage / 100.0);
                         }
@@ -150,9 +109,11 @@ namespace SimplyBudget.ViewModels
             RemoveItemCommand = new RelayCommand<LineItemViewModel>(OnRemoveItem);
             CancelCommand = new RelayCommand(OnCancel);
 
-            ExpenseCategories = context.ExpenseCategories.OrderBy(x => x.Name).ToList();
+            ExpenseCategories = context.ExpenseCategories.AsEnumerable().OrderBy(x => x.Name).ToList();
 
             SelectedType = AddType.Transaction;
+
+            PropertyChanged += (_, __) => ClearValidationErrors(nameof(SubmitCommand));
         }
 
         private void OnCancel()
@@ -183,59 +144,93 @@ namespace SimplyBudget.ViewModels
 
         private async Task OnSubmit()
         {
-            bool result = SelectedType switch
+            var errors = await (SelectedType switch
             {
-                AddType.Transaction => await TrySubmitTransaction(),
-                AddType.Income => await TrySubmitIncome(),
-                AddType.Transfer => await TrySubmitTransfer(),
-                _ => false
-            };
+                AddType.Transaction => TrySubmitTransaction(),
+                AddType.Income => TrySubmitIncome(),
+                AddType.Transfer => TrySubmitTransfer(),
+                _ => throw new InvalidOperationException()
+            }).ToListAsync();
 
-            if (result)
+            SetValidationErrors(nameof(SubmitCommand), errors);
+
+            if (!errors.Any())
             {
                 Messenger.Send(new DoneAddingItemMessage());
             }
         }
 
-        private async Task<bool> TrySubmitTransfer()
+        private async IAsyncEnumerable<string> TrySubmitTransfer()
         {
-            if (Date is null) return false;
-            if (TotalAmount <= 0) return false;
+            if (Date is null)
+            {
+                yield return "Date is required";
+                yield break;
+            }
+            if (TotalAmount <= 0)
+            {
+                yield return "Total amount is required";
+                yield break;
+            }
 
             var items = LineItems.Where(x => x.SelectedCategory != null).ToList();
-            if (items.Count != 2) return false;
+            if (items.Count != 2)
+            {
+                yield return "Both a From and To categories must be defined";
+                yield break;
+            }
+
+            if (items[0].SelectedCategory.ID == items[1].SelectedCategory.ID)
+            {
+                yield return "From and To categories must be different";
+                yield break;
+            }
 
             await Context.AddTransfer(Description, Date.Value, TotalAmount, items[0].SelectedCategory, items[1].SelectedCategory);
-
-            return true;
         }
 
-        private async Task<bool> TrySubmitIncome()
+        private async IAsyncEnumerable<string> TrySubmitIncome()
         {
-            if (Date is null) return false;
-            if (TotalAmount <= 0) return false;
+            if (Date is null)
+            {
+                yield return "Date is required";
+                yield break;
+            }
+            if (TotalAmount <= 0)
+            {
+                yield return "Total amount is required";
+                yield break;
+            }
 
             var items = GetValidLineItems().ToList();
-            if (items.Sum(x => x.Amount) != TotalAmount) return false;
+            if (items.Sum(x => x.Amount) != TotalAmount)
+            {
+                yield return "All income must be allocated to a category";
+                yield break;
+            }
 
             await Context.AddIncome(Description, Date.Value, items.Select(x => (x.Amount, x.SelectedCategory.ID)).ToArray());
-
-            return true;
         }
 
-        private async Task<bool> TrySubmitTransaction()
+        private async IAsyncEnumerable<string> TrySubmitTransaction()
         {
-            if (Date is null) return false;
+            if (Date is null)
+            {
+                yield return "Date is required";
+                yield break;
+            }
 
             var items = GetValidLineItems().ToList();
-            if (!items.Any()) return false;
+            if (!items.Any())
+            {
+                yield return "At least one line item must be completed";
+                yield break;
+            }
 
             await Context.AddTransaction(Description, Date.Value, items.Select(vm => (vm.Amount, vm.SelectedCategory.ID)).ToArray());
-
-            return true;
         }
 
-        private IEnumerable<LineItemViewModel> GetValidLineItems() 
+        private IEnumerable<LineItemViewModel> GetValidLineItems()
             => LineItems.Where(x => x.SelectedCategory != null && x.Amount > 0);
     }
 
