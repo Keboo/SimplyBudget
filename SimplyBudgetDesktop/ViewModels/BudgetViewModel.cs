@@ -1,4 +1,5 @@
 ﻿using Microsoft.Toolkit.Mvvm.Messaging;
+using SimplyBudget.Messaging;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Events;
 using SimplyBudgetShared.Utilities;
@@ -10,19 +11,20 @@ using System.Windows.Data;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-    public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelEx>, 
-        IRecipient<ExpenseCategoryEvent>
+    public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelEx>,
+        IRecipient<ExpenseCategoryEvent>,
+        IRecipient<CurrentMonthChanged>
     {
         private BudgetContext Context { get; } = BudgetContext.Instance;
+        public IMessenger Messenger { get; }
+        public ICurrentMonth CurrentMonth { get; }
 
-        public BudgetViewModel(IMessenger messenger)
+        public BudgetViewModel(IMessenger messenger, ICurrentMonth currentMonth)
         {
-            if (messenger is null)
-            {
-                throw new ArgumentNullException(nameof(messenger));
-            }
-
-            messenger.Register(this);
+            Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+            CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
+            messenger.Register<ExpenseCategoryEvent>(this);
+            messenger.Register<CurrentMonthChanged>(this);
             GroupItems = true;
         }
 
@@ -59,9 +61,9 @@ namespace SimplyBudget.ViewModels.MainWindow
 
         protected override async IAsyncEnumerable<ExpenseCategoryViewModelEx> GetItems()
         {
-            await foreach(var category in Context.ExpenseCategories)
+            await foreach (var category in Context.ExpenseCategories)
             {
-                yield return await ExpenseCategoryViewModelEx.Create(Context, category);
+                yield return await ExpenseCategoryViewModelEx.Create(Context, category, CurrentMonth.CurrenMonth);
             }
         }
 
@@ -84,6 +86,10 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
         }
 
+
+        public void Receive(CurrentMonthChanged message)
+            => LoadItemsAsync();
+
         private void SetDescriptors()
         {
             _view.SortDescriptions.Clear();
@@ -103,7 +109,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             await base.ReloadItemsAsync();
             int percentage = 0;
             int total = 0;
-            foreach(var category in Items)
+            foreach (var category in Items)
             {
                 if (category.BudgetedPercentage > 0)
                 {

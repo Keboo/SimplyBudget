@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Toolkit.Mvvm.Messaging;
+using SimplyBudget.Messaging;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Events;
 using SimplyBudgetShared.Utilities;
@@ -17,19 +18,18 @@ namespace SimplyBudget.ViewModels.MainWindow
         IRecipient<TransactionItemEvent>,
         IRecipient<IncomeEvent>,
         IRecipient<IncomeItemEvent>,
-        IRecipient<TransferEvent>
+        IRecipient<TransferEvent>,
+        IRecipient<CurrentMonthChanged>
     {
         public BudgetContext Context { get; }
-
-        private DateTime OldestTime { get; set; }
-
+        public ICurrentMonth CurrentMonth { get; }
 
         public ICollectionView HistoryView => _view;
 
-        public HistoryViewModel(BudgetContext context, IMessenger messenger)
+        public HistoryViewModel(BudgetContext context, IMessenger messenger, ICurrentMonth currentMonth)
         {
             Context = context ?? throw new ArgumentNullException(nameof(context));
-            OldestTime = DateTime.Now.AddMonths(-2).StartOfMonth();
+            CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             Sort(nameof(BudgetHistoryViewModel.Date), ListSortDirection.Descending);
 
             messenger.Register<TransactionEvent>(this);
@@ -37,20 +37,23 @@ namespace SimplyBudget.ViewModels.MainWindow
             messenger.Register<IncomeEvent>(this);
             messenger.Register<IncomeItemEvent>(this);
             messenger.Register<TransferEvent>(this);
+            messenger.Register<CurrentMonthChanged>(this);
         }
 
         protected override async IAsyncEnumerable<BudgetHistoryViewModel> GetItems()
         {
-            await foreach(var item in Context.Incomes.Where(x => x.Date >= OldestTime).AsAsyncEnumerable())
+            var oldestTime = CurrentMonth.CurrenMonth.AddMonths(-2).StartOfMonth();
+
+            await foreach(var item in Context.Incomes.Where(x => x.Date >= oldestTime).AsAsyncEnumerable())
             {
                 yield return BudgetHistoryViewModel.Create(item);
             }
-            await foreach (var item in Context.Transactions.Where(x => x.Date >= OldestTime).AsAsyncEnumerable())
+            await foreach (var item in Context.Transactions.Where(x => x.Date >= oldestTime).AsAsyncEnumerable())
             {
                 int total = Context.TransactionItems.Where(x => x.TransactionID == item.ID).Select(x => x.Amount).Sum();
                 yield return BudgetHistoryViewModel.Create(item, total);
             }
-            await foreach(var item in Context.Transfers.Where(x => x.Date >= OldestTime).AsAsyncEnumerable())
+            await foreach(var item in Context.Transfers.Where(x => x.Date >= oldestTime).AsAsyncEnumerable())
             {
                 var from = await Context.FindAsync<ExpenseCategory>(item.FromExpenseCategoryID);
                 var to = await Context.FindAsync<ExpenseCategory>(item.ToExpenseCategoryID);
@@ -80,5 +83,7 @@ namespace SimplyBudget.ViewModels.MainWindow
         public void Receive(TransactionItemEvent message) => LoadItemsAsync();
 
         public void Receive(TransferEvent message) => LoadItemsAsync();
+
+        public void Receive(CurrentMonthChanged message) => LoadItemsAsync();
     }
 }

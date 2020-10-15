@@ -71,14 +71,7 @@
                         <Grid.InputBindings>
                             <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
                         </Grid.InputBindings>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition />
-                        </Grid.RowDefinitions>
 
-                        <Grid Margin="5,3" Grid.Row="0">
-                            <CheckBox IsChecked="{Binding GroupItems}" Content="Group Items"/>
-                        </Grid>
                         <ListView ItemsSource="{Binding ExpenseCategoriesView}" Style="{StaticResource MainWindowListViewStyle}" Grid.Row="1"
                                   materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
                             <ListView.ItemContainerStyle>
@@ -189,7 +182,7 @@
                         </ListView>
                     </Grid>
                 </TabItem>
-                
+
                 <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
                     <TabItem.Header>
                         <materialDesign:PackIcon Kind="History" Width="30" Height="30" />
@@ -236,12 +229,35 @@
             </TabControl>
         </materialDesign:DrawerHost>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Right">
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-            <TextBlock Text="{Binding Budget.TotalBudget, StringFormat='Total Monthly Budget: {0}', Converter={valueConverter:CurrencyValueConverter}}" />
+            <ComboBox HorizontalAlignment="Right" 
+                      SelectedItem="{Binding SelectedMonth}"
+                      ItemsSource="{Binding PastMonths}"
+                      materialDesign:ComboBoxAssist.ClassicMode="True"
+                      materialDesign:ComboBoxAssist.ShowSelectedItem="True">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding StringFormat='MMMM yyyy'}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+
+            <TextBlock Text="{Binding Budget.TotalBudget, StringFormat='Total Monthly Budget: {0}', Converter={valueConverter:CurrencyValueConverter}}" 
+                       VerticalAlignment="Center"
+                       Grid.Column="2"/>
+
             <ItemsControl DataContext="{Binding Accounts}"
                           ItemsSource="{Binding AccountsView}"
-                          HorizontalAlignment="Right">
+                          HorizontalAlignment="Right"
+                          VerticalAlignment="Center"
+                          Grid.Column="3">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel />
@@ -257,6 +273,10 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+        </Grid>
+        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Right">
+
+
         </StackPanel>
     </Grid>
 </Window>
