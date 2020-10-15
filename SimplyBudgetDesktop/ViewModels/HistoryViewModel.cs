@@ -16,7 +16,8 @@ namespace SimplyBudget.ViewModels.MainWindow
         IRecipient<TransactionEvent>,
         IRecipient<TransactionItemEvent>,
         IRecipient<IncomeEvent>,
-        IRecipient<IncomeItemEvent>
+        IRecipient<IncomeItemEvent>,
+        IRecipient<TransferEvent>
     {
         public BudgetContext Context { get; }
 
@@ -35,6 +36,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             messenger.Register<TransactionItemEvent>(this);
             messenger.Register<IncomeEvent>(this);
             messenger.Register<IncomeItemEvent>(this);
+            messenger.Register<TransferEvent>(this);
         }
 
         protected override async IAsyncEnumerable<BudgetHistoryViewModel> GetItems()
@@ -47,6 +49,12 @@ namespace SimplyBudget.ViewModels.MainWindow
             {
                 int total = Context.TransactionItems.Where(x => x.TransactionID == item.ID).Select(x => x.Amount).Sum();
                 yield return BudgetHistoryViewModel.Create(item, total);
+            }
+            await foreach(var item in Context.Transfers.Where(x => x.Date >= OldestTime).AsAsyncEnumerable())
+            {
+                var from = await Context.FindAsync<ExpenseCategory>(item.FromExpenseCategoryID);
+                var to = await Context.FindAsync<ExpenseCategory>(item.ToExpenseCategoryID);
+                yield return BudgetHistoryViewModel.Create(item, from, to);
             }
         }
 
@@ -70,5 +78,7 @@ namespace SimplyBudget.ViewModels.MainWindow
         public void Receive(TransactionEvent message) => LoadItemsAsync();
 
         public void Receive(TransactionItemEvent message) => LoadItemsAsync();
+
+        public void Receive(TransferEvent message) => LoadItemsAsync();
     }
 }

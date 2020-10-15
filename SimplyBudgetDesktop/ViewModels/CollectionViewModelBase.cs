@@ -13,6 +13,15 @@ namespace SimplyBudget.ViewModels
 {
     public abstract class CollectionViewModelBase : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
     {
+        public ICommand RefreshCommand { get; }
+
+        protected CollectionViewModelBase()
+        {
+            RefreshCommand = new RelayCommand(OnRefresh);
+        }
+
+        private void OnRefresh() => LoadItemsAsync();
+
         public abstract void LoadItemsAsync();
 
         public abstract void UnloadItems();

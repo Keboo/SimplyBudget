@@ -68,6 +68,9 @@
                         <materialDesign:PackIcon Kind="FormatListBulletedSquare" Width="30" Height="30" />
                     </TabItem.Header>
                     <Grid DataContext="{Binding Budget}">
+                        <Grid.InputBindings>
+                            <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
+                        </Grid.InputBindings>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition />
@@ -192,6 +195,9 @@
                         <materialDesign:PackIcon Kind="History" Width="30" Height="30" />
                     </TabItem.Header>
                     <Grid DataContext="{Binding History}">
+                        <Grid.InputBindings>
+                            <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
+                        </Grid.InputBindings>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition />

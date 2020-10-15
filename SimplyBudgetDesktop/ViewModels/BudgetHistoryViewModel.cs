@@ -4,7 +4,7 @@ using SimplyBudgetShared.Utilities;
 using System;
 using System.Threading.Tasks;
 
-namespace SimplyBudget.ViewModels.MainWindow
+namespace SimplyBudget.ViewModels
 {
     public abstract class BudgetHistoryViewModel : ObservableObject
     {
@@ -26,6 +26,26 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
 
             return new TransactionBudgetHistoryViewModel(transaction, totalAmount);
+        }
+
+        internal static BudgetHistoryViewModel Create(Transfer transfer, ExpenseCategory from, ExpenseCategory to)
+        {
+            if (transfer is null)
+            {
+                throw new ArgumentNullException(nameof(transfer));
+            }
+
+            if (from is null)
+            {
+                throw new ArgumentNullException(nameof(from));
+            }
+
+            if (to is null)
+            {
+                throw new ArgumentNullException(nameof(to));
+            }
+
+            return new TransferBudgetHistoryViewModel(transfer, from, to);
         }
 
         private class IncomeBudgetHistoryViewModel : BudgetHistoryViewModel
@@ -64,6 +84,26 @@ namespace SimplyBudget.ViewModels.MainWindow
             public override async Task Delete(BudgetContext context)
             {
                 context.Remove(Transaction);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        private class TransferBudgetHistoryViewModel : BudgetHistoryViewModel
+        {
+            public Transfer Transfer { get; }
+
+            public TransferBudgetHistoryViewModel(Transfer transfer, ExpenseCategory from, ExpenseCategory to)
+            {
+                Transfer = transfer;
+
+                Date = transfer.Date;
+                Description = transfer.Description;
+                DisplayAmount = $"{transfer.Amount.FormatCurrency()} ({from.Name} => {to.Name})";
+            }
+
+            public override async Task Delete(BudgetContext context)
+            {
+                context.Remove(Transfer);
                 await context.SaveChangesAsync();
             }
         }
