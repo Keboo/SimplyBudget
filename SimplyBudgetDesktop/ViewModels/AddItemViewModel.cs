@@ -14,14 +14,6 @@ using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
 {
-    public enum AddType
-    {
-        None,
-        Transaction,
-        Income,
-        Transfer
-    }
-
     public class LineItemViewModel : ObservableObject
     {
         public ICommand SetAmountCommand { get; }

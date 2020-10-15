@@ -117,6 +117,9 @@
         </DataTemplate.Resources>
         
         <Grid MinWidth="300" Margin="10">
+            <Grid.InputBindings>
+                <KeyBinding Key="Escape" Command="{Binding CancelCommand}"/>
+            </Grid.InputBindings>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition />

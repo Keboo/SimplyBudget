@@ -34,7 +34,7 @@ namespace SimplyBudget.ViewModels
             [Dependency]IMessenger messenger = null, 
             [Dependency]BudgetContext context = null)
         {
-            ShowAddCommand = new RelayCommand(OnShowAdd);
+            ShowAddCommand = new RelayCommand<AddType?>(OnShowAdd);
 
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
             Context = context ?? throw new ArgumentNullException(nameof(context));
@@ -49,9 +49,13 @@ namespace SimplyBudget.ViewModels
             messenger.Register(this);
         }
 
-        private void OnShowAdd()
+        private void OnShowAdd(AddType? addType)
         {
             AddItem = new AddItemViewModel(Context, Messenger);
+            if (addType != null)
+            {
+                AddItem.SelectedType = addType.Value;
+            }
         }
 
         public void Receive(DoneAddingItemMessage message)
