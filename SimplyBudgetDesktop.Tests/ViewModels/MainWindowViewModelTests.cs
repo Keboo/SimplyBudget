@@ -15,18 +15,13 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         [TestMethod]
         public void Constructor_CreatesDependencies()
         {
-            var fixture = new BudgetDatabaseContext();
-            var messenger = new WeakReferenceMessenger();
+            var mocker = new AutoMocker().WithMessenger();
+            using var scope = mocker.BeginDbScope();
 
-            fixture.PerformDatabaseOperation(context =>
-            {
-                var vm = new MainWindowViewModel(messenger, context);
-                Assert.IsNotNull(vm.Budget);
-                Assert.IsNotNull(vm.History);
-                Assert.IsNotNull(vm.Accounts);
-
-                return Task.CompletedTask;
-            });
+            var vm = mocker.CreateInstance<MainWindowViewModel>();
+            Assert.IsNotNull(vm.Budget);
+            Assert.IsNotNull(vm.History);
+            Assert.IsNotNull(vm.Accounts);
         }
 
         [TestMethod]
