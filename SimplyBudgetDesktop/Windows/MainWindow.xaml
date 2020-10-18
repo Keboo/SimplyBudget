@@ -59,7 +59,7 @@
                 <materialDesign:NavigationRailAssist.FloatingContent>
                     <Button Style="{StaticResource MaterialDesignFloatingActionAccentButton}"
                             Margin="0,8" Command="{Binding ShowAddCommand}">
-                        <materialDesign:PackIcon Kind="Plus" Width="30" Height="30" Margin="13,13,0,0"/>
+                        <materialDesign:PackIcon Kind="Plus" Width="30" Height="30" />
                     </Button>
                 </materialDesign:NavigationRailAssist.FloatingContent>
 
@@ -72,10 +72,10 @@
                             <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
                         </Grid.InputBindings>
 
-                        <ListView ItemsSource="{Binding ExpenseCategoriesView}" Style="{StaticResource MainWindowListViewStyle}" Grid.Row="1"
+                        <ListView ItemsSource="{Binding ExpenseCategoriesView}" Grid.Row="1"
                                   materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
                             <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem" BasedOn="{StaticResource MainWindowListViewItem}">
+                                <Style TargetType="ListViewItem">
                                     <!--<Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{Binding DataContext.ShowExpenseCategoryDetailsCommand, RelativeSource={RelativeSource AncestorType=windows:MainWindow}}"/>-->
                                     <Setter Property="utilities:AttachedProperties.DoubleClickCommandParameter" Value="{Binding}"/>
                                     <Setter Property="ContextMenu">
@@ -83,15 +83,15 @@
                                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                 <MenuItem Header="_Edit" Command="{commands:EditDatabaseItemCommand}" 
                                                           utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
-                                                    <MenuItem.Icon>
+                                                    <!--<MenuItem.Icon>
                                                         <Path Style="{StaticResource EditIcon}"/>
-                                                    </MenuItem.Icon>
+                                                    </MenuItem.Icon>-->
                                                 </MenuItem>
                                                 <MenuItem Header="_Delete" Command="{commands:DeleteDatabaseItemCommand}"
                                                           utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
-                                                    <MenuItem.Icon>
+                                                    <!--<MenuItem.Icon>
                                                         <Path Style="{StaticResource DeleteIcon}"/>
-                                                    </MenuItem.Icon>
+                                                    </MenuItem.Icon>-->
                                                 </MenuItem>
                                                 <Separator />
                                                 <MenuItem Header="Transaction _History" Command="{commands:ShowExpenseCategoryHistory}"

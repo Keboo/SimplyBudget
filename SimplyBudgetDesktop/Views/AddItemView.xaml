@@ -144,7 +144,7 @@
                                 VerticalAlignment="Top"
                                 VerticalContentAlignment="Top"
                                 Grid.Column="1">
-                            <materialDesign:PackIcon Kind="Close" Margin="6,6,0,0"/>
+                            <materialDesign:PackIcon Kind="Close" Margin="3"/>
                         </Button>
                     </Grid>
                 </materialDesign:ColorZone>

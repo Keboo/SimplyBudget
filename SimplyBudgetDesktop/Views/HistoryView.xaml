@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:data="clr-namespace:SimplyBudgetShared.Data;assembly=SimplyBudgetShared"
              xmlns:vm="clr-namespace:SimplyBudget.ViewModels"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" 
              xmlns:utilities="clr-namespace:SimplyBudget.Utilities"
@@ -18,8 +19,56 @@
             <RowDefinition />
         </Grid.RowDefinitions>
 
-        <ListView ItemsSource="{Binding HistoryView}" 
-                  Style="{StaticResource MainWindowListViewStyle}" 
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" MinWidth="120"/>
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <ItemsControl ItemsSource="{Binding FilterCategories}" VerticalAlignment="Center" Margin="3">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type data:ExpenseCategory}">
+                        <materialDesign:Chip
+                            Content="{Binding Name}"
+                            IsDeletable="True"
+                            DeleteCommand="{Binding DataContext.RemoveFilterCommand, RelativeSource={RelativeSource FindAncestor, AncestorType=ItemsControl}}"
+                            DeleteCommandParameter="{Binding}"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            
+            <ComboBox ItemsSource="{Binding ExpenseCategories}"
+                      DisplayMemberPath="Name"
+                      IsEditable="True"
+                      x:Name="FilterComboBox"
+                      materialDesign:HintAssist.Hint="Add Filter"
+                      SelectedItem="{Binding SelectedCategory, UpdateSourceTrigger=PropertyChanged}"
+                      
+                      Grid.Column="1">
+                <ComboBox.InputBindings>
+                    <KeyBinding Key="Return" 
+                                Command="{Binding AddFilterCommand}"
+                                CommandParameter="{Binding SelectedCategory}"/>
+                </ComboBox.InputBindings>
+            </ComboBox>
+            <Button Style="{StaticResource MaterialDesignFlatButton}"
+                    Command="{Binding AddFilterCommand}"
+                    CommandParameter="{Binding SelectedCategory}"
+                    Padding="5,0" 
+                    Grid.Column="2"
+                    Content="{materialDesign:PackIcon Kind=Add}" />
+
+        </Grid>
+        
+        <ListView ItemsSource="{Binding HistoryView}"
                   x:Name="HistoryListView"
                   Grid.Row="1"
                   materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
@@ -32,7 +81,7 @@
                 </ContextMenu>
             </ListView.ContextMenu>
             <ListView.ItemContainerStyle>
-                <Style TargetType="ListViewItem" BasedOn="{StaticResource MainWindowListViewItem}">
+                <Style TargetType="ListViewItem">
                     <!--<Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{Binding DataContext.ShowExpenseCategoryDetailsCommand, RelativeSource={RelativeSource AncestorType=windows:MainWindow}}"/>-->
                     <Setter Property="utilities:AttachedProperties.DoubleClickCommandParameter" Value="{Binding}"/>
                 </Style>

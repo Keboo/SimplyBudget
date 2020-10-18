@@ -1,10 +1,10 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     
-    <Style TargetType="Path">
+    <!--<Style TargetType="Path">
         <Setter Property="Stretch" Value="Uniform" />
         <Setter Property="Fill" Value="{StaticResource IconBrush}"/>
-    </Style>
+    </Style>-->
     
     <Style x:Key="EditIcon" TargetType="Path" BasedOn="{StaticResource {x:Type Path}}">
         <Setter Property="Data" Value="M0,51.811003L12.293,58.86939 1.1757193,63.999998z M18.11735,12.648L38.103998,24.119321 22.75799,50.853998 21.614605,47.435965 15.750179,46.830458 14.753991,43.156118 9.0027626,42.957916 7.3934724,38.929478 2.7749995,39.382679z M27.724333,0.00095844269C28.275374,-0.012296677,28.813618,0.11171532,29.298115,0.38925457L43.451544,8.5127215C45.170199,9.5000639,45.55559,12.057143,44.314722,14.221125L42.627268,17.164001 22.244999,5.4634366 23.932455,2.5205812C24.82433,0.96517754,26.316117,0.034832954,27.724333,0.00095844269z" />
