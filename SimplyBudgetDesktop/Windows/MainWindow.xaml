@@ -8,7 +8,7 @@
         xmlns:commands="clr-namespace:SimplyBudget.Commands" 
         xmlns:vmData="clr-namespace:SimplyBudget.ViewModels.Data" 
         xmlns:valueConverter="clr-namespace:SimplyBudget.ValueConverter"
-        xmlns:utilities="clr-namespace:SimplyBudget.Utilities"
+        xmlns:utilities="clr-namespace:SimplyBudget.Utilities" xmlns:views="clr-namespace:SimplyBudget.Views"
         mc:Ignorable="d"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         TextElement.FontWeight="Regular"
@@ -187,44 +187,8 @@
                     <TabItem.Header>
                         <materialDesign:PackIcon Kind="History" Width="30" Height="30" />
                     </TabItem.Header>
-                    <Grid DataContext="{Binding History}">
-                        <Grid.InputBindings>
-                            <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
-                        </Grid.InputBindings>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition />
-                        </Grid.RowDefinitions>
 
-                        <ListView ItemsSource="{Binding HistoryView}" 
-                                  Style="{StaticResource MainWindowListViewStyle}" 
-                                  x:Name="HistoryListView"
-                                  Grid.Row="1"
-                                  materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
-                            <ListView.CommandBindings>
-                                <CommandBinding Command="{x:Static ApplicationCommands.Delete}" Executed="DeleteSelectedHistoryItemExecuted" />
-                            </ListView.CommandBindings>
-                            <ListView.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="_Delete" Command="{x:Static ApplicationCommands.Delete}"/>
-                                </ContextMenu>
-                            </ListView.ContextMenu>
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem" BasedOn="{StaticResource MainWindowListViewItem}">
-                                    <!--<Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{Binding DataContext.ShowExpenseCategoryDetailsCommand, RelativeSource={RelativeSource AncestorType=windows:MainWindow}}"/>-->
-                                    <Setter Property="utilities:AttachedProperties.DoubleClickCommandParameter" Value="{Binding}"/>
-                                </Style>
-                            </ListView.ItemContainerStyle>
-
-                            <ListView.View>
-                                <GridView AllowsColumnReorder="False" >
-                                    <GridViewColumn DisplayMemberBinding="{Binding Date, StringFormat='d'}" Header="Date" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
-                                    <GridViewColumn DisplayMemberBinding="{Binding Description}" Header="Description" utilities:AttachedProperties.SortPropertyName="Name"/>
-                                    <GridViewColumn DisplayMemberBinding="{Binding DisplayAmount}" Header="Amount" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
-                    </Grid>
+                    <views:HistoryView DataContext="{Binding History}" />
                 </TabItem>
             </TabControl>
         </materialDesign:DrawerHost>

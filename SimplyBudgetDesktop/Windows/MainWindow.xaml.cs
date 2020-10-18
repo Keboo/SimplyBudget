@@ -1,6 +1,4 @@
 ﻿using SimplyBudget.ViewModels;
-using SimplyBudget.ViewModels.MainWindow;
-using System.Linq;
 
 namespace SimplyBudget.Windows
 {
@@ -13,12 +11,6 @@ namespace SimplyBudget.Windows
         {
             DataContext = new MainWindowViewModel();
             InitializeComponent();
-        }
-
-        private async void DeleteSelectedHistoryItemExecuted(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
-        {
-            var vm = (HistoryViewModel)HistoryListView.DataContext;
-            await vm.DeleteItems(HistoryListView.SelectedItems.OfType<BudgetHistoryViewModel>());
         }
     }
 }
