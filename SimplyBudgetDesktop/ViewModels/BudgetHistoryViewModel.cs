@@ -2,6 +2,7 @@
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels
@@ -129,6 +130,13 @@ namespace SimplyBudget.ViewModels
             private set => SetProperty(ref _displayAmount, value);
         }
 
+        public IReadOnlyList<BudgetHistoryDetailsViewModel> Details { get; }
+
         public abstract Task Delete(BudgetContext context);
+    }
+
+    public class BudgetHistoryDetailsViewModel
+    {
+
     }
 }
