@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
 using System;
 using System.Collections.Generic;
@@ -40,6 +41,37 @@ namespace SimplyBudgetSharedTests.Data
                 Assert.AreEqual(100, (await context.FindAsync<ExpenseCategory>(category1.ID)).CurrentBalance);
                 Assert.AreEqual(200, (await context.FindAsync<ExpenseCategory>(category2.ID)).CurrentBalance);
             });
+        }
+
+        [TestMethod]
+        public async Task OnRetrieve_GetsRelatedItems()
+        {
+            //Arrange
+            var fixture = new BudgetDatabaseContext();
+
+            var category1 = new ExpenseCategory { CurrentBalance = 100 };
+            var category2 = new ExpenseCategory { CurrentBalance = 200 };
+
+            Transfer? transfer = null;
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.AddRange(category1, category2);
+                await context.SaveChangesAsync();
+                transfer = await context.AddTransfer("Test", DateTime.Now, 30, category1, category2);
+            });
+
+            //Act
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                transfer = await context.Transfers
+                    .Include(x => x.FromExpenseCategory)
+                    .Include(x => x.ToExpenseCategory)
+                    .SingleAsync();
+            });
+
+            //Assert
+            Assert.AreEqual(category1.ID, transfer!.FromExpenseCategory?.ID);
+            Assert.AreEqual(category2.ID, transfer.ToExpenseCategory?.ID);
         }
     }
 }

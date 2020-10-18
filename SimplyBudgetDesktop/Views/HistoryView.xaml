@@ -8,7 +8,7 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" 
              xmlns:utilities="clr-namespace:SimplyBudget.Utilities"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance Type=vm:HistoryViewModel}"
+             d:DataContext="{d:DesignInstance Type=vm:BudgetHistoryViewModel}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid Grid.IsSharedSizeScope="True">
         <Grid.InputBindings>

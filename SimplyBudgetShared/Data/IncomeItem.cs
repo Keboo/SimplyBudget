@@ -9,9 +9,11 @@ namespace SimplyBudgetShared.Data
     {
         //[Indexed]
         public int IncomeID { get; set; }
+        public Income? Income { get; set; }
 
         //[Indexed]
         public int ExpenseCategoryID { get; set; }
+        public ExpenseCategory? ExpenseCategory { get; set; }
 
         public int Amount { get; set; }
 

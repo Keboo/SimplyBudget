@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,6 +22,8 @@ namespace SimplyBudgetShared.Data
         public int TotalAmount { get; set; }
 
         public string? Description { get; set; }
+
+        public List<IncomeItem>? IncomeItems { get; set; }
 
         public async Task BeforeRemove(BudgetContext context)
         {

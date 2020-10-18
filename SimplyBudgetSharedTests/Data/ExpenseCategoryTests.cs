@@ -47,7 +47,7 @@ namespace SimplyBudgetSharedTests.Data
                 var foundTransaction = context.Transactions.Single(x => x.ID == transaction!.ID);
                 Assert.AreEqual(description, foundTransaction.Description);
 
-                var foundTransactionItem = await context.TransactionItems.SingleOrDefaultAsync(x => x.TransactionID == transaction.ID);
+                var foundTransactionItem = await context.TransactionItems.SingleOrDefaultAsync(x => x.TransactionID == transaction!.ID);
                 Assert.AreEqual(amount, foundTransactionItem.Amount);
                 Assert.AreEqual(description, foundTransactionItem.Description);
                 Assert.AreEqual(category.ID, foundTransactionItem.ExpenseCategoryID);
@@ -90,7 +90,7 @@ namespace SimplyBudgetSharedTests.Data
                 Assert.AreEqual(description, foundTransaction.Description);
                 Assert.AreEqual(transactionDate.Date, foundTransaction.Date);
 
-                var foundTransactionItem = await context.TransactionItems.SingleOrDefaultAsync(x => x.TransactionID == transaction.ID);
+                var foundTransactionItem = await context.TransactionItems.SingleOrDefaultAsync(x => x.TransactionID == transaction!.ID);
                 Assert.AreEqual(amount, foundTransactionItem.Amount);
                 Assert.AreEqual(description, foundTransactionItem.Description);
                 Assert.AreEqual(category.ID, foundTransactionItem.ExpenseCategoryID);

@@ -7,8 +7,10 @@ namespace SimplyBudgetShared.Data
     public class TransactionItem : BaseItem, IBeforeCreate, IBeforeRemove
     {
         public int TransactionID { get; set; }
+        public Transaction? Transaction { get; set; }
 
         public int ExpenseCategoryID { get; set; }
+        public ExpenseCategory? ExpenseCategory { get; set; }
 
         public int Amount { get; set; }
 
