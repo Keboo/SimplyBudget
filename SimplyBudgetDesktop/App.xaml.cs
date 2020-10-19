@@ -12,7 +12,6 @@ namespace SimplyBudget
     {
         protected override void OnStartup(StartupEventArgs e)
         {
-            //BudgetContext.Instance.Database.EnsureCreated();
             BudgetContext.Instance.Database.Migrate();
             base.OnStartup(e);
         }

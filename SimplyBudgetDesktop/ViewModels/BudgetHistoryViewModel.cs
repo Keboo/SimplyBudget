@@ -3,6 +3,7 @@ using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels
@@ -19,34 +20,24 @@ namespace SimplyBudget.ViewModels
             return new IncomeBudgetHistoryViewModel(income);
         }
 
-        internal static BudgetHistoryViewModel Create(Transaction transaction, int totalAmount)
+        internal static BudgetHistoryViewModel Create(Transaction transaction)
         {
             if (transaction is null)
             {
                 throw new ArgumentNullException(nameof(transaction));
             }
 
-            return new TransactionBudgetHistoryViewModel(transaction, totalAmount);
+            return new TransactionBudgetHistoryViewModel(transaction);
         }
 
-        internal static BudgetHistoryViewModel Create(Transfer transfer, ExpenseCategory from, ExpenseCategory to)
+        internal static BudgetHistoryViewModel Create(Transfer transfer)
         {
             if (transfer is null)
             {
                 throw new ArgumentNullException(nameof(transfer));
             }
 
-            if (from is null)
-            {
-                throw new ArgumentNullException(nameof(from));
-            }
-
-            if (to is null)
-            {
-                throw new ArgumentNullException(nameof(to));
-            }
-
-            return new TransferBudgetHistoryViewModel(transfer, from, to);
+            return new TransferBudgetHistoryViewModel(transfer);
         }
 
         private class IncomeBudgetHistoryViewModel : BudgetHistoryViewModel
@@ -60,6 +51,9 @@ namespace SimplyBudget.ViewModels
                 Date = income.Date;
                 Description = income.Description;
                 DisplayAmount = $"({income.TotalAmount.FormatCurrency()})";
+
+                Details = income.IncomeItems.Select(x => new BudgetHistoryDetailsViewModel(x)).ToList();
+
             }
 
             public override async Task Delete(BudgetContext context)
@@ -73,13 +67,17 @@ namespace SimplyBudget.ViewModels
         {
             private Transaction Transaction { get; }
 
-            public TransactionBudgetHistoryViewModel(Transaction transaction, int totalAmount)
+            public TransactionBudgetHistoryViewModel(Transaction transaction)
             {
                 Transaction = transaction;
 
+                int total = transaction.TransactionItems.Sum(x => x.Amount);
+
                 Date = transaction.Date;
                 Description = transaction.Description;
-                DisplayAmount = totalAmount.FormatCurrency();
+                DisplayAmount = total.FormatCurrency();
+
+                Details = transaction.TransactionItems.Select(x => new BudgetHistoryDetailsViewModel(x)).ToList();
             }
 
             public override async Task Delete(BudgetContext context)
@@ -93,13 +91,19 @@ namespace SimplyBudget.ViewModels
         {
             public Transfer Transfer { get; }
 
-            public TransferBudgetHistoryViewModel(Transfer transfer, ExpenseCategory from, ExpenseCategory to)
+            public TransferBudgetHistoryViewModel(Transfer transfer)
             {
                 Transfer = transfer;
 
                 Date = transfer.Date;
                 Description = transfer.Description;
-                DisplayAmount = $"{transfer.Amount.FormatCurrency()} ({from.Name} => {to.Name})";
+                DisplayAmount = $"<{transfer.Amount.FormatCurrency()}>";
+
+                Details = new List<BudgetHistoryDetailsViewModel>
+                {
+                    new BudgetHistoryDetailsViewModel(transfer.Amount.FormatCurrency(), transfer.FromExpenseCategory.Name),
+                    new BudgetHistoryDetailsViewModel($"({transfer.Amount.FormatCurrency()})", transfer.ToExpenseCategory.Name),
+                };
             }
 
             public override async Task Delete(BudgetContext context)
@@ -130,13 +134,8 @@ namespace SimplyBudget.ViewModels
             private set => SetProperty(ref _displayAmount, value);
         }
 
-        public IReadOnlyList<BudgetHistoryDetailsViewModel> Details { get; }
+        public IReadOnlyList<BudgetHistoryDetailsViewModel> Details { get; private set;  }
 
         public abstract Task Delete(BudgetContext context);
-    }
-
-    public class BudgetHistoryDetailsViewModel
-    {
-
     }
 }

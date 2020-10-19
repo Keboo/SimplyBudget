@@ -96,7 +96,10 @@ namespace SimplyBudget.ViewModels.MainWindow
                 categoryList.AddRange(FilterCategories.Select(x => x.ID));
             }
             
-            var incomeQuery = Context.Incomes.Where(x => x.Date >= oldestTime);
+            var incomeQuery = Context.Incomes
+                .Include(x => x.IncomeItems)
+                .ThenInclude(x => x.ExpenseCategory)
+                .Where(x => x.Date >= oldestTime);
             if (categoryList.Any())
             {
 
@@ -110,7 +113,10 @@ namespace SimplyBudget.ViewModels.MainWindow
                 yield return BudgetHistoryViewModel.Create(item);
             }
 
-            var transactionQuery = Context.Transactions.Where(x => x.Date >= oldestTime);
+            var transactionQuery = Context.Transactions
+                .Include(x => x.TransactionItems)
+                .ThenInclude(x => x.ExpenseCategory)
+                .Where(x => x.Date >= oldestTime);
             if (categoryList.Any())
             {
                 transactionQuery = from transaction in transactionQuery
@@ -120,20 +126,20 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
             await foreach (var item in transactionQuery.AsAsyncEnumerable())
             {
-                int total = Context.TransactionItems.Where(x => x.TransactionID == item.ID).Select(x => x.Amount).Sum();
-                yield return BudgetHistoryViewModel.Create(item, total);
+                yield return BudgetHistoryViewModel.Create(item);
             }
 
-            var transferQuery = Context.Transfers.Where(x => x.Date >= oldestTime);
+            var transferQuery = Context.Transfers
+                .Include(x => x.FromExpenseCategory)
+                .Include(x => x.ToExpenseCategory)
+                .Where(x => x.Date >= oldestTime);
             if (categoryList.Any())
             {
                 transferQuery = transferQuery.Where(x => categoryList.Contains(x.FromExpenseCategoryID) || categoryList.Contains(x.ToExpenseCategoryID));
             }
             await foreach(var item in transferQuery.AsAsyncEnumerable())
             {
-                var from = await Context.FindAsync<ExpenseCategory>(item.FromExpenseCategoryID);
-                var to = await Context.FindAsync<ExpenseCategory>(item.ToExpenseCategoryID);
-                yield return BudgetHistoryViewModel.Create(item, from, to);
+                yield return BudgetHistoryViewModel.Create(item);
             }
         }
 
