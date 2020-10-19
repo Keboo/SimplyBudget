@@ -55,7 +55,8 @@
             </materialDesign:DrawerHost.RightDrawerContent>
 
             <TabControl Style="{StaticResource MaterialDesignNavigatilRailTabControl}"
-                        materialDesign:ColorZoneAssist.Mode="PrimaryMid">
+                        materialDesign:ColorZoneAssist.Mode="PrimaryMid"
+                        x:Name="TabControl">
                 <materialDesign:NavigationRailAssist.FloatingContent>
                     <Button Style="{StaticResource MaterialDesignFloatingActionAccentButton}"
                             Margin="0,8" Command="{Binding ShowAddCommand}">
@@ -68,6 +69,10 @@
                         <materialDesign:PackIcon Kind="FormatListBulletedSquare" Width="30" Height="30" />
                     </TabItem.Header>
                     <Grid DataContext="{Binding Budget}">
+                        <Grid.CommandBindings>
+                            <CommandBinding Command="{x:Static ApplicationCommands.Open}"
+                                            Executed="Open_Executed" />
+                        </Grid.CommandBindings>
                         <Grid.InputBindings>
                             <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
                         </Grid.InputBindings>
@@ -76,7 +81,7 @@
                                   materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
-                                    <!--<Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{Binding DataContext.ShowExpenseCategoryDetailsCommand, RelativeSource={RelativeSource AncestorType=windows:MainWindow}}"/>-->
+                                    <Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{x:Static ApplicationCommands.Open}"/>
                                     <Setter Property="utilities:AttachedProperties.DoubleClickCommandParameter" Value="{Binding}"/>
                                     <Setter Property="ContextMenu">
                                         <Setter.Value>
