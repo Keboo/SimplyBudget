@@ -125,6 +125,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             
             <StackPanel DockPanel.Dock="Top">
@@ -240,9 +241,28 @@
                 </ScrollViewer>
             </Grid>
 
+            <TextBlock HorizontalAlignment="Right"
+                       Grid.Row="2">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedType}" Value="Transaction">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Setter Property="Text" Value="{Binding TotalAmount, StringFormat='Total: {0}', Converter={StaticResource CurrentValueConverter}}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SelectedType}" Value="Income">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Setter Property="Text" Value="{Binding RemainingAmount, StringFormat='Remaining: {0}', Converter={StaticResource CurrentValueConverter}}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
             <Button Content="Submit"
                     Command="{Binding SubmitCommand}" 
-                    Grid.Row="2"
+                    Grid.Row="3"
                     materialDesign:ValidationAssist.PopupPlacement="Top"
                     materialDesign:ValidationAssist.UsePopup="True"
                     Validation.ErrorTemplate="{StaticResource MaterialDesignValidationErrorTemplate}"/>

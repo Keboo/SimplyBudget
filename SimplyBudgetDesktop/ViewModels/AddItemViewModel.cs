@@ -13,7 +13,8 @@ using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
 {
-    public class AddItemViewModel : ValidationViewModel
+    public class AddItemViewModel : ValidationViewModel,
+        IRecipient<LineItemAmountUpdated>
     {
         public ICommand SubmitCommand { get; }
         public ICommand AddItemCommand { get; }
@@ -41,21 +42,24 @@ namespace SimplyBudget.ViewModels
                 if (SetProperty(ref _selectedType, value))
                 {
                     LineItems.Clear();
+                    TotalAmount = 0;
+                    UpdateRemaining();
+
                     switch (value)
                     {
                         case AddType.Transaction:
-                            LineItems.Add(new LineItemViewModel(ExpenseCategories));
+                            LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
                             break;
                         case AddType.Income:
-                            LineItems.AddRange(ExpenseCategories.Select(x => new LineItemViewModel(ExpenseCategories)
+                            LineItems.AddRange(ExpenseCategories.Select(x => new LineItemViewModel(ExpenseCategories, Messenger)
                             {
                                 SelectedCategory = x
                             }));
                             LoadDesiredAmounts();
                             break;
                         case AddType.Transfer:
-                            LineItems.Add(new LineItemViewModel(ExpenseCategories));
-                            LineItems.Add(new LineItemViewModel(ExpenseCategories) { DesiredAmount = -1 });
+                            LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
+                            LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger) { DesiredAmount = -1 });
                             Date = DateTime.Today;
                             break;
                     }
@@ -78,8 +82,16 @@ namespace SimplyBudget.ViewModels
                             lineItem.DesiredAmount = (int)(value * lineItem.SelectedCategory.BudgetedPercentage / 100.0);
                         }
                     }
+                    UpdateRemaining();
                 }
             }
+        }
+
+        private int _remainingAmount;
+        public int RemainingAmount
+        {
+            get => _remainingAmount;
+            private set => SetProperty(ref _remainingAmount, value);
         }
 
         private string _description;
@@ -103,6 +115,8 @@ namespace SimplyBudget.ViewModels
         {
             Context = context ?? throw new ArgumentNullException(nameof(context));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+
+            Messenger.Register(this);
 
             SubmitCommand = new AsyncRelayCommand(OnSubmit);
             AddItemCommand = new RelayCommand(OnAddItem);
@@ -131,7 +145,7 @@ namespace SimplyBudget.ViewModels
 
         private void OnAddItem()
         {
-            LineItems.Add(new LineItemViewModel(ExpenseCategories));
+            LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
         }
 
         private async void LoadDesiredAmounts()
@@ -158,6 +172,11 @@ namespace SimplyBudget.ViewModels
             {
                 Messenger.Send(new DoneAddingItemMessage());
             }
+        }
+
+        private void UpdateRemaining()
+        {
+            RemainingAmount = TotalAmount - LineItems.Sum(x => x.Amount);
         }
 
         private async IAsyncEnumerable<string> TrySubmitTransfer()
@@ -232,6 +251,18 @@ namespace SimplyBudget.ViewModels
 
         private IEnumerable<LineItemViewModel> GetValidLineItems()
             => LineItems.Where(x => x.SelectedCategory != null && x.Amount > 0);
-    }
 
+        public void Receive(LineItemAmountUpdated message)
+        {
+            switch (SelectedType)
+            {
+                case AddType.Income:
+                    UpdateRemaining();
+                    break;
+                case AddType.Transaction:
+                    TotalAmount = LineItems.Sum(x => x.Amount);
+                    break;
+            }
+        }
+    }
 }

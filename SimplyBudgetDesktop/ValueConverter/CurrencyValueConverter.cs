@@ -20,7 +20,9 @@ namespace SimplyBudget.ValueConverter
             }
 #if DEBUG
             if (value != null)
+            {
                 System.Diagnostics.Debugger.Break();
+            }
 #else 
             if (value is double) //TODO: Delete this after finding all of the bugs
             {
@@ -35,9 +37,14 @@ namespace SimplyBudget.ValueConverter
         {
             if (value != null)
             {
+                var stringValue = value.ToString();
+                if (string.IsNullOrWhiteSpace(stringValue)) return 0;
+
                 decimal rv;
-                if (decimal.TryParse(value.ToString(), NumberStyles.Currency, culture, out rv))
+                if (decimal.TryParse(stringValue, NumberStyles.Currency, culture, out rv))
+                {
                     return (int)decimal.Round(rv * 100);
+                }
             }
 #if DEBUG
             System.Diagnostics.Debugger.Break();

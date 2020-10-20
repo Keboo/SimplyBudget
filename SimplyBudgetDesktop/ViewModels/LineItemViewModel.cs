@@ -1,5 +1,7 @@
 ﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using SimplyBudget.Messaging;
 using SimplyBudgetShared.Data;
 using System;
 using System.Collections.Generic;
@@ -12,11 +14,12 @@ namespace SimplyBudget.ViewModels
         public ICommand SetAmountCommand { get; }
 
         public IList<ExpenseCategory> ExpenseCategories { get; }
+        private IMessenger Messenger { get; }
 
-        public LineItemViewModel(IList<ExpenseCategory> expenseCategories)
+        public LineItemViewModel(IList<ExpenseCategory> expenseCategories, IMessenger messenger)
         {
             ExpenseCategories = expenseCategories ?? throw new ArgumentNullException(nameof(expenseCategories));
-
+            Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
             SetAmountCommand = new RelayCommand(OnSetAmount);
         }
 
@@ -29,9 +32,14 @@ namespace SimplyBudget.ViewModels
         public int Amount
         {
             get => _amount;
-            set => SetProperty(ref _amount, value);
+            set
+            {
+                if (SetProperty(ref _amount, value))
+                {
+                    Messenger.Send(new LineItemAmountUpdated());
+                }
+            }
         }
-
 
         private int _desiredAmount;
         public int DesiredAmount
