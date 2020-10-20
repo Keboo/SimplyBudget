@@ -26,32 +26,6 @@ namespace SimplyBudgetShared.Utilities
             }
         }
 
-        public static IEnumerable<T> PumpItems<T>(this IEnumerable<T> items, IEqualityComparer<T>? comparer = null)
-        {
-            if (items is null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
-
-            var seen = new HashSet<T>(comparer);
-
-            bool loop;
-            do
-            {
-                loop = false;
-                foreach (var item in items)
-                {
-                    if (seen.Add(item))
-                    {
-                        yield return item;
-                        loop = true;
-                        break;
-                    }
-                }
-            }
-            while (loop);
-        }
-
         public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T>? toAdd)
         {
             if (collection is null) throw new ArgumentNullException(nameof(collection));

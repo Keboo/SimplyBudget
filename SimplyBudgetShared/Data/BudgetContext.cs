@@ -64,7 +64,7 @@ namespace SimplyBudgetShared.Data
         public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
         {
             var notifications = new List<Action>();
-            foreach (var entity in ChangeTracker.Entries().PumpItems(EntityComparer.Instance))
+            foreach (var entity in PumpItems(() => ChangeTracker.Entries().Where(x => x.State != EntityState.Unchanged), EntityComparer.Instance))
             {
                 if (entity.Entity is IBeforeCreate beforeCreate &&
                     entity.State == EntityState.Added)
@@ -122,6 +122,32 @@ namespace SimplyBudgetShared.Data
         public override int SaveChanges() => throw new InvalidOperationException($"Must use {nameof(SaveChangesAsync)}");
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess) => throw new InvalidOperationException($"Must use {nameof(SaveChangesAsync)}");
+
+        public static IEnumerable<T> PumpItems<T>(Func<IEnumerable<T>> items, IEqualityComparer<T>? comparer = null)
+        {
+            if (items is null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+
+            var seen = new HashSet<T>(comparer);
+
+            bool loop;
+            do
+            {
+                loop = false;
+                foreach (var item in items())
+                {
+                    if (seen.Add(item))
+                    {
+                        yield return item;
+                        loop = true;
+                        break;
+                    }
+                }
+            }
+            while (loop);
+        }
 
         private class EntityComparer : IEqualityComparer<EntityEntry>
         {
