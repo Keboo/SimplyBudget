@@ -52,7 +52,10 @@ namespace SimplyBudget.ViewModels
                 Description = income.Description;
                 DisplayAmount = $"({income.TotalAmount.FormatCurrency()})";
 
-                Details = income.IncomeItems.Select(x => new BudgetHistoryDetailsViewModel(x)).ToList();
+                Details = income.IncomeItems
+                    .Select(x => new BudgetHistoryDetailsViewModel(x))
+                    .OrderBy(x => x.ExpenseCategoryName)
+                    .ToList();
 
             }
 
@@ -77,7 +80,10 @@ namespace SimplyBudget.ViewModels
                 Description = transaction.Description;
                 DisplayAmount = total.FormatCurrency();
 
-                Details = transaction.TransactionItems.Select(x => new BudgetHistoryDetailsViewModel(x)).ToList();
+                Details = transaction.TransactionItems
+                    .Select(x => new BudgetHistoryDetailsViewModel(x))
+                    .OrderBy(x => x.ExpenseCategoryName)
+                    .ToList();
             }
 
             public override async Task Delete(BudgetContext context)
