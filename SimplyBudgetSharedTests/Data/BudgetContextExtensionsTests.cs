@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetSharedTests.Data
@@ -15,11 +16,12 @@ namespace SimplyBudgetSharedTests.Data
             //Arrange
             var fixture = new BudgetDatabaseContext();
 
-            var expenseCategory = new ExpenseCategory { CurrentBalance = 20 };
+            var category1 = new ExpenseCategory { CurrentBalance = 20 };
+            var category2 = new ExpenseCategory { CurrentBalance = 100 };
 
             await fixture.PerformDatabaseOperation(async context =>
             {
-                context.Add(expenseCategory);
+                context.AddRange(category1, category2);
                 await context.SaveChangesAsync();
             });
             var now = DateTime.Now;
@@ -28,7 +30,7 @@ namespace SimplyBudgetSharedTests.Data
             //Act
             await fixture.PerformDatabaseOperation(async context =>
             {
-                await context.AddIncome("Test", now, (150, expenseCategory.ID));
+                await context.AddIncome("Test", now, (150, category1.ID), (50, category2.ID));
             });
 
             //Assert
@@ -37,12 +39,17 @@ namespace SimplyBudgetSharedTests.Data
                 var income = await context.Incomes.SingleAsync();
                 Assert.AreEqual("Test", income.Description);
                 Assert.AreEqual(now.Date, income.Date);
-                Assert.AreEqual(150, income.TotalAmount);
+                Assert.AreEqual(200, income.TotalAmount);
 
-                var incomeItem = await context.IncomeItems.SingleAsync(x => x.IncomeID == income.ID);
-                Assert.AreEqual(150, incomeItem.Amount);
-                var category = await context.ExpenseCategories.FindAsync(expenseCategory.ID);
-                Assert.AreEqual(170, category.CurrentBalance);
+                var incomeItems = await context.IncomeItems.Where(x => x.IncomeID == income.ID).ToListAsync();
+                Assert.AreEqual(2, incomeItems.Count);
+                CollectionAssert.AreEquivalent(new[] { 150, 50 }, incomeItems.Select(x => x.Amount).ToList());
+
+                var cat1 = await context.ExpenseCategories.FindAsync(category1.ID);
+                Assert.AreEqual(170, cat1.CurrentBalance);
+
+                var cat2 = await context.ExpenseCategories.FindAsync(category2.ID);
+                Assert.AreEqual(150, cat2.CurrentBalance);
             });
         }
 
@@ -52,27 +59,32 @@ namespace SimplyBudgetSharedTests.Data
             //Arrange
             var fixture = new BudgetDatabaseContext();
 
-            var expenseCategory = new ExpenseCategory { CurrentBalance = 150 };
+            var category1 = new ExpenseCategory { CurrentBalance = 150 };
+            var category2 = new ExpenseCategory { CurrentBalance = 100 };
 
             await fixture.PerformDatabaseOperation(async context =>
             {
-                context.Add(expenseCategory);
+                context.AddRange(category1, category2);
                 await context.SaveChangesAsync();
             });
 
             //Act
             await fixture.PerformDatabaseOperation(async context =>
             {
-                await context.AddTransaction(expenseCategory.ID, 80, "transaction description");
+                await context.AddTransaction("transaction description", DateTime.Today, (80, category1.ID), (20, category2.ID));
             });
 
             //Assert
             await fixture.PerformDatabaseOperation(async context =>
             {
-                var transaction = await context.TransactionItems.SingleAsync(x => x.ExpenseCategoryID == expenseCategory.ID);
-                Assert.AreEqual(80, transaction.Amount);
-                var category = await context.ExpenseCategories.FindAsync(expenseCategory.ID);
-                Assert.AreEqual(70, category.CurrentBalance);
+                var transaction = await context.Transactions.Include(x => x.TransactionItems).SingleOrDefaultAsync();
+                Assert.AreEqual(2, transaction.TransactionItems!.Count);
+                CollectionAssert.AreEquivalent(new[] { 80, 20 }, transaction.TransactionItems.Select(x => x.Amount).ToList());
+
+                var cat1 = await context.ExpenseCategories.FindAsync(category1.ID);
+                Assert.AreEqual(70, cat1.CurrentBalance);
+                var cat2 = await context.ExpenseCategories.FindAsync(category2.ID);
+                Assert.AreEqual(80, cat2.CurrentBalance);
             });
         }
 

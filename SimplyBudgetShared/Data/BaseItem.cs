@@ -11,7 +11,7 @@
             return false;
         }
 
-        protected bool Equals(BaseItem other)
+        protected virtual bool Equals(BaseItem other)
         {
             return ID == other?.ID;
         }
