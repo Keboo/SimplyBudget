@@ -21,6 +21,7 @@ namespace SimplyBudget.ViewModels
         public ICommand RemoveItemCommand { get; }
         public ICommand CancelCommand { get; }
         public BudgetContext Context { get; }
+        public ICurrentMonth CurrentMonth { get; }
         public IMessenger Messenger { get; }
 
         public ObservableCollection<LineItemViewModel> LineItems { get; }
@@ -111,9 +112,10 @@ namespace SimplyBudget.ViewModels
 
         private IList<ExpenseCategory> ExpenseCategories { get; }
 
-        public AddItemViewModel(BudgetContext context, IMessenger messenger)
+        public AddItemViewModel(BudgetContext context, ICurrentMonth currentMonth, IMessenger messenger)
         {
             Context = context ?? throw new ArgumentNullException(nameof(context));
+            CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
 
             Messenger.Register(this);
@@ -152,7 +154,7 @@ namespace SimplyBudget.ViewModels
         {
             foreach (var lineItem in LineItems)
             {
-                lineItem.DesiredAmount = await Context.GetRemainingBudgetAmount(lineItem.SelectedCategory, DateTime.Today);
+                lineItem.DesiredAmount = await Context.GetRemainingBudgetAmount(lineItem.SelectedCategory, CurrentMonth.CurrenMonth);
             }
         }
 

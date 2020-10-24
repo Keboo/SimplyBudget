@@ -92,7 +92,7 @@ namespace SimplyBudget.ViewModels
 
         private void OnShowAdd(AddType? addType)
         {
-            AddItem = new AddItemViewModel(Context, Messenger);
+            AddItem = new AddItemViewModel(Context, CurrentMonth, Messenger);
             if (addType != null && addType != AddType.None)
             {
                 AddItem.SelectedType = addType.Value;

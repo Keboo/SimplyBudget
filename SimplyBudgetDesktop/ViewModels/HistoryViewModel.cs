@@ -102,12 +102,14 @@ namespace SimplyBudget.ViewModels.MainWindow
                 .Where(x => x.Date >= oldestTime);
             if (categoryList.Any())
             {
-
                 incomeQuery = from income in incomeQuery
                               join item in Context.IncomeItems on income.ID equals item.IncomeID
                               where categoryList.Contains(item.ExpenseCategoryID)
                               select income;
             }
+            incomeQuery = incomeQuery
+                .OrderByDescending(x => x.Date)
+                .ThenByDescending(x => x.ID);
             await foreach(var item in incomeQuery.AsAsyncEnumerable())
             {
                 yield return BudgetHistoryViewModel.Create(item);
@@ -124,6 +126,9 @@ namespace SimplyBudget.ViewModels.MainWindow
                                    where categoryList.Contains(item.ExpenseCategoryID)
                                    select transaction;
             }
+            transactionQuery = transactionQuery
+                .OrderByDescending(x => x.Date)
+                .ThenByDescending(x => x.ID);
             await foreach (var item in transactionQuery.AsAsyncEnumerable())
             {
                 yield return BudgetHistoryViewModel.Create(item);
@@ -137,6 +142,9 @@ namespace SimplyBudget.ViewModels.MainWindow
             {
                 transferQuery = transferQuery.Where(x => categoryList.Contains(x.FromExpenseCategoryID) || categoryList.Contains(x.ToExpenseCategoryID));
             }
+            transferQuery = transferQuery
+                .OrderByDescending(x => x.Date)
+                .ThenByDescending(x => x.ID);
             await foreach(var item in transferQuery.AsAsyncEnumerable())
             {
                 yield return BudgetHistoryViewModel.Create(item);
