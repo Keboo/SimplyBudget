@@ -165,7 +165,8 @@
                 
                 <TextBox Text="{Binding Description}"
                          materialDesign:HintAssist.IsFloating="True"
-                         materialDesign:HintAssist.Hint="Description">
+                         materialDesign:HintAssist.Hint="Description"
+                         SpellCheck.IsEnabled="True">
                     <i:Interaction.Behaviors>
                         <behaviors:FocusOnVisibleBehavior />
                     </i:Interaction.Behaviors>
