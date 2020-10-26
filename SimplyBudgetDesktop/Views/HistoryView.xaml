@@ -84,9 +84,9 @@
         </Grid>
         <Separator Grid.Row="2" VerticalAlignment="Bottom" Margin="0,10"/>
         <ListBox ItemsSource="{Binding HistoryView}"
-                  x:Name="HistoryListView"
-                  Grid.Row="3"
-                  materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
+                 x:Name="HistoryListView"
+                 Grid.Row="3"
+                 materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
             <ListBox.CommandBindings>
                 <CommandBinding Command="{x:Static ApplicationCommands.Delete}" Executed="DeleteSelectedHistoryItemExecuted" />
             </ListBox.CommandBindings>
