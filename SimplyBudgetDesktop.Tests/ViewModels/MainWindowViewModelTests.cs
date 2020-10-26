@@ -32,7 +32,8 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         [DataRow(AddType.Transfer, AddType.Transfer)]
         public void AddCommands_SetsAddItem(AddType? parameter, AddType expected)
         {
-            var mocker = new AutoMocker().WithMessenger();
+            var mocker = new AutoMocker()
+                .WithDefaults();
             using var scope = mocker.BeginDbScope();
 
             var vm = mocker.CreateInstance<MainWindowViewModel>();

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Toolkit.Mvvm.Messaging;
 using Moq.AutoMock;
 using Moq.AutoMock.Resolvers;
+using SimplyBudget;
 using SimplyBudgetShared.Data;
 using SimplyBudgetSharedTests.Data;
 using System;
@@ -25,11 +26,23 @@ namespace SimplyBudgetDesktop.Tests
         }
 
         public static AutoMocker WithDefaults(this AutoMocker mocker)
-            => mocker.WithMessenger();
+            => mocker.WithMessenger()
+                     .WithCurrentMonth();
 
         public static AutoMocker WithMessenger(this AutoMocker mocker)
         {
             mocker.Use<IMessenger>(new WeakReferenceMessenger());
+            return mocker;
+        }
+
+        public static AutoMocker WithCurrentMonth(this AutoMocker mocker, DateTime? month = null)
+        {
+            var currentMonth = new CurrentMonth(mocker.Get<IMessenger>());
+            if (month != null)
+            {
+                currentMonth.CurrenMonth = month.Value;
+            }
+            mocker.Use<ICurrentMonth>(currentMonth);
             return mocker;
         }
 
