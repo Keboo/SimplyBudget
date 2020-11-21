@@ -1,4 +1,6 @@
-﻿namespace SimplyBudgetShared.Data
+﻿using System;
+
+namespace SimplyBudgetShared.Data
 {
     public abstract class BaseItem
     {
