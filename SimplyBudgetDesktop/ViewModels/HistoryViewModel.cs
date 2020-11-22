@@ -111,7 +111,7 @@ namespace SimplyBudget.ViewModels.MainWindow
 
             await foreach (var item in query.AsAsyncEnumerable())
             {
-                yield return BudgetHistoryViewModel.Create(item);
+                yield return new BudgetHistoryViewModel(item);
             }
         }
 
