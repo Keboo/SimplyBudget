@@ -14,10 +14,12 @@ namespace SimplyBudgetShared.Data
 {
     public class BudgetContext : DbContext
     {
+        public const string FileName = "data.db";
+
         static BudgetContext()
         {
             var optionsBuilder = new DbContextOptionsBuilder<BudgetContext>();
-            optionsBuilder.UseSqlite("Data Source=data.db");
+            optionsBuilder.UseSqlite($"Data Source={FileName}");
 
             Instance = new BudgetContext(WeakReferenceMessenger.Default, optionsBuilder.Options);
         }
