@@ -60,6 +60,7 @@ namespace SimplyBudgetDesktop.Tests
             }
 
             private BudgetContext? Context { get; set; }
+
             private TaskCompletionSource<object> CompletionSource { get; } = new TaskCompletionSource<object>();
 
             public void Resolve(MockResolutionContext context)

@@ -1,10 +1,9 @@
 ﻿using SimplyBudgetShared.Data;
 using System;
-using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels.Data
 {
-    public class ExpenseCategoryViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, IDatabaseItem
+    public class ExpenseCategoryViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
     {
         public static ExpenseCategoryViewModel Create(ExpenseCategory expenseCategory)
         {
@@ -24,8 +23,6 @@ namespace SimplyBudget.ViewModels.Data
             viewModel.BudgetedPercentage = expenseCategory.BudgetedPercentage;
             viewModel.CategoryName = expenseCategory.CategoryName ?? string.Empty;
         }
-
-        private BudgetContext Context { get; } = BudgetContext.Instance;
 
         public ExpenseCategoryViewModel(int expenseCategoryID)
         {
@@ -67,11 +64,6 @@ namespace SimplyBudget.ViewModels.Data
         {
             get => _categoryName;
             set => SetProperty(ref _categoryName, value);
-        }
-
-        async Task<BaseItem> IDatabaseItem.GetItem()
-        {
-            return await Context.ExpenseCategories.FindAsync(ExpenseCategoryID);
         }
     }
 }

@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -17,11 +16,8 @@ using System.Windows.Input;
 namespace SimplyBudget.ViewModels.MainWindow
 {
     public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
-        IRecipient<TransactionEvent>,
-        IRecipient<TransactionItemEvent>,
-        IRecipient<IncomeEvent>,
-        IRecipient<IncomeItemEvent>,
-        IRecipient<TransferEvent>,
+        IRecipient<DatabaseEvent<ExpenseCategoryItem>>,
+        IRecipient<DatabaseEvent<ExpenseCategoryItemDetail>>,
         IRecipient<CurrentMonthChanged>
     {
         public BudgetContext Context { get; }
@@ -78,11 +74,8 @@ namespace SimplyBudget.ViewModels.MainWindow
 
             FilterCategories.CollectionChanged += FilterCategories_CollectionChanged;
 
-            messenger.Register<TransactionEvent>(this);
-            messenger.Register<TransactionItemEvent>(this);
-            messenger.Register<IncomeEvent>(this);
-            messenger.Register<IncomeItemEvent>(this);
-            messenger.Register<TransferEvent>(this);
+            messenger.Register<DatabaseEvent<ExpenseCategoryItem>>(this);
+            messenger.Register<DatabaseEvent<ExpenseCategoryItemDetail>>(this);
             messenger.Register<CurrentMonthChanged>(this);
         }
 
@@ -166,15 +159,9 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
         }
 
-        public void Receive(IncomeItemEvent message) => LoadItemsAsync();
+        public void Receive(DatabaseEvent<ExpenseCategoryItemDetail> message) => LoadItemsAsync();
 
-        public void Receive(IncomeEvent message) => LoadItemsAsync();
-
-        public void Receive(TransactionEvent message) => LoadItemsAsync();
-
-        public void Receive(TransactionItemEvent message) => LoadItemsAsync();
-
-        public void Receive(TransferEvent message) => LoadItemsAsync();
+        public void Receive(DatabaseEvent<ExpenseCategoryItem> message) => LoadItemsAsync();
 
         public void Receive(CurrentMonthChanged message) => LoadItemsAsync();
     }

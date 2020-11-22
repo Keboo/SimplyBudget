@@ -16,7 +16,10 @@ namespace SimplyBudget
         protected override void OnStartup(StartupEventArgs e)
         {
             MakeDataBackup();
-            BudgetContext.Instance.Database.Migrate();
+            using (var context = new BudgetContext())
+            {
+                context.Database.Migrate();
+            }
             base.OnStartup(e);
         }
 
@@ -42,7 +45,7 @@ namespace SimplyBudget
                     oldBackup.Delete();
                 }
                 catch
-                { 
+                {
                     //TODO: Notification
                 }
             }

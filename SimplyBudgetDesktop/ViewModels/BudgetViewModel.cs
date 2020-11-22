@@ -15,12 +15,13 @@ namespace SimplyBudget.ViewModels.MainWindow
         IRecipient<ExpenseCategoryEvent>,
         IRecipient<CurrentMonthChanged>
     {
-        private BudgetContext Context { get; } = BudgetContext.Instance;
+        private BudgetContext Context { get; }
         public IMessenger Messenger { get; }
         public ICurrentMonth CurrentMonth { get; }
 
-        public BudgetViewModel(IMessenger messenger, ICurrentMonth currentMonth)
+        public BudgetViewModel(BudgetContext context, IMessenger messenger, ICurrentMonth currentMonth)
         {
+            Context = context ?? throw new ArgumentNullException(nameof(context));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             messenger.Register<ExpenseCategoryEvent>(this);

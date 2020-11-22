@@ -70,7 +70,7 @@ namespace SimplyBudget.ViewModels
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             Context = context ?? throw new ArgumentNullException(nameof(context));
-            Budget = new BudgetViewModel(messenger, currentMonth);
+            Budget = new BudgetViewModel(context, messenger, currentMonth);
             History = new HistoryViewModel(context, messenger, currentMonth);
             Accounts = new AccountsViewModel(context, messenger);
 

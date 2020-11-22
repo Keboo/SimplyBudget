@@ -16,16 +16,6 @@ namespace SimplyBudgetShared.Data
     {
         public const string FileName = "data.db";
 
-        static BudgetContext()
-        {
-            var optionsBuilder = new DbContextOptionsBuilder<BudgetContext>();
-            optionsBuilder.UseSqlite($"Data Source={FileName}");
-
-            Instance = new BudgetContext(WeakReferenceMessenger.Default, optionsBuilder.Options);
-        }
-
-        public static BudgetContext Instance { get; }
-
         public DbSet<Account> Accounts => Set<Account>();
         public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
         public DbSet<ExpenseCategoryItem> ExpenseCategoryItems => Set<ExpenseCategoryItem>();
@@ -33,6 +23,11 @@ namespace SimplyBudgetShared.Data
         public DbSet<Metadata> Metadatas => Set<Metadata>();
         
         private IMessenger Messenger { get; }
+
+        public BudgetContext()
+            : this (WeakReferenceMessenger.Default, 
+                  new DbContextOptionsBuilder<BudgetContext>().UseSqlite($"Data Source={FileName}").Options)
+        { }
 
         public BudgetContext(IMessenger messenger, DbContextOptions options)
             : base(options)
@@ -106,18 +101,6 @@ namespace SimplyBudgetShared.Data
                         break;
                     case Account account:
                         notifications.Add(() => Messenger.Send(new AccountEvent(this, account, type)));
-                        break;
-                    case Income income:
-                        notifications.Add(() => Messenger.Send(new IncomeEvent(this, income, type)));
-                        break;
-                    case IncomeItem incomeItem:
-                        notifications.Add(() => Messenger.Send(new IncomeItemEvent(this, incomeItem, type)));
-                        break;
-                    case Transaction transaction:
-                        notifications.Add(() => Messenger.Send(new TransactionEvent(this, transaction, type)));
-                        break;
-                    case TransactionItem transactionItem:
-                        notifications.Add(() => Messenger.Send(new TransactionItemEvent(this, transactionItem, type)));
                         break;
                 }
             }
