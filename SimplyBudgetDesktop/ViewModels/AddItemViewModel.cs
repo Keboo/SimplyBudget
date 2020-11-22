@@ -125,7 +125,7 @@ namespace SimplyBudget.ViewModels
             RemoveItemCommand = new RelayCommand<LineItemViewModel>(OnRemoveItem);
             CancelCommand = new RelayCommand(OnCancel);
 
-            ExpenseCategories = context.ExpenseCategories.AsEnumerable().OrderBy(x => x.Name).ToList();
+            ExpenseCategories = context.ExpenseCategories.OrderBy(x => x.Name).ToList();
 
             SelectedType = AddType.Transaction;
 
@@ -154,7 +154,9 @@ namespace SimplyBudget.ViewModels
         {
             foreach (var lineItem in LineItems.Where(x => x.SelectedCategory is not null))
             {
-                lineItem.DesiredAmount = await Context.GetRemainingBudgetAmount(lineItem.SelectedCategory!, CurrentMonth.CurrenMonth);
+                var desiredAmount = await Context.GetRemainingBudgetAmount(lineItem.SelectedCategory!, CurrentMonth.CurrenMonth);
+                lineItem.DesiredAmount = desiredAmount;
+                lineItem.SetAmountCallback = x => Math.Min(RemainingAmount, desiredAmount);
             }
         }
 

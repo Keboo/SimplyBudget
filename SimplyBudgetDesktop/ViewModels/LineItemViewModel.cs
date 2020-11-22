@@ -25,7 +25,7 @@ namespace SimplyBudget.ViewModels
 
         private void OnSetAmount()
         {
-            Amount = DesiredAmount;
+            Amount = SetAmountCallback?.Invoke(this) ?? DesiredAmount;
         }
 
         private int _amount;
@@ -47,6 +47,8 @@ namespace SimplyBudget.ViewModels
             get => _desiredAmount;
             set => SetProperty(ref _desiredAmount, value);
         }
+
+        public Func<LineItemViewModel, int>? SetAmountCallback { get; set; }
 
         private ExpenseCategory? _selectedCategory;
         public ExpenseCategory? SelectedCategory

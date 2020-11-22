@@ -67,6 +67,15 @@
                                     <DataTrigger Binding="{Binding DesiredAmount}" Value="0">
                                         <Setter Property="IsEnabled" Value="False" />
                                     </DataTrigger>
+                                    <DataTrigger Value="0">
+                                        <DataTrigger.Binding>
+                                            <MultiBinding Converter="{valueconverter:ComparableMultiValueConverter}">
+                                                <Binding Path="DesiredAmount" />
+                                                <Binding Path="Amount" />
+                                            </MultiBinding>
+                                        </DataTrigger.Binding>
+                                        <Setter Property="IsEnabled" Value="False" />
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </TextBlock.Style>
@@ -256,6 +265,13 @@
                                 <Setter Property="Visibility" Value="Visible" />
                                 <Setter Property="Text" Value="{Binding RemainingAmount, StringFormat='Remaining: {0}', Converter={StaticResource CurrentValueConverter}}" />
                             </DataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding SelectedType}" Value="Income" />
+                                    <Condition Binding="{Binding RemainingAmount, Converter={valueconverter:IsNegativeValueConverter}}" Value="True" />
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Foreground" Value="{DynamicResource MaterialDesignValidationErrorBrush}" />
+                            </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>
                 </TextBlock.Style>
