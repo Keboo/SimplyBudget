@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Include>
-  <?define ProductName="SimplyBudget" ?>
-  <?define Manufacturer="Keboo" ?>
-
-  <?define VersionNumer="1.0.0.0" ?>
-</Include>
