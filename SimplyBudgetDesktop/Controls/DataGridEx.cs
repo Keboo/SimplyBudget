@@ -9,22 +9,22 @@ namespace SimplyBudget.Controls
     //Based on an example at: http://bengribaudo.com/blog/2012/03/14/1942/saving-restoring-wpf-datagrid-columns-size-sorting-and-order
     public class DataGridEx : DataGrid
     {
-        public event EventHandler<EventArgs> ColumnsResized;
-        public event EventHandler<DataGridSortingEventArgs> AfterColumnSorted;
+        public event EventHandler<EventArgs>? ColumnsResized;
+        public event EventHandler<DataGridSortingEventArgs>? AfterColumnSorted;
 
         private readonly DelayAction _delayColumnWidthAction;
 
         public DataGridEx()
         {
             _delayColumnWidthAction = new DelayAction();
-            _delayColumnWidthAction.Action += (sender, e) => ColumnsResized.Raise(this, EventArgs.Empty);
+            _delayColumnWidthAction.Action += (sender, e) => ColumnsResized?.Invoke(this, EventArgs.Empty);
         }
 
         protected override void OnSorting(DataGridSortingEventArgs eventArgs)
         {
             base.OnSorting(eventArgs);
             if (eventArgs.Handled == false)
-                AfterColumnSorted.Raise(this, eventArgs);
+                AfterColumnSorted?.Invoke(this, eventArgs);
         }
 
         protected override void OnInitialized(EventArgs e)

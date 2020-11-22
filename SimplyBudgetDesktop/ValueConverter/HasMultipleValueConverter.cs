@@ -10,7 +10,7 @@ namespace SimplyBudget.ValueConverter
         public HasMultipleValueConverter() { }
         // ReSharper restore EmptyConstructor
 
-        public override object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public override object? Convert(object? value, Type? targetType, object? parameter, CultureInfo? culture)
         {
             var enumerable = value as IEnumerable;
             if (enumerable != null)

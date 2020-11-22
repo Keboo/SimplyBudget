@@ -42,7 +42,7 @@ namespace SimplyBudgetSharedTests.Data
             //Assert
             Assert.IsNotNull(transaction);
             
-            await fixture.PerformDatabaseOperation(async context =>
+            await fixture.PerformDatabaseOperation(context =>
             {
                 var foundTransaction = context.ExpenseCategoryItems
                     .Include(x => x.Details)
@@ -52,6 +52,8 @@ namespace SimplyBudgetSharedTests.Data
                 Assert.AreEqual(1, foundTransaction.Details?.Count);
                 Assert.AreEqual(-amount, foundTransaction.Details?[0].Amount);
                 Assert.AreEqual(category.ID, foundTransaction.Details?[0].ExpenseCategoryId);
+
+                return Task.CompletedTask;
             });
         }
 

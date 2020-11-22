@@ -6,7 +6,6 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace SimplyBudget.ViewModels
 {
@@ -79,7 +78,7 @@ namespace SimplyBudget.ViewModels
 
         protected bool ValidateProperty(string propertyName)
         {
-            if (_ValidatorsByName.TryGetValue(propertyName, out IValidator validator))
+            if (_ValidatorsByName.TryGetValue(propertyName, out IValidator? validator))
             {
                 var errors = validator.Validate(this).ToList();
                 
@@ -129,7 +128,7 @@ namespace SimplyBudget.ViewModels
 
         public IEnumerable GetErrors(string propertyName)
         {
-            if (_ValidationErrorsByProperty.TryGetValue(propertyName, out IList<object> errors))
+            if (_ValidationErrorsByProperty.TryGetValue(propertyName, out IList<object>? errors))
             {
                 return errors;
             }
@@ -138,6 +137,6 @@ namespace SimplyBudget.ViewModels
 
         public bool HasErrors => _ValidationErrorsByProperty.Any();
 
-        public event EventHandler<DataErrorsChangedEventArgs> ErrorsChanged;
+        public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
     }
 }

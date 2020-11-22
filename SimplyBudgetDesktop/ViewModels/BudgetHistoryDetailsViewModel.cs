@@ -8,7 +8,7 @@ namespace SimplyBudget.ViewModels
     {
         public string Amount { get; }
 
-        public string ExpenseCategoryName { get; }
+        public string? ExpenseCategoryName { get; }
 
         public BudgetHistoryDetailsViewModel(ExpenseCategoryItemDetail item)
         {

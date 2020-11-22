@@ -1,14 +1,14 @@
 ﻿
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using JetBrains.Annotations;
-using System;
 using System.IO;
 using System.Linq;
 using System.Windows.Controls;
 using System.Xml.Serialization;
 
-namespace SimplyBudget.Properties {
+namespace SimplyBudget.Properties
+{
 
     internal sealed partial class Settings {
 
@@ -17,7 +17,7 @@ namespace SimplyBudget.Properties {
     [Serializable]
     public class DataGridSettingsManager
     {
-        public DataGridSettings[] GridSettings { get; set; }
+        public DataGridSettings[]? GridSettings { get; set; }
 
         public static void SaveSettings(DataGrid dataGrid)
         {
@@ -32,7 +32,7 @@ namespace SimplyBudget.Properties {
             Settings.Default.Save();
         }
 
-        public static DataGridSettings GetSettings(DataGrid dataGrid)
+        public static DataGridSettings? GetSettings(DataGrid dataGrid)
         {
             if (dataGrid is null) throw new ArgumentNullException("dataGrid");
             var manager = Settings.Default.DataGridSettingsManager;
@@ -47,7 +47,7 @@ namespace SimplyBudget.Properties {
     {
         public static DataGridSettings Create(DataGrid dataGrid)
         {
-            if (dataGrid is null) throw new ArgumentNullException("dataGrid");
+            if (dataGrid is null) throw new ArgumentNullException(nameof(dataGrid));
             if (string.IsNullOrWhiteSpace(dataGrid.Name)) throw new InvalidDataException("DataGrid must have a name");
 
             return new DataGridSettings
@@ -68,8 +68,7 @@ namespace SimplyBudget.Properties {
                 var columnsByHeader = Columns.ToDictionary(x => x.Header);
                 foreach (var column in dataGrid.Columns.Where(x => x.Header != null))
                 {
-                    DataGridColumnSettings settings;
-                    if (columnsByHeader.TryGetValue(column.Header.ToString(), out settings))
+                    if (columnsByHeader.TryGetValue(column!.Header!.ToString() ?? "", out DataGridColumnSettings? settings))
                     {
                         column.MinWidth = settings.MinWidth;
                         column.MaxWidth = settings.MaxWidth;
@@ -81,10 +80,10 @@ namespace SimplyBudget.Properties {
             }
         }
 
-        public DataGridColumnSettings[] Columns { get; set; }
+        public DataGridColumnSettings[]? Columns { get; set; }
 
         [XmlElement]
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 
     [Serializable]
@@ -97,7 +96,7 @@ namespace SimplyBudget.Properties {
         
             return new DataGridColumnSettings
                        {
-                           Header = column.Header.ToString(),
+                           Header = column.Header!.ToString() ?? "",
                            MinWidth = column.MinWidth,
                            MaxWidth = column.MaxWidth,
                            DisplayIndex = column.DisplayIndex,
@@ -117,6 +116,6 @@ namespace SimplyBudget.Properties {
 
         public int DisplayIndex { get; set; }
 
-        public string Header { get; set; }
+        public string? Header { get; set; }
     }
 }

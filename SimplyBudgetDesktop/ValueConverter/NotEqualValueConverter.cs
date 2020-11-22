@@ -9,7 +9,7 @@ namespace SimplyBudget.ValueConverter
         public NotEqualValueConverter() { }
         // ReSharper restore EmptyConstructor
 
-        public override object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public override object? Convert(object? value, Type? targetType, object? parameter, CultureInfo? culture)
         {
             if (value != null && parameter != null)
             {

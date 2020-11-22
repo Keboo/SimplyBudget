@@ -9,7 +9,7 @@ namespace SimplyBudget.Validation
         private const int MaxMonthsInThePast = 2;
         private const int MaxMonthsInTheFuture = 1;
 
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             if (value is DateTime dateTime)
             {

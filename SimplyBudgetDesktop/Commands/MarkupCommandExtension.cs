@@ -1,13 +1,14 @@
-﻿using System;
+﻿using Microsoft.Toolkit.Mvvm.Input;
+using System;
 using System.Windows.Input;
 using System.Windows.Markup;
 
 namespace SimplyBudget.Commands
 {
     [MarkupExtensionReturnType(typeof(ICommand))]
-    public abstract class MarkupCommandExtension<T> : MarkupExtension, ICommand, IRaiseCanExecute where T : ICommand, new()
+    public abstract class MarkupCommandExtension<T> : MarkupExtension, ICommand, IRelayCommand where T : ICommand, new()
     {
-        public event EventHandler CanExecuteChanged;
+        public event EventHandler? CanExecuteChanged;
 
         public override object ProvideValue(IServiceProvider serviceProvider)
         {
@@ -23,9 +24,7 @@ namespace SimplyBudget.Commands
 
         public void NotifyCanExecuteChanged()
         {
-            var @event = CanExecuteChanged;
-            if (@event != null)
-                @event(this, EventArgs.Empty);
+            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 }

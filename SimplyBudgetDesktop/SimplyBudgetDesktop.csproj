@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
 	<LangVersion>9.0</LangVersion>
+	<Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <RootNamespace>SimplyBudget</RootNamespace>
     <AssemblyName>SimplyBudget</AssemblyName>

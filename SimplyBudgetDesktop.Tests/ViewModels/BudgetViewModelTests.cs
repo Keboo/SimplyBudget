@@ -14,14 +14,14 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         [ExpectedException(typeof(ArgumentNullException))]
         public void Constructor_WithoutMessenger_Throws()
         {
-            new BudgetViewModel(null, Mock.Of<ICurrentMonth>());
+            new BudgetViewModel(null!, Mock.Of<ICurrentMonth>());
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void Constructor_WithoutCurrentMonth_Throws()
         {
-            new BudgetViewModel(Mock.Of<IMessenger>(), null);
+            new BudgetViewModel(Mock.Of<IMessenger>(), null!);
         }
     }
 }

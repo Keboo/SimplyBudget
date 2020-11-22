@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Windows.Threading;
-using SimplyBudgetShared.Utilities;
 
 namespace SimplyBudget.Utilities
 {
     public class DelayAction
     {
-        public event EventHandler<EventArgs> Action;
+        public event EventHandler<EventArgs>? Action;
 
         private readonly DispatcherTimer _timer;
         public DelayAction(TimeSpan? delay = null)
@@ -15,10 +14,10 @@ namespace SimplyBudget.Utilities
             _timer.Tick += TimerOnTick;
         }
 
-        private void TimerOnTick(object sender, EventArgs eventArgs)
+        private void TimerOnTick(object? sender, EventArgs eventArgs)
         {
             _timer.Stop();
-            Action.Raise(this, EventArgs.Empty);
+            Action?.Invoke(this, EventArgs.Empty);
         }
 
         public void RaiseAction()

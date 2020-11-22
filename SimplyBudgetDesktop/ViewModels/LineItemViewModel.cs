@@ -48,8 +48,8 @@ namespace SimplyBudget.ViewModels
             set => SetProperty(ref _desiredAmount, value);
         }
 
-        private ExpenseCategory _selectedCategory;
-        public ExpenseCategory SelectedCategory
+        private ExpenseCategory? _selectedCategory;
+        public ExpenseCategory? SelectedCategory
         {
             get => _selectedCategory;
             set => SetProperty(ref _selectedCategory, value);

@@ -51,8 +51,8 @@ namespace SimplyBudget.ViewModels
             set => SetProperty(ref _monthlyAllocations, value);
         }
 
-        private string _budgetedAmountDisplay;
-        public string BudgetedAmountDisplay
+        private string? _budgetedAmountDisplay;
+        public string? BudgetedAmountDisplay
         {
             get => _budgetedAmountDisplay;
             set => SetProperty(ref _budgetedAmountDisplay, value);

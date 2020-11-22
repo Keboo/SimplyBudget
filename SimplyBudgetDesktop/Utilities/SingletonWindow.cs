@@ -13,13 +13,12 @@ namespace SimplyBudget.Utilities
         {
             lock (_syncLock)
             {
-                Window existingWindow;
-                if (_singletonWindows.TryGetValue(typeof (T), out existingWindow))
+                if (_singletonWindows.TryGetValue(typeof (T), out Window? existingWindow))
                     existingWindow.Activate();
                 else
                 {
                     var window = new T();
-                    EventHandler closedHandler = null;
+                    EventHandler? closedHandler = null;
                     closedHandler = (sender, e) =>
                     {
                         window.Closed -= closedHandler;

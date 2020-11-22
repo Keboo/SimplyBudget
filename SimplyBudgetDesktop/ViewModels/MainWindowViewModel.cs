@@ -23,8 +23,8 @@ namespace SimplyBudget.ViewModels
 
         public AccountsViewModel Accounts { get; }
 
-        private AddItemViewModel _addItem;
-        public AddItemViewModel AddItem
+        private AddItemViewModel? _addItem;
+        public AddItemViewModel? AddItem
         {
             get => _addItem;
             set => SetProperty(ref _addItem, value);
@@ -61,9 +61,9 @@ namespace SimplyBudget.ViewModels
         private BudgetContext Context { get; }
 
         public MainWindowViewModel(
-            [Dependency]IMessenger messenger = null,
-            [Dependency]ICurrentMonth currentMonth = null,
-            [Dependency]BudgetContext context = null)
+            [Dependency]IMessenger? messenger = null,
+            [Dependency]ICurrentMonth? currentMonth = null,
+            [Dependency]BudgetContext? context = null)
         {
             ShowAddCommand = new RelayCommand<AddType?>(OnShowAdd);
 

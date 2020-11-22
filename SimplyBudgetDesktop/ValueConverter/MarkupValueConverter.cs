@@ -13,12 +13,12 @@ namespace SimplyBudget.ValueConverter
             return new T();
         }
 
-        public virtual object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public virtual object? Convert(object? value, Type? targetType, object? parameter, CultureInfo? culture)
         {
             throw new InvalidOperationException();
         }
 
-        public virtual object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public virtual object? ConvertBack(object? value, Type? targetType, object? parameter, CultureInfo? culture)
         {
             throw new InvalidOperationException();
         }
@@ -32,12 +32,12 @@ namespace SimplyBudget.ValueConverter
             return new T();
         }
 
-        public virtual object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        public virtual object? Convert(object[]? values, Type? targetType, object? parameter, CultureInfo? culture)
         {
             throw new NotImplementedException();
         }
 
-        public virtual object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        public virtual object[]? ConvertBack(object? value, Type[]? targetTypes, object? parameter, CultureInfo? culture)
         {
             throw new NotImplementedException();
         }

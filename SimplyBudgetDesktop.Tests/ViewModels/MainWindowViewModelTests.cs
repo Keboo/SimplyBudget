@@ -42,7 +42,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             vm.ShowAddCommand.Execute(parameter);
 
             Assert.IsNotNull(vm.AddItem);
-            Assert.AreEqual(expected, vm.AddItem.SelectedType);
+            Assert.AreEqual(expected, vm.AddItem?.SelectedType);
         }
 
         [TestMethod]

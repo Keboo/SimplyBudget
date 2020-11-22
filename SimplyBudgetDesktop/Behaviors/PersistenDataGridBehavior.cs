@@ -20,7 +20,7 @@ namespace SimplyBudget.Behaviors
                 LoadSettings();
             else
             {
-                RoutedEventHandler loadedHandler = null;
+                RoutedEventHandler? loadedHandler = null;
                 loadedHandler += (sender, e) =>
                                      {
                                          AssociatedObject.Loaded -= loadedHandler;
@@ -39,17 +39,17 @@ namespace SimplyBudget.Behaviors
             base.OnDetaching();
         }
 
-        private void DataGridOnColumnReordered(object sender, DataGridColumnEventArgs e)
+        private void DataGridOnColumnReordered(object? sender, DataGridColumnEventArgs e)
         {
             SaveSettings();
         }
 
-        private void DataGridOnColumnsResized(object sender, EventArgs eventArgs)
+        private void DataGridOnColumnsResized(object? sender, EventArgs eventArgs)
         {
             SaveSettings();
         }
 
-        private void DataGridOnAfterColumnSorted(object sender, DataGridSortingEventArgs e)
+        private void DataGridOnAfterColumnSorted(object? sender, DataGridSortingEventArgs e)
         {
             SaveSettings();
         }

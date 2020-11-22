@@ -34,8 +34,8 @@ namespace SimplyBudget.ViewModels.Data
 
         public int ExpenseCategoryID { get; }
 
-        private string _name;
-        public string Name
+        private string? _name;
+        public string? Name
         {
             get => _name;
             set => SetProperty(ref _name, value);
@@ -62,8 +62,8 @@ namespace SimplyBudget.ViewModels.Data
             set => SetProperty(ref _budgetedPercentage, value);
         }
 
-        private string _categoryName;
-        public string CategoryName
+        private string? _categoryName;
+        public string? CategoryName
         {
             get => _categoryName;
             set => SetProperty(ref _categoryName, value);

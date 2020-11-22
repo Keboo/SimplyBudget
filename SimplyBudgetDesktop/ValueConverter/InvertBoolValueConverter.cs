@@ -6,14 +6,14 @@
         public InvertBoolValueConverter() { }
         // ReSharper restore EmptyConstructor
 
-        public override object Convert(object value, System.Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public override object? Convert(object? value, System.Type? targetType, object? parameter, System.Globalization.CultureInfo? culture)
         {
             if (value is bool)
                 return ((bool) value) == false;
             return null;
         }
 
-        public override object ConvertBack(object value, System.Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        public override object? ConvertBack(object? value, System.Type? targetType, object? parameter, System.Globalization.CultureInfo? culture)
         {
             if (value is bool)
                 return ((bool) value) == false;

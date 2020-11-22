@@ -37,7 +37,7 @@ namespace SimplyBudget.Utilities
             OnPropertyChanged(new PropertyChangedEventArgs("CollectionsCount"));
         }
 
-        public ICollection<T> PopCollection()
+        public ICollection<T>? PopCollection()
         {
             if (_collectionsStack.Count == 0)
                 return null;

@@ -10,7 +10,7 @@ namespace SimplyBudget.ValueConverter
         public ComparableMultiValueConverter() { }
         // ReSharper restore EmptyConstructor
 
-        public override object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        public override object? Convert(object[]? values, Type? targetType, object? parameter, CultureInfo? culture)
         {
             if (values is null || values.Length != 2)
                 return DependencyProperty.UnsetValue;

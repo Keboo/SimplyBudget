@@ -11,7 +11,7 @@ namespace SimplyBudget.ValueConverter
         public ExpenseCategoryBudgettedAmountReachedValueConverter() { }
         // ReSharper restore EmptyConstructor
 
-        public override object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public override object? Convert(object? value, Type? targetType, object? parameter, CultureInfo? culture)
         {
             var expenseCategoryVM = value as ExpenseCategoryViewModelEx;
             if (expenseCategoryVM != null)

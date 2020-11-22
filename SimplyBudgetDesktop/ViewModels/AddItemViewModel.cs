@@ -80,7 +80,7 @@ namespace SimplyBudget.ViewModels
                     {
                         foreach (var lineItem in LineItems.Where(x => x.SelectedCategory?.UsePercentage == true))
                         {
-                            lineItem.DesiredAmount = (int)(value * lineItem.SelectedCategory.BudgetedPercentage / 100.0);
+                            lineItem.DesiredAmount = (int)(value * lineItem.SelectedCategory!.BudgetedPercentage / 100.0);
                         }
                     }
                     UpdateRemaining();
@@ -95,8 +95,8 @@ namespace SimplyBudget.ViewModels
             private set => SetProperty(ref _remainingAmount, value);
         }
 
-        private string _description;
-        public string Description
+        private string? _description;
+        public string? Description
         {
             get => _description;
             set => SetProperty(ref _description, value);
@@ -152,9 +152,9 @@ namespace SimplyBudget.ViewModels
 
         private async void LoadDesiredAmounts()
         {
-            foreach (var lineItem in LineItems)
+            foreach (var lineItem in LineItems.Where(x => x.SelectedCategory is not null))
             {
-                lineItem.DesiredAmount = await Context.GetRemainingBudgetAmount(lineItem.SelectedCategory, CurrentMonth.CurrenMonth);
+                lineItem.DesiredAmount = await Context.GetRemainingBudgetAmount(lineItem.SelectedCategory!, CurrentMonth.CurrenMonth);
             }
         }
 
@@ -201,13 +201,14 @@ namespace SimplyBudget.ViewModels
                 yield break;
             }
 
-            if (items[0].SelectedCategory.ID == items[1].SelectedCategory.ID)
+            if (items[0].SelectedCategory?.ID == items[1].SelectedCategory?.ID)
             {
                 yield return "From and To categories must be different";
                 yield break;
             }
 
-            await Context.AddTransfer(Description, Date.Value, TotalAmount, items[0].SelectedCategory, items[1].SelectedCategory);
+            await Context.AddTransfer(Description ?? "", Date.Value, TotalAmount, 
+                items[0].SelectedCategory!, items[1].SelectedCategory!);
         }
 
         private async IAsyncEnumerable<string> TrySubmitIncome()
@@ -230,7 +231,7 @@ namespace SimplyBudget.ViewModels
                 yield break;
             }
 
-            await Context.AddIncome(Description, Date.Value, items.Select(x => (x.Amount, x.SelectedCategory.ID)).ToArray());
+            await Context.AddIncome(Description ?? "", Date.Value, items.Select(x => (x.Amount, x.SelectedCategory!.ID)).ToArray());
         }
 
         private async IAsyncEnumerable<string> TrySubmitTransaction()

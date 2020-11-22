@@ -39,8 +39,8 @@ namespace SimplyBudget.ViewModels.MainWindow
         public ObservableCollection<ExpenseCategory> FilterCategories { get; }
             = new ObservableCollection<ExpenseCategory>();
 
-        private ExpenseCategory _selectedCategory;
-        public ExpenseCategory SelectedCategory
+        private ExpenseCategory? _selectedCategory;
+        public ExpenseCategory? SelectedCategory
         {
             get => _selectedCategory;
             set
@@ -52,8 +52,8 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
         }
 
-        private Account _selectedAccount;
-        public Account SelectedAccount
+        private Account? _selectedAccount;
+        public Account? SelectedAccount
         {
             get => _selectedAccount;
             set
@@ -108,11 +108,11 @@ namespace SimplyBudget.ViewModels.MainWindow
             {
                 categoryList.AddRange(FilterCategories.Select(x => x.ID));
             }
-            else
+            else if (SelectedAccount?.ID is int selectedId)
             {
                 currentAmount = Context.ExpenseCategoryItemDetails
                     .Include(x => x.ExpenseCategory)
-                    .Where(x => x.ExpenseCategory.AccountID == SelectedAccount.ID)
+                    .Where(x => x.ExpenseCategory!.AccountID == selectedId)
                     .Sum(x => x.Amount);
             }
 
@@ -133,10 +133,10 @@ namespace SimplyBudget.ViewModels.MainWindow
             await foreach (var item in query.AsAsyncEnumerable())
             {
                 yield return new BudgetHistoryViewModel(item, currentAmount);
-                if (!FilterCategories.Any())
+                if (!FilterCategories.Any() && SelectedAccount?.ID is int selectedId)
                 {
                     currentAmount -= item.Details
-                        .Where(x => x.ExpenseCategory.AccountID == SelectedAccount.ID)
+                        .Where(x => x.ExpenseCategory!.AccountID == selectedId)
                         .Sum(x => x.Amount);
                 }
             }

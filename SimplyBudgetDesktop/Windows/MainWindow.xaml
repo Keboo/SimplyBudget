@@ -86,8 +86,9 @@
                                     <Setter Property="ContextMenu">
                                         <Setter.Value>
                                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                <MenuItem Header="_Delete" Command="{commands:DeleteDatabaseItemCommand}"
-                                                          utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
+                                                <MenuItem Header="_Delete">
+                                                    <!--Command="{commands:DeleteDatabaseItemCommand}"
+                                                          utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">-->
                                                     <!--<MenuItem.Icon>
                                                         <Path Style="{StaticResource DeleteIcon}"/>
                                                     </MenuItem.Icon>-->

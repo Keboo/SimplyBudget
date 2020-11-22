@@ -6,7 +6,7 @@ namespace SimplyBudget.ValueConverter
 {
     public class IsNotTodayValueConverter : MarkupValueConverter<IsNotTodayValueConverter>
     {
-        public override object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public override object? Convert(object? value, Type? targetType, object? parameter, CultureInfo? culture)
         {
             if (value is DateTime)
             {

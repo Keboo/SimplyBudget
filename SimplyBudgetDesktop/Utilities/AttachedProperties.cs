@@ -1,5 +1,4 @@
 ﻿using Microsoft.Toolkit.Mvvm.Input;
-using SimplyBudget.Commands;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -25,7 +24,7 @@ namespace SimplyBudget.Utilities
                 var command = commandSource.Command as IRelayCommand;
                 if (command != null)
                     command.NotifyCanExecuteChanged();
-                var raiseCanExecute = commandSource.Command as IRaiseCanExecute;
+                var raiseCanExecute = commandSource.Command as IRelayCommand;
                 if (raiseCanExecute != null)
                     raiseCanExecute.NotifyCanExecuteChanged();
             }

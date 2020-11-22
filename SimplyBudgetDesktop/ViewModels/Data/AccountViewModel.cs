@@ -31,8 +31,8 @@ namespace SimplyBudget.ViewModels.Data
 
         public int AccountID { get; }
 
-        private string _name;
-        public string Name
+        private string? _name;
+        public string? Name
         {
             get => _name;
             set => _ = SetProperty(ref _name, value);

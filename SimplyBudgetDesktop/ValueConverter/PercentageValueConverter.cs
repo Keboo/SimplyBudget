@@ -11,7 +11,7 @@ namespace SimplyBudget.ValueConverter
         public PercentageValueConverter() { }
         // ReSharper restore EmptyConstructor
 
-        public override object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public override object? Convert(object? value, Type? targetType, object? parameter, CultureInfo? culture)
         {
             if (value is int)
             {
@@ -21,12 +21,12 @@ namespace SimplyBudget.ValueConverter
             return null;
         }
 
-        public override object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public override object? ConvertBack(object? value, Type? targetType, object? parameter, CultureInfo? culture)
         {
             if (value != null)
             {
                 double rv;
-                var valueString = value.ToString().Replace(culture.NumberFormat.PercentSymbol, "");
+                var valueString = value.ToString()?.Replace(culture?.NumberFormat.PercentSymbol ?? "%", "");
                 if (double.TryParse(valueString, NumberStyles.Number, culture, out rv))
                     return (int)rv;
             }

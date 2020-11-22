@@ -13,7 +13,7 @@ namespace SimplyBudget.Behaviors
                 AssociatedObject.IsVisibleChanged += OnIsVisibleChanged;
             else
             {
-                RoutedEventHandler loadedHandler = null;
+                RoutedEventHandler? loadedHandler = null;
                 loadedHandler = (sender, e) =>
                                     {
                                         AssociatedObject.Loaded -= loadedHandler;
@@ -29,7 +29,7 @@ namespace SimplyBudget.Behaviors
             base.OnDetaching();
         }
 
-        private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        private void OnIsVisibleChanged(object? sender, DependencyPropertyChangedEventArgs e)
         {
             DoFocus();
         }
