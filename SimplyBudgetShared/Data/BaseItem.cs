@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace SimplyBudgetShared.Data
+﻿namespace SimplyBudgetShared.Data
 {
     public abstract class BaseItem
     {
@@ -15,6 +13,10 @@ namespace SimplyBudgetShared.Data
 
         protected virtual bool Equals(BaseItem other)
         {
+            if (ID == 0)
+            {
+                return ReferenceEquals(this, other);
+            }
             return ID == other?.ID;
         }
 

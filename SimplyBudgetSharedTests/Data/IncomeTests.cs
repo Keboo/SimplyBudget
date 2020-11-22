@@ -26,18 +26,20 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Act
+            int itemId = 0;
             await fixture.PerformDatabaseOperation(async context =>
             {
-                income = await context.FindAsync<Income>(income!.ID);
-                context.Remove(income);
+                var item = await context.FindAsync<ExpenseCategoryItem>(income!.ID);
+                context.Remove(item);
                 await context.SaveChangesAsync();
+                itemId = item.ID;
             });
 
             //Assert
             await fixture.PerformDatabaseOperation(async context =>
             {
-                Assert.IsFalse(await context.Incomes.AnyAsync());
-                Assert.IsFalse(await context.IncomeItems.AnyAsync());
+                Assert.IsFalse(await context.ExpenseCategoryItems.AnyAsync());
+                Assert.IsFalse(await context.ExpenseCategoryItemDetails.AnyAsync());
                 Assert.AreEqual(250, (await context.FindAsync<ExpenseCategory>(category.ID)).CurrentBalance);
             });
         }
@@ -49,26 +51,26 @@ namespace SimplyBudgetSharedTests.Data
             var fixture = new BudgetDatabaseContext();
             
             var category = new ExpenseCategory { CurrentBalance = 250 };
-            Income? income = null;
+            ExpenseCategoryItem? income = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
                 context.Add(category);
                 await context.SaveChangesAsync();
-                income = await context.AddIncome("Test", DateTime.Now, (100, category.ID));
+                await context.AddIncome("Test", DateTime.Now, (100, category.ID));
             });
 
             //Act
             await fixture.PerformDatabaseOperation(async context =>
             {
-                income = await context.Incomes
-                    .Include(x => x.IncomeItems)
+                income = await context.ExpenseCategoryItems
+                    .Include(x => x.Details)
                     .ThenInclude(x => x.ExpenseCategory)
                     .SingleAsync();
             });
 
             //Assert
-            Assert.IsNotNull(income?.IncomeItems);
-            var item = income!.IncomeItems.Single();
+            Assert.IsNotNull(income?.Details);
+            var item = income!.Details.Single();
             Assert.AreEqual(100, item.Amount);
             Assert.AreEqual(category.ID, item.ExpenseCategory?.ID);
         }

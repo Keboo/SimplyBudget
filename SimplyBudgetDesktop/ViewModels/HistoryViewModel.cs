@@ -95,57 +95,21 @@ namespace SimplyBudget.ViewModels.MainWindow
             {
                 categoryList.AddRange(FilterCategories.Select(x => x.ID));
             }
-            
-            var incomeQuery = Context.Incomes
-                .Include(x => x.IncomeItems)
-                .ThenInclude(x => x.ExpenseCategory)
+
+            var query = Context.ExpenseCategoryItems
+                .Include(x => x.Details)
                 .Where(x => x.Date >= oldestTime);
+
             if (categoryList.Any())
             {
-                incomeQuery = from income in incomeQuery
-                              join item in Context.IncomeItems on income.ID equals item.IncomeID
-                              where categoryList.Contains(item.ExpenseCategoryID)
-                              select income;
-            }
-            incomeQuery = incomeQuery
-                .OrderByDescending(x => x.Date)
-                .ThenByDescending(x => x.ID);
-            await foreach(var item in incomeQuery.AsAsyncEnumerable())
-            {
-                yield return BudgetHistoryViewModel.Create(item);
+                query = query.Where(x => x.Details.Any(x => categoryList.Contains(x.ExpenseCategoryId)));
             }
 
-            var transactionQuery = Context.Transactions
-                .Include(x => x.TransactionItems)
-                .ThenInclude(x => x.ExpenseCategory)
-                .Where(x => x.Date >= oldestTime);
-            if (categoryList.Any())
-            {
-                transactionQuery = from transaction in transactionQuery
-                                   join item in Context.TransactionItems on transaction.ID equals item.TransactionID
-                                   where categoryList.Contains(item.ExpenseCategoryID)
-                                   select transaction;
-            }
-            transactionQuery = transactionQuery
+            query = query
                 .OrderByDescending(x => x.Date)
                 .ThenByDescending(x => x.ID);
-            await foreach (var item in transactionQuery.AsAsyncEnumerable())
-            {
-                yield return BudgetHistoryViewModel.Create(item);
-            }
 
-            var transferQuery = Context.Transfers
-                .Include(x => x.FromExpenseCategory)
-                .Include(x => x.ToExpenseCategory)
-                .Where(x => x.Date >= oldestTime);
-            if (categoryList.Any())
-            {
-                transferQuery = transferQuery.Where(x => categoryList.Contains(x.FromExpenseCategoryID) || categoryList.Contains(x.ToExpenseCategoryID));
-            }
-            transferQuery = transferQuery
-                .OrderByDescending(x => x.Date)
-                .ThenByDescending(x => x.ID);
-            await foreach(var item in transferQuery.AsAsyncEnumerable())
+            await foreach (var item in query.AsAsyncEnumerable())
             {
                 yield return BudgetHistoryViewModel.Create(item);
             }

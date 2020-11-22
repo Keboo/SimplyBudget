@@ -86,12 +86,6 @@
                                     <Setter Property="ContextMenu">
                                         <Setter.Value>
                                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                <MenuItem Header="_Edit" Command="{commands:EditDatabaseItemCommand}" 
-                                                          utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
-                                                    <!--<MenuItem.Icon>
-                                                        <Path Style="{StaticResource EditIcon}"/>
-                                                    </MenuItem.Icon>-->
-                                                </MenuItem>
                                                 <MenuItem Header="_Delete" Command="{commands:DeleteDatabaseItemCommand}"
                                                           utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
                                                     <!--<MenuItem.Icon>
@@ -99,10 +93,10 @@
                                                     </MenuItem.Icon>-->
                                                 </MenuItem>
                                                 <Separator />
-                                                <MenuItem Header="Transaction _History" Command="{commands:ShowExpenseCategoryHistory}"
+                                                <!--<MenuItem Header="Transaction _History" Command="{commands:ShowExpenseCategoryHistory}"
                                                           utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
 
-                                                </MenuItem>
+                                                </MenuItem>-->
                                             </ContextMenu>
                                         </Setter.Value>
                                     </Setter>

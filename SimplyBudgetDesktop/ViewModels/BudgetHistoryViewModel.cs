@@ -10,6 +10,16 @@ namespace SimplyBudget.ViewModels
 {
     public abstract class BudgetHistoryViewModel : ObservableObject
     {
+        internal static BudgetHistoryViewModel Create(ExpenseCategoryItem item)
+        {
+            if (item is null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
+            return new ExpenseCategoryItemHistoryViewModel(item);
+        }
+
         internal static BudgetHistoryViewModel Create(Income income)
         {
             if (income is null)
@@ -38,6 +48,44 @@ namespace SimplyBudget.ViewModels
             }
 
             return new TransferBudgetHistoryViewModel(transfer);
+        }
+
+        private class ExpenseCategoryItemHistoryViewModel : BudgetHistoryViewModel
+        {
+            private ExpenseCategoryItem Item { get; }
+
+            public ExpenseCategoryItemHistoryViewModel(ExpenseCategoryItem item)
+            {
+                Item = item;
+
+                Date = item.Date;
+                Description = item.Description;
+
+                Details = item.Details
+                    .Select(x => new BudgetHistoryDetailsViewModel(x))
+                    .OrderBy(x => x.ExpenseCategoryName)
+                    .ToList();
+
+                int total = item.Details.Sum(x => x.Amount);
+                if (item.Details.Count == 2 && total == 0)
+                {
+                    DisplayAmount = $"<{Math.Abs(item.Details[0].Amount).FormatCurrency()}>";
+                }
+                else if (total > 0)
+                {
+                    DisplayAmount = $"({total.FormatCurrency()})";
+                }
+                else
+                {
+                    DisplayAmount = $"{(-total).FormatCurrency()}";
+                }
+            }
+
+            public override async Task Delete(BudgetContext context)
+            {
+                context.Remove(Item);
+                await context.SaveChangesAsync();
+            }
         }
 
         private class IncomeBudgetHistoryViewModel : BudgetHistoryViewModel

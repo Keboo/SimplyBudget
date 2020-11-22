@@ -28,16 +28,16 @@ namespace SimplyBudgetSharedTests.Data
             //Act
             await fixture.PerformDatabaseOperation(async context =>
             {
-                transaction = await context.FindAsync<Transaction>(transaction!.ID);
-                context.Remove(transaction);
+                var item = await context.FindAsync<ExpenseCategoryItem>(transaction!.ID);
+                context.Remove(item);
                 await context.SaveChangesAsync();
             });
 
             //Assert
             await fixture.PerformDatabaseOperation(async context =>
             {
-                Assert.IsFalse(await context.Transactions.AnyAsync());
-                Assert.IsFalse(await context.TransactionItems.AnyAsync());
+                Assert.IsFalse(await context.ExpenseCategoryItems.AnyAsync());
+                Assert.IsFalse(await context.ExpenseCategoryItemDetails.AnyAsync());
                 Assert.AreEqual(250, (await context.FindAsync<ExpenseCategory>(category.ID)).CurrentBalance);
             });
         }
@@ -48,28 +48,28 @@ namespace SimplyBudgetSharedTests.Data
             //Arrange
             var fixture = new BudgetDatabaseContext();
 
-            Transaction? transaction = null;
             var category = new ExpenseCategory { CurrentBalance = 250 };
             await fixture.PerformDatabaseOperation(async context =>
             {
                 context.Add(category);
                 await context.SaveChangesAsync();
-                transaction = await context.AddTransaction("Test", DateTime.Now, (100, category.ID));
+                await context.AddTransaction("Test", DateTime.Now, (100, category.ID));
             });
 
             //Act
+            ExpenseCategoryItem? transaction = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
-                transaction = await context.Transactions
-                    .Include(x => x.TransactionItems)
+                transaction = await context.ExpenseCategoryItems
+                    .Include(x => x.Details)
                     .ThenInclude(x => x.ExpenseCategory)
                     .SingleAsync();
             });
 
             //Assert
-            Assert.IsNotNull(transaction?.TransactionItems);
-            var item = transaction!.TransactionItems.Single();
-            Assert.AreEqual(100, item.Amount);
+            Assert.IsNotNull(transaction?.Details);
+            var item = transaction!.Details.Single();
+            Assert.AreEqual(-100, item.Amount);
             Assert.AreEqual(category.ID, item.ExpenseCategory?.ID);
         }
     }

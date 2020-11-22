@@ -30,8 +30,8 @@ namespace SimplyBudgetSharedTests.Data
             //Act
             await fixture.PerformDatabaseOperation(async context =>
             {
-                transfer = await context.FindAsync<Transfer>(transfer!.ID);
-                context.Remove(transfer);
+                var item = await context.FindAsync<ExpenseCategoryItem>(transfer!.ID);
+                context.Remove(item);
                 await context.SaveChangesAsync();
             });
 
@@ -52,26 +52,27 @@ namespace SimplyBudgetSharedTests.Data
             var category1 = new ExpenseCategory { CurrentBalance = 100 };
             var category2 = new ExpenseCategory { CurrentBalance = 200 };
 
-            Transfer? transfer = null;
+            ExpenseCategoryItem? transfer = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
                 context.AddRange(category1, category2);
                 await context.SaveChangesAsync();
-                transfer = await context.AddTransfer("Test", DateTime.Now, 30, category1, category2);
+                await context.AddTransfer("Test", DateTime.Now, 30, category1, category2);
             });
 
             //Act
             await fixture.PerformDatabaseOperation(async context =>
             {
-                transfer = await context.Transfers
-                    .Include(x => x.FromExpenseCategory)
-                    .Include(x => x.ToExpenseCategory)
+                transfer = await context.ExpenseCategoryItems
+                    .Include(x => x.Details)
+                    .ThenInclude(x => x.ExpenseCategory)
                     .SingleAsync();
             });
 
             //Assert
-            Assert.AreEqual(category1.ID, transfer!.FromExpenseCategory?.ID);
-            Assert.AreEqual(category2.ID, transfer.ToExpenseCategory?.ID);
+            Assert.AreEqual(2, transfer?.Details?.Count);
+            Assert.AreEqual(category1.ID, transfer?.Details?[0]?.ID);
+            Assert.AreEqual(category2.ID, transfer?.Details?[1]?.ID);
         }
     }
 }

@@ -66,114 +66,112 @@ namespace SimplyBudgetShared.Data
             string description, DateTime date, int amount,
             ExpenseCategory fromCategory, ExpenseCategory toCategory)
         {
-            var transfer = new Transfer
+            var item = new ExpenseCategoryItem
             {
-                Amount = amount,
-                Date = date,
+                Date = date.Date,
                 Description = description,
-                FromExpenseCategoryID = fromCategory.ID,
-                ToExpenseCategoryID = toCategory.ID
+                Details = new List<ExpenseCategoryItemDetail>
+                {
+                    new ExpenseCategoryItemDetail
+                    {
+                        Amount = -amount,
+                        ExpenseCategoryId = fromCategory.ID,
+                    },
+                    new ExpenseCategoryItemDetail
+                    {
+                        Amount = amount,
+                        ExpenseCategoryId = toCategory.ID
+                    }
+                }
             };
-
-            context.Add(transfer);
-            await context.SaveChangesAsync();
-            return transfer;
-        }
-
-        [Obsolete("Use AddIncome")]
-        public static async Task<IncomeItem> AddIncomeItem(this BudgetContext context,
-            ExpenseCategory expenseCategory, Income income,
-            int amount, string? description = null)
-        {
-            if (context is null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            if (expenseCategory is null)
-            {
-                throw new ArgumentNullException(nameof(expenseCategory));
-            }
-
-            if (income is null)
-            {
-                throw new ArgumentNullException(nameof(income));
-            }
-
-            var incomeItem = new IncomeItem
-            {
-                Amount = amount,
-                Description = description ?? income.Description,
-                ExpenseCategoryID = expenseCategory.ID,
-                IncomeID = income.ID
-            };
-            context.IncomeItems.Add(incomeItem);
+            context.ExpenseCategoryItems.Add(item);
 
             await context.SaveChangesAsync();
-
-            return incomeItem;
+            return item;
         }
+
+        //[Obsolete("Use AddIncome")]
+        //public static async Task<IncomeItem> AddIncomeItem(this BudgetContext context,
+        //    ExpenseCategory expenseCategory, Income income,
+        //    int amount, string? description = null)
+        //{
+        //    if (context is null)
+        //    {
+        //        throw new ArgumentNullException(nameof(context));
+        //    }
+
+        //    if (expenseCategory is null)
+        //    {
+        //        throw new ArgumentNullException(nameof(expenseCategory));
+        //    }
+
+        //    if (income is null)
+        //    {
+        //        throw new ArgumentNullException(nameof(income));
+        //    }
+
+        //    var incomeItem = new IncomeItem
+        //    {
+        //        Amount = amount,
+        //        Description = description ?? income.Description,
+        //        ExpenseCategoryID = expenseCategory.ID,
+        //        IncomeID = income.ID
+        //    };
+        //    context.IncomeItems.Add(incomeItem);
+
+        //    await context.SaveChangesAsync();
+
+        //    return incomeItem;
+        //}
 
         public static async Task<Income> AddIncome(this BudgetContext context,
             string description, DateTime date,
-            params (int amount, int expenseCategory)[] items)
+            params (int Amount, int ExpenseCategory)[] items)
         {
             if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
 
-            var income = new Income
+            var item = new ExpenseCategoryItem
             {
-                Date = date,
+                Date = date.Date,
                 Description = description,
-                TotalAmount = items.Sum(x => x.amount)
-            };
-            context.Add(income);
-            await context.SaveChangesAsync();
-
-            foreach((int amount, int expenseCategoryId) in items)
-            {
-                var incomeItem = new IncomeItem
+                Details = items.Select(x =>
                 {
-                    Amount = amount,
-                    Description = description ?? income.Description,
-                    ExpenseCategoryID = expenseCategoryId,
-                    IncomeID = income.ID
-                };
-                context.Add(incomeItem);
-            }
+                    return new ExpenseCategoryItemDetail
+                    {
+                        Amount = x.Amount,
+                        ExpenseCategoryId = x.ExpenseCategory,
+                    };
+                }).ToList()
+            };
+            context.ExpenseCategoryItems.Add(item);
             await context.SaveChangesAsync();
 
-            return income;
+            return item;
         }
 
         public static async Task<Transaction> AddTransaction(this BudgetContext context,
             string description, DateTime date, params (int amount, int expenseCategory)[] items)
         {
-            var transaction = new Transaction 
-            { 
-                Description = description,
-                Date = date.Date
-            };
-            context.Transactions.Add(transaction);
-            await context.SaveChangesAsync();
-            
-            foreach((int amount, int expenseCategoryId) in items)
+            var item = new ExpenseCategoryItem
             {
-                var transactionItem = new TransactionItem
+                Date = date.Date,
+                Description = description,
+                Details = items.Select(x =>
                 {
-                    Description = description,
-                    Amount = amount,
-                    ExpenseCategoryID = expenseCategoryId,
-                    TransactionID = transaction.ID
-                };
-                context.TransactionItems.Add(transactionItem);
-            }
-            
-            await context.SaveChangesAsync();
+                    return new ExpenseCategoryItemDetail
+                    {
+                        Amount = -x.amount,
+                        ExpenseCategoryId = x.expenseCategory,
+                    };
+                }).ToList()
+            };
 
-            return transaction;
+            context.ExpenseCategoryItems.Add(item);
+            await context.SaveChangesAsync();
+            return item;
         }
 
         public static async Task<Transaction> AddTransaction(this BudgetContext context,
@@ -185,41 +183,29 @@ namespace SimplyBudgetShared.Data
 
         public static async Task<IList<Transfer>> GetTransfers(this BudgetContext context, ExpenseCategory expenseCategory, DateTime? queryStart = null, DateTime? queryEnd = null)
         {
-            IQueryable<Transfer> transferQuery = context.Transfers.Where(x => x.FromExpenseCategoryID == expenseCategory.ID || x.ToExpenseCategoryID == expenseCategory.ID);
-
+            IQueryable<ExpenseCategoryItem> transferQuery = context.ExpenseCategoryItems.Include(x => x.Details)
+                .Where(x => x.Details.Count() == 2 &&
+                       x.Details.Sum(x=> x.Amount) == 0 &&
+                       x.Details.Any(x => x.ExpenseCategoryId == expenseCategory.ID));
             if (queryStart != null && queryEnd != null)
             {
                 transferQuery = transferQuery.Where(x => x.Date >= queryStart && x.Date <= queryEnd);
             }
-            return await transferQuery.ToListAsync();
+            return (await transferQuery.ToListAsync()).Select(x => (Transfer)x).ToList();
         }
 
-        public static async Task<IList<TransactionItem>> GetTransactionItems(this BudgetContext context, ExpenseCategory expenseCategory, DateTime? queryStart = null, DateTime? queryEnd = null)
+        public static async Task<IList<ExpenseCategoryItemDetail>> GetCategoryItemDetails(this BudgetContext context, ExpenseCategory expenseCategory, DateTime? queryStart = null, DateTime? queryEnd = null)
         {
-            IQueryable<TransactionItem> transactionItemsQuery = context.TransactionItems.Where(x => x.ExpenseCategoryID == expenseCategory.ID);
+            IQueryable<ExpenseCategoryItemDetail> query = context.ExpenseCategoryItemDetails
+                .Include(x => x.ExpenseCategoryItem)
+                .Where(x => x.ExpenseCategoryId == expenseCategory.ID);
 
             if (queryStart != null && queryEnd != null)
             {
-                var transactions = await context.Transactions.Where(x => x.Date >= queryStart && x.Date <= queryEnd)
-                    .Select(x => x.ID)
-                    .ToListAsync();
-                transactionItemsQuery = transactionItemsQuery.Where(x => transactions.Contains(x.TransactionID));
+                query = query
+                    .Where(x => x.ExpenseCategoryItem!.Date >= queryStart && x.ExpenseCategoryItem.Date <= queryEnd);
             }
-            return await transactionItemsQuery.ToListAsync();
-        }
-
-        public static async Task<IList<IncomeItem>> GetIncomeItems(this BudgetContext context, ExpenseCategory expenseCategory, DateTime? queryStart = null, DateTime? queryEnd = null)
-        {
-            IQueryable<IncomeItem> incomeItemsQuery = context.IncomeItems.Where(x => x.ExpenseCategoryID == expenseCategory.ID);
-
-            if (queryStart != null && queryEnd != null)
-            {
-                var incomes = await context.Incomes.Where(x => x.Date >= queryStart && x.Date <= queryEnd)
-                    .Select(x => x.ID)
-                    .ToListAsync();
-                incomeItemsQuery = incomeItemsQuery.Where(x => incomes.Contains(x.IncomeID));
-            }
-            return await incomeItemsQuery.ToListAsync();
+            return await query.ToListAsync();
         }
 
         public static async Task<int> GetRemainingBudgetAmount(this BudgetContext context, ExpenseCategory expenseCategory, DateTime month)
@@ -238,19 +224,13 @@ namespace SimplyBudgetShared.Data
 
             var start = month.StartOfMonth();
             var end = month.EndOfMonth();
-            var incomeIds = await context.Incomes.Where(x => x.Date >= start && x.Date <= end).Select(x => x.ID).ToListAsync();
-            var allocatedAmount = (await context.IncomeItems.Where(x => x.ExpenseCategoryID == expenseCategory.ID && incomeIds.Contains(x.IncomeID))
-                .ToListAsync())
-                .Sum(x => x.Amount);
+
+            var allocatedAmount =
+                await context.ExpenseCategoryItemDetails.Include(x => x.ExpenseCategoryItem)
+                    .Where(x => x.ExpenseCategoryItem!.Date >= start && x.ExpenseCategoryItem.Date <= end)
+                    .Where(x => x.ExpenseCategoryId == expenseCategory.ID)
+                    .SumAsync(x => x.Amount);
             return Math.Max(0, expenseCategory.BudgetedAmount - allocatedAmount);
-        }
-
-        public static async Task InitDatabase(this BudgetContext context, string storageFolder, string? dbFileName = null)
-        {
-            var builder = new DbContextOptionsBuilder<BudgetContext>()
-                .UseSqlite($"Data Source={Path.Combine(storageFolder, dbFileName ?? "data.db")}");
-
-            new BudgetContext(WeakReferenceMessenger.Default, builder.Options);
         }
     }
 }

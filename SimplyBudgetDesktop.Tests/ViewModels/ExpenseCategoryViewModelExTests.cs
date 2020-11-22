@@ -22,21 +22,17 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
 
             await fixture.PerformDatabaseOperation(async context =>
             {
-                var income1 = new Income { Date = twoMonthsAgo };
-                var income2 = new Income { Date = lastMonth };
-                var income3 = new Income { Date = now };
-
-                context.AddRange(expenseCategory, income1, income2, income3);
+                context.AddRange(expenseCategory);
                 await context.SaveChangesAsync();
                 
                 await context.AddTransaction(expenseCategory.ID, 100, "Transaction 1", twoMonthsAgo);
-                await context.AddIncomeItem(expenseCategory, income1, 300);
+                await context.AddIncome("Income 1", twoMonthsAgo, (300, expenseCategory.ID));
                 
                 await context.AddTransaction(expenseCategory.ID, 200, "Transaction 2", lastMonth);
-                await context.AddIncomeItem(expenseCategory, income2, 300);
+                await context.AddIncome("Income 2", lastMonth, (300, expenseCategory.ID));
 
                 await context.AddTransaction(expenseCategory.ID, 300, "Transaction 3", now);
-                await context.AddIncomeItem(expenseCategory, income3, 300);
+                await context.AddIncome("Income 3", now, (300, expenseCategory.ID));
             });
 
             await fixture.PerformDatabaseOperation(async context =>

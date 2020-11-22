@@ -31,25 +31,25 @@ namespace SimplyBudget.ViewModels.Windows
             ExpenseCategoryName = expenseCategory.Name;
             BudgettedAmount = expenseCategory.BudgetedAmount;
 
-            foreach (var month in Enumerable.Range(0, 12).Reverse().Select(x => DateTime.Today.AddMonths(-x)))
-            {
-                var transactions = await Context.GetTransactionItems(expenseCategory, month.StartOfMonth(), month.EndOfMonth());
-                Months.Add(new MonthHistoryViewModel
-                {
-                    BarTitle = month.ToString("MMM yyyy"),
-                    MonthlyExpenses = transactions.Sum(x => x.Amount)
-                });
-            }
-
-            //bar max height is 90%
-            double hundredPercent = Math.Max(Months.Cast<MonthHistoryViewModel>().Select(x => x.MonthlyExpenses).Max(),
-                    expenseCategory.BudgetedAmount)/0.9;
-            if ((int) hundredPercent == 0) return;
-            foreach (var month in Months.Cast<MonthHistoryViewModel>())
-            {
-                month.BarPercentHeight = Convert.ToInt32(month.MonthlyExpenses / hundredPercent * 100);
-                month.LinePercentHeight = Convert.ToInt32(expenseCategory.BudgetedAmount / hundredPercent * 100 );
-            }
+            //foreach (var month in Enumerable.Range(0, 12).Reverse().Select(x => DateTime.Today.AddMonths(-x)))
+            //{
+            //    var transactions = await Context.GetTransactionItems(expenseCategory, month.StartOfMonth(), month.EndOfMonth());
+            //    Months.Add(new MonthHistoryViewModel
+            //    {
+            //        BarTitle = month.ToString("MMM yyyy"),
+            //        MonthlyExpenses = transactions.Sum(x => x.Amount)
+            //    });
+            //}
+            //
+            ////bar max height is 90%
+            //double hundredPercent = Math.Max(Months.Cast<MonthHistoryViewModel>().Select(x => x.MonthlyExpenses).Max(),
+            //        expenseCategory.BudgetedAmount)/0.9;
+            //if ((int) hundredPercent == 0) return;
+            //foreach (var month in Months.Cast<MonthHistoryViewModel>())
+            //{
+            //    month.BarPercentHeight = Convert.ToInt32(month.MonthlyExpenses / hundredPercent * 100);
+            //    month.LinePercentHeight = Convert.ToInt32(expenseCategory.BudgetedAmount / hundredPercent * 100 );
+            //}
         }
 
         public BindingList<IBarGraphItem> Months { get; } = new BindingList<IBarGraphItem>();

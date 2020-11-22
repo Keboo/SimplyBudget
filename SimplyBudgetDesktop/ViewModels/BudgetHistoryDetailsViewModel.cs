@@ -18,6 +18,14 @@ namespace SimplyBudget.ViewModels
             ExpenseCategoryName = item.ExpenseCategory?.Name;
         }
 
+        public BudgetHistoryDetailsViewModel(ExpenseCategoryItemDetail item)
+        {
+            if (item is null) throw new ArgumentNullException(nameof(item));
+
+            Amount = item.Amount.FormatCurrency();
+            ExpenseCategoryName = item.ExpenseCategory?.Name;
+        }
+
         public BudgetHistoryDetailsViewModel(IncomeItem item)
         {
             if (item is null) throw new ArgumentNullException(nameof(item));

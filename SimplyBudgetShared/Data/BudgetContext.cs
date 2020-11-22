@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudgetShared.Events;
-using SimplyBudgetShared.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -28,13 +27,8 @@ namespace SimplyBudgetShared.Data
         public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
         public DbSet<ExpenseCategoryItem> ExpenseCategoryItems => Set<ExpenseCategoryItem>();
         public DbSet<ExpenseCategoryItemDetail> ExpenseCategoryItemDetails => Set<ExpenseCategoryItemDetail>();
-        public DbSet<Income> Incomes => Set<Income>();
-        public DbSet<IncomeItem> IncomeItems => Set<IncomeItem>();
         public DbSet<Metadata> Metadatas => Set<Metadata>();
-        public DbSet<Transaction> Transactions => Set<Transaction>();
-        public DbSet<TransactionItem> TransactionItems => Set<TransactionItem>();
-        public DbSet<Transfer> Transfers => Set<Transfer>();
-
+        
         private IMessenger Messenger { get; }
 
         public BudgetContext(IMessenger messenger, DbContextOptions options)
@@ -66,6 +60,7 @@ namespace SimplyBudgetShared.Data
         public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
         {
             var notifications = new List<Action>();
+            var foo = ChangeTracker.Entries().Where(x => x.State != EntityState.Unchanged).ToList();
             foreach (var entity in PumpItems(() => ChangeTracker.Entries().Where(x => x.State != EntityState.Unchanged), EntityComparer.Instance))
             {
                 if (entity.Entity is IBeforeCreate beforeCreate &&
@@ -92,6 +87,12 @@ namespace SimplyBudgetShared.Data
                 {
                     case ExpenseCategory category:
                         notifications.Add(() => Messenger.Send(new ExpenseCategoryEvent(this, category, type)));
+                        break;
+                    case ExpenseCategoryItem item:
+                        notifications.Add(() => Messenger.Send(new DatabaseEvent<ExpenseCategoryItem>(this, item, type)));
+                        break;
+                    case ExpenseCategoryItemDetail detailItem:
+                        notifications.Add(() => Messenger.Send(new DatabaseEvent<ExpenseCategoryItemDetail>(this, detailItem, type)));
                         break;
                     case Account account:
                         notifications.Add(() => Messenger.Send(new AccountEvent(this, account, type)));

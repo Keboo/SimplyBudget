@@ -44,13 +44,14 @@ namespace SimplyBudgetSharedTests.Data
             
             await fixture.PerformDatabaseOperation(async context =>
             {
-                var foundTransaction = context.Transactions.Single(x => x.ID == transaction!.ID);
+                var foundTransaction = context.ExpenseCategoryItems
+                    .Include(x => x.Details)
+                    .Single(x => x.ID == transaction!.ID);
                 Assert.AreEqual(description, foundTransaction.Description);
 
-                var foundTransactionItem = await context.TransactionItems.SingleOrDefaultAsync(x => x.TransactionID == transaction!.ID);
-                Assert.AreEqual(amount, foundTransactionItem.Amount);
-                Assert.AreEqual(description, foundTransactionItem.Description);
-                Assert.AreEqual(category.ID, foundTransactionItem.ExpenseCategoryID);
+                Assert.AreEqual(1, foundTransaction.Details?.Count);
+                Assert.AreEqual(-amount, foundTransaction.Details?[0].Amount);
+                Assert.AreEqual(category.ID, foundTransaction.Details?[0].ExpenseCategoryId);
             });
         }
 
@@ -86,14 +87,15 @@ namespace SimplyBudgetSharedTests.Data
 
             await fixture.PerformDatabaseOperation(async context =>
             {
-                var foundTransaction = context.Transactions.Single(x => x.ID == transaction!.ID);
+                var foundTransaction = context.ExpenseCategoryItems
+                    .Include(x => x.Details)
+                    .Single(x => x.ID == transaction!.ID);
                 Assert.AreEqual(description, foundTransaction.Description);
                 Assert.AreEqual(transactionDate.Date, foundTransaction.Date);
 
-                var foundTransactionItem = await context.TransactionItems.SingleOrDefaultAsync(x => x.TransactionID == transaction!.ID);
-                Assert.AreEqual(amount, foundTransactionItem.Amount);
-                Assert.AreEqual(description, foundTransactionItem.Description);
-                Assert.AreEqual(category.ID, foundTransactionItem.ExpenseCategoryID);
+                var foundTransactionItem = foundTransaction.Details.Single();
+                Assert.AreEqual(-amount, foundTransactionItem.Amount);
+                Assert.AreEqual(category.ID, foundTransactionItem.ExpenseCategoryId);
             });
         }
 
@@ -108,26 +110,18 @@ namespace SimplyBudgetSharedTests.Data
             var category2 = new ExpenseCategory { Account = account };
             var category3 = new ExpenseCategory { Account = account };
 
-            var transfer1 = new Transfer();
-            var transfer2 = new Transfer();
-            var transfer3 = new Transfer();
+            Transfer? transfer1 = null;
+            Transfer? transfer2 = null;
+            Transfer? transfer3 = null;
 
             await fixture.PerformDatabaseOperation(async context =>
             {
                 context.ExpenseCategories.AddRange(category1, category2, category3);
                 await context.SaveChangesAsync();
 
-                transfer1.FromExpenseCategoryID = category1.ID;
-                transfer1.ToExpenseCategoryID = category2.ID;
-
-                transfer2.FromExpenseCategoryID = category2.ID;
-                transfer2.ToExpenseCategoryID = category3.ID;
-
-                transfer3.FromExpenseCategoryID = category3.ID;
-                transfer3.ToExpenseCategoryID = category1.ID;
-
-                context.Transfers.AddRange(transfer1, transfer2, transfer3);
-                await context.SaveChangesAsync();
+                transfer1 = await context.AddTransfer("", DateTime.Now, 10, category1, category2);
+                transfer2 = await context.AddTransfer("", DateTime.Now, 10, category2, category3);
+                transfer3 = await context.AddTransfer("", DateTime.Now, 10, category3, category1);
             });
 
             //Act
@@ -139,7 +133,7 @@ namespace SimplyBudgetSharedTests.Data
 
             //Assert
             Assert.IsNotNull(transfers);
-            CollectionAssert.AreEquivalent(new[] { transfer1.ID, transfer2.ID }, transfers.Select(x => x.ID).ToList());
+            CollectionAssert.AreEquivalent(new[] { transfer1?.ID, transfer2?.ID }, transfers.Select(x => x.ID).ToList());
         }
 
         [TestMethod]
@@ -153,25 +147,19 @@ namespace SimplyBudgetSharedTests.Data
             var category2 = new ExpenseCategory { Account = account };
 
             var now = DateTime.Now;
-            var transfer1 = new Transfer { Date = now.AddDays(-3).Date };
-            var transfer2 = new Transfer { Date = now.AddDays(-2).Date };
-            var transfer3 = new Transfer { Date = now.AddDays(-1).Date };
+            Transfer? transfer1 = null;
+            Transfer? transfer2 = null;
+            Transfer? transfer3 = null;
 
             await fixture.PerformDatabaseOperation(async context =>
             {
                 context.ExpenseCategories.AddRange(category1, category2);
                 await context.SaveChangesAsync();
 
-                transfer1.FromExpenseCategoryID = category1.ID;
-                transfer1.ToExpenseCategoryID = category2.ID;
+                transfer1 = await context.AddTransfer("", now.AddDays(-3).Date, 10, category1, category2);
+                transfer2 = await context.AddTransfer("", now.AddDays(-2).Date, 10, category2, category1);
+                transfer3 = await context.AddTransfer("", now.AddDays(-1).Date, 10, category1, category2);
 
-                transfer2.FromExpenseCategoryID = category2.ID;
-                transfer2.ToExpenseCategoryID = category1.ID;
-
-                transfer3.FromExpenseCategoryID = category1.ID;
-                transfer3.ToExpenseCategoryID = category2.ID;
-
-                context.Transfers.AddRange(transfer1, transfer2, transfer3);
                 await context.SaveChangesAsync();
             });
 
@@ -184,7 +172,7 @@ namespace SimplyBudgetSharedTests.Data
 
             //Assert
             Assert.IsNotNull(transfers);
-            CollectionAssert.AreEquivalent(new[] { transfer2.ID, transfer3.ID }, transfers.Select(x => x.ID).ToList());
+            CollectionAssert.AreEquivalent(new[] { transfer2?.ID, transfer3?.ID }, transfers.Select(x => x.ID).ToList());
         }
 
         [TestMethod]
@@ -209,25 +197,24 @@ namespace SimplyBudgetSharedTests.Data
                 transaction1 = await context.AddTransaction(category1.ID, 100, "Transaction 1");
                 transaction2 = await context.AddTransaction(category2.ID, 200, "Transaction 2");
                 transaction3 = await context.AddTransaction(category1.ID, 300, "Transaction 3");
-
             });
 
             //Act
-            IList<TransactionItem>? transactionItems = null;
+            IList<ExpenseCategoryItemDetail>? transactionItems = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
-                transactionItems = await context.GetTransactionItems(category1);
+                transactionItems = await context.GetCategoryItemDetails(category1);
             });
 
             //Assert
             Assert.IsNotNull(transactionItems);
             Assert.AreEqual(2, transactionItems!.Count);
 
-            Assert.AreEqual(100, transactionItems[0].Amount);
-            Assert.AreEqual("Transaction 1", transactionItems[0].Description);
+            Assert.AreEqual(-100, transactionItems[0].Amount);
+            Assert.AreEqual("Transaction 1", transactionItems[0].ExpenseCategoryItem?.Description);
 
-            Assert.AreEqual(300, transactionItems[1].Amount);
-            Assert.AreEqual("Transaction 3", transactionItems[1].Description);
+            Assert.AreEqual(-300, transactionItems[1].Amount);
+            Assert.AreEqual("Transaction 3", transactionItems[1].ExpenseCategoryItem?.Description);
         }
 
         [TestMethod]
@@ -256,21 +243,21 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Act
-            IList<TransactionItem>? transactionItems = null;
+            IList<ExpenseCategoryItemDetail>? transactionItems = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
-                transactionItems = await context.GetTransactionItems(category1, now.AddDays(-2).Date, now);
+                transactionItems = await context.GetCategoryItemDetails(category1, now.AddDays(-2).Date, now);
             });
 
             //Assert
             Assert.IsNotNull(transactionItems);
             Assert.AreEqual(2, transactionItems!.Count);
 
-            Assert.AreEqual(100, transactionItems[0].Amount);
-            Assert.AreEqual("Transaction 1", transactionItems[0].Description);
+            Assert.AreEqual(-100, transactionItems[0].Amount);
+            Assert.AreEqual("Transaction 1", transactionItems[0].ExpenseCategoryItem?.Description);
 
-            Assert.AreEqual(200, transactionItems[1].Amount);
-            Assert.AreEqual("Transaction 2", transactionItems[1].Description);
+            Assert.AreEqual(-200, transactionItems[1].Amount);
+            Assert.AreEqual("Transaction 2", transactionItems[1].ExpenseCategoryItem?.Description);
         }
 
         [TestMethod]
@@ -287,24 +274,18 @@ namespace SimplyBudgetSharedTests.Data
             await fixture.PerformDatabaseOperation(async context =>
             {
                 context.ExpenseCategories.AddRange(category1);
-                var income = new Income
-                {
-                    Date = now.AddDays(-1),
-                    TotalAmount = 300,
-                    Description = "Income description"
-                };
-                context.Incomes.Add(income);
                 await context.SaveChangesAsync();
-
-                await context.AddIncomeItem(category1, income, 100, "Income item 1");
-                await context.AddIncomeItem(category1, income, 200);
+                
+                await context.AddIncome("Income description", now.AddDays(-1), 
+                    (100, category1.ID), 
+                    (200, category1.ID));
             });
 
             //Act
-            IList<IncomeItem>? incomeItems = null;
+            IList<ExpenseCategoryItemDetail>? incomeItems = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
-                incomeItems = await context.GetIncomeItems(category1);
+                incomeItems = await context.GetCategoryItemDetails(category1);
             });
 
             //Assert
@@ -312,10 +293,10 @@ namespace SimplyBudgetSharedTests.Data
             Assert.AreEqual(2, incomeItems!.Count);
 
             Assert.AreEqual(100, incomeItems[0].Amount);
-            Assert.AreEqual("Income item 1", incomeItems[0].Description);
+            Assert.AreEqual("Income description", incomeItems[0].ExpenseCategoryItem?.Description);
 
             Assert.AreEqual(200, incomeItems[1].Amount);
-            Assert.AreEqual("Income description", incomeItems[1].Description);
+            Assert.AreEqual("Income description", incomeItems[1].ExpenseCategoryItem?.Description);
         }
 
         [TestMethod]
@@ -332,46 +313,27 @@ namespace SimplyBudgetSharedTests.Data
             await fixture.PerformDatabaseOperation(async context =>
             {
                 context.ExpenseCategories.AddRange(category1);
-                var income1 = new Income
-                {
-                    Date = now.AddDays(-1),
-                    TotalAmount = 300,
-                    Description = "Income 1 description"
-                };
-                context.Incomes.Add(income1);
-                var income2 = new Income
-                {
-                    Date = now.AddDays(-2),
-                    TotalAmount = 500,
-                    Description = "Income 2 description"
-                };
-                context.Incomes.Add(income2);
                 await context.SaveChangesAsync();
-
-                await context.AddIncomeItem(category1, income1, 100, "Income item 1");
-                await context.AddIncomeItem(category1, income1, 200);
-
-                await context.AddIncomeItem(category1, income2, 200, "Income item 3");
-                await context.AddIncomeItem(category1, income2, 300);
-
+                
+                await context.AddIncome("Income 1 description", now.AddDays(-1), (100, category1.ID), (200, category1.ID));
+                await context.AddIncome("Income 2 description", now.AddDays(-2), (200, category1.ID), (300, category1.ID));
             });
 
             //Act
-            IList<IncomeItem>? incomeItems = null;
+            IList<ExpenseCategoryItemDetail>? incomeItems = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
-                incomeItems = await context.GetIncomeItems(category1, now.AddDays(-3), now.AddDays(-2));
+                incomeItems = await context.GetCategoryItemDetails(category1, now.AddDays(-3), now.AddDays(-2));
             });
 
             //Assert
             Assert.IsNotNull(incomeItems);
             Assert.AreEqual(2, incomeItems!.Count);
 
-            Assert.AreEqual(200, incomeItems[0].Amount);
-            Assert.AreEqual("Income item 3", incomeItems[0].Description);
+            Assert.AreEqual("Income 2 description", incomeItems[0].ExpenseCategoryItem?.Description);
+            Assert.AreEqual("Income 2 description", incomeItems[1].ExpenseCategoryItem?.Description);
 
-            Assert.AreEqual(300, incomeItems[1].Amount);
-            Assert.AreEqual("Income 2 description", incomeItems[1].Description);
+            CollectionAssert.AreEquivalent(new[] { 200, 300 }, incomeItems.Select(x => x.Amount).ToArray());
         }
 
         [TestMethod]

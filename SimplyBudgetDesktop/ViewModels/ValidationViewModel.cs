@@ -61,10 +61,10 @@ namespace SimplyBudget.ViewModels
                 .ToDictionary(x => x.Property.Name, x => (IValidator)x);
         }
 
-        protected override void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected override void OnPropertyChanged(PropertyChangedEventArgs e)
         {
-            base.OnPropertyChanged(propertyName);
-            ValidateProperty(propertyName);
+            base.OnPropertyChanged(e);
+            ValidateProperty(e.PropertyName);
         }
 
         protected bool ValidateModel()
