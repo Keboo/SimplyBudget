@@ -16,7 +16,6 @@ using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels.MainWindow
 {
-
     public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
         IRecipient<TransactionEvent>,
         IRecipient<TransactionItemEvent>,
@@ -31,7 +30,8 @@ namespace SimplyBudget.ViewModels.MainWindow
         public IRelayCommand AddFilterCommand { get; }
         public ICommand RemoveFilterCommand { get; }
 
-        public ICollectionView HistoryView => _view;
+        public ObservableCollection<Account> Accounts { get; }
+            = new ObservableCollection<Account>();
 
         public ObservableCollection<ExpenseCategory> ExpenseCategories { get; }
             = new ObservableCollection<ExpenseCategory>();
@@ -52,11 +52,23 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
         }
 
+        private Account _selectedAccount;
+        public Account SelectedAccount
+        {
+            get => _selectedAccount;
+            set
+            {
+                if (SetProperty(ref _selectedAccount, value))
+                {
+                    LoadItemsAsync();
+                }
+            }
+        }
+
         public HistoryViewModel(BudgetContext context, IMessenger messenger, ICurrentMonth currentMonth)
         {
             Context = context ?? throw new ArgumentNullException(nameof(context));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
-            Sort(nameof(BudgetHistoryViewModel.Date), ListSortDirection.Descending);
 
             ExpenseCategories.AddRange(context.ExpenseCategories);
 
@@ -90,14 +102,23 @@ namespace SimplyBudget.ViewModels.MainWindow
         {
             var oldestTime = CurrentMonth.CurrenMonth.AddMonths(-2).StartOfMonth();
 
+            int currentAmount = 0;
             var categoryList = new List<int>();
             if (FilterCategories.Any())
             {
                 categoryList.AddRange(FilterCategories.Select(x => x.ID));
             }
+            else
+            {
+                currentAmount = Context.ExpenseCategoryItemDetails
+                    .Include(x => x.ExpenseCategory)
+                    .Where(x => x.ExpenseCategory.AccountID == SelectedAccount.ID)
+                    .Sum(x => x.Amount);
+            }
 
             var query = Context.ExpenseCategoryItems
                 .Include(x => x.Details)
+                .ThenInclude(x => x.ExpenseCategory)
                 .Where(x => x.Date >= oldestTime);
 
             if (categoryList.Any())
@@ -111,8 +132,25 @@ namespace SimplyBudget.ViewModels.MainWindow
 
             await foreach (var item in query.AsAsyncEnumerable())
             {
-                yield return new BudgetHistoryViewModel(item);
+                yield return new BudgetHistoryViewModel(item, currentAmount);
+                if (!FilterCategories.Any())
+                {
+                    currentAmount -= item.Details
+                        .Where(x => x.ExpenseCategory.AccountID == SelectedAccount.ID)
+                        .Sum(x => x.Amount);
+                }
             }
+        }
+
+        protected override async Task ReloadItemsAsync()
+        {
+            int? selectedId = SelectedAccount?.ID;
+            Accounts.Clear();
+            Accounts.AddRange(Context.Accounts);
+            _selectedAccount = Accounts.FirstOrDefault(x => x.ID == selectedId) ??
+                await Context.GetDefaultAccountAsync();
+            await base.ReloadItemsAsync();
+            OnPropertyChanged(nameof(SelectedAccount));
         }
 
         public async Task DeleteItems(IEnumerable<BudgetHistoryViewModel> items)
@@ -122,7 +160,7 @@ namespace SimplyBudget.ViewModels.MainWindow
                 throw new ArgumentNullException(nameof(items));
             }
 
-            foreach(var item in items.ToList())
+            foreach (var item in items.ToList())
             {
                 await item.Delete(Context);
             }

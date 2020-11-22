@@ -29,7 +29,7 @@ namespace SimplyBudget.ViewModels
 
     public abstract class CollectionViewModelBase<T> : CollectionViewModelBase
     {
-        protected ObservableCollection<T> Items { get; }
+        public ObservableCollection<T> Items { get; }
         protected readonly ICollectionView _view;
         private readonly RelayCommand<string> _sortCommand;
         private SemaphoreSlim LoadLock { get; } = new SemaphoreSlim(1);

@@ -4,6 +4,7 @@ using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudgetShared.Events;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
@@ -35,6 +36,13 @@ namespace SimplyBudgetShared.Data
             : base(options)
         {
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder
+                .LogTo(x => Debug.WriteLine(x))
+                .EnableSensitiveDataLogging();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
