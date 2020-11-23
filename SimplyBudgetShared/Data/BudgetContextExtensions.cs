@@ -226,9 +226,11 @@ namespace SimplyBudgetShared.Data
             var end = month.EndOfMonth();
 
             var allocatedAmount =
-                await context.ExpenseCategoryItemDetails.Include(x => x.ExpenseCategoryItem)
-                    .Where(x => x.ExpenseCategoryItem!.Date >= start && x.ExpenseCategoryItem.Date <= end)
+                await context.ExpenseCategoryItemDetails
+                    .Include(x => x.ExpenseCategoryItem)
                     .Where(x => x.ExpenseCategoryId == expenseCategory.ID)
+                    .Where(x => x.Amount > 0)
+                    .Where(x => x.ExpenseCategoryItem!.Date >= start && x.ExpenseCategoryItem.Date <= end)
                     .SumAsync(x => x.Amount);
             return Math.Max(0, expenseCategory.BudgetedAmount - allocatedAmount);
         }
