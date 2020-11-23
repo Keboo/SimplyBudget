@@ -15,15 +15,15 @@ namespace SimplyBudget.ViewModels
             Item = item;
 
             Date = item.Date;
-            Description = item.ID + " " + item.Description;
+            Description = item.Description ?? "";
             CurrentAmount = currentAmount;
 
-            Details = item.Details
+            Details = item.Details?
                 .Select(x => new BudgetHistoryDetailsViewModel(x))
                 .OrderBy(x => x.ExpenseCategoryName)
-                .ToList();
+                .ToList() ?? new List<BudgetHistoryDetailsViewModel>();
 
-            int total = item.Details.Sum(x => x.Amount);
+            int total = item.Details?.Sum(x => x.Amount) ?? 0;
             if (item.Details?.Count == 2 && total == 0)
             {
                 DisplayAmount = $"<{Math.Abs(item.Details[0].Amount).FormatCurrency()}>";

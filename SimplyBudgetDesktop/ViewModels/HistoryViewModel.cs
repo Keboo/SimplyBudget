@@ -88,14 +88,14 @@ namespace SimplyBudget.ViewModels.MainWindow
             SelectedCategory = null;
         }
 
-        private void FilterCategories_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        private void FilterCategories_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
             => LoadItemsAsync();
 
         protected override async IAsyncEnumerable<BudgetHistoryViewModel> GetItems()
         {
             var oldestTime = CurrentMonth.CurrenMonth.AddMonths(-2).StartOfMonth();
 
-            int currentAmount = 0;
+            int currentAccountAmount = 0;
             var categoryList = new List<int>();
             if (FilterCategories.Any())
             {
@@ -103,10 +103,9 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
             else if (SelectedAccount?.ID is int selectedId)
             {
-                currentAmount = Context.ExpenseCategoryItemDetails
-                    .Include(x => x.ExpenseCategory)
-                    .Where(x => x.ExpenseCategory!.AccountID == selectedId)
-                    .Sum(x => x.Amount);
+                currentAccountAmount = Context.ExpenseCategories
+                    .Where(x => x.AccountID == selectedId)
+                    .Sum(x => x.CurrentBalance);
             }
 
             var query = Context.ExpenseCategoryItems
@@ -116,7 +115,7 @@ namespace SimplyBudget.ViewModels.MainWindow
 
             if (categoryList.Any())
             {
-                query = query.Where(x => x.Details.Any(x => categoryList.Contains(x.ExpenseCategoryId)));
+                query = query.Where(x => x.Details!.Any(x => categoryList.Contains(x.ExpenseCategoryId)));
             }
 
             query = query
@@ -125,12 +124,12 @@ namespace SimplyBudget.ViewModels.MainWindow
 
             await foreach (var item in query.AsAsyncEnumerable())
             {
-                yield return new BudgetHistoryViewModel(item, currentAmount);
+                yield return new BudgetHistoryViewModel(item, currentAccountAmount);
                 if (!FilterCategories.Any() && SelectedAccount?.ID is int selectedId)
                 {
-                    currentAmount -= item.Details
+                    currentAccountAmount -= item.Details?
                         .Where(x => x.ExpenseCategory!.AccountID == selectedId)
-                        .Sum(x => x.Amount);
+                        .Sum(x => x.Amount) ?? 0;
                 }
             }
         }

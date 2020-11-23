@@ -233,6 +233,12 @@ namespace SimplyBudget.ViewModels
                 yield break;
             }
 
+            if (items.FirstOrDefault(x => x.Amount < 0) is { } negativeItem)
+            {
+                yield return $"{negativeItem.SelectedCategory?.Name ?? "<empty>"} has a negative amount";
+                yield break;
+            }
+
             await Context.AddIncome(Description ?? "", Date.Value, items.Select(x => (x.Amount, x.SelectedCategory!.ID)).ToArray());
         }
 
