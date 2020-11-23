@@ -13,7 +13,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-namespace SimplyBudget.ViewModels.MainWindow
+namespace SimplyBudget.ViewModels
 {
     public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
         IRecipient<DatabaseEvent<ExpenseCategoryItem>>,
@@ -24,6 +24,7 @@ namespace SimplyBudget.ViewModels.MainWindow
         public ICurrentMonth CurrentMonth { get; }
 
         public IRelayCommand AddFilterCommand { get; }
+        public ICommand DoSearchCommand { get; }
         public ICommand RemoveFilterCommand { get; }
 
         public ObservableCollection<Account> Accounts { get; }
@@ -61,6 +62,13 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
         }
 
+        private string? _search;
+        public string? Search
+        {
+            get => _search;
+            set => SetProperty(ref _search, value);
+        }
+
         public HistoryViewModel(BudgetContext context, IMessenger messenger, ICurrentMonth currentMonth)
         {
             Context = context ?? throw new ArgumentNullException(nameof(context));
@@ -71,6 +79,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             AddFilterCommand = new RelayCommand<ExpenseCategory>(OnAddFilter, x => x != null);
             RemoveFilterCommand = new RelayCommand<ExpenseCategory>(
                 x => FilterCategories.Remove(x), x => x != null);
+            DoSearchCommand = new RelayCommand(OnDoSearch);
 
             FilterCategories.CollectionChanged += FilterCategories_CollectionChanged;
 
@@ -87,6 +96,8 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
             SelectedCategory = null;
         }
+
+        private void OnDoSearch() => LoadItemsAsync();
 
         private void FilterCategories_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
             => LoadItemsAsync();
@@ -106,10 +117,18 @@ namespace SimplyBudget.ViewModels.MainWindow
                 currentAccountAmount = await Context.GetCurrentAmount(selectedId);
             }
 
-            var query = Context.ExpenseCategoryItems
+            IQueryable<ExpenseCategoryItem> query = Context.ExpenseCategoryItems
                 .Include(x => x.Details)
-                .ThenInclude(x => x.ExpenseCategory)
-                .Where(x => x.Date >= oldestTime);
+                .ThenInclude(x => x.ExpenseCategory);
+
+            if (!string.IsNullOrWhiteSpace(Search))
+            {
+                query = query.Where(x => EF.Functions.Like(x.Description, $"%{Search}%"));
+            }
+            else
+            {
+                query = query.Where(x => x.Date >= oldestTime);
+            }
 
             if (categoryList.Any())
             {

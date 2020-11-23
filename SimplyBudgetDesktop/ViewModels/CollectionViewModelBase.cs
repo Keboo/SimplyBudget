@@ -94,7 +94,7 @@ namespace SimplyBudget.ViewModels
 
         protected virtual async Task ReloadItemsAsync()
         {
-            await LoadLock.WaitAsync();
+            await LoadLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 Items.Clear();
