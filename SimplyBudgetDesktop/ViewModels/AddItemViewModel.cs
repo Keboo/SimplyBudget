@@ -156,7 +156,14 @@ namespace SimplyBudget.ViewModels
             {
                 var desiredAmount = await Context.GetRemainingBudgetAmount(lineItem.SelectedCategory!, CurrentMonth.CurrenMonth);
                 lineItem.DesiredAmount = desiredAmount;
-                lineItem.SetAmountCallback = x => Math.Min(RemainingAmount, desiredAmount);
+                lineItem.SetAmountCallback = x =>
+                {
+                    if (x.SelectedCategory?.UsePercentage == true)
+                    {
+                        return (int)Math.Round(x.SelectedCategory.BudgetedPercentage / 100.0 * TotalAmount);
+                    }
+                    return Math.Min(RemainingAmount, desiredAmount);
+                };
             }
         }
 
@@ -257,7 +264,7 @@ namespace SimplyBudget.ViewModels
                 yield break;
             }
 
-            await Context.AddTransaction(Description, Date.Value, items.Select(vm => (vm.Amount, vm.SelectedCategory.ID)).ToArray());
+            await Context.AddTransaction(Description ?? "", Date.Value, items.Select(vm => (vm.Amount, vm.SelectedCategory!.ID)).ToArray());
         }
 
         private IEnumerable<LineItemViewModel> GetValidLineItems()
