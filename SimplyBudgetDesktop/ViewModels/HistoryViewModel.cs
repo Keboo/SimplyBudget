@@ -103,9 +103,7 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
             else if (SelectedAccount?.ID is int selectedId)
             {
-                currentAccountAmount = Context.ExpenseCategories
-                    .Where(x => x.AccountID == selectedId)
-                    .Sum(x => x.CurrentBalance);
+                currentAccountAmount = await Context.GetCurrentAmount(selectedId);
             }
 
             var query = Context.ExpenseCategoryItems

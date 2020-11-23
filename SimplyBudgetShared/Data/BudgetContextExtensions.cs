@@ -1,9 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudgetShared.Utilities;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -59,7 +57,7 @@ namespace SimplyBudgetShared.Data
                 .Include(x => x.ExpenseCategories)
                 .FirstOrDefaultAsync(x => x.ID == accountId);
 
-            return account?.ExpenseCategories.Sum(x => x.CurrentBalance) ?? 0;
+            return account?.ExpenseCategories?.Sum(x => x.CurrentBalance) ?? 0;
         }
 
         public static async Task<Transfer> AddTransfer(this BudgetContext context,
@@ -89,40 +87,6 @@ namespace SimplyBudgetShared.Data
             await context.SaveChangesAsync();
             return item;
         }
-
-        //[Obsolete("Use AddIncome")]
-        //public static async Task<IncomeItem> AddIncomeItem(this BudgetContext context,
-        //    ExpenseCategory expenseCategory, Income income,
-        //    int amount, string? description = null)
-        //{
-        //    if (context is null)
-        //    {
-        //        throw new ArgumentNullException(nameof(context));
-        //    }
-
-        //    if (expenseCategory is null)
-        //    {
-        //        throw new ArgumentNullException(nameof(expenseCategory));
-        //    }
-
-        //    if (income is null)
-        //    {
-        //        throw new ArgumentNullException(nameof(income));
-        //    }
-
-        //    var incomeItem = new IncomeItem
-        //    {
-        //        Amount = amount,
-        //        Description = description ?? income.Description,
-        //        ExpenseCategoryID = expenseCategory.ID,
-        //        IncomeID = income.ID
-        //    };
-        //    context.IncomeItems.Add(incomeItem);
-
-        //    await context.SaveChangesAsync();
-
-        //    return incomeItem;
-        //}
 
         public static async Task<Income> AddIncome(this BudgetContext context,
             string description, DateTime date,
@@ -184,7 +148,7 @@ namespace SimplyBudgetShared.Data
         public static async Task<IList<Transfer>> GetTransfers(this BudgetContext context, ExpenseCategory expenseCategory, DateTime? queryStart = null, DateTime? queryEnd = null)
         {
             IQueryable<ExpenseCategoryItem> transferQuery = context.ExpenseCategoryItems.Include(x => x.Details)
-                .Where(x => x.Details.Count() == 2 &&
+                .Where(x => x.Details!.Count() == 2 &&
                        x.Details.Sum(x=> x.Amount) == 0 &&
                        x.Details.Any(x => x.ExpenseCategoryId == expenseCategory.ID));
             if (queryStart != null && queryEnd != null)

@@ -64,17 +64,14 @@
                         <TextBlock.Style>
                             <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding DesiredAmount}" Value="0">
-                                        <Setter Property="IsEnabled" Value="False" />
-                                    </DataTrigger>
-                                    <DataTrigger Value="0">
+                                    <DataTrigger Value="1">
                                         <DataTrigger.Binding>
                                             <MultiBinding Converter="{valueconverter:ComparableMultiValueConverter}">
                                                 <Binding Path="DesiredAmount" />
                                                 <Binding Path="Amount" />
                                             </MultiBinding>
                                         </DataTrigger.Binding>
-                                        <Setter Property="IsEnabled" Value="False" />
+                                        <Setter Property="IsEnabled" Value="True" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
