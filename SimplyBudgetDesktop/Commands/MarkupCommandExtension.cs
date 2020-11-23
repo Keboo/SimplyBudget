@@ -15,12 +15,12 @@ namespace SimplyBudget.Commands
             return new T();
         }
 
-        public virtual bool CanExecute(object parameter)
+        public virtual bool CanExecute(object? parameter)
         {
             return true;
         }
 
-        public abstract void Execute(object parameter);
+        public abstract void Execute(object? parameter);
 
         public void NotifyCanExecuteChanged()
         {

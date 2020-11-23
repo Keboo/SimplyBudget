@@ -9,7 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimplyBudgetSharedTests", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimplyBudgetDesktop", "SimplyBudgetDesktop\SimplyBudgetDesktop.csproj", "{92A1344C-75CF-4EAE-A00D-DB90161DBC42}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimplyBudgetDesktop.Tests", "SimplyBudgetDesktop.Tests\SimplyBudgetDesktop.Tests.csproj", "{EE95A13D-F8DF-4AB8-B354-AC9B0F13E163}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimplyBudgetDesktop.Tests", "SimplyBudgetDesktop.Tests\SimplyBudgetDesktop.Tests.csproj", "{EE95A13D-F8DF-4AB8-B354-AC9B0F13E163}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3999A7BB-5952-4011-942D-FC988E1BDBE7}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		TODO.txt = TODO.txt
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

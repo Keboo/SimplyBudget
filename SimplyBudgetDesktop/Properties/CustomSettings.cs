@@ -65,7 +65,7 @@ namespace SimplyBudget.Properties
             var columns = Columns;
             if (columns != null)
             {
-                var columnsByHeader = Columns.ToDictionary(x => x.Header);
+                var columnsByHeader = columns.ToDictionary(x => x.Header ?? "");
                 foreach (var column in dataGrid.Columns.Where(x => x.Header != null))
                 {
                     if (columnsByHeader.TryGetValue(column!.Header!.ToString() ?? "", out DataGridColumnSettings? settings))
