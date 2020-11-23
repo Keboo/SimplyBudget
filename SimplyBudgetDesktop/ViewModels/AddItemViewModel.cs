@@ -52,10 +52,13 @@ namespace SimplyBudget.ViewModels
                             LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
                             break;
                         case AddType.Income:
-                            LineItems.AddRange(ExpenseCategories.Select(x => new LineItemViewModel(ExpenseCategories, Messenger)
-                            {
-                                SelectedCategory = x
-                            }));
+                            LineItems.AddRange(ExpenseCategories
+                                .Select(x => new LineItemViewModel(ExpenseCategories, Messenger)
+                                {
+                                    SelectedCategory = x
+                                })
+                                .OrderByDescending(x => x.SelectedCategory?.UsePercentage)
+                                .ThenBy(x => x.SelectedCategory?.Name));
                             LoadDesiredAmounts();
                             break;
                         case AddType.Transfer:
