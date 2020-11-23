@@ -26,15 +26,11 @@ namespace SimplyBudget.ViewModels
             int total = item.Details?.Sum(x => x.Amount) ?? 0;
             if (item.Details?.Count == 2 && total == 0)
             {
-                DisplayAmount = $"<{Math.Abs(item.Details[0].Amount).FormatCurrency()}>";
-            }
-            else if (total > 0)
-            {
-                DisplayAmount = $"({total.FormatCurrency()})";
+                DisplayAmount = $"<{(-Math.Abs(item.Details[0].Amount)).FormatCurrency()}>";
             }
             else
             {
-                DisplayAmount = $"{(-total).FormatCurrency()}";
+                DisplayAmount = total.FormatCurrency();
             }
         }
 

@@ -54,9 +54,20 @@ namespace SimplyBudgetShared.Utilities
         public static void Raise<T>(this EventHandler<T> handler, object sender, T args) where T : EventArgs
             => handler?.Invoke(sender, args);
 
-        public static string FormatCurrency(this int amount)
+        [Obsolete("Use FormatCurrency - NB negative vs positive")]
+        public static string FormatCurrencyOld(this int amount)
         {
             return string.Format("{0:c}", (double)amount / 100);
+        }
+
+        public static string FormatCurrency(this int amount)
+        {
+            //Negative values are transactions, positive values are income
+            if (amount > 0)
+            {
+                return $"({amount/100.0:c})";
+            }
+            return $"{amount/-100.0:c}";
         }
 
         public static string FormatPercentage(this int percentage)

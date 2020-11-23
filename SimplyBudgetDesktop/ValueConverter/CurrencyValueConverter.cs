@@ -16,7 +16,7 @@ namespace SimplyBudget.ValueConverter
             if (value is int)
             {
                 var intValue = (int) value;
-                return intValue.FormatCurrency();
+                return intValue.FormatCurrencyOld();
             }
 #if DEBUG
             if (value != null)
@@ -27,7 +27,7 @@ namespace SimplyBudget.ValueConverter
             if (value is double) //TODO: Delete this after finding all of the bugs
             {
                 var intVal = (int) (double) value;
-                return intVal.FormatCurrency();
+                return intVal.FormatCurrencyOld();
             }
 #endif
             return null;
