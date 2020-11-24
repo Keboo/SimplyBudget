@@ -110,6 +110,7 @@
         <ListBox ItemsSource="{Binding Items}"
                  x:Name="HistoryListView"
                  Grid.Row="3"
+                 VirtualizingPanel.ScrollUnit="Pixel"
                  materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
             <ListBox.CommandBindings>
                 <CommandBinding Command="{x:Static ApplicationCommands.Delete}" Executed="DeleteSelectedHistoryItemExecuted" />
