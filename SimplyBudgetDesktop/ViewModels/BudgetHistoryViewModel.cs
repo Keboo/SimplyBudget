@@ -10,13 +10,13 @@ namespace SimplyBudget.ViewModels
 {
     public class BudgetHistoryViewModel : ObservableObject
     {
-        public BudgetHistoryViewModel(ExpenseCategoryItem item, int currentAmount)
+        public BudgetHistoryViewModel(ExpenseCategoryItem item, int currentAccountAmount)
         {
             Item = item;
 
             Date = item.Date;
             Description = item.Description ?? "";
-            CurrentAmount = currentAmount;
+            CurrentAmount = currentAccountAmount;
 
             Details = item.Details?
                 .Select(x => new BudgetHistoryDetailsViewModel(x))
