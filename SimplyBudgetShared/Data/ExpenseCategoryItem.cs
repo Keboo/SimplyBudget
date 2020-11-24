@@ -29,6 +29,10 @@ namespace SimplyBudgetShared.Data
             }
         }
 
+        public bool IsTransfer =>
+            Details?.Count == 2 &&
+            Details[0].Amount + Details[1].Amount == 0;
+
         public static implicit operator Transaction(ExpenseCategoryItem item)
         {
             var transaction =  new Transaction

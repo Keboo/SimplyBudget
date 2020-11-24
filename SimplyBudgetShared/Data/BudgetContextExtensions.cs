@@ -162,6 +162,7 @@ namespace SimplyBudgetShared.Data
         {
             IQueryable<ExpenseCategoryItemDetail> query = context.ExpenseCategoryItemDetails
                 .Include(x => x.ExpenseCategoryItem)
+                .ThenInclude(x => x!.Details)
                 .Where(x => x.ExpenseCategoryId == expenseCategory.ID);
 
             if (queryStart != null && queryEnd != null)

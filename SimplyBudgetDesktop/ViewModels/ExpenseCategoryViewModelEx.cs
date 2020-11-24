@@ -22,13 +22,18 @@ namespace SimplyBudget.ViewModels
             }
 
             if (expenseCategory is null) throw new ArgumentNullException(nameof(expenseCategory));
-            
+
             var categoryItems = await context.GetCategoryItemDetails(expenseCategory, month.StartOfMonth(), month.EndOfMonth());
 
             var rv = new ExpenseCategoryViewModelEx(expenseCategory.ID);
             SetProperties(expenseCategory, rv);
-            rv.MonthlyExpenses = categoryItems.Where(x => x.Amount < 0).Sum(x => -x.Amount);
-            rv.MonthlyAllocations = categoryItems.Where(x => x.Amount > 0).Sum(x => x.Amount);
+            rv.MonthlyExpenses = categoryItems
+                .Where(x => x.Amount < 0 && x.ExpenseCategoryItem?.IsTransfer == false)
+                .Sum(x => -x.Amount);
+
+            rv.MonthlyAllocations = categoryItems
+                .Where(x => x.Amount > 0 || x.ExpenseCategoryItem?.IsTransfer == true)
+                .Sum(x => x.Amount);
             rv.BudgetedAmountDisplay = expenseCategory.GetBudgetedDisplayString();
             return rv;
         }

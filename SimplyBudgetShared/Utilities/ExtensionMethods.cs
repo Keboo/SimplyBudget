@@ -51,9 +51,6 @@ namespace SimplyBudgetShared.Utilities
             }
         }
 
-        public static void Raise<T>(this EventHandler<T> handler, object sender, T args) where T : EventArgs
-            => handler?.Invoke(sender, args);
-
         [Obsolete("Use FormatCurrency - NB negative vs positive")]
         public static string FormatCurrencyOld(this int amount)
         {

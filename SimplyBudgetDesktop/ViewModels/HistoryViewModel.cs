@@ -66,7 +66,20 @@ namespace SimplyBudget.ViewModels
         public string? Search
         {
             get => _search;
-            set => SetProperty(ref _search, value);
+            set
+            {
+                if (SetProperty(ref _search, value))
+                {
+                    SetFilterDisplay();
+                }
+            }
+        }
+
+        private string? _filterDisplay;
+        public string? FilterDisplay
+        {
+            get => _filterDisplay;
+            private set => SetProperty(ref _filterDisplay, value);
         }
 
         public HistoryViewModel(BudgetContext context, IMessenger messenger, ICurrentMonth currentMonth)
@@ -99,8 +112,29 @@ namespace SimplyBudget.ViewModels
 
         private void OnDoSearch() => LoadItemsAsync();
 
+        private void SetFilterDisplay()
+        {
+            string rv = "";
+            if (!string.IsNullOrEmpty(Search))
+            {
+                rv += $"\"{Search}\" ";
+            }
+            if (FilterCategories.Any())
+            {
+                rv += "in";
+                foreach(var category in FilterCategories)
+                {
+                    rv += $" {category.Name}";
+                }
+            }
+            FilterDisplay = rv;
+        }
+
         private void FilterCategories_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-            => LoadItemsAsync();
+        {
+            LoadItemsAsync();
+            SetFilterDisplay();
+        }
 
         protected override async IAsyncEnumerable<BudgetHistoryViewModel> GetItems()
         {
