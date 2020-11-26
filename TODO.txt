@@ -2,7 +2,6 @@ Feature and Enhancements:
 Add the ability to import expeses from a file. Use STCU as an example, but be prepared to support multiple file formats.
 Allow for "add rest" to transaction
 Keyboard shorcut for add another line item to transaction
-Search previous item descriptions
 History of budgetted amounts
 Graph of expenses
 Move submit and total fields up

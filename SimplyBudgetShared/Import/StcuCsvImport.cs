@@ -11,12 +11,13 @@ namespace SimplyBudgetShared.Import
             : base(csvData)
         { }
 
-        protected override ExpenseCategoryItem ConvertRow(StcuRecord row)
+        protected override ExpenseCategoryItem? ConvertRow(StcuRecord row)
         {
-            switch(row.TransactionType?.ToLowerInvariant())
+            if (row.Amount is null) return null;
+            switch (row.TransactionType?.ToLowerInvariant())
             {
                 case "check":
-                case "debit":
+                case "debit" when !string.Equals(row.Type, "Transfer", StringComparison.Ordinal):
                     return new()
                     {
                         Date = row.EffectiveDate?.Date ?? DateTime.Today,
@@ -29,6 +30,7 @@ namespace SimplyBudgetShared.Import
                             }
                         }
                     };
+                case "debit": return null;
                 case "credit":
                     return new()
                     {

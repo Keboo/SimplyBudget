@@ -22,18 +22,17 @@ namespace SimplyBudgetShared.Import
             using (var reader = new StreamReader(CsvData))
             using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
             {
-                //if (!csv.ReadHeader())
-                //{
-                //    yield break;
-                //}
                 TRow item = new();
                 await foreach(var record in csv.EnumerateRecordsAsync(item))
                 {
-                    yield return ConvertRow(item);
+                    if (ConvertRow(record) is { } converted)
+                    {
+                        yield return converted;
+                    }
                 }
             }
         }
 
-        protected abstract ExpenseCategoryItem ConvertRow(TRow row);
+        protected abstract ExpenseCategoryItem? ConvertRow(TRow row);
     }
 }
