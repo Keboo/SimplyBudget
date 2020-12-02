@@ -5,8 +5,6 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:SimplyBudget.ViewModels"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" 
-        xmlns:commands="clr-namespace:SimplyBudget.Commands" 
-        xmlns:vmData="clr-namespace:SimplyBudget.ViewModels.Data" 
         xmlns:valueConverter="clr-namespace:SimplyBudget.ValueConverter"
         xmlns:utilities="clr-namespace:SimplyBudget.Utilities" xmlns:views="clr-namespace:SimplyBudget.Views"
         mc:Ignorable="d"
@@ -122,7 +120,7 @@
                                     <GridViewColumn DisplayMemberBinding="{Binding BudgetedAmountDisplay}" Header="Budgeted Amount" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
                                     <GridViewColumn Header="Current Balance" utilities:AttachedProperties.SortPropertyName="Balance">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
+                                            <DataTemplate DataType="{x:Type vm:ExpenseCategoryViewModel}">
                                                 <TextBlock Text="{Binding Balance, Converter={valueConverter:CurrencyValueConverter}}">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
@@ -139,7 +137,7 @@
                                     </GridViewColumn>
                                     <GridViewColumn Header="Monthly Expenses" utilities:AttachedProperties.SortPropertyName="MonthlyExpenses">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
+                                            <DataTemplate DataType="{x:Type vm:ExpenseCategoryViewModel}">
                                                 <TextBlock Text="{Binding MonthlyExpenses, Converter={valueConverter:CurrencyValueConverter}}">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
@@ -156,7 +154,7 @@
                                     </GridViewColumn>
                                     <GridViewColumn Header="Monthly Allocations" utilities:AttachedProperties.SortPropertyName="MonthlyAllocations">
                                         <GridViewColumn.CellTemplate>
-                                            <DataTemplate>
+                                            <DataTemplate DataType="{x:Type vm:ExpenseCategoryViewModel}">
                                                 <TextBlock Text="{Binding MonthlyAllocations, Converter={valueConverter:CurrencyValueConverter}}">
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
@@ -229,7 +227,7 @@
                 </ItemsControl.ItemsPanel>
 
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type vmData:AccountViewModel}">
+                    <DataTemplate DataType="{x:Type vm:AccountViewModel}">
                         <TextBlock Margin="10,0">
                         <Run Text="{Binding Name}" />
                         <Run Text="{Binding CurrentAmount, Converter={valueConverter:CurrencyValueConverter}}" />

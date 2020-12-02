@@ -1,5 +1,4 @@
 ﻿using Microsoft.Toolkit.Mvvm.Messaging;
-using SimplyBudget.ViewModels.Data;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Events;
 using System;

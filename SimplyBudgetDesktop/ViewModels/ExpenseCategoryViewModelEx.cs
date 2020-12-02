@@ -1,5 +1,4 @@
-﻿using SimplyBudget.ViewModels.Data;
-using SimplyBudgetShared.Data;
+﻿using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using System;
 using System.Linq;

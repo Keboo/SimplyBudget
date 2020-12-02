@@ -2,7 +2,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace SimplyBudget.ViewModels.Data
+namespace SimplyBudget.ViewModels
 {
     public class AccountViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
     {

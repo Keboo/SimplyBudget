@@ -1,7 +1,7 @@
 ﻿using SimplyBudgetShared.Data;
 using System;
 
-namespace SimplyBudget.ViewModels.Data
+namespace SimplyBudget.ViewModels
 {
     public class ExpenseCategoryViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
     {
