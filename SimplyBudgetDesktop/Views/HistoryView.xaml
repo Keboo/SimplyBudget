@@ -156,7 +156,20 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Text="{Binding Date, StringFormat='d'}" />
-                        <TextBlock Text="{Binding DisplayAmount}" Grid.Column="1" Margin="4,0"/>
+                        <TextBlock Text="{Binding DisplayAmount}" Grid.Column="1" Margin="15,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Type}" Value="{x:Static vm:BudgetHistoryViewModelType.Transfer}">
+                                            <Setter Property="HorizontalAlignment" Value="Center" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Type}" Value="{x:Static vm:BudgetHistoryViewModelType.Transaction}">
+                                            <Setter Property="HorizontalAlignment" Value="Right" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                         <TextBlock Text="{Binding Description}" Grid.Column="2" />
                         <TextBlock Text="{Binding CurrentAmount, Converter={StaticResource CurrentValueConverter}}" Grid.Column="3" HorizontalAlignment="Right">
                             <TextBlock.Style>

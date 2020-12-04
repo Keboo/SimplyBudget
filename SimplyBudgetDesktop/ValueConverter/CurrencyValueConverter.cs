@@ -1,6 +1,8 @@
 ﻿
 using System;
 using System.Globalization;
+using System.Linq;
+using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 
 namespace SimplyBudget.ValueConverter
@@ -16,20 +18,12 @@ namespace SimplyBudget.ValueConverter
             if (value is int)
             {
                 var intValue = (int) value;
-                return intValue.FormatCurrencyOld();
+                return intValue.FormatCurrency();
             }
-#if DEBUG
-            if (value != null)
+            if (value is ExpenseCategoryItem item)
             {
-                System.Diagnostics.Debugger.Break();
+                return item.GetDisplayAmount();
             }
-#else 
-            if (value is double) //TODO: Delete this after finding all of the bugs
-            {
-                var intVal = (int) (double) value;
-                return intVal.FormatCurrencyOld();
-            }
-#endif
             return null;
         }
 

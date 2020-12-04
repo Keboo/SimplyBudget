@@ -8,6 +8,14 @@ using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels
 {
+    public enum BudgetHistoryViewModelType
+    {
+        Unknown,
+        Transfer,
+        Transaction,
+        Income
+    }
+
     public class BudgetHistoryViewModel : ObservableObject
     {
         public BudgetHistoryViewModel(ExpenseCategoryItem item, int currentAccountAmount)
@@ -23,15 +31,20 @@ namespace SimplyBudget.ViewModels
                 .OrderBy(x => x.ExpenseCategoryName)
                 .ToList() ?? new List<BudgetHistoryDetailsViewModel>();
 
-            int total = item.Details?.Sum(x => x.Amount) ?? 0;
-            if (item.Details?.Count == 2 && total == 0)
+            if (item.IsTransfer)
             {
-                DisplayAmount = $"<{(-Math.Abs(item.Details[0].Amount)).FormatCurrency()}>";
+                Type = BudgetHistoryViewModelType.Transfer;
+            }
+            else if (item.Details?.Sum(x => x.Amount) > 0)
+            {
+                Type = BudgetHistoryViewModelType.Income;
             }
             else
             {
-                DisplayAmount = total.FormatCurrency();
+                Type = BudgetHistoryViewModelType.Transaction;
             }
+
+            DisplayAmount = item.GetDisplayAmount();
         }
 
         private ExpenseCategoryItem Item { get; }
@@ -43,6 +56,8 @@ namespace SimplyBudget.ViewModels
         public string DisplayAmount { get; }
 
         public int CurrentAmount { get; }
+
+        public BudgetHistoryViewModelType Type { get; }
 
         public IReadOnlyList<BudgetHistoryDetailsViewModel> Details { get; }
 

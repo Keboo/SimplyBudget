@@ -113,7 +113,7 @@ namespace SimplyBudget.ViewModels
             set => SetProperty(ref _date, value);
         }
 
-        private IList<ExpenseCategory> ExpenseCategories { get; }
+        public IList<ExpenseCategory> ExpenseCategories { get; }
 
         public AddItemViewModel(BudgetContext context, ICurrentMonth currentMonth, IMessenger messenger)
         {

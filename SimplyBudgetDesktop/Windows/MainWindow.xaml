@@ -188,6 +188,14 @@
 
                     <views:HistoryView DataContext="{Binding History}" />
                 </TabItem>
+
+                <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
+                    <TabItem.Header>
+                        <materialDesign:PackIcon Kind="Import" Width="30" Height="30" />
+                    </TabItem.Header>
+
+                    <views:ImportView DataContext="{Binding Import}" />
+                </TabItem>
             </TabControl>
         </materialDesign:DrawerHost>
 

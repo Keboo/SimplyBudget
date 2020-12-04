@@ -7,7 +7,7 @@ namespace SimplyBudget.ViewModels
     {
         public static ExpenseCategoryViewModel Create(ExpenseCategory expenseCategory)
         {
-            if (expenseCategory is null) throw new ArgumentNullException("expenseCategory");
+            if (expenseCategory is null) throw new ArgumentNullException(nameof(expenseCategory));
             var rv = new ExpenseCategoryViewModel(expenseCategory.ID);
             SetProperties(expenseCategory, rv);
             return rv;
@@ -15,8 +15,8 @@ namespace SimplyBudget.ViewModels
 
         protected static void SetProperties(ExpenseCategory expenseCategory, ExpenseCategoryViewModel viewModel)
         {
-            if (expenseCategory is null) throw new ArgumentNullException("expenseCategory");
-            if (viewModel is null) throw new ArgumentNullException("viewModel");
+            if (expenseCategory is null) throw new ArgumentNullException(nameof(expenseCategory));
+            if (viewModel is null) throw new ArgumentNullException(nameof(viewModel));
             viewModel.Name = expenseCategory.Name;
             viewModel.Balance = expenseCategory.CurrentBalance;
             viewModel.BudgetedAmount = expenseCategory.BudgetedAmount;

@@ -15,13 +15,16 @@ namespace SimplyBudget.ViewModels
 {
     public class MainWindowViewModel : ObservableObject,
         IRecipient<DoneAddingItemMessage>,
-        IRecipient<CurrentMonthChanged>
+        IRecipient<CurrentMonthChanged>,
+        IRecipient<AddItemMessage>
     {
         public BudgetViewModel Budget { get; }
 
         public HistoryViewModel History { get; }
 
         public AccountsViewModel Accounts { get; }
+
+        public ImportViewModel Import { get; }
 
         private AddItemViewModel? _addItem;
         public AddItemViewModel? AddItem
@@ -73,6 +76,7 @@ namespace SimplyBudget.ViewModels
             Budget = new BudgetViewModel(context, messenger, currentMonth);
             History = new HistoryViewModel(context, messenger, currentMonth);
             Accounts = new AccountsViewModel(context, messenger);
+            Import = new ImportViewModel(messenger);
 
             Budget.LoadItemsAsync();
             History.LoadItemsAsync();
@@ -82,6 +86,7 @@ namespace SimplyBudget.ViewModels
 
             messenger.Register<DoneAddingItemMessage>(this);
             messenger.Register<CurrentMonthChanged>(this);
+            messenger.Register<AddItemMessage>(this);
         }
 
         private void OnShowAdd(AddType? addType)
@@ -98,5 +103,29 @@ namespace SimplyBudget.ViewModels
 
         public void Receive(CurrentMonthChanged message) 
             => SelectedMonth = message.StartOfMonth;
+
+        public void Receive(AddItemMessage message)
+        {
+            AddItem = new AddItemViewModel(Context, CurrentMonth, Messenger)
+            {
+                SelectedType = message.Type,
+                Date = message.Date,
+                Description = message.Description
+            };
+            switch(message.Type)
+            {
+                case AddType.Transaction:
+                    AddItem.LineItems.Clear();
+                    AddItem.LineItems.AddRange(message.Items
+                        .Select(x => new LineItemViewModel(AddItem.ExpenseCategories, Messenger) 
+                        { 
+                            Amount = x.Amount
+                        }));
+                    break;
+                case AddType.Income:
+                    AddItem.TotalAmount = message.Items.Sum(x => x.Amount);
+                    break;
+            }
+        }
     }
 }

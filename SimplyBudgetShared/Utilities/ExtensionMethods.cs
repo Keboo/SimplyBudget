@@ -1,6 +1,8 @@
-﻿using System;
+﻿using SimplyBudgetShared.Data;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetShared.Utilities
@@ -51,20 +53,30 @@ namespace SimplyBudgetShared.Utilities
             }
         }
 
-        [Obsolete("Use FormatCurrency - NB negative vs positive")]
-        public static string FormatCurrencyOld(this int amount)
-        {
-            return string.Format("{0:c}", (double)amount / 100);
-        }
-
         public static string FormatCurrency(this int amount)
         {
             //Negative values are transactions, positive values are income
-            if (amount > 0)
+            //if (amount > 0)
+            //{
+            //    return $"({amount/100.0:c})";
+            //}
+            return $"{amount/100.0:c}";
+        }
+
+        public static string GetDisplayAmount(this ExpenseCategoryItem expenseItem)
+        {
+            if (expenseItem is null)
             {
-                return $"({amount/100.0:c})";
+                throw new ArgumentNullException(nameof(expenseItem));
             }
-            return $"{amount/-100.0:c}";
+
+            int total = expenseItem.Details?.Sum(x => x.Amount) ?? 0;
+            if (expenseItem.Details?.Count == 2 && total == 0)
+            {
+                return $"<{Math.Abs(expenseItem.Details[0].Amount).FormatCurrency()}>";
+            }
+            return total.FormatCurrency();
+
         }
 
         public static string FormatPercentage(this int percentage)

@@ -18,7 +18,8 @@
             </ResourceDictionary.MergedDictionaries>
 
             <valueConverter:CurrencyValueConverter x:Key="CurrentValueConverter"/>
-
+            <valueConverter:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+            
         </ResourceDictionary>
     </Application.Resources>
 </Application>

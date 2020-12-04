@@ -23,7 +23,7 @@ namespace SimplyBudgetShared.Data
         {
             return UsePercentage
                        ? BudgetedPercentage.FormatPercentage()
-                       : BudgetedAmount.FormatCurrencyOld();
+                       : BudgetedAmount.FormatCurrency();
         }
 
         public async Task BeforeCreate(BudgetContext context)
