@@ -21,6 +21,7 @@ namespace SimplyBudget.ViewModels
     {
         public ICommand ImportCommand { get; }
         public IRelayCommand AddItemCommand { get; }
+        public ICommand DeleteCommand { get; }
         public IMessenger Messenger { get; }
 
         public ObservableCollection<ImportRecord> ImportedRecords { get; } = new();
@@ -59,6 +60,7 @@ namespace SimplyBudget.ViewModels
         {
             ImportCommand = new RelayCommand(OnImport);
             AddItemCommand = new RelayCommand(OnAddItem, CanAddItem);
+            DeleteCommand = new RelayCommand(OnDeleteItem);
 
             BindingOperations.EnableCollectionSynchronization(ImportedRecords, new object());
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
@@ -113,6 +115,14 @@ namespace SimplyBudget.ViewModels
             }
 
             IsViewingCsv = false;
+        }
+
+        private void OnDeleteItem()
+        {
+            foreach(var item in SelectedItems?.ToList() ?? Enumerable.Empty<ImportRecord>())
+            {
+                ImportedRecords.Remove(item);
+            }
         }
     }
 

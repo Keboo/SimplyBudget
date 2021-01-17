@@ -50,6 +50,9 @@
                   SelectionUnit="FullRow"
                   x:Name="DataGrid"
                   Visibility="{Binding IsViewingCsv, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+            <DataGrid.InputBindings>
+                <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
+            </DataGrid.InputBindings>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Date" Binding="{Binding Date, StringFormat='d'}" SortMemberPath="Date" />
                 <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
