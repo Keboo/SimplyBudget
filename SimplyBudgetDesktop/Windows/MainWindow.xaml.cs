@@ -22,6 +22,7 @@ namespace SimplyBudget.Windows
             if (!history.FilterCategories.Any(x => x.ID == category.ExpenseCategoryID) &&
                 history.ExpenseCategories.FirstOrDefault(x => x.ID == category.ExpenseCategoryID) is ExpenseCategory foundCategory)
             {
+                history.FilterCategories.Clear();
                 history.FilterCategories.Add(foundCategory);
             }
             TabControl.SelectedIndex = 1;

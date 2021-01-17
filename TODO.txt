@@ -1,17 +1,14 @@
 BUGS:
 Cannot edit expense category.
 Monthly allocations keeps showing the wrong amounts when viewing previous months.
-Double clicking on an expense category should clear any previous filters.
 
 Feature and Enhancements:
 When viewing income items in transaction history wih a filter. The amount shown without selection should be the filtered amount.
-Importing doesn't appear to update totals properly
 DatePicker on add drawer should also show days from previous months (MD change?)
 Rather than deleting items from the import, simply mark them as hidden and offer a way to show hidden items.
 Allow for splitting out some amount from a transaction line item.
 Add quick way to clear filters on transaction history page. 
 Select all on focus for transaction description.
-Change color for DEBUG
 Add option to delete line item from import
 Order import from oldest to newest
 Allow for "add rest" to transaction
