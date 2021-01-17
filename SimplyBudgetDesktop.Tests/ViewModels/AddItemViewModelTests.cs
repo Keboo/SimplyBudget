@@ -75,5 +75,23 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             Assert.IsNull(vm.LineItems[1].SelectedCategory);
             Assert.AreEqual(DateTime.Today, vm.Date);
         }
+
+        [TestMethod]
+        public void RemovingItem_UpdatesRemainingAmount()
+        {
+            var mocker = new AutoMocker().WithDefaults();
+            using var _ = mocker.BeginDbScope();
+
+            var vm = mocker.CreateInstance<AddItemViewModel>();
+
+            vm.SelectedType = AddType.Transaction;
+            vm.AddItemCommand.Execute(null);
+            vm.LineItems[0].Amount = 300;
+            vm.LineItems[1].Amount = 400;
+
+            vm.RemoveItemCommand.Execute(vm.LineItems[0]);
+
+            Assert.AreEqual(400, vm.TotalAmount);
+        }
     }
 }

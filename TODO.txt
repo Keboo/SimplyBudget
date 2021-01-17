@@ -1,5 +1,4 @@
 BUGS:
-Deleting line item doesn't update transaction total.
 Cannot edit expense category.
 Monthly allocations keeps showing the wrong amounts when viewing previous months.
 Double clicking on an expense category should clear any previous filters.

@@ -145,6 +145,7 @@ namespace SimplyBudget.ViewModels
             if (SelectedType == AddType.Transaction && LineItems.Count > 1)
             {
                 LineItems.Remove(item);
+                TotalAmount = LineItems.Sum(x => x.Amount);
             }
         }
 
@@ -219,7 +220,7 @@ namespace SimplyBudget.ViewModels
                 yield break;
             }
 
-            await Context.AddTransfer(Description ?? "", Date.Value, TotalAmount, 
+            await Context.AddTransfer(Description ?? "", Date.Value, TotalAmount,
                 items[0].SelectedCategory!, items[1].SelectedCategory!);
         }
 
