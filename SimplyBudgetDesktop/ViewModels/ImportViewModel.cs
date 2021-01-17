@@ -99,12 +99,17 @@ namespace SimplyBudget.ViewModels
 
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(CsvData));
             IImport importer = new StcuCsvImport(stream);
-            
-            ImportedRecords.Clear();
-            
-            await foreach(ExpenseCategoryItem item in importer.GetItems())
+
+            List<ImportRecord> records = new();
+            await foreach (ExpenseCategoryItem item in importer.GetItems())
             {
-                ImportedRecords.Add(new ImportRecord(item));
+                records.Add(new ImportRecord(item));
+            }
+
+            ImportedRecords.Clear();
+            foreach (var record in records.OrderBy(x => x.Date))
+            {
+                ImportedRecords.Add(record);
             }
 
             IsViewingCsv = false;

@@ -10,7 +10,6 @@ Allow for splitting out some amount from a transaction line item.
 Add quick way to clear filters on transaction history page. 
 Select all on focus for transaction description.
 Add option to delete line item from import
-Order import from oldest to newest
 Allow for "add rest" to transaction
 Keyboard shorcut for add another line item to transaction
 History of budgetted amounts
