@@ -1,10 +1,12 @@
 ﻿
+using MaterialDesignThemes.Wpf;
 using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using System;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Media;
 
 namespace SimplyBudget
 {
@@ -20,6 +22,12 @@ namespace SimplyBudget
             {
                 context.Database.Migrate();
             }
+#if DEBUG
+            var helper = new PaletteHelper();
+            var theme = helper.GetTheme();
+            theme.SetPrimaryColor(Colors.Orange);
+            helper.SetTheme(theme);
+#endif
             base.OnStartup(e);
         }
 
