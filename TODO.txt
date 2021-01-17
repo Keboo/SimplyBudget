@@ -1,5 +1,4 @@
 BUGS:
-Importing transactions don't show correct totals unless line items are edited.
 Deleting line item doesn't update transaction total.
 Cannot edit expense category.
 Monthly allocations keeps showing the wrong amounts when viewing previous months.

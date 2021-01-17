@@ -126,6 +126,7 @@ namespace SimplyBudget.ViewModels
                     AddItem.TotalAmount = message.Items.Sum(x => x.Amount);
                     break;
             }
+            AddItem.Receive(new LineItemAmountUpdated());
         }
     }
 }
