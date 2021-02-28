@@ -1,13 +1,12 @@
 ﻿
-using System;
-using System.Globalization;
-using System.Linq;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
+using System;
+using System.Globalization;
 
 namespace SimplyBudget.ValueConverter
 {
-    internal class CurrencyValueConverter : MarkupValueConverter<CurrencyValueConverter>
+    public class CurrencyValueConverter : MarkupValueConverter<CurrencyValueConverter>
     {
         // ReSharper disable EmptyConstructor
         public CurrencyValueConverter() { }

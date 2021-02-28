@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace SimplyBudgetDesktop.Tests
 {
-    public static class AuotMockerExtensions
+    public static class AutoMockerExtensions
     {
         public static IDisposable BeginDbScope(this AutoMocker mocker, BudgetDatabaseContext? context = null)
         {

@@ -1,6 +1,7 @@
 ﻿
 using MaterialDesignThemes.Wpf;
 using Microsoft.EntityFrameworkCore;
+using SimplyBudget.Properties;
 using SimplyBudgetShared.Data;
 using System;
 using System.IO;
@@ -18,7 +19,7 @@ namespace SimplyBudget
         protected override void OnStartup(StartupEventArgs e)
         {
             MakeDataBackup();
-            using (var context = new BudgetContext())
+            using (var context = new BudgetContext(Settings.Default.DatabaseConnectionString))
             {
                 context.Database.Migrate();
             }
@@ -35,15 +36,16 @@ namespace SimplyBudget
         {
             DirectoryInfo backups = Directory.CreateDirectory("Backups");
             const int maxBackups = 30;
-            var fileName = $"{DateTime.Now:yyyyMMddhhmmss}-{BudgetContext.FileName}";
+            string filePath = BudgetContext.GetFilePathFromConnectionString(Settings.Default.DatabaseConnectionString);
+            var fileName = $"{DateTime.Now:yyyyMMddhhmmss}.db";
             try
             {
-                File.Copy(BudgetContext.FileName, Path.Combine(backups.FullName, fileName));
+                File.Copy(filePath, Path.Combine(backups.FullName, fileName));
             }
             catch (FileNotFoundException)
             { }
 
-            foreach (var oldBackup in backups.EnumerateFiles($"*-{BudgetContext.FileName}")
+            foreach (var oldBackup in backups.EnumerateFiles($"*.db")
                 .OrderByDescending(x => x.Name)
                 .Skip(maxBackups)
                 .ToList())

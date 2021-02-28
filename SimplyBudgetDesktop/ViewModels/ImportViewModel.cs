@@ -77,13 +77,15 @@ namespace SimplyBudget.ViewModels
             var selectedItems = SelectedItems;
             if (selectedItems is null) return;
 
+            var type = selectedItems.All(x => x.Item.Details?.Sum(d => d.Amount) > 0) ? AddType.Income : AddType.Transaction;
+            var date = selectedItems.Min(x => x.Date.Date);
+            var description = string.Join(Environment.NewLine, selectedItems.Select(x => x.Description));
+            var items = selectedItems.Select(x => new LineItem(x.Amount)).ToList();
+
+            SelectedItems = null;
+            
             await Task.Run(() =>
             {
-                var type = selectedItems.All(x => x.Item.Details?.Sum(d => d.Amount) > 0) ? AddType.Income : AddType.Transaction;
-                var date = selectedItems.Min(x => x.Date.Date);
-                var description = string.Join(Environment.NewLine, selectedItems.Select(x => x.Description));
-                var items = selectedItems.Select(x => new LineItem(x.Amount)).ToList();
-
                 foreach (var selectedItem in selectedItems)
                 {
                     ImportedRecords.Remove(selectedItem);
@@ -92,7 +94,6 @@ namespace SimplyBudget.ViewModels
                 var message = new AddItemMessage(type, date, description, items);
                 Messenger.Send(message);
             });
-            SelectedItems = null;
         }
 
         private async void OnImport()

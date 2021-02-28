@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,8 +15,6 @@ namespace SimplyBudgetShared.Data
 {
     public class BudgetContext : DbContext
     {
-        public const string FileName = "data.db";
-
         public DbSet<Account> Accounts => Set<Account>();
         public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
         public DbSet<ExpenseCategoryItem> ExpenseCategoryItems => Set<ExpenseCategoryItem>();
@@ -25,14 +24,30 @@ namespace SimplyBudgetShared.Data
         private IMessenger Messenger { get; }
 
         public BudgetContext()
+            : this("Data Source=data.db")
+        { }
+
+        public BudgetContext(string connectionString)
             : this (WeakReferenceMessenger.Default, 
-                  new DbContextOptionsBuilder<BudgetContext>().UseSqlite($"Data Source={FileName}").Options)
+                  new DbContextOptionsBuilder<BudgetContext>().UseSqlite(connectionString).Options)
         { }
 
         public BudgetContext(IMessenger messenger, DbContextOptions options)
             : base(options)
         {
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+        }
+
+        public string GetFilePath() => GetFilePathFromConnectionString(Database.GetConnectionString());
+
+        public static string GetFilePathFromConnectionString(string connectionString)
+        {
+            if (Regex.Match(connectionString, @"Data Source=([^;]+)") is Match match &&
+                match.Success)
+            {
+                return match.Groups[1].Value;
+            }
+            throw new InvalidOperationException($"Failed to resolve file path from connection string '{connectionString}'");
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

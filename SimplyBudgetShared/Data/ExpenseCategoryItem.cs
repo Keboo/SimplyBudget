@@ -75,7 +75,7 @@ namespace SimplyBudgetShared.Data
                 IncomeID = income.ID
             }).ToList();
             
-            income.TotalAmount = income.IncomeItems.Sum(x => x.Amount);
+            income.TotalAmount = income.IncomeItems?.Sum(x => x.Amount) ?? 0;
 
             return income;
         }

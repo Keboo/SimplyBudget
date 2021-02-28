@@ -149,8 +149,8 @@ namespace SimplyBudgetShared.Data
         {
             IQueryable<ExpenseCategoryItem> transferQuery = context.ExpenseCategoryItems.Include(x => x.Details)
                 .Where(x => x.Details!.Count() == 2 &&
-                       x.Details.Sum(x=> x.Amount) == 0 &&
-                       x.Details.Any(x => x.ExpenseCategoryId == expenseCategory.ID));
+                       x.Details!.Sum(x=> x.Amount) == 0 &&
+                       x.Details!.Any(x => x.ExpenseCategoryId == expenseCategory.ID));
             if (queryStart != null && queryEnd != null)
             {
                 transferQuery = transferQuery.Where(x => x.Date >= queryStart && x.Date <= queryEnd);

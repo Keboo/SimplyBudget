@@ -2,14 +2,8 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="SimplyBudget.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="DataGridSettingsManager" Type="SimplyBudget.Properties.DataGridSettingsManager" Scope="User">
-      <Value Profile="(Default)" />
-    </Setting>
-    <Setting Name="DateRangeSimpleMode" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
-    </Setting>
-    <Setting Name="DataDirectory" Type="System.String" Scope="User">
-      <Value Profile="(Default)" />
+    <Setting Name="DatabaseConnectionString" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Data Source=data.db</Value>
     </Setting>
   </Settings>
 </SettingsFile>

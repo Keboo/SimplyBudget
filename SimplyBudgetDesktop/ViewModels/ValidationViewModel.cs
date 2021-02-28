@@ -63,7 +63,7 @@ namespace SimplyBudget.ViewModels
         protected override void OnPropertyChanged(PropertyChangedEventArgs e)
         {
             base.OnPropertyChanged(e);
-            ValidateProperty(e.PropertyName);
+            ValidateProperty(e.PropertyName ?? "");
         }
 
         protected bool ValidateModel()
@@ -126,9 +126,9 @@ namespace SimplyBudget.ViewModels
             _ValidatorsByName[propertyName] = new DelegateValidator(validate);
         }
 
-        public IEnumerable GetErrors(string propertyName)
+        public IEnumerable GetErrors(string? propertyName)
         {
-            if (_ValidationErrorsByProperty.TryGetValue(propertyName, out IList<object>? errors))
+            if (_ValidationErrorsByProperty.TryGetValue(propertyName ?? "", out IList<object>? errors))
             {
                 return errors;
             }

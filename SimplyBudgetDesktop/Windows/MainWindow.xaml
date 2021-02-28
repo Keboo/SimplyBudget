@@ -30,7 +30,6 @@
         <KeyBinding Gesture="Ctrl+T" Command="{Binding ShowAddCommand}" CommandParameter="{x:Static vm:AddType.Transaction}"/>
         <KeyBinding Gesture="Ctrl+R" Command="{Binding ShowAddCommand}" CommandParameter="{x:Static vm:AddType.Transfer}"/>
         <KeyBinding Gesture="Ctrl+I" Command="{Binding ShowAddCommand}" CommandParameter="{x:Static vm:AddType.Income}"/>
-
     </Window.InputBindings>
     <Grid>
         <Grid.RowDefinitions>
@@ -237,16 +236,12 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:AccountViewModel}">
                         <TextBlock Margin="10,0">
-                        <Run Text="{Binding Name}" />
-                        <Run Text="{Binding CurrentAmount, Converter={valueConverter:CurrencyValueConverter}}" />
+                            <Run Text="{Binding Name}" />
+                            <Run Text="{Binding CurrentAmount, Converter={valueConverter:CurrencyValueConverter}}" />
                         </TextBlock>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </Grid>
-        <StackPanel Orientation="Horizontal" Grid.Row="1" HorizontalAlignment="Right">
-
-
-        </StackPanel>
     </Grid>
 </Window>
