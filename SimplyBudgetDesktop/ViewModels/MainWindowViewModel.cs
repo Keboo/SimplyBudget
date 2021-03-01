@@ -26,6 +26,8 @@ namespace SimplyBudget.ViewModels
 
         public ImportViewModel Import { get; }
 
+        public SettingsViewModel Settings { get; }
+
         private AddItemViewModel? _addItem;
         public AddItemViewModel? AddItem
         {
@@ -64,19 +66,21 @@ namespace SimplyBudget.ViewModels
         private BudgetContext Context { get; }
 
         public MainWindowViewModel(
-            [Dependency]IMessenger? messenger = null,
-            [Dependency]ICurrentMonth? currentMonth = null,
-            [Dependency]BudgetContext? context = null)
+            [Dependency] IMessenger? messenger = null,
+            [Dependency] ICurrentMonth? currentMonth = null,
+            [Dependency] BudgetContext? context = null)
         {
             ShowAddCommand = new RelayCommand<AddType?>(OnShowAdd);
 
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             Context = context ?? throw new ArgumentNullException(nameof(context));
-            Budget = new BudgetViewModel(context, messenger, currentMonth);
-            History = new HistoryViewModel(context, messenger, currentMonth);
-            Accounts = new AccountsViewModel(context, messenger);
-            Import = new ImportViewModel(messenger);
+            
+            Budget = new(context, messenger, currentMonth);
+            History = new(context, messenger, currentMonth);
+            Accounts = new(context, messenger);
+            Import = new(messenger);
+            Settings = new(messenger);
 
             Budget.LoadItemsAsync();
             History.LoadItemsAsync();
@@ -98,10 +102,10 @@ namespace SimplyBudget.ViewModels
             }
         }
 
-        public void Receive(DoneAddingItemMessage message) 
+        public void Receive(DoneAddingItemMessage message)
             => AddItem = null;
 
-        public void Receive(CurrentMonthChanged message) 
+        public void Receive(CurrentMonthChanged message)
             => SelectedMonth = message.StartOfMonth;
 
         public void Receive(AddItemMessage message)
@@ -112,13 +116,13 @@ namespace SimplyBudget.ViewModels
                 Date = message.Date,
                 Description = message.Description
             };
-            switch(message.Type)
+            switch (message.Type)
             {
                 case AddType.Transaction:
                     AddItem.LineItems.Clear();
                     AddItem.LineItems.AddRange(message.Items
-                        .Select(x => new LineItemViewModel(AddItem.ExpenseCategories, Messenger) 
-                        { 
+                        .Select(x => new LineItemViewModel(AddItem.ExpenseCategories, Messenger)
+                        {
                             Amount = x.Amount
                         }));
                     break;

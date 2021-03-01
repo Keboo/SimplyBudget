@@ -195,6 +195,14 @@
 
                     <views:ImportView DataContext="{Binding Import}" />
                 </TabItem>
+
+                <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
+                    <TabItem.Header>
+                        <materialDesign:PackIcon Kind="Settings" Width="30" Height="30" />
+                    </TabItem.Header>
+
+                    <views:SettingsView DataContext="{Binding Settings}" />
+                </TabItem>
             </TabControl>
         </materialDesign:DrawerHost>
 

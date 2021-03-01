@@ -2,13 +2,7 @@
 
 namespace SimplyBudget.Messaging
 {
-    public class CurrentMonthChanged
+    public record CurrentMonthChanged(DateTime StartOfMonth)
     {
-        public CurrentMonthChanged(DateTime startOfMonth)
-        {
-            StartOfMonth = startOfMonth;
-        }
-
-        public DateTime StartOfMonth { get; }
     }
 }

@@ -23,12 +23,15 @@ namespace SimplyBudget.Properties {
             }
         }
         
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Data Source=data.db")]
         public string DatabaseConnectionString {
             get {
                 return ((string)(this["DatabaseConnectionString"]));
+            }
+            set {
+                this["DatabaseConnectionString"] = value;
             }
         }
     }

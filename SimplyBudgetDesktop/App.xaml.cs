@@ -1,6 +1,9 @@
 ﻿
+using AutoDI;
 using MaterialDesignThemes.Wpf;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Toolkit.Mvvm.Messaging;
+using SimplyBudget.Messaging;
 using SimplyBudget.Properties;
 using SimplyBudgetShared.Data;
 using System;
@@ -14,10 +17,11 @@ namespace SimplyBudget
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App
+    public partial class App : IRecipient<DatabaseConnectionStringChanged>
     {
         protected override void OnStartup(StartupEventArgs e)
         {
+            ShutdownOnConnectionStringChanged();
             MakeDataBackup();
             using (var context = new BudgetContext(Settings.Default.DatabaseConnectionString))
             {
@@ -30,6 +34,9 @@ namespace SimplyBudget
             helper.SetTheme(theme);
 #endif
             base.OnStartup(e);
+
+            void ShutdownOnConnectionStringChanged([Dependency] IMessenger? messenger = null)
+                => messenger!.Register(this);
         }
 
         private static void MakeDataBackup()
@@ -60,5 +67,7 @@ namespace SimplyBudget
                 }
             }
         }
+
+        public void Receive(DatabaseConnectionStringChanged message) => Shutdown();
     }
 }

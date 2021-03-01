@@ -2,7 +2,7 @@
 <SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="SimplyBudget.Properties" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
-    <Setting Name="DatabaseConnectionString" Type="System.String" Scope="Application">
+    <Setting Name="DatabaseConnectionString" Type="System.String" Scope="User">
       <Value Profile="(Default)">Data Source=data.db</Value>
     </Setting>
   </Settings>
