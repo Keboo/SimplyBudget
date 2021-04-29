@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="DatabaseConnectionString" Type="System.String" Scope="User">
-      <Value Profile="(Default)">Data Source=data.db</Value>
+      <Value Profile="(Default)">Data Source=%APPDATA%\SimplyBudget\data.db</Value>
     </Setting>
   </Settings>
 </SettingsFile>

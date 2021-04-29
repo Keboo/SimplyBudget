@@ -21,9 +21,10 @@ namespace SimplyBudget
     {
         protected override void OnStartup(StartupEventArgs e)
         {
+            Settings.Default.Reset();
             ShutdownOnConnectionStringChanged();
             MakeDataBackup();
-            using (var context = new BudgetContext(Settings.Default.DatabaseConnectionString))
+            using (var context = new BudgetContext(Environment.ExpandEnvironmentVariables(Settings.Default.DatabaseConnectionString)))
             {
                 context.Database.Migrate();
             }
@@ -41,7 +42,8 @@ namespace SimplyBudget
 
         private static void MakeDataBackup()
         {
-            DirectoryInfo backups = Directory.CreateDirectory("Backups");
+            string backupsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SimplyBudget", "Backups");
+            DirectoryInfo backups = Directory.CreateDirectory(backupsDirectory);
             const int maxBackups = 30;
             string filePath = BudgetContext.GetFilePathFromConnectionString(Settings.Default.DatabaseConnectionString);
             var fileName = $"{DateTime.Now:yyyyMMddhhmmss}.db";

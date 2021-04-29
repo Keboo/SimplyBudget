@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -27,6 +28,8 @@ namespace SimplyBudgetShared.Data
             : this("Data Source=data.db")
         { }
 
+
+
         public BudgetContext(string connectionString)
             : this (WeakReferenceMessenger.Default, 
                   new DbContextOptionsBuilder<BudgetContext>().UseSqlite(connectionString).Options)
@@ -45,7 +48,7 @@ namespace SimplyBudgetShared.Data
             if (Regex.Match(connectionString, @"Data Source=([^;]+)") is Match match &&
                 match.Success)
             {
-                return match.Groups[1].Value;
+                return Path.GetFullPath(Environment.ExpandEnvironmentVariables(match.Groups[1].Value));
             }
             throw new InvalidOperationException($"Failed to resolve file path from connection string '{connectionString}'");
         }

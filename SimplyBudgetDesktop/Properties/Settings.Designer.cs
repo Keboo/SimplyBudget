@@ -25,7 +25,7 @@ namespace SimplyBudget.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Data Source=data.db")]
+        [global::System.Configuration.DefaultSettingValueAttribute("Data Source=%APPDATA%\\SimplyBudget\\data.db")]
         public string DatabaseConnectionString {
             get {
                 return ((string)(this["DatabaseConnectionString"]));
