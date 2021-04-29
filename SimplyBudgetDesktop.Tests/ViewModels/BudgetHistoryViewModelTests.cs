@@ -44,9 +44,9 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             Assert.AreEqual(transaction.Date, vm.Date);
             Assert.AreEqual(transaction.Description, vm.Description);
             Assert.AreEqual(200, vm.CurrentAmount);
-            Assert.AreEqual($"{5.00:c}", vm.DisplayAmount);
+            Assert.AreEqual($"({5.00:c})", vm.DisplayAmount);
             var item1 = vm.Details.Single();
-            Assert.AreEqual($"{5.00:c}", item1.Amount);
+            Assert.AreEqual($"({5.00:c})", item1.Amount);
             Assert.AreEqual(expenseCategory.Name, item1.ExpenseCategoryName);
         }
 
@@ -84,9 +84,9 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             Assert.AreEqual(income.Date, vm.Date);
             Assert.AreEqual(income.Description, vm.Description);
             Assert.AreEqual(400, vm.CurrentAmount);
-            Assert.AreEqual($"{-5.00:c}", vm.DisplayAmount);
+            Assert.AreEqual($"{5.00:c}", vm.DisplayAmount);
             var item1 = vm.Details.Single();
-            Assert.AreEqual($"{-5.00:c}", item1.Amount);
+            Assert.AreEqual($"{5.00:c}", item1.Amount);
             Assert.AreEqual(expenseCategory.Name, item1.ExpenseCategoryName);
         }
 
@@ -145,9 +145,9 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             var from = vm.Details[0];
             var to = vm.Details[1];
 
-            Assert.AreEqual($"{4.50:c}", from.Amount);
+            Assert.AreEqual($"{-4.50:c}", from.Amount);
             Assert.AreEqual(expenseCategoryFrom.Name, from.ExpenseCategoryName);
-            Assert.AreEqual($"{-4.50:c}", to.Amount);
+            Assert.AreEqual($"{4.50:c}", to.Amount);
             Assert.AreEqual(expenseCategoryTo.Name, to.ExpenseCategoryName);
         }
     }
