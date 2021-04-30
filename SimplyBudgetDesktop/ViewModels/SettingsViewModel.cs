@@ -21,16 +21,16 @@ namespace SimplyBudget.ViewModels
 
         private void OnSaveCommand()
         {
-            if (string.Equals(ConnectionString, Settings.Default.DatabaseConnectionString, StringComparison.Ordinal))
+            if (string.Equals(ConnectionString, Settings.Default.StorageLocation, StringComparison.Ordinal))
             {
                 return;
             }
-            Settings.Default.DatabaseConnectionString = ConnectionString;
+            Settings.Default.StorageLocation = ConnectionString;
             Settings.Default.Save();
-            Messenger.Send(new DatabaseConnectionStringChanged());
+            Messenger.Send(new StorageLocationChanged());
         }
 
-        private string _ConnectionString = Settings.Default.DatabaseConnectionString;
+        private string _ConnectionString = Settings.Default.StorageLocation;
         public string ConnectionString
         {
             get => _ConnectionString;

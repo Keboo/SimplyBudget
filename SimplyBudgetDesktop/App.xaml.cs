@@ -17,14 +17,14 @@ namespace SimplyBudget
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : IRecipient<DatabaseConnectionStringChanged>
+    public partial class App : IRecipient<StorageLocationChanged>
     {
         protected override void OnStartup(StartupEventArgs e)
         {
             Settings.Default.Reset();
             ShutdownOnConnectionStringChanged();
             MakeDataBackup();
-            using (var context = new BudgetContext(Environment.ExpandEnvironmentVariables(Settings.Default.DatabaseConnectionString)))
+            using (var context = new BudgetContext(Settings.GetDatabaseConnectionString()))
             {
                 context.Database.Migrate();
             }
@@ -42,14 +42,13 @@ namespace SimplyBudget
 
         private static void MakeDataBackup()
         {
-            string backupsDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SimplyBudget", "Backups");
+            string backupsDirectory = Path.Combine(Settings.GetStorageDirectory(), "Backups");
             DirectoryInfo backups = Directory.CreateDirectory(backupsDirectory);
             const int maxBackups = 30;
-            string filePath = BudgetContext.GetFilePathFromConnectionString(Settings.Default.DatabaseConnectionString);
             var fileName = $"{DateTime.Now:yyyyMMddhhmmss}.db";
             try
             {
-                File.Copy(filePath, Path.Combine(backups.FullName, fileName));
+                File.Copy(Settings.GetDatabasePath(), Path.Combine(backups.FullName, fileName));
             }
             catch (FileNotFoundException)
             { }
@@ -70,6 +69,6 @@ namespace SimplyBudget
             }
         }
 
-        public void Receive(DatabaseConnectionStringChanged message) => Shutdown();
+        public void Receive(StorageLocationChanged message) => Shutdown();
     }
 }

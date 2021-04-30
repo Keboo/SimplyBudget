@@ -1,4 +1,7 @@
-﻿namespace SimplyBudget.Properties
+﻿using System;
+using System.IO;
+
+namespace SimplyBudget.Properties
 {
 
 
@@ -17,7 +20,16 @@
             // this.SettingsSaving += this.SettingsSavingEventHandler;
             //
         }
-        
+
+        public static string GetStorageDirectory() 
+            => Path.GetFullPath(Environment.ExpandEnvironmentVariables(Default.StorageLocation));
+
+        public static string GetDatabasePath()
+            => Path.Combine(GetStorageDirectory(), "data.db");
+
+        public static string GetDatabaseConnectionString()
+            => $"Data Source='{GetDatabasePath()}'";
+
         private void SettingChangingEventHandler(object sender, System.Configuration.SettingChangingEventArgs e) {
             // Add code to handle the SettingChangingEvent event here.
         }

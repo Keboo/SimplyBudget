@@ -21,14 +21,12 @@ namespace SimplyBudgetShared.Data
         public DbSet<ExpenseCategoryItem> ExpenseCategoryItems => Set<ExpenseCategoryItem>();
         public DbSet<ExpenseCategoryItemDetail> ExpenseCategoryItemDetails => Set<ExpenseCategoryItemDetail>();
         public DbSet<Metadata> Metadatas => Set<Metadata>();
-        
+
         private IMessenger Messenger { get; }
 
         public BudgetContext()
             : this("Data Source=data.db")
         { }
-
-
 
         public BudgetContext(string connectionString)
             : this (WeakReferenceMessenger.Default, 
@@ -40,8 +38,6 @@ namespace SimplyBudgetShared.Data
         {
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
         }
-
-        public string GetFilePath() => GetFilePathFromConnectionString(Database.GetConnectionString());
 
         public static string GetFilePathFromConnectionString(string connectionString)
         {
