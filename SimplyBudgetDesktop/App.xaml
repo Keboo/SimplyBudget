@@ -12,7 +12,7 @@
                 <!--<ResourceDictionary Source="/Resources/Icons.xaml"/>-->
                 <!--<ResourceDictionary Source="/Resources/Styles.xaml"/>-->
 
-                <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="Green" SecondaryColor="Cyan" />
+                <materialDesign:BundledTheme BaseTheme="Inherit" PrimaryColor="Green" SecondaryColor="Cyan" />
 
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
             </ResourceDictionary.MergedDictionaries>

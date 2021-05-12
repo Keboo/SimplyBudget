@@ -65,7 +65,11 @@
                     <TabItem.Header>
                         <materialDesign:PackIcon Kind="FormatListBulletedSquare" Width="30" Height="30" />
                     </TabItem.Header>
-                    <Grid DataContext="{Binding Budget}">
+                    <Grid DataContext="{Binding Budget}" Grid.IsSharedSizeScope="True">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
                         <Grid.CommandBindings>
                             <CommandBinding Command="{x:Static ApplicationCommands.Open}"
                                             Executed="Open_Executed" />
@@ -74,109 +78,109 @@
                             <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
                         </Grid.InputBindings>
 
-                        <ListView ItemsSource="{Binding ExpenseCategoriesView}" Grid.Row="1"
-                                  materialDesign:DataGridAssist.ColumnHeaderPadding="2,1">
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition SharedSizeGroup="Name"/>
+                                <ColumnDefinition SharedSizeGroup="Budget"/>
+                                <ColumnDefinition SharedSizeGroup="Balance"/>
+                                <ColumnDefinition SharedSizeGroup="Expesnses"/>
+                                <ColumnDefinition SharedSizeGroup="Allocations"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.Resources>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                    <Setter Property="FontSize" Value="14" />
+                                    <Setter Property="Margin" Value="10,2" />
+                                </Style>
+                            </Grid.Resources>
+                            <TextBlock Text="Name" />
+                            <TextBlock Text="Budgetted Amount" Grid.Column="1" />
+                            <TextBlock Text="Current Balance" Grid.Column="2" />
+                            <TextBlock Text="Monthly Expenses" Grid.Column="3" />
+                            <TextBlock Text="Monthly Allocations" Grid.Column="4" />
+                        </Grid>
+
+                        <ListBox ItemsSource="{Binding ExpenseCategoriesView}" Grid.Row="1">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
                                     <Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{x:Static ApplicationCommands.Open}"/>
                                     <Setter Property="utilities:AttachedProperties.DoubleClickCommandParameter" Value="{Binding}"/>
-                                    <Setter Property="ContextMenu">
+                                    <!--<Setter Property="ContextMenu">
                                         <Setter.Value>
                                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                                <MenuItem Header="_Delete">
-                                                    <!--Command="{commands:DeleteDatabaseItemCommand}"
-                                                          utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">-->
-                                                    <!--<MenuItem.Icon>
-                                                        <Path Style="{StaticResource DeleteIcon}"/>
-                                                    </MenuItem.Icon>-->
-                                                </MenuItem>
+                                                <MenuItem Header="_Delete" />
                                                 <Separator />
-                                                <!--<MenuItem Header="Transaction _History" Command="{commands:ShowExpenseCategoryHistory}"
-                                                          utilities:AttachedProperties.UpdatingCommandParameter="{Binding}">
-
-                                                </MenuItem>-->
                                             </ContextMenu>
                                         </Setter.Value>
-                                    </Setter>
+                                    </Setter>-->
                                 </Style>
-                            </ListView.ItemContainerStyle>
-
-                            <ListView.GroupStyle>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.GroupStyle>
                                 <GroupStyle HidesIfEmpty="True">
                                     <GroupStyle.HeaderTemplate>
                                         <DataTemplate>
-                                            <Grid Background="{StaticResource HeaderBackgroundBrush}">
-                                                <TextBlock Text="{Binding Name}" Margin="15,3,3,3"/>
+                                            <Grid Background="{DynamicResource PrimaryHueLightBrush}">
+                                                <TextBlock Text="{Binding Name}" Margin="15,3,3,3"
+                                                           Foreground="{DynamicResource PrimaryHueLightForegroundBrush}"/>
                                             </Grid>
                                         </DataTemplate>
                                     </GroupStyle.HeaderTemplate>
                                 </GroupStyle>
-                            </ListView.GroupStyle>
-
-                            <ListView.View>
-                                <GridView AllowsColumnReorder="False" >
-                                    <GridViewColumn DisplayMemberBinding="{Binding Name}" Header="Expense Category" utilities:AttachedProperties.SortPropertyName="Name"/>
-                                    <GridViewColumn DisplayMemberBinding="{Binding BudgetedAmountDisplay}" Header="Budgeted Amount" utilities:AttachedProperties.SortPropertyName="BudgetedAmountDisplay"/>
-                                    <GridViewColumn Header="Current Balance" utilities:AttachedProperties.SortPropertyName="Balance">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type vm:ExpenseCategoryViewModel}">
-                                                <TextBlock Text="{Binding Balance, Converter={valueConverter:CurrencyValueConverter}}">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Balance, Converter={valueConverter:IsNegativeValueConverter}}" Value="True">
-                                                                    <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                    <GridViewColumn Header="Monthly Expenses" utilities:AttachedProperties.SortPropertyName="MonthlyExpenses">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type vm:ExpenseCategoryViewModel}">
-                                                <TextBlock Text="{Binding MonthlyExpenses, Converter={valueConverter:CurrencyValueConverter}}">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Value="True" Binding="{Binding Converter={valueConverter:ExpenseCategoryMonthlyExpensesExceeded}}">
-                                                                    <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                    <GridViewColumn Header="Monthly Allocations" utilities:AttachedProperties.SortPropertyName="MonthlyAllocations">
-                                        <GridViewColumn.CellTemplate>
-                                            <DataTemplate DataType="{x:Type vm:ExpenseCategoryViewModel}">
-                                                <TextBlock Text="{Binding MonthlyAllocations, Converter={valueConverter:CurrencyValueConverter}}">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="0">
-                                                                    <Setter Property="Foreground" Value="{StaticResource IgnoreBrush}"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="1">
-                                                                    <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="-1">
-                                                                    <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                            </DataTemplate>
-                                        </GridViewColumn.CellTemplate>
-                                    </GridViewColumn>
-                                </GridView>
-                            </ListView.View>
-                        </ListView>
+                            </ListBox.GroupStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ExpenseCategoryViewModelEx}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition SharedSizeGroup="Name"/>
+                                            <ColumnDefinition SharedSizeGroup="Budget"/>
+                                            <ColumnDefinition SharedSizeGroup="Balance"/>
+                                            <ColumnDefinition SharedSizeGroup="Expesnses"/>
+                                            <ColumnDefinition SharedSizeGroup="Allocations"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Name}" />
+                                        <TextBlock Text="{Binding BudgetedAmountDisplay}" Grid.Column="1"/>
+                                        <TextBlock Text="{Binding Balance, Converter={StaticResource CurrentValueConverter}}" Grid.Column="2">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Balance, Converter={valueConverter:IsNegativeValueConverter}}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding MonthlyExpenses, Converter={StaticResource CurrentValueConverter}}" Grid.Column="3">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Value="True" Binding="{Binding Converter={valueConverter:ExpenseCategoryMonthlyExpensesExceeded}}">
+                                                            <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding MonthlyAllocations, Converter={StaticResource CurrentValueConverter}}" Grid.Column="4">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="0">
+                                                            <Setter Property="Foreground" Value="{StaticResource IgnoreBrush}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="1">
+                                                            <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Converter={valueConverter:ExpenseCategoryBudgettedAmountReachedValueConverter}}" Value="-1">
+                                                            <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </Grid>
                 </TabItem>
 
