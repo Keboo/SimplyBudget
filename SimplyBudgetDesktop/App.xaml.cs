@@ -21,7 +21,9 @@ namespace SimplyBudget
     {
         protected override void OnStartup(StartupEventArgs e)
         {
-            Settings.Default.Reset();
+#if DEBUG
+            Settings.Default.StorageLocation = Path.GetFullPath(@".\Database");
+#endif
             ShutdownOnConnectionStringChanged();
             MakeDataBackup();
             using (var context = new BudgetContext(Settings.GetDatabaseConnectionString()))
