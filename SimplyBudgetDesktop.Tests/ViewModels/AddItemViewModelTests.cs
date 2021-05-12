@@ -93,5 +93,31 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
 
             Assert.AreEqual(400, vm.TotalAmount);
         }
+
+        [TestMethod]
+        public async Task AutoAllocateCommand_AllocatesIncomeAmount()
+        {
+            var mocker = new AutoMocker().WithDefaults();
+            using var _ = mocker.BeginDbScope();
+
+            var context = mocker.Get<BudgetContext>();
+            var category1 = new ExpenseCategory { Name = "Bar", BudgetedPercentage = 10 };
+            var category2 = new ExpenseCategory { Name = "Cat", BudgetedAmount = 100 };
+            var category3 = new ExpenseCategory { Name = "Foo", BudgetedAmount = 200 };
+            context.AddRange(category1, category2, category3);
+            await context.SaveChangesAsync();
+
+            var vm = mocker.CreateInstance<AddItemViewModel>();
+
+            vm.SelectedType = AddType.Income;
+            vm.TotalAmount = 200;
+
+            vm.AutoAllocateCommand.Execute(null);
+
+            Assert.AreEqual(3, vm.LineItems.Count);
+            Assert.AreEqual(20, vm.LineItems[0].Amount);
+            Assert.AreEqual(100, vm.LineItems[1].Amount);
+            Assert.AreEqual(80, vm.LineItems[2].Amount);
+        }
     }
 }

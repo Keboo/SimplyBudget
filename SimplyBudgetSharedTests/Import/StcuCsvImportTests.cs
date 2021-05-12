@@ -29,7 +29,7 @@ namespace SimplyBudgetSharedTests.Import
             Assert.AreEqual(1, items[0].Details?.Count);
             Assert.AreEqual(-2177, items[0].Details?[0].Amount);
 
-            Assert.AreEqual(new DateTime(2020, 11, 23), items[1].Date);
+            Assert.AreEqual(new DateTime(2020, 11, 22), items[1].Date);
             Assert.AreEqual("Purchase MCDONALD'S SPOKANE      WAUS", items[1].Description);
             Assert.AreEqual(1, items[1].Details?.Count);
             Assert.AreEqual(-2348, items[1].Details?[0].Amount);

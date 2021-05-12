@@ -20,6 +20,7 @@ namespace SimplyBudget.ViewModels
         public ICommand AddItemCommand { get; }
         public ICommand RemoveItemCommand { get; }
         public ICommand CancelCommand { get; }
+        public ICommand AutoAllocateCommand { get; }
         public BudgetContext Context { get; }
         public ICurrentMonth CurrentMonth { get; }
         public IMessenger Messenger { get; }
@@ -127,6 +128,7 @@ namespace SimplyBudget.ViewModels
             AddItemCommand = new RelayCommand(OnAddItem);
             RemoveItemCommand = new RelayCommand<LineItemViewModel>(OnRemoveItem);
             CancelCommand = new RelayCommand(OnCancel);
+            AutoAllocateCommand = new RelayCommand(OnAutoAllocate);
 
             ExpenseCategories = context.ExpenseCategories.OrderBy(x => x.Name).ToList();
 
@@ -140,9 +142,11 @@ namespace SimplyBudget.ViewModels
             Messenger.Send(new DoneAddingItemMessage());
         }
 
-        private void OnRemoveItem(LineItemViewModel item)
+        private void OnRemoveItem(LineItemViewModel? item)
         {
-            if (SelectedType == AddType.Transaction && LineItems.Count > 1)
+            if (SelectedType == AddType.Transaction && 
+                LineItems.Count > 1 && 
+                item is not null)
             {
                 LineItems.Remove(item);
                 TotalAmount = LineItems.Sum(x => x.Amount);
@@ -152,6 +156,21 @@ namespace SimplyBudget.ViewModels
         private void OnAddItem()
         {
             LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
+        }
+
+        private void OnAutoAllocate()
+        {
+            int total = RemainingAmount;
+            foreach(var lineItem in LineItems.OrderByDescending(x => x.SelectedCategory?.UsePercentage))
+            {
+                int desiredAmount = lineItem.DesiredAmount;
+                if (lineItem.SelectedCategory?.UsePercentage == true)
+                {
+                    desiredAmount = (int)(TotalAmount * (lineItem.SelectedCategory.BudgetedPercentage / 100.0));
+                }
+                lineItem.Amount = Math.Min(total, desiredAmount);
+                total -= lineItem.Amount;
+            }
         }
 
         private async void LoadDesiredAmounts()

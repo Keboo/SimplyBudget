@@ -206,12 +206,13 @@
                     <materialDesign:PackIcon Kind="PlusBoxOutline" Margin="10,3,6,1"/>
                 </Button>
 
-                <TextBox Text="{Binding TotalAmount, Converter={StaticResource CurrentValueConverter}}" 
-                         materialDesign:HintAssist.Hint="Total Amount"
-                         materialDesign:HintAssist.IsFloating="True"
-                         Grid.Row="2">
-                    <TextBox.Style>
-                        <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.Style>
+                        <Style TargetType="Grid">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SelectedType}" Value="Income">
@@ -222,11 +223,29 @@
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </TextBox.Style>
-                    <i:Interaction.Behaviors>
-                        <behaviors:SelectAllOnFocusBehavior />
-                    </i:Interaction.Behaviors>
-                </TextBox>
+                    </Grid.Style>
+                    <TextBox Text="{Binding TotalAmount, Converter={StaticResource CurrentValueConverter}}" 
+                         materialDesign:HintAssist.Hint="Total Amount"
+                         materialDesign:HintAssist.IsFloating="True"
+                         Grid.Row="2">
+                        <i:Interaction.Behaviors>
+                            <behaviors:SelectAllOnFocusBehavior />
+                        </i:Interaction.Behaviors>
+                    </TextBox>
+                    <Button Command="{Binding AutoAllocateCommand}" Grid.Column="1">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignFlatButton}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedType}" Value="Income">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <materialDesign:PackIcon Kind="TableColumnPlusAfter" />
+                    </Button>
+                </Grid>
 
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Row="3" Grid.IsSharedSizeScope="True">
                     <ItemsControl ItemsSource="{Binding LineItems}" Focusable="False">
