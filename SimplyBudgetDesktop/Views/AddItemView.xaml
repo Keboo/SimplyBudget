@@ -74,6 +74,7 @@
                                         <Setter Property="IsEnabled" Value="True" />
                                     </DataTrigger>
                                 </Style.Triggers>
+                                <Setter Property="IsEnabled" Value="False" />
                             </Style>
                         </TextBlock.Style>
                         <Hyperlink Command="{Binding SetAmountCommand}">
