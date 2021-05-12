@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xaml.Behaviors;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -27,7 +28,9 @@ namespace SimplyBudget.Behaviors
         private void DoSelection()
         {
             if (AssociatedObject.IsFocused)
-                AssociatedObject.SelectAll();
+            {
+                Dispatcher.BeginInvoke(new Action(() => AssociatedObject.SelectAll()));
+            }
         }
     }
 }
