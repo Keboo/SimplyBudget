@@ -20,7 +20,7 @@ namespace SimplyBudgetShared.Import
                 case "debit" when !string.Equals(row.Type, "Transfer", StringComparison.Ordinal):
                     return new()
                     {
-                        Date = row.EffectiveDate?.Date ?? DateTime.Today,
+                        Date = row.PostingDate?.Date ?? DateTime.Today,
                         Description = row.Description,
                         Details = new()
                         {
@@ -34,7 +34,7 @@ namespace SimplyBudgetShared.Import
                 case "credit":
                     return new()
                     {
-                        Date = row.EffectiveDate?.Date ?? DateTime.Today,
+                        Date = row.PostingDate?.Date ?? DateTime.Today,
                         Description = row.Description,
                         Details = new()
                         {
@@ -52,8 +52,8 @@ namespace SimplyBudgetShared.Import
 
     public class StcuRecord
     {
-        [Name("Effective Date")]
-        public DateTime? EffectiveDate { get; set; }
+        [Name("Posting Date")]
+        public DateTime? PostingDate { get; set; }
 
         [Name("Transaction Type")]
         public string? TransactionType { get; set; }

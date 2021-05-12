@@ -81,6 +81,20 @@ namespace SimplyBudgetSharedTests.Import
             Assert.AreEqual(0, items.Count);
         }
 
+        [TestMethod]
+        [Description("Issue 3")]
+        public async Task Import_WithDifferentEffectiveAndPostingDate_UsesPostingDate()
+        {
+            string csv = @"""2021013112784791,75120,210,201,446,006,044"",""1/31/2021"",""2/1/2021"",""Debit"",""-17.51000"","""",""531221069"",""Purchase MCDONALD'S F570,6321 N MONROE          SPOKANE      WAUS"",""Food & Dining"",""Debit Card"",""40653.62000"","""",""Purchase MCDONALD'S F570,6321 N MONROE          SPOKANE      WAUS""";
+            using var stream = AsStream(csv);
+            var csvImport = new StcuCsvImport(stream);
+
+            var items = await csvImport.GetItems().ToListAsync();
+
+            Assert.AreEqual(1, items.Count);
+            Assert.AreEqual(new DateTime(2021, 1, 31), items[0].Date);
+        }
+
         private const string StcuHeader = @"""Transaction ID"",""Posting Date"",""Effective Date"",""Transaction Type"",""Amount"",""Check Number"",""Reference Number"",""Description"",""Transaction Category"",""Type"",""Balance"",""Memo"",""Extended Description""";
 
         private static Stream AsStream(string csvData)
