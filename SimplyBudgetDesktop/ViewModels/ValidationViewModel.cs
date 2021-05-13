@@ -81,7 +81,7 @@ namespace SimplyBudget.ViewModels
             if (_ValidatorsByName.TryGetValue(propertyName, out IValidator? validator))
             {
                 var errors = validator.Validate(this).ToList();
-                
+
                 if (errors.Any())
                 {
                     _ValidationErrorsByProperty[propertyName] = errors;
@@ -108,7 +108,7 @@ namespace SimplyBudget.ViewModels
             ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(propertyName));
         }
 
-        protected void ClearValidationErrors(string propertyName) 
+        protected void ClearValidationErrors(string propertyName)
             => SetValidationErrors(propertyName, Array.Empty<object>());
 
         protected void AddValidator(string propertyName, Func<IEnumerable<object>> validate)

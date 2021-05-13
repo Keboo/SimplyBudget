@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Mvvm.Messaging;
+﻿using AutoDI;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using Moq.AutoMock;
 using Moq.AutoMock.Resolvers;
 using SimplyBudget;
@@ -6,6 +7,7 @@ using SimplyBudgetShared.Data;
 using SimplyBudgetSharedTests.Data;
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetDesktop.Tests
@@ -44,6 +46,49 @@ namespace SimplyBudgetDesktop.Tests
             }
             mocker.Use<ICurrentMonth>(currentMonth);
             return mocker;
+        }
+
+        public static IDisposable WithAutoDIResolver(this AutoMocker mocker)
+        {
+            var provider = new AutoDIServiceProvider(mocker);
+            GlobalDI.Register(provider);
+            return new Disposable(() => GlobalDI.Unregister(provider));
+        }
+
+        private class Disposable : IDisposable
+        {
+            public Disposable(Action onDispose)
+            {
+                OnDispose = onDispose ?? throw new ArgumentNullException(nameof(onDispose));
+            }
+
+            private Action OnDispose { get; }
+
+            public void Dispose() => OnDispose();
+        }
+
+        private class AutoDIServiceProvider : IServiceProvider
+        {
+            private static readonly AsyncLocal<AutoMocker?> _AsyncLocalBuilder = new();
+
+            private static AutoMocker? CurrentBuilder
+            {
+                get => _AsyncLocalBuilder.Value;
+                set => _AsyncLocalBuilder.Value = value;
+            }
+
+            public AutoDIServiceProvider(AutoMocker mocker)
+            {
+                CurrentBuilder = mocker ?? throw new ArgumentNullException(nameof(mocker));
+            }
+
+            public object GetService(Type serviceType)
+            {
+                AutoMocker? mocker = CurrentBuilder;
+                _ = mocker ?? throw new InvalidOperationException($"'mocker' was null when resolving {serviceType.FullName}.");
+
+                return mocker.Get(serviceType);
+            }
         }
 
         private class DbScopedResolver : IMockResolver, IDisposable

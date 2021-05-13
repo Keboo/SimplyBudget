@@ -14,7 +14,8 @@ using System.Windows.Input;
 namespace SimplyBudget.ViewModels
 {
     public class AddItemViewModel : ValidationViewModel,
-        IRecipient<LineItemAmountUpdated>
+        IRecipient<LineItemAmountUpdated>,
+        IRecipient<CurrentMonthChanged>
     {
         public ICommand SubmitCommand { get; }
         public ICommand AddItemCommand { get; }
@@ -122,7 +123,8 @@ namespace SimplyBudget.ViewModels
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
 
-            Messenger.Register(this);
+            Messenger.Register<LineItemAmountUpdated>(this);
+            Messenger.Register<CurrentMonthChanged>(this);
 
             SubmitCommand = new AsyncRelayCommand(OnSubmit);
             AddItemCommand = new RelayCommand(OnAddItem);
@@ -144,8 +146,8 @@ namespace SimplyBudget.ViewModels
 
         private void OnRemoveItem(LineItemViewModel? item)
         {
-            if (SelectedType == AddType.Transaction && 
-                LineItems.Count > 1 && 
+            if (SelectedType == AddType.Transaction &&
+                LineItems.Count > 1 &&
                 item is not null)
             {
                 LineItems.Remove(item);
@@ -161,7 +163,7 @@ namespace SimplyBudget.ViewModels
         private void OnAutoAllocate()
         {
             int total = RemainingAmount;
-            foreach(var lineItem in LineItems.OrderByDescending(x => x.SelectedCategory?.UsePercentage))
+            foreach (var lineItem in LineItems.OrderByDescending(x => x.SelectedCategory?.UsePercentage))
             {
                 int desiredAmount = lineItem.DesiredAmount;
                 if (lineItem.SelectedCategory?.UsePercentage == true)
@@ -305,5 +307,7 @@ namespace SimplyBudget.ViewModels
                     break;
             }
         }
+
+        public void Receive(CurrentMonthChanged message) => ValidateModel();
     }
 }

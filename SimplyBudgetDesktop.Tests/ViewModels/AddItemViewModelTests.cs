@@ -1,8 +1,11 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq.AutoMock;
+using SimplyBudget;
 using SimplyBudget.ViewModels;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetDesktop.Tests.ViewModels
@@ -118,6 +121,65 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             Assert.AreEqual(20, vm.LineItems[0].Amount);
             Assert.AreEqual(100, vm.LineItems[1].Amount);
             Assert.AreEqual(80, vm.LineItems[2].Amount);
+        }
+
+        [TestMethod]
+        [DataRow(-3)]
+        [DataRow(2)]
+        public void Date_MonthsOutOfRange_ShowsWarning(int monthOffset)
+        {
+            var now = DateTime.Now;
+            var mocker = new AutoMocker().WithDefaults();
+            using var __ = mocker.WithAutoDIResolver();
+            using var _ = mocker.BeginDbScope();
+
+            var vm = mocker.CreateInstance<AddItemViewModel>();
+
+            vm.Date = DateTime.Now.AddMonths(monthOffset);
+
+            var errors = vm.GetErrors(nameof(vm.Date)).OfType<string>().ToList();
+            Assert.AreEqual(1, errors.Count);
+            Assert.AreEqual($"Date should be between {now.AddMonths(-2).StartOfMonth():d} and {now.AddMonths(1).EndOfMonth():d}", errors[0]);
+        }
+
+        [TestMethod]
+        [DataRow(-2)]
+        [DataRow(0)]
+        [DataRow(1)]
+        public void Date_MonthsWithinRange_DoesNotShowWarning(int monthOffset)
+        {
+            var mocker = new AutoMocker().WithDefaults();
+            using var __ = mocker.WithAutoDIResolver();
+            using var _ = mocker.BeginDbScope();
+
+            var vm = mocker.CreateInstance<AddItemViewModel>();
+
+            vm.Date = DateTime.Now.AddMonths(monthOffset);
+
+            var errors = vm.GetErrors(nameof(vm.Date)).OfType<string>().ToList();
+            Assert.AreEqual(0, errors.Count);
+        }
+
+        [TestMethod]
+        [Description("Issue 14")]
+        public void Date_ChangingCurrentMonth_ClearsWarning()
+        {
+            var mocker = new AutoMocker().WithDefaults();
+            using var __ = mocker.WithAutoDIResolver();
+            using var _ = mocker.BeginDbScope();
+
+            ICurrentMonth current = mocker.Get<ICurrentMonth>();
+
+            var vm = mocker.CreateInstance<AddItemViewModel>();
+            current.CurrenMonth = DateTime.Now.AddMonths(-10);
+
+            vm.Date = DateTime.Now;
+            var errorsBefore = vm.GetErrors(nameof(vm.Date)).OfType<string>().ToList();
+            current.CurrenMonth = DateTime.Now;
+            var errorsAfter = vm.GetErrors(nameof(vm.Date)).OfType<string>().ToList();
+
+            Assert.AreEqual(1, errorsBefore.Count);
+            Assert.AreEqual(0, errorsAfter.Count);
         }
     }
 }
