@@ -41,7 +41,10 @@
                  Margin="2,4" Padding="4"
                  materialDesign:HintAssist.Hint="CSV Data"
                  Text="{Binding CsvData}"
-                 AcceptsReturn="True"/>
+                 AcceptsReturn="True"
+                 AllowDrop="True"
+                 PreviewDragOver="TextBox_PreviewDragOver"
+                 Drop="OnDrop"/>
 
         <DataGrid ItemsSource="{Binding ImportedRecords}" 
                   AutoGenerateColumns="False"
