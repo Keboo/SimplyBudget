@@ -43,6 +43,8 @@
                  Text="{Binding CsvData}"
                  AcceptsReturn="True"
                  AllowDrop="True"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
                  PreviewDragOver="TextBox_PreviewDragOver"
                  Drop="OnDrop"/>
 
