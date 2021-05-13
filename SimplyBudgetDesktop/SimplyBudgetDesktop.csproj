@@ -10,6 +10,7 @@
     <AssemblyName>SimplyBudget</AssemblyName>
     <StartupObject>SimplyBudget.App</StartupObject>
     <ApplicationIcon>Resources\Icon.ico</ApplicationIcon>
+    <RuntimeIdentifiers>win-x86;win-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
   <ItemGroup>
