@@ -10,7 +10,7 @@
   <ItemGroup>
     <!--<PackageReference Include="IntelliTect.TestTools.Data" Version="0.1.0" />-->
     <PackageReference Include="IntelliTect.TestTools.Data" Version="0.2.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.6" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
     <PackageReference Include="Moq.AutoMock" Version="2.3.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.2.3" />

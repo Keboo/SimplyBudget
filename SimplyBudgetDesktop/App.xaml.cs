@@ -7,8 +7,10 @@ using SimplyBudget.Messaging;
 using SimplyBudget.Properties;
 using SimplyBudgetShared.Data;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 
@@ -29,6 +31,16 @@ namespace SimplyBudget
             using (var context = new BudgetContext(Settings.GetDatabaseConnectionString()))
             {
                 context.Database.Migrate();
+
+                //TODO: Async this
+                if (!context.ExpenseCategories.Any())
+                {
+                    Task.Run(async () =>
+                    {
+                        await SampleBudget.GenerateBudget(context);
+                        await context.SaveChangesAsync();
+                    }).Wait();
+                }
             }
 #if DEBUG
             var helper = new PaletteHelper();
