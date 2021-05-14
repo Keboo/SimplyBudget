@@ -9,13 +9,14 @@ using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows.Data;
 
-namespace SimplyBudget.ViewModels.MainWindow
+namespace SimplyBudget.ViewModels
 {
     public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelEx>,
         IRecipient<ExpenseCategoryEvent>,
         IRecipient<CurrentMonthChanged>
     {
         private BudgetContext Context { get; }
+
         public IMessenger Messenger { get; }
         public ICurrentMonth CurrentMonth { get; }
 
@@ -87,6 +88,8 @@ namespace SimplyBudget.ViewModels.MainWindow
             }
         }
 
+        public void OpenExpenseCategory(ExpenseCategoryViewModelEx category)
+            => Messenger.Send(new OpenHistory(category));
 
         public void Receive(CurrentMonthChanged message)
             => LoadItemsAsync();

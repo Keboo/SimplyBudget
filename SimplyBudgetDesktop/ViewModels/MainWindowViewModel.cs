@@ -3,7 +3,6 @@ using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
-using SimplyBudget.ViewModels.MainWindow;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using System;
@@ -75,7 +74,7 @@ namespace SimplyBudget.ViewModels
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             Context = context ?? throw new ArgumentNullException(nameof(context));
-            
+
             Budget = new(context, messenger, currentMonth);
             History = new(context, messenger, currentMonth);
             Accounts = new(context, messenger);

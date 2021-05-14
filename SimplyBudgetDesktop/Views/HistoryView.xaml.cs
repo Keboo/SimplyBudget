@@ -1,5 +1,4 @@
 ﻿using SimplyBudget.ViewModels;
-using SimplyBudget.ViewModels.MainWindow;
 using System.Linq;
 using System.Windows.Controls;
 
