@@ -12,6 +12,7 @@
     <Grid Grid.IsSharedSizeScope="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition />
         </Grid.RowDefinitions>
         <Grid.CommandBindings>
@@ -21,7 +22,7 @@
             <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
         </Grid.InputBindings>
 
-        <Grid>
+        <Grid Margin="0,10,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition SharedSizeGroup="Name"/>
                 <ColumnDefinition SharedSizeGroup="Budget"/>
@@ -32,7 +33,7 @@
             <Grid.Resources>
                 <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                     <Setter Property="FontSize" Value="14" />
-                    <Setter Property="Margin" Value="10,2" />
+                    <Setter Property="Margin" Value="10,0" />
                 </Style>
             </Grid.Resources>
             <TextBlock Text="Name" />
@@ -41,8 +42,9 @@
             <TextBlock Text="Monthly Expenses" Grid.Column="3" />
             <TextBlock Text="Monthly Allocations" Grid.Column="4" />
         </Grid>
+        <Separator Grid.Row="1" VerticalAlignment="Bottom" Margin="0,10"/>
 
-        <ListBox ItemsSource="{Binding ExpenseCategoriesView}" Grid.Row="1">
+        <ListBox ItemsSource="{Binding ExpenseCategoriesView}" Grid.Row="2">
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
                     <Setter Property="utilities:AttachedProperties.DoubleClickCommand" Value="{x:Static ApplicationCommands.Open}"/>
@@ -79,9 +81,9 @@
                             <ColumnDefinition SharedSizeGroup="Expesnses"/>
                             <ColumnDefinition SharedSizeGroup="Allocations"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="{Binding Name}" />
-                        <TextBlock Text="{Binding BudgetedAmountDisplay}" Grid.Column="1"/>
-                        <TextBlock Text="{Binding Balance, Converter={StaticResource CurrentValueConverter}}" Grid.Column="2">
+                        <TextBlock Text="{Binding Name}" Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding BudgetedAmountDisplay}" Margin="0,0,10,0" Grid.Column="1"/>
+                        <TextBlock Text="{Binding Balance, Converter={StaticResource CurrentValueConverter}}" Margin="0,0,10,0" Grid.Column="2">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>
@@ -92,7 +94,7 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <TextBlock Text="{Binding MonthlyExpenses, Converter={StaticResource CurrentValueConverter}}" Grid.Column="3">
+                        <TextBlock Text="{Binding MonthlyExpenses, Converter={StaticResource CurrentValueConverter}}" Margin="0,0,10,0" Grid.Column="3">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>

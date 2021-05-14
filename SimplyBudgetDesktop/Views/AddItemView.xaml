@@ -45,7 +45,7 @@
                             VerticalAlignment="Center"
                             VerticalContentAlignment="Center"
                             Grid.Column="2">
-                        <materialDesign:PackIcon Kind="Close" Margin="6,6,0,0"/>
+                        <materialDesign:PackIcon Kind="Close" Margin="3,0"/>
                     </Button>
                 </Grid>
             </DataTemplate>
