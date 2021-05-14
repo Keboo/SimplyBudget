@@ -3,6 +3,7 @@ using System.Windows.Controls;
 
 namespace SimplyBudget.TemplateSelectors
 {
+
     public class NullTemplateSelector : DataTemplateSelector
     {
         public DataTemplate? NullTemplate { get; set; }

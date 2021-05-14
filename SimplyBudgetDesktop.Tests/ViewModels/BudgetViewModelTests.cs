@@ -2,7 +2,7 @@ using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using SimplyBudget;
-using SimplyBudget.ViewModels.MainWindow;
+using SimplyBudget.ViewModels;
 using SimplyBudgetShared.Data;
 using System;
 

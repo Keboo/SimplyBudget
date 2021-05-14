@@ -91,6 +91,20 @@ namespace SimplyBudget.ViewModels
         public void OpenExpenseCategory(ExpenseCategoryViewModelEx category)
             => Messenger.Send(new OpenHistory(category));
 
+        public async Task<bool> SaveChanges(ExpenseCategoryViewModelEx category)
+        {
+            if (Context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
+            {
+                dbCategory.Name = category.EditingName;
+                dbCategory.CategoryName = category.EditingCategory;
+                await Context.SaveChangesAsync();
+                category.Name = dbCategory.Name;
+                category.CategoryName = dbCategory.CategoryName;
+                return true;
+            }
+            return false;
+        }
+
         public void Receive(CurrentMonthChanged message)
             => LoadItemsAsync();
 

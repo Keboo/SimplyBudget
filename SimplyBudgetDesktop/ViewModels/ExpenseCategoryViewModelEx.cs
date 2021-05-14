@@ -61,5 +61,33 @@ namespace SimplyBudget.ViewModels
             get => _budgetedAmountDisplay;
             set => SetProperty(ref _budgetedAmountDisplay, value);
         }
+
+        private bool _isEditing;
+        public bool IsEditing
+        {
+            get => _isEditing;
+            set
+            {
+                if (SetProperty(ref _isEditing, value) && value)
+                {
+                    EditingName = Name;
+                    EditingCategory = CategoryName;
+                }
+            }
+        }
+
+        private string? _editingName;
+        public string? EditingName
+        {
+            get => _editingName;
+            set => SetProperty(ref _editingName, value);
+        }
+
+        private string? _editingCatergory;
+        public string? EditingCategory
+        {
+            get => _editingCatergory;
+            set => SetProperty(ref _editingCatergory, value);
+        }
     }
 }
