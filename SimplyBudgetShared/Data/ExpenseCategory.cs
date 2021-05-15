@@ -16,6 +16,8 @@ namespace SimplyBudgetShared.Data
         public int BudgetedPercentage { get; set; }
         public int BudgetedAmount { get; set; }
         public int CurrentBalance { get; set; }
+        public int? Cap { get; set; }
+        public bool IsHidden { get; set; }
 
         public bool UsePercentage => BudgetedPercentage > 0;
 

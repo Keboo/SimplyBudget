@@ -55,7 +55,6 @@ namespace SimplyBudget.ViewModels
                 throw new ArgumentNullException(nameof(propertyName));
             }
 
-
             var existingSortDescriptor = _view.SortDescriptions.FirstOrDefault(x => x.PropertyName == propertyName);
 
             if (existingSortDescriptor != default)

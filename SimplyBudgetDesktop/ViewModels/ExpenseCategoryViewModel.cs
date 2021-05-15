@@ -22,6 +22,8 @@ namespace SimplyBudget.ViewModels
             viewModel.BudgetedAmount = expenseCategory.BudgetedAmount;
             viewModel.BudgetedPercentage = expenseCategory.BudgetedPercentage;
             viewModel.CategoryName = expenseCategory.CategoryName ?? string.Empty;
+            viewModel.IsHidden = expenseCategory.IsHidden;
+            viewModel.Cap = expenseCategory.Cap;
         }
 
         public ExpenseCategoryViewModel(int expenseCategoryID)
@@ -64,6 +66,20 @@ namespace SimplyBudget.ViewModels
         {
             get => _categoryName;
             set => SetProperty(ref _categoryName, value);
+        }
+
+        private bool _isHidden;
+        public bool IsHidden
+        {
+            get => _isHidden;
+            set => SetProperty(ref _isHidden, value);
+        }
+
+        private int? _cap;
+        public int? Cap
+        {
+            get => _cap;
+            set => SetProperty(ref _cap, value);
         }
     }
 }

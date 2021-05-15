@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Mvvm.Messaging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Events;
@@ -6,6 +7,7 @@ using SimplyBudgetShared.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data;
 
@@ -116,6 +118,15 @@ namespace SimplyBudget.ViewModels
             if (GroupItems)
                 _view.SortDescriptions.Add(new SortDescription("CategoryName", ListSortDirection.Ascending));
             _view.SortDescriptions.Add(new SortDescription("Name", ListSortDirection.Ascending));
+
+            _view.Filter = x =>
+            {
+                if (x is ExpenseCategoryViewModelEx vm)
+                {
+                    return !vm.IsHidden;
+                }
+                return true;
+            };
 
             _view.GroupDescriptions.Clear();
 
