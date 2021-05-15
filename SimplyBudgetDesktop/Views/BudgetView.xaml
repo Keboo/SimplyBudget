@@ -20,7 +20,25 @@
                     <ColumnDefinition SharedSizeGroup="Expesnses"/>
                     <ColumnDefinition SharedSizeGroup="Allocations"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Text="{Binding Name}" Margin="0,0,10,0"/>
+                <TextBlock Margin="0,0,10,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                            <Setter Property="Text">
+                                <Setter.Value>
+                                    <MultiBinding StringFormat="{}{0} ({1})">
+                                        <Binding Path="Name" />
+                                        <Binding Path="Cap" Converter="{StaticResource CurrentValueConverter}" />
+                                    </MultiBinding>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Cap}" Value="{x:Null}">
+                                    <Setter Property="Text" Value="{Binding Name}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
                 <TextBlock Text="{Binding BudgetedAmountDisplay}" Margin="0,0,10,0" Grid.Column="1"/>
                 <TextBlock Text="{Binding Balance, Converter={StaticResource CurrentValueConverter}}" Margin="0,0,10,0" Grid.Column="2">
                     <TextBlock.Style>
@@ -71,6 +89,8 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBox materialDesign:HintAssist.Hint="Name" 
@@ -91,7 +111,9 @@
                         </Grid.RowDefinitions>
                         <RadioButton Content="Amount" IsChecked="{Binding EditIsAmountType}"/>
                         <RadioButton Content="Percentage" IsChecked="{Binding EditIsAmountType, Converter={StaticResource InvertBoolValueConverter}}" Grid.Row="1"/>
-                        <TextBox MinWidth="100" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Bottom"
+                        <TextBox MinWidth="100" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" 
+                                 VerticalAlignment="Bottom"
+                                 materialDesign:HintAssist.IsFloating="True"
                                  Margin="5,0">
                             <i:Interaction.Behaviors>
                                 <behaviors:SelectAllOnFocusBehavior />
@@ -99,26 +121,43 @@
                             <TextBox.Style>
                                 <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
                                     <Setter Property="Text" Value="{Binding EditAmount, Converter={StaticResource PercentageValueConverter}}" />
+                                    <Setter Property="materialDesign:HintAssist.Hint" Value="Percentage" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding EditIsAmountType}" Value="True">
                                             <Setter Property="Text" Value="{Binding EditAmount, Converter={StaticResource CurrentValueConverter}}" />
+                                            <Setter Property="materialDesign:HintAssist.Hint" Value="Amount" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </TextBox.Style>
                         </TextBox>
                     </Grid>
+                    <TextBox materialDesign:HintAssist.Hint="Cap" 
+                             materialDesign:HintAssist.IsFloating="True" 
+                             Text="{Binding EditingCap, Converter={StaticResource CurrentValueConverter}}"
+                             Grid.Column="2"
+                             Margin="0,0,10,0">
+                        <i:Interaction.Behaviors>
+                            <behaviors:SelectAllOnFocusBehavior />
+                        </i:Interaction.Behaviors>
+                    </TextBox>
                     <TextBox materialDesign:HintAssist.Hint="Category" 
                              materialDesign:HintAssist.IsFloating="True" 
                              Text="{Binding EditingCategory}" 
-                             Grid.Column="2">
+                             Grid.Column="3">
                         <i:Interaction.Behaviors>
                             <behaviors:SelectAllOnFocusBehavior />
                         </i:Interaction.Behaviors>
                     </TextBox>
 
+                    <Button Content="{materialDesign:PackIcon Kind=Delete}" 
+                            Grid.Column="4" 
+                            Style="{StaticResource MaterialDesignFlatButton}"
+                            Command="{x:Static ApplicationCommands.Delete}"
+                            CommandParameter="{Binding}"/>
+
                     <Button Content="{materialDesign:PackIcon Kind=ContentSave}" 
-                            Grid.Column="3" 
+                            Grid.Column="5" 
                             Style="{StaticResource MaterialDesignFlatButton}"
                             Command="{x:Static ApplicationCommands.Save}"
                             CommandParameter="{Binding}"/>
@@ -138,6 +177,7 @@
             <CommandBinding Command="{x:Static ApplicationCommands.Open}" Executed="Open_Executed" />
             <CommandBinding Command="{x:Static ApplicationCommands.Properties}" Executed="Properties_Executed" />
             <CommandBinding Command="{x:Static ApplicationCommands.Save}" Executed="Save_Executed" />
+            <CommandBinding Command="{x:Static ApplicationCommands.Delete}" Executed="Delete_Executed" />
         </Grid.CommandBindings>
         <Grid.InputBindings>
             <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
@@ -150,6 +190,8 @@
                 <ColumnDefinition SharedSizeGroup="Balance"/>
                 <ColumnDefinition SharedSizeGroup="Expesnses"/>
                 <ColumnDefinition SharedSizeGroup="Allocations"/>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Grid.Resources>
                 <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
@@ -157,11 +199,22 @@
                     <Setter Property="Margin" Value="10,0" />
                 </Style>
             </Grid.Resources>
-            <TextBlock Text="Name" />
-            <TextBlock Text="Budgetted Amount" Grid.Column="1" />
-            <TextBlock Text="Current Balance" Grid.Column="2" />
-            <TextBlock Text="Monthly Expenses" Grid.Column="3" />
-            <TextBlock Text="Monthly Allocations" Grid.Column="4" />
+            <TextBlock Text="Name" VerticalAlignment="Bottom"/>
+            <TextBlock Text="Budgetted Amount" Grid.Column="1" VerticalAlignment="Bottom"/>
+            <TextBlock Text="Current Balance" Grid.Column="2" VerticalAlignment="Bottom"/>
+            <TextBlock Text="Monthly Expenses" Grid.Column="3" VerticalAlignment="Bottom"/>
+            <TextBlock Text="Monthly Allocations" Grid.Column="4" VerticalAlignment="Bottom"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,10,0" Grid.Column="6" VerticalAlignment="Bottom">
+                <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" 
+                         materialDesign:HintAssist.Hint="Search"
+                         Margin="5,0"
+                         MinWidth="200">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Return" Command="{Binding DoSearchCommand}"/>
+                    </TextBox.InputBindings>
+                </TextBox>
+                <CheckBox IsChecked="{Binding ShowAll}" Content="All" />
+            </StackPanel>
         </Grid>
         <Separator Grid.Row="1" VerticalAlignment="Bottom" Margin="0,10"/>
 
@@ -174,9 +227,12 @@
                     <Setter Property="ContextMenu">
                         <Setter.Value>
                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                <!--<MenuItem Header="_Delete" />
-                                <Separator />-->
-                                <MenuItem Header="_Edit" Command="{x:Static ApplicationCommands.Properties}"
+                                <MenuItem Header="_Delete"
+                                          Command="{x:Static ApplicationCommands.Delete}"
+                                          CommandParameter="{Binding}" />
+                                <Separator />
+                                <MenuItem Header="_Edit"
+                                          Command="{x:Static ApplicationCommands.Properties}"
                                           CommandParameter="{Binding}"/>
                             </ContextMenu>
                         </Setter.Value>

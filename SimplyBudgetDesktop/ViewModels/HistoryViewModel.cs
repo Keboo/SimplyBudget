@@ -91,7 +91,7 @@ namespace SimplyBudget.ViewModels
 
             AddFilterCommand = new RelayCommand<ExpenseCategory>(OnAddFilter, x => x != null);
             RemoveFilterCommand = new RelayCommand<ExpenseCategory>(
-                x => FilterCategories.Remove(x), x => x != null);
+                x => FilterCategories.Remove(x!), x => x != null);
             DoSearchCommand = new RelayCommand(OnDoSearch);
 
             FilterCategories.CollectionChanged += FilterCategories_CollectionChanged;
@@ -101,8 +101,9 @@ namespace SimplyBudget.ViewModels
             messenger.Register<CurrentMonthChanged>(this);
         }
 
-        private void OnAddFilter(ExpenseCategory category)
+        private void OnAddFilter(ExpenseCategory? category)
         {
+            if (category is null) return;
             if (!FilterCategories.Contains(category))
             {
                 FilterCategories.Add(category);

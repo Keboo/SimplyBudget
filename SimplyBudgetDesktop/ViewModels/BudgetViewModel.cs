@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
 using SimplyBudgetShared.Data;
@@ -7,9 +7,9 @@ using SimplyBudgetShared.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
 {
@@ -21,6 +21,7 @@ namespace SimplyBudget.ViewModels
 
         public IMessenger Messenger { get; }
         public ICurrentMonth CurrentMonth { get; }
+        public ICommand DoSearchCommand { get; }
 
         public BudgetViewModel(BudgetContext context, IMessenger messenger, ICurrentMonth currentMonth)
         {
@@ -29,6 +30,7 @@ namespace SimplyBudget.ViewModels
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             messenger.Register<ExpenseCategoryEvent>(this);
             messenger.Register<CurrentMonthChanged>(this);
+            DoSearchCommand = new RelayCommand(OnDoSearch);
             GroupItems = true;
         }
 
@@ -60,6 +62,29 @@ namespace SimplyBudget.ViewModels
                 {
                     SetDescriptors();
                 }
+            }
+        }
+
+        private bool _showAll;
+        public bool ShowAll
+        {
+            get => _showAll;
+            set
+            {
+                if (SetProperty(ref _showAll, value))
+                {
+                    SetDescriptors();
+                }
+            }
+        }
+
+        private string? _search;
+        public string? Search
+        {
+            get => _search;
+            set
+            {
+                SetProperty(ref _search, value);
             }
         }
 
@@ -101,16 +126,32 @@ namespace SimplyBudget.ViewModels
                 dbCategory.CategoryName = category.EditingCategory;
                 dbCategory.BudgetedPercentage = !category.EditIsAmountType ? category.EditAmount : 0;
                 dbCategory.BudgetedAmount = category.EditIsAmountType ? category.EditAmount : 0;
+                dbCategory.Cap = category.EditingCap;
                 await Context.SaveChangesAsync();
                 category.Name = dbCategory.Name;
                 category.CategoryName = dbCategory.CategoryName;
+                category.BudgetedAmount = dbCategory.BudgetedAmount;
+                category.BudgetedPercentage = dbCategory.BudgetedPercentage;
+                category.Cap = dbCategory.Cap;
                 return true;
             }
             return false;
         }
 
+        public async Task Delete(ExpenseCategoryViewModelEx category)
+        {
+            if (Context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
+            {
+                dbCategory.IsHidden = true;
+                await Context.SaveChangesAsync();
+                category.IsHidden = true;
+            }
+        }
+
         public void Receive(CurrentMonthChanged message)
             => LoadItemsAsync();
+
+        private void OnDoSearch() => SetDescriptors();
 
         private void SetDescriptors()
         {
@@ -123,7 +164,17 @@ namespace SimplyBudget.ViewModels
             {
                 if (x is ExpenseCategoryViewModelEx vm)
                 {
-                    return !vm.IsHidden;
+                    if (!string.IsNullOrWhiteSpace(Search))
+                    {
+                        if (vm.Name?.IndexOf(Search, StringComparison.InvariantCultureIgnoreCase) < 0)
+                        {
+                            return false;
+                        }
+                    }
+                    if (!ShowAll)
+                    {
+                        return !vm.IsHidden;
+                    }
                 }
                 return true;
             };

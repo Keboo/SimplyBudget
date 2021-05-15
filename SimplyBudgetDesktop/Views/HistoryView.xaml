@@ -36,6 +36,9 @@
                     </Style.Triggers>
                 </Style>
             </Expander.Style>
+            <Expander.Header>
+                <Border Background="Transparent" Height="20"/>
+            </Expander.Header>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />

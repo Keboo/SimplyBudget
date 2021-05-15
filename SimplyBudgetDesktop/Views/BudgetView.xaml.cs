@@ -47,5 +47,13 @@ namespace SimplyBudget.Views
                 category.IsEditing = false;
             }
         }
+
+        private async void Delete_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        {
+            if (e.Parameter is ExpenseCategoryViewModelEx category)
+            {
+                await ViewModel.Delete(category);
+            }
+        }
     }
 }

@@ -74,6 +74,7 @@ namespace SimplyBudget.ViewModels
                     EditingCategory = CategoryName;
                     EditIsAmountType = BudgetedPercentage <= 0;
                     EditAmount = BudgetedPercentage > 0 ? BudgetedPercentage : BudgetedAmount;
+                    EditingCap = Cap;
                 }
             }
         }
@@ -104,6 +105,13 @@ namespace SimplyBudget.ViewModels
         {
             get => _editAmount;
             set => SetProperty(ref _editAmount, value);
+        }
+
+        private int? _editingCap;
+        public int? EditingCap
+        {
+            get => _editingCap;
+            set => SetProperty(ref _editingCap, value);
         }
     }
 }
