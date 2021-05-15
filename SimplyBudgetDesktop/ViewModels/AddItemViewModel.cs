@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
@@ -137,12 +138,11 @@ namespace SimplyBudget.ViewModels
             SelectedType = AddType.Transaction;
 
             PropertyChanged += (_, __) => ClearValidationErrors(nameof(SubmitCommand));
+            BindingOperations.EnableCollectionSynchronization(LineItems, new object());
         }
 
         private void OnCancel()
-        {
-            Messenger.Send(new DoneAddingItemMessage());
-        }
+            => Messenger.Send(new DoneAddingItemMessage());
 
         private void OnRemoveItem(LineItemViewModel? item)
         {
@@ -156,9 +156,7 @@ namespace SimplyBudget.ViewModels
         }
 
         private void OnAddItem()
-        {
-            LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
-        }
+            => LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
 
         private void OnAutoAllocate()
         {
@@ -308,6 +306,17 @@ namespace SimplyBudget.ViewModels
             }
         }
 
-        public void Receive(CurrentMonthChanged message) => ValidateModel();
+        public void Receive(CurrentMonthChanged message)
+        {
+            Task.Run(() =>
+            {
+                ValidateModel();
+                if (SelectedType == AddType.Income)
+                {
+                    SelectedType = AddType.None;
+                    SelectedType = AddType.Income;
+                }
+            });
+        }
     }
 }
