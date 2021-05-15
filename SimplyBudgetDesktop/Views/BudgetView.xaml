@@ -7,8 +7,7 @@
              xmlns:utilities="clr-namespace:SimplyBudget.Utilities" 
              xmlns:vm="clr-namespace:SimplyBudget.ViewModels" 
              xmlns:valueConverter="clr-namespace:SimplyBudget.ValueConverter" 
-             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" 
-             
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" xmlns:i="http://schemas.microsoft.com/xaml/behaviors" xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors"
              d:DataContext="{d:DesignInstance Type=vm:BudgetViewModel}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
@@ -77,8 +76,12 @@
                     </Grid.ColumnDefinitions>
                     <TextBox materialDesign:HintAssist.Hint="Name" 
                              materialDesign:HintAssist.IsFloating="True" 
-                             Text="{Binding EditingName}" />
-                    <!--<Grid Margin="5,0" Grid.Column="1" VerticalAlignment="Bottom">
+                             Text="{Binding EditingName}">
+                        <i:Interaction.Behaviors>
+                            <behaviors:SelectAllOnFocusBehavior />
+                        </i:Interaction.Behaviors>
+                    </TextBox>
+                    <Grid Margin="5,0" Grid.Column="1" VerticalAlignment="Bottom">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition />
@@ -87,15 +90,34 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <RadioButton Content="Amount" />
-                        <RadioButton Content="Percentage" Grid.Row="1"/>
-                        <TextBox MinWidth="100" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Bottom"/>
-                    </Grid>-->
+                        <RadioButton Content="Amount" IsChecked="{Binding EditIsAmountType}"/>
+                        <RadioButton Content="Percentage" IsChecked="{Binding EditIsAmountType, Converter={StaticResource InvertBoolValueConverter}}" Grid.Row="1"/>
+                        <TextBox MinWidth="100" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Bottom"
+                                 Margin="5,0">
+                            <i:Interaction.Behaviors>
+                                <behaviors:SelectAllOnFocusBehavior />
+                            </i:Interaction.Behaviors>
+                            <TextBox.Style>
+                                <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                    <Setter Property="Text" Value="{Binding EditAmount, Converter={StaticResource PercentageValueConverter}}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding EditIsAmountType}" Value="True">
+                                            <Setter Property="Text" Value="{Binding EditAmount, Converter={StaticResource CurrentValueConverter}}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                    </Grid>
                     <TextBox materialDesign:HintAssist.Hint="Category" 
                              materialDesign:HintAssist.IsFloating="True" 
                              Text="{Binding EditingCategory}" 
-                             Grid.Column="2" />
-                    
+                             Grid.Column="2">
+                        <i:Interaction.Behaviors>
+                            <behaviors:SelectAllOnFocusBehavior />
+                        </i:Interaction.Behaviors>
+                    </TextBox>
+
                     <Button Content="{materialDesign:PackIcon Kind=ContentSave}" 
                             Grid.Column="3" 
                             Style="{StaticResource MaterialDesignFlatButton}"

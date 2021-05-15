@@ -35,6 +35,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             var mocker = new AutoMocker()
                 .WithDefaults();
             using var scope = mocker.BeginDbScope();
+            using var _ = mocker.WithAutoDIResolver();
 
             var vm = mocker.CreateInstance<MainWindowViewModel>();
 

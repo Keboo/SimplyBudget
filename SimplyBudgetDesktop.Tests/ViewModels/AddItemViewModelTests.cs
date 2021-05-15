@@ -61,6 +61,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         {
             var mocker = new AutoMocker().WithDefaults();
             using var _ = mocker.BeginDbScope();
+            using var __ = mocker.WithAutoDIResolver();
 
             var context = mocker.Get<BudgetContext>();
             var category1 = new ExpenseCategory { Name = "Foo" };

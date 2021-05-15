@@ -35,7 +35,7 @@ namespace SimplyBudgetShared.Data
 
         public static implicit operator Transaction(ExpenseCategoryItem item)
         {
-            var transaction =  new Transaction
+            var transaction = new Transaction
             {
                 Date = item.Date,
                 Description = item.Description,
@@ -74,7 +74,7 @@ namespace SimplyBudgetShared.Data
                 Income = income,
                 IncomeID = income.ID
             }).ToList();
-            
+
             income.TotalAmount = income.IncomeItems?.Sum(x => x.Amount) ?? 0;
 
             return income;

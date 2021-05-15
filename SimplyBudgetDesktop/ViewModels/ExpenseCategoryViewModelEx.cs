@@ -72,6 +72,8 @@ namespace SimplyBudget.ViewModels
                 {
                     EditingName = Name;
                     EditingCategory = CategoryName;
+                    EditIsAmountType = BudgetedPercentage <= 0;
+                    EditAmount = BudgetedPercentage > 0 ? BudgetedPercentage : BudgetedAmount;
                 }
             }
         }
@@ -88,6 +90,20 @@ namespace SimplyBudget.ViewModels
         {
             get => _editingCatergory;
             set => SetProperty(ref _editingCatergory, value);
+        }
+
+        private bool _editIsAmountType;
+        public bool EditIsAmountType
+        {
+            get => _editIsAmountType;
+            set => SetProperty(ref _editIsAmountType, value);
+        }
+
+        private int _editAmount;
+        public int EditAmount
+        {
+            get => _editAmount;
+            set => SetProperty(ref _editAmount, value);
         }
     }
 }

@@ -97,6 +97,8 @@ namespace SimplyBudget.ViewModels
             {
                 dbCategory.Name = category.EditingName;
                 dbCategory.CategoryName = category.EditingCategory;
+                dbCategory.BudgetedPercentage = !category.EditIsAmountType ? category.EditAmount : 0;
+                dbCategory.BudgetedAmount = category.EditIsAmountType ? category.EditAmount : 0;
                 await Context.SaveChangesAsync();
                 category.Name = dbCategory.Name;
                 category.CategoryName = dbCategory.CategoryName;

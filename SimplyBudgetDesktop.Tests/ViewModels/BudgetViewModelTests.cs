@@ -1,10 +1,8 @@
-using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
-using SimplyBudget;
+using Moq.AutoMock;
 using SimplyBudget.ViewModels;
 using SimplyBudgetShared.Data;
-using System;
+using System.Threading.Tasks;
 
 namespace SimplyBudgetDesktop.Tests.ViewModels
 {
@@ -12,24 +10,85 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
     public class BudgetViewModelTests
     {
         [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
-        public void Constructor_WithoutContext_Throws()
+        public void ConstructorThrowsExpectedExceptions()
+            => ConstructorTest.AssertArgumentNullExceptions<BudgetViewModel>();
+
+        [TestMethod]
+        public async Task SaveChanges_CategoryNotFound_ReturnsFalse()
         {
-            new BudgetViewModel(null!, Mock.Of<IMessenger>(), Mock.Of<ICurrentMonth>());
+            AutoMocker mocker = new AutoMocker().WithDefaults();
+            using var _ = mocker.BeginDbScope();
+
+            var vm = mocker.CreateInstance<BudgetViewModel>();
+            var expenseCategory = await ExpenseCategoryViewModelEx.Create(mocker.Get<BudgetContext>(), new ExpenseCategory { ID = 42 });
+
+            bool result = await vm.SaveChanges(expenseCategory);
+
+            Assert.IsFalse(result);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
-        public void Constructor_WithoutMessenger_Throws()
+        public async Task SaveChanges_WithFoundCategory_UpdatesBudgettedAmount()
         {
-            new BudgetViewModel(Mock.Of<BudgetContext>(), null!, Mock.Of<ICurrentMonth>());
+            AutoMocker mocker = new AutoMocker().WithDefaults();
+            using var _ = mocker.BeginDbScope();
+            var context = mocker.Get<BudgetContext>();
+            context.ExpenseCategories.Add(new ExpenseCategory
+            {
+                ID = 42,
+                CategoryName = "CategoryName",
+                Name = "Name",
+                BudgetedAmount = 100
+            });
+            await context.SaveChangesAsync();
+
+            var vm = mocker.CreateInstance<BudgetViewModel>();
+            var expenseCategory = await ExpenseCategoryViewModelEx.Create(context, new ExpenseCategory { ID = 42 });
+            expenseCategory.EditingCategory = "CategoryNameChanged";
+            expenseCategory.EditingName = "NameChanged";
+            expenseCategory.EditAmount = 120;
+            expenseCategory.EditIsAmountType = true;
+
+            bool result = await vm.SaveChanges(expenseCategory);
+
+            Assert.IsTrue(result);
+            var existing = await context.ExpenseCategories.FindAsync(42);
+            Assert.AreEqual("CategoryNameChanged", existing.CategoryName);
+            Assert.AreEqual("NameChanged", existing.Name);
+            Assert.AreEqual(120, existing.BudgetedAmount);
+            Assert.AreEqual(0, existing.BudgetedPercentage);
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException))]
-        public void Constructor_WithoutCurrentMonth_Throws()
+        public async Task SaveChanges_WithFoundCategory_UpdatesBudgettedPercentage()
         {
-            new BudgetViewModel(Mock.Of<BudgetContext>(), Mock.Of<IMessenger>(), null!);
+            AutoMocker mocker = new AutoMocker().WithDefaults();
+            using var _ = mocker.BeginDbScope();
+            var context = mocker.Get<BudgetContext>();
+            context.ExpenseCategories.Add(new ExpenseCategory
+            {
+                ID = 42,
+                CategoryName = "CategoryName",
+                Name = "Name",
+                BudgetedAmount = 100
+            });
+            await context.SaveChangesAsync();
+
+            var vm = mocker.CreateInstance<BudgetViewModel>();
+            var expenseCategory = await ExpenseCategoryViewModelEx.Create(context, new ExpenseCategory { ID = 42 });
+            expenseCategory.EditingCategory = "CategoryNameChanged";
+            expenseCategory.EditingName = "NameChanged";
+            expenseCategory.EditAmount = 10;
+            expenseCategory.EditIsAmountType = false;
+
+            bool result = await vm.SaveChanges(expenseCategory);
+
+            Assert.IsTrue(result);
+            var existing = await context.ExpenseCategories.FindAsync(42);
+            Assert.AreEqual("CategoryNameChanged", existing.CategoryName);
+            Assert.AreEqual("NameChanged", existing.Name);
+            Assert.AreEqual(0, existing.BudgetedAmount);
+            Assert.AreEqual(10, existing.BudgetedPercentage);
         }
     }
 }
