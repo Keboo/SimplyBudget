@@ -38,15 +38,11 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Margin" Value="3,0"/>
     </Style>
-    
+
     <Style TargetType="TextBlock" x:Key="TitleTextBlock">
-        <Setter Property="FontSize" Value="14" /> 
+        <Setter Property="FontSize" Value="14" />
         <Setter Property="FontWeight" Value="Bold" />
     </Style>
-
-    <!--<Style TargetType="controls:DataGridEx">
-        <Setter Property="AlternatingRowBackground" Value="{StaticResource AlternateRowBrush}"/>
-    </Style>-->
 
     <Style TargetType="GridViewColumnHeader">
         <Setter Property="Padding" Value="8,0"/>

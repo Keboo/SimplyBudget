@@ -3,9 +3,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq.AutoMock;
 using SimplyBudget.Messaging;
 using SimplyBudget.ViewModels;
-using SimplyBudgetShared.Data;
-using SimplyBudgetSharedTests.Data;
-using System.Threading.Tasks;
 
 namespace SimplyBudgetDesktop.Tests.ViewModels
 {
