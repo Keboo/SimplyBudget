@@ -3,6 +3,7 @@ using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
 using SimplyBudget.Validation;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Threading;
 using SimplyBudgetShared.Utilities;
 using System;
 using System.Collections.Generic;
@@ -306,9 +307,9 @@ namespace SimplyBudget.ViewModels
             }
         }
 
-        public void Receive(CurrentMonthChanged message)
+        public async void Receive(CurrentMonthChanged message)
         {
-            Task.Run(() =>
+            await TaskEx.Run(() =>
             {
                 ValidateModel();
                 if (SelectedType == AddType.Income)

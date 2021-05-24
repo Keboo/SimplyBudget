@@ -4,6 +4,7 @@ using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Import;
+using SimplyBudgetShared.Threading;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -84,7 +85,7 @@ namespace SimplyBudget.ViewModels
 
             SelectedItems = null;
             
-            await Task.Run(() =>
+            await TaskEx.Run(() =>
             {
                 foreach (var selectedItem in selectedItems)
                 {

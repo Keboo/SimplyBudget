@@ -4,8 +4,10 @@ using Moq.AutoMock;
 using Moq.AutoMock.Resolvers;
 using SimplyBudget;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Threading;
 using SimplyBudgetSharedTests.Data;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +16,13 @@ namespace SimplyBudgetDesktop.Tests
 {
     public static class AutoMockerExtensions
     {
-        public static IDisposable BeginDbScope(this AutoMocker mocker, BudgetDatabaseContext? context = null)
+        public static IDisposable WithSynchonousTaskRunner(this AutoMocker mocker)
+        {
+            TaskEx.Default = new SynchonousTaskScheduler();
+            return new Disposable(() => TaskEx.Default = null!);
+        }
+
+        public static IDisposable WithDbScope(this AutoMocker mocker, BudgetDatabaseContext? context = null)
         {
             var resolver = new DbScopedResolver(context ?? new BudgetDatabaseContext());
             var existing = mocker.Resolvers.ToList();
@@ -134,6 +142,22 @@ namespace SimplyBudgetDesktop.Tests
                 // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
                 Dispose(disposing: true);
                 GC.SuppressFinalize(this);
+            }
+        }
+
+        private class SynchonousTaskScheduler : TaskScheduler
+        {
+            public override int MaximumConcurrencyLevel => 1;
+
+            protected override void QueueTask(Task task) => TryExecuteTask(task);
+
+            protected override bool TryExecuteTaskInline(
+                Task task,
+                bool taskWasPreviouslyQueued) => TryExecuteTask(task);
+
+            protected override IEnumerable<Task> GetScheduledTasks()
+            {
+                return Enumerable.Empty<Task>();
             }
         }
     }

@@ -17,7 +17,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SelectedType_Transaction_LoadsItems()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.BeginDbScope();
+            using var _ = mocker.WithDbScope();
 
             var context = mocker.Get<BudgetContext>();
             var category1 = new ExpenseCategory { Name = "Foo" };
@@ -37,7 +37,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SelectedType_Income_LoadsItems()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.BeginDbScope();
+            using var _ = mocker.WithDbScope();
 
             var context = mocker.Get<BudgetContext>();
             var category1 = new ExpenseCategory { Name = "Foo" };
@@ -60,7 +60,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SelectedType_Transfer_LoadsItems()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.BeginDbScope();
+            using var _ = mocker.WithDbScope();
             using var __ = mocker.WithAutoDIResolver();
 
             var context = mocker.Get<BudgetContext>();
@@ -84,7 +84,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public void RemovingItem_UpdatesRemainingAmount()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.BeginDbScope();
+            using var _ = mocker.WithDbScope();
 
             var vm = mocker.CreateInstance<AddItemViewModel>();
 
@@ -102,7 +102,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task AutoAllocateCommand_AllocatesIncomeAmount()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.BeginDbScope();
+            using var _ = mocker.WithDbScope();
 
             var context = mocker.Get<BudgetContext>();
             var category1 = new ExpenseCategory { Name = "Bar", BudgetedPercentage = 10 };
@@ -132,7 +132,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             var now = DateTime.Now;
             var mocker = new AutoMocker().WithDefaults();
             using var __ = mocker.WithAutoDIResolver();
-            using var _ = mocker.BeginDbScope();
+            using var _ = mocker.WithDbScope();
 
             var vm = mocker.CreateInstance<AddItemViewModel>();
 
@@ -151,7 +151,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         {
             var mocker = new AutoMocker().WithDefaults();
             using var __ = mocker.WithAutoDIResolver();
-            using var _ = mocker.BeginDbScope();
+            using var _ = mocker.WithDbScope();
 
             var vm = mocker.CreateInstance<AddItemViewModel>();
 
@@ -166,8 +166,9 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public void Date_ChangingCurrentMonth_ClearsWarning()
         {
             var mocker = new AutoMocker().WithDefaults();
+            using var _ = mocker.WithDbScope();
             using var __ = mocker.WithAutoDIResolver();
-            using var _ = mocker.BeginDbScope();
+            using var ___ = mocker.WithSynchonousTaskRunner();
 
             ICurrentMonth current = mocker.Get<ICurrentMonth>();
 

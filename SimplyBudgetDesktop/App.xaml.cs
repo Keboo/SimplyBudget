@@ -6,6 +6,7 @@ using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
 using SimplyBudget.Properties;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Threading;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,7 +36,7 @@ namespace SimplyBudget
                 //TODO: Async this
                 if (!context.ExpenseCategories.Any())
                 {
-                    Task.Run(async () =>
+                    TaskEx.Run(async () =>
                     {
                         await SampleBudget.GenerateBudget(context);
                         await context.SaveChangesAsync();

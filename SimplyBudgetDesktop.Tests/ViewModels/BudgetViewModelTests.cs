@@ -17,7 +17,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SaveChanges_CategoryNotFound_ReturnsFalse()
         {
             AutoMocker mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.BeginDbScope();
+            using var _ = mocker.WithDbScope();
 
             var vm = mocker.CreateInstance<BudgetViewModel>();
             var expenseCategory = await ExpenseCategoryViewModelEx.Create(mocker.Get<BudgetContext>(), new ExpenseCategory { ID = 42 });
@@ -31,7 +31,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SaveChanges_WithFoundCategory_UpdatesBudgettedAmount()
         {
             AutoMocker mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.BeginDbScope();
+            using var _ = mocker.WithDbScope();
             var context = mocker.Get<BudgetContext>();
             context.ExpenseCategories.Add(new ExpenseCategory
             {
@@ -63,7 +63,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SaveChanges_WithFoundCategory_UpdatesBudgettedPercentage()
         {
             AutoMocker mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.BeginDbScope();
+            using var _ = mocker.WithDbScope();
             var context = mocker.Get<BudgetContext>();
             context.ExpenseCategories.Add(new ExpenseCategory
             {

@@ -13,7 +13,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public void Constructor_CreatesDependencies()
         {
             var mocker = new AutoMocker().WithMessenger();
-            using var scope = mocker.BeginDbScope();
+            using var scope = mocker.WithDbScope();
 
             var vm = mocker.CreateInstance<MainWindowViewModel>();
             Assert.IsNotNull(vm.Budget);
@@ -31,7 +31,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         {
             var mocker = new AutoMocker()
                 .WithDefaults();
-            using var scope = mocker.BeginDbScope();
+            using var scope = mocker.WithDbScope();
             using var _ = mocker.WithAutoDIResolver();
 
             var vm = mocker.CreateInstance<MainWindowViewModel>();
@@ -47,7 +47,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public void OnDoneAddingItemMessage_AddItemCleared()
         {
             var mocker = new AutoMocker().WithMessenger();
-            using var scope = mocker.BeginDbScope();
+            using var scope = mocker.WithDbScope();
 
             var vm = mocker.CreateInstance<MainWindowViewModel>();
             vm.AddItem = mocker.CreateInstance<AddItemViewModel>();
