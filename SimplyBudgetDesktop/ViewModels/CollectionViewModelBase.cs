@@ -41,7 +41,7 @@ namespace SimplyBudget.ViewModels
             _sortCommand = new RelayCommand<string>(OnSort);
         }
 
-        private void OnSort(string sortProperty)
+        private void OnSort(string? sortProperty)
         {
             if (string.IsNullOrWhiteSpace(sortProperty)) return;
 

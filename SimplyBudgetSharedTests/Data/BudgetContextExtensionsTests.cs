@@ -42,7 +42,7 @@ namespace SimplyBudgetSharedTests.Data
                 Assert.AreEqual(now.Date, item.Date);
 
                 Assert.AreEqual(2, item.Details?.Count);
-                CollectionAssert.AreEquivalent(new[] { 150, 50 }, item.Details.Select(x => x.Amount).ToList());
+                CollectionAssert.AreEquivalent(new[] { 150, 50 }, item.Details!.Select(x => x.Amount).ToList());
 
                 var cat1 = await context.ExpenseCategories.FindAsync(category1.ID);
                 Assert.AreEqual(170, cat1.CurrentBalance);

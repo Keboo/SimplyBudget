@@ -89,13 +89,13 @@ namespace SimplyBudgetSharedTests.Data
 
             await fixture.PerformDatabaseOperation(async context =>
             {
-                var foundTransaction = context.ExpenseCategoryItems
+                var foundTransaction = await context.ExpenseCategoryItems
                     .Include(x => x.Details)
-                    .Single(x => x.ID == transaction!.ID);
+                    .SingleAsync(x => x.ID == transaction!.ID);
                 Assert.AreEqual(description, foundTransaction.Description);
                 Assert.AreEqual(transactionDate.Date, foundTransaction.Date);
 
-                var foundTransactionItem = foundTransaction.Details.Single();
+                var foundTransactionItem = foundTransaction.Details!.Single();
                 Assert.AreEqual(-amount, foundTransactionItem.Amount);
                 Assert.AreEqual(category.ID, foundTransactionItem.ExpenseCategoryId);
             });
