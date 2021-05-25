@@ -197,7 +197,12 @@ namespace SimplyBudgetShared.Data
                     .Where(x => x.Amount > 0)
                     .Where(x => x.ExpenseCategoryItem!.Date >= start && x.ExpenseCategoryItem.Date <= end)
                     .SumAsync(x => x.Amount);
-            return Math.Max(0, expenseCategory.BudgetedAmount - allocatedAmount);
+            int remaining = Math.Max(0, expenseCategory.BudgetedAmount - allocatedAmount);
+            if (expenseCategory.Cap is int cap)
+            {
+                return Math.Min(remaining, Math.Max(0, cap - expenseCategory.CurrentBalance));
+            }
+            return remaining;
         }
     }
 }

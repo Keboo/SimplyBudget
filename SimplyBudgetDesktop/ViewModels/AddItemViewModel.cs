@@ -311,7 +311,7 @@ namespace SimplyBudget.ViewModels
         {
             await TaskEx.Run(() =>
             {
-                ValidateModel();
+                _ = ValidateModel();
                 if (SelectedType == AddType.Income)
                 {
                     SelectedType = AddType.None;

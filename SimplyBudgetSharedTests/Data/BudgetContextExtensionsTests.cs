@@ -242,5 +242,63 @@ namespace SimplyBudgetSharedTests.Data
                 Assert.AreEqual(40, await context.GetRemainingBudgetAmount(category, now));
             });
         }
+
+        [TestMethod]
+        [Description("Issue 10")]
+        public async Task GetRemainingBudgetAmount_WithExpenseCategoryCap_ReturnsRemainingAmount()
+        {
+            // Arrange
+            var fixture = new BudgetDatabaseContext();
+
+            var category = new ExpenseCategory
+            {
+                CurrentBalance = 100,
+                BudgetedAmount = 50,
+                Cap = 120
+            };
+
+            var now = DateTime.Now;
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.AddRange(category);
+                await context.SaveChangesAsync();
+            });
+
+            //Act/Assert
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                Assert.AreEqual(20, await context.GetRemainingBudgetAmount(category, now));
+            });
+        }
+
+        [TestMethod]
+        [Description("Issue 10")]
+        public async Task GetRemainingBudgetAmount_WhenCurrentIsOverCap_ReturnsZero()
+        {
+            // Arrange
+            var fixture = new BudgetDatabaseContext();
+
+            var category = new ExpenseCategory
+            {
+                CurrentBalance = 100,
+                BudgetedAmount = 50,
+                Cap = 80
+            };
+
+            var now = DateTime.Now;
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.AddRange(category);
+                await context.SaveChangesAsync();
+            });
+
+            //Act/Assert
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                Assert.AreEqual(0, await context.GetRemainingBudgetAmount(category, now));
+            });
+        }
     }
 }
