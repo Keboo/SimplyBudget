@@ -1,5 +1,7 @@
 ﻿using SimplyBudget.ViewModels;
+using System.ComponentModel;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace SimplyBudget.Views
@@ -10,7 +12,7 @@ namespace SimplyBudget.Views
     public partial class BudgetView
     {
         private BudgetViewModel ViewModel => (BudgetViewModel)DataContext;
-        
+
         public BudgetView()
         {
             InitializeComponent();
@@ -53,6 +55,19 @@ namespace SimplyBudget.Views
             if (e.Parameter is ExpenseCategoryViewModelEx category)
             {
                 await ViewModel.Delete(category);
+            }
+        }
+
+        private void Copy_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        {
+            switch (e.Parameter)
+            {
+                case IClipboardData clipboardData:
+                    clipboardData.OnCopy();
+                    break;
+                case object obj:
+                    Clipboard.SetText(obj.ToString());
+                    break;
             }
         }
     }

@@ -178,6 +178,7 @@
             <CommandBinding Command="{x:Static ApplicationCommands.Properties}" Executed="Properties_Executed" />
             <CommandBinding Command="{x:Static ApplicationCommands.Save}" Executed="Save_Executed" />
             <CommandBinding Command="{x:Static ApplicationCommands.Delete}" Executed="Delete_Executed" />
+            <CommandBinding Command="{x:Static ApplicationCommands.Copy}" Executed="Copy_Executed" />
         </Grid.CommandBindings>
         <Grid.InputBindings>
             <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
@@ -227,6 +228,9 @@
                     <Setter Property="ContextMenu">
                         <Setter.Value>
                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                <MenuItem Command="{x:Static ApplicationCommands.Copy}"
+                                          CommandParameter="{Binding}"/>
+                                <Separator />
                                 <MenuItem Header="_Delete"
                                           Command="{x:Static ApplicationCommands.Delete}"
                                           CommandParameter="{Binding}" />

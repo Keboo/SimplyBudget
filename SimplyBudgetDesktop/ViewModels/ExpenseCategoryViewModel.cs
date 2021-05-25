@@ -1,9 +1,11 @@
 ﻿using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
 using System;
+using System.Windows;
 
 namespace SimplyBudget.ViewModels
 {
-    public class ExpenseCategoryViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject
+    public class ExpenseCategoryViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, IClipboardData
     {
         public static ExpenseCategoryViewModel Create(ExpenseCategory expenseCategory)
         {
@@ -24,6 +26,11 @@ namespace SimplyBudget.ViewModels
             viewModel.CategoryName = expenseCategory.CategoryName ?? string.Empty;
             viewModel.IsHidden = expenseCategory.IsHidden;
             viewModel.Cap = expenseCategory.Cap;
+        }
+
+        public void OnCopy()
+        {
+            Clipboard.SetText(Balance.FormatCurrency());
         }
 
         public ExpenseCategoryViewModel(int expenseCategoryID)
