@@ -57,6 +57,7 @@
                   Visibility="{Binding IsViewingCsv, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
             <DataGrid.InputBindings>
                 <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
+                <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding AddItemCommand}" />
             </DataGrid.InputBindings>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Date" Binding="{Binding Date, StringFormat='d'}" SortMemberPath="Date" />
