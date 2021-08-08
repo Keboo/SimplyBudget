@@ -173,6 +173,8 @@
                 <TextBox Text="{Binding Description}"
                          materialDesign:HintAssist.IsFloating="True"
                          materialDesign:HintAssist.Hint="Description"
+                         TextWrapping="Wrap" 
+                         MaxWidth="300"
                          SpellCheck.IsEnabled="True">
                     <i:Interaction.Behaviors>
                         <behaviors:FocusOnVisibleBehavior />
