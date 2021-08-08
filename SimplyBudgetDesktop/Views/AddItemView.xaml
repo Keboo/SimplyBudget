@@ -127,6 +127,7 @@
         <Grid MinWidth="300" Margin="10">
             <Grid.InputBindings>
                 <KeyBinding Key="Escape" Command="{Binding CancelCommand}"/>
+                <KeyBinding Gesture="Ctrl+T" Command="{Binding AddItemCommand}" />
             </Grid.InputBindings>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
@@ -193,6 +194,7 @@
                         HorizontalAlignment="Right"
                         HorizontalContentAlignment="Center"
                         VerticalContentAlignment="Center"
+                        ToolTip="Add another item (Ctrl+T)"
                         Margin="3,3,0,0"
                         Padding="0">
                     <Button.Style>
