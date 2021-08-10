@@ -17,19 +17,18 @@ namespace SimplyBudgetSharedTests.Data
             var fixture = new BudgetDatabaseContext();
             var category = new ExpenseCategory { CurrentBalance = 250 };
 
-            Income? income = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
                 context.Add(category);
                 await context.SaveChangesAsync();
-                income = await context.AddIncome("Test", DateTime.Now, (100, category.ID));
+                await context.AddIncome("Test", DateTime.Now, (100, category.ID));
             });
 
             //Act
             int itemId = 0;
             await fixture.PerformDatabaseOperation(async context =>
             {
-                var item = await context.FindAsync<ExpenseCategoryItem>(income!.ID);
+                ExpenseCategoryItem item = await context.ExpenseCategoryItems.SingleAsync();
                 context.Remove(item);
                 await context.SaveChangesAsync();
                 itemId = item.ID;

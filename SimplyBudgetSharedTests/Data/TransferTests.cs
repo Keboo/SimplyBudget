@@ -2,8 +2,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SimplyBudgetShared.Data;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetSharedTests.Data
@@ -19,7 +17,7 @@ namespace SimplyBudgetSharedTests.Data
             var category1 = new ExpenseCategory { CurrentBalance = 100 };
             var category2 = new ExpenseCategory { CurrentBalance = 200 };
 
-            Transfer? transfer = null;
+            ExpenseCategoryItem? transfer = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
                 context.AddRange(category1, category2);

@@ -16,7 +16,7 @@ namespace SimplyBudgetSharedTests.Data
             //Arrange
             var fixture = new BudgetDatabaseContext();
 
-            Transaction? transaction = null;
+            ExpenseCategoryItem? transaction = null;
             var category = new ExpenseCategory { CurrentBalance = 250 };
             await fixture.PerformDatabaseOperation(async context =>
             {

@@ -33,7 +33,7 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Act
-            Transaction? transaction = null;
+            ExpenseCategoryItem? transaction = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
                 transaction = await context.AddTransaction(category.ID, amount, description);
@@ -78,7 +78,7 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Act
-            Transaction? transaction = null;
+            ExpenseCategoryItem? transaction = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
                 transaction = await context.AddTransaction(category.ID, amount, description, transactionDate);
@@ -112,9 +112,9 @@ namespace SimplyBudgetSharedTests.Data
             var category2 = new ExpenseCategory { Account = account };
             var category3 = new ExpenseCategory { Account = account };
 
-            Transfer? transfer1 = null;
-            Transfer? transfer2 = null;
-            Transfer? transfer3 = null;
+            ExpenseCategoryItem? transfer1 = null;
+            ExpenseCategoryItem? transfer2 = null;
+            ExpenseCategoryItem? transfer3 = null;
 
             await fixture.PerformDatabaseOperation(async context =>
             {
@@ -127,7 +127,7 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Act
-            IList<Transfer>? transfers = null;
+            IList<ExpenseCategoryItem>? transfers = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
                 transfers = await context.GetTransfers(category2);
@@ -149,9 +149,9 @@ namespace SimplyBudgetSharedTests.Data
             var category2 = new ExpenseCategory { Account = account };
 
             var now = DateTime.Now;
-            Transfer? transfer1 = null;
-            Transfer? transfer2 = null;
-            Transfer? transfer3 = null;
+            ExpenseCategoryItem? transfer1 = null;
+            ExpenseCategoryItem? transfer2 = null;
+            ExpenseCategoryItem? transfer3 = null;
 
             await fixture.PerformDatabaseOperation(async context =>
             {
@@ -166,7 +166,7 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Act
-            IList<Transfer>? transfers = null;
+            IList<ExpenseCategoryItem>? transfers = null;
             await fixture.PerformDatabaseOperation(async context =>
             {
                 transfers = await context.GetTransfers(category2, now.AddDays(-2).Date, now);
@@ -187,9 +187,9 @@ namespace SimplyBudgetSharedTests.Data
             var category1 = new ExpenseCategory { Account = account };
             var category2 = new ExpenseCategory { Account = account };
 
-            Transaction? transaction1 = null;
-            Transaction? transaction2 = null;
-            Transaction? transaction3 = null;
+            ExpenseCategoryItem? transaction1 = null;
+            ExpenseCategoryItem? transaction2 = null;
+            ExpenseCategoryItem? transaction3 = null;
 
             await fixture.PerformDatabaseOperation(async context =>
             {
@@ -229,9 +229,9 @@ namespace SimplyBudgetSharedTests.Data
             var category1 = new ExpenseCategory { Account = account };
 
             DateTime now = DateTime.Now;
-            Transaction? transaction1 = null;
-            Transaction? transaction2 = null;
-            Transaction? transaction3 = null;
+            ExpenseCategoryItem? transaction1 = null;
+            ExpenseCategoryItem? transaction2 = null;
+            ExpenseCategoryItem? transaction3 = null;
 
             await fixture.PerformDatabaseOperation(async context =>
             {
