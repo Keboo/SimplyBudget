@@ -244,6 +244,10 @@
                     <Setter Property="ContentTemplate" Value="{StaticResource DefaultCategoryTemplate}" />
 
                     <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsHidden}" Value="True">
+                            <Setter Property="Opacity" Value="0.6" />
+                            <Setter Property="TextElement.FontStyle" Value="Italic" />
+                        </DataTrigger>
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
                                 <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True" />
