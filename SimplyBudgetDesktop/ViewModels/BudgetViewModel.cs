@@ -148,6 +148,16 @@ namespace SimplyBudget.ViewModels
             }
         }
 
+        public async Task Undelete(ExpenseCategoryViewModelEx category)
+        {
+            if (Context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
+            {
+                dbCategory.IsHidden = false;
+                await Context.SaveChangesAsync();
+                category.IsHidden = false;
+            }
+        }
+
         public void Receive(CurrentMonthChanged message)
             => LoadItemsAsync();
 

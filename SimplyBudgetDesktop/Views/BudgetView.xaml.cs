@@ -58,6 +58,30 @@ namespace SimplyBudget.Views
             }
         }
 
+        private void Delete_CanExecute(object sender, System.Windows.Input.CanExecuteRoutedEventArgs e)
+        {
+            if (e.Parameter is ExpenseCategoryViewModelEx category)
+            {
+                e.CanExecute = category.IsHidden == false;
+            }
+        }
+
+        private async void Restore_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+        {
+            if (e.Parameter is ExpenseCategoryViewModelEx category)
+            {
+                await ViewModel.Undelete(category);
+            }
+        }
+
+        private void Restore_CanExecute(object sender, System.Windows.Input.CanExecuteRoutedEventArgs e)
+        {
+            if (e.Parameter is ExpenseCategoryViewModelEx category)
+            {
+                e.CanExecute = category.IsHidden;
+            }
+        }
+
         private void Copy_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
         {
             switch (e.Parameter)

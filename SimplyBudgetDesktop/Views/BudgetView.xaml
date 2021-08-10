@@ -177,7 +177,8 @@
             <CommandBinding Command="{x:Static ApplicationCommands.Open}" Executed="Open_Executed" />
             <CommandBinding Command="{x:Static ApplicationCommands.Properties}" Executed="Properties_Executed" />
             <CommandBinding Command="{x:Static ApplicationCommands.Save}" Executed="Save_Executed" />
-            <CommandBinding Command="{x:Static ApplicationCommands.Delete}" Executed="Delete_Executed" />
+            <CommandBinding Command="{x:Static ApplicationCommands.Delete}" Executed="Delete_Executed" CanExecute="Delete_CanExecute" />
+            <CommandBinding Command="{x:Static ApplicationCommands.Replace}" Executed="Restore_Executed" CanExecute="Restore_CanExecute" />
             <CommandBinding Command="{x:Static ApplicationCommands.Copy}" Executed="Copy_Executed" />
         </Grid.CommandBindings>
         <Grid.InputBindings>
@@ -233,6 +234,9 @@
                                 <Separator />
                                 <MenuItem Header="_Delete"
                                           Command="{x:Static ApplicationCommands.Delete}"
+                                          CommandParameter="{Binding}" />
+                                <MenuItem Header="_Restore"
+                                          Command="{x:Static ApplicationCommands.Replace}"
                                           CommandParameter="{Binding}" />
                                 <Separator />
                                 <MenuItem Header="_Edit"
