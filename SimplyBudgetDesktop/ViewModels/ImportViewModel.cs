@@ -11,8 +11,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
 
@@ -22,7 +22,10 @@ namespace SimplyBudget.ViewModels
     {
         public ICommand ImportCommand { get; }
         public IRelayCommand AddItemCommand { get; }
-        public ICommand DeleteCommand { get; }
+        public IRelayCommand DeleteCommand { get; }
+        public IRelayCommand MarkAsDoneCommand { get; }
+        public IRelayCommand UnmarkAsDoneCommand { get; }
+
         public IMessenger Messenger { get; }
 
         public ObservableCollection<ImportRecord> ImportedRecords { get; } = new();
@@ -53,6 +56,9 @@ namespace SimplyBudget.ViewModels
                 {
                     base.OnPropertyChanged(new PropertyChangedEventArgs(nameof(SelectedAmount)));
                     AddItemCommand.NotifyCanExecuteChanged();
+                    DeleteCommand.NotifyCanExecuteChanged();
+                    MarkAsDoneCommand.NotifyCanExecuteChanged();
+                    UnmarkAsDoneCommand.NotifyCanExecuteChanged();
                 }
             }
         }
@@ -61,7 +67,9 @@ namespace SimplyBudget.ViewModels
         {
             ImportCommand = new RelayCommand(OnImport);
             AddItemCommand = new RelayCommand(OnAddItem, CanAddItem);
-            DeleteCommand = new RelayCommand(OnDeleteItem);
+            DeleteCommand = new RelayCommand(OnDeleteItem, () => SelectedItems?.Any() == true);
+            MarkAsDoneCommand = new RelayCommand(OnMarkAsDone, () => SelectedItems?.Any(x => x.IsDone == false) == true);
+            UnmarkAsDoneCommand = new RelayCommand(OnUnmarkAsDone, () => SelectedItems?.Any(x => x.IsDone) == true);
 
             BindingOperations.EnableCollectionSynchronization(ImportedRecords, new object());
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
@@ -84,12 +92,12 @@ namespace SimplyBudget.ViewModels
             var items = selectedItems.Select(x => new LineItem(x.Amount)).ToList();
 
             SelectedItems = null;
-            
+
             await TaskEx.Run(() =>
             {
                 foreach (var selectedItem in selectedItems)
                 {
-                    ImportedRecords.Remove(selectedItem);
+                    selectedItem.IsDone = true;
                 }
 
                 var message = new AddItemMessage(type, date, description, items);
@@ -121,19 +129,61 @@ namespace SimplyBudget.ViewModels
 
         private void OnDeleteItem()
         {
-            foreach(var item in SelectedItems?.ToList() ?? Enumerable.Empty<ImportRecord>())
+            foreach (var item in SelectedItems?.ToList() ?? Enumerable.Empty<ImportRecord>())
             {
                 ImportedRecords.Remove(item);
             }
         }
+
+        private void OnMarkAsDone()
+        {
+            foreach (var item in SelectedItems ?? Enumerable.Empty<ImportRecord>())
+            {
+                item.IsDone = true;
+            }
+        }
+
+        private void OnUnmarkAsDone()
+        {
+            foreach (var item in SelectedItems ?? Enumerable.Empty<ImportRecord>())
+            {
+                item.IsDone = false;
+            }
+        }
     }
 
-    public record ImportRecord(ExpenseCategoryItem Item)
+    public class ImportRecord : INotifyPropertyChanged
     {
+        public ExpenseCategoryItem Item { get; }
+        public ImportRecord(ExpenseCategoryItem item)
+        {
+            Item = item;
+        }
+
         public int Amount => Math.Abs(Item.Details?.Sum(x => x.Amount) ?? 0);
 
         public string? Description => Item.Description;
 
         public DateTime Date => Item.Date;
+
+        private bool _isDone;
+        public bool IsDone
+        {
+            get => _isDone;
+            set => SetProperty(ref _isDone, value);
+        }
+
+        private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+        {
+            if (!EqualityComparer<T>.Default.Equals(field, value))
+            {
+                field = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+                return true;
+            }
+            return false;
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
     }
 }

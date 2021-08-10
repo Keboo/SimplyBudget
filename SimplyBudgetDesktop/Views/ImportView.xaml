@@ -3,8 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" 
-             xmlns:local="clr-namespace:SimplyBudget.Views"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:vm="clr-namespace:SimplyBudget.ViewModels"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type={x:Type vm:ImportViewModel}}"
@@ -16,28 +15,35 @@
         </Grid.RowDefinitions>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition />
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
+            <CheckBox Content="Show all" x:Name="ShowAll" Grid.Column="0" Margin="10,2" />
+            
+            
             <TextBlock Text="{Binding SelectedAmount, Converter={StaticResource CurrentValueConverter}, StringFormat='Total {0}'}"
                        Visibility="{Binding IsViewingCsv, Converter={StaticResource InverseBooleanToVisibilityConverter}}" 
                        HorizontalAlignment="Right"
+                       Grid.Column="1"
                        VerticalAlignment="Center"/>
 
-            <Button Content="Import" Grid.Column="1" Margin="10,2"
+            <Button Content="Import" Grid.Column="2" Margin="10,2"
                     Command="{Binding ImportCommand}"
                     Visibility="{Binding IsViewingCsv, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-            <Button Content="Add" Grid.Column="1" Margin="10,2" MinWidth="80"
+            <Button Content="Add" Grid.Column="3" Margin="10,2" MinWidth="80"
                     Command="{Binding AddItemCommand}"
                     Visibility="{Binding IsViewingCsv, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
                     />
-            <ToggleButton x:Name="Toggle" Grid.Column="2" Margin="10,2"
+            <ToggleButton x:Name="Toggle" Grid.Column="4" Margin="10,2"
                           IsChecked="{Binding IsViewingCsv}"/>
         </Grid>
 
         <TextBox Style="{StaticResource MaterialDesignOutlinedTextBox}" 
+                 VerticalContentAlignment="Stretch"
                  Margin="2,4" Padding="4"
                  materialDesign:HintAssist.Hint="CSV Data"
                  Text="{Binding CsvData}"
@@ -59,12 +65,41 @@
                 <KeyBinding Key="Delete" Command="{Binding DeleteCommand}" />
                 <MouseBinding MouseAction="LeftDoubleClick" Command="{Binding AddItemCommand}" />
             </DataGrid.InputBindings>
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
+                    <Style.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsDone}" Value="True"/>
+                                <Condition Binding="{Binding IsChecked, ElementName=ShowAll}" Value="False"/>
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Visibility" Value="Collapsed" />
+                        </MultiDataTrigger>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding IsDone}" Value="True"/>
+                                <Condition Binding="{Binding IsChecked, ElementName=ShowAll}" Value="True"/>
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Opacity" Value="0.5" />
+                            <Setter Property="FontStyle" Value="Italic" />
+                        </MultiDataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Date" Binding="{Binding Date, StringFormat='d'}" SortMemberPath="Date" />
-                <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
-                <DataGridTextColumn Header="Amount" Binding="{Binding Item, Converter={StaticResource CurrentValueConverter}}"
+                <DataGridTextColumn Header="Date" Binding="{Binding Date, StringFormat='d', Mode=OneTime}" SortMemberPath="Date" />
+                <DataGridTextColumn Header="Description" Binding="{Binding Description, Mode=OneTime}" Width="*" />
+                <DataGridTextColumn Header="Amount" Binding="{Binding Item, Converter={StaticResource CurrentValueConverter}, Mode=OneTime}"
                                     MinWidth="150" SortMemberPath="Amount" />
             </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Mark Done" Command="{Binding MarkAsDoneCommand}" />
+                    <MenuItem Header="Mark Not Done" Command="{Binding UnmarkAsDoneCommand}" />
+                    <Separator />
+                    <MenuItem Header="Delete" Command="{Binding DeleteCommand}" />
+                </ContextMenu>
+            </DataGrid.ContextMenu>
         </DataGrid>
     </Grid>
 </UserControl>
