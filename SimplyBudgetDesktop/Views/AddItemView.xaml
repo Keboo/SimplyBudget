@@ -189,52 +189,39 @@
                             materialDesign:ValidationAssist.UsePopup="True"
                             materialDesign:ValidationAssist.HorizontalAlignment="Left"/>
 
-                <Button Command="{Binding AddItemCommand}"
-                        Grid.Row="2"
-                        HorizontalAlignment="Right"
-                        HorizontalContentAlignment="Center"
-                        VerticalContentAlignment="Center"
-                        ToolTip="Add another item (Ctrl+T)"
-                        Margin="3,3,0,0"
-                        Padding="0">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignFlatButton}">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding SelectedType}" Value="Transaction">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                    <materialDesign:PackIcon Kind="PlusBoxOutline" Margin="10,3,6,1"/>
-                </Button>
-
                 <Grid Grid.Row="2">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Grid.Style>
-                        <Style TargetType="Grid">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding SelectedType}" Value="Income">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding SelectedType}" Value="Transfer">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Grid.Style>
-                    <TextBox Text="{Binding TotalAmount, Converter={StaticResource CurrentValueConverter}}" 
-                         materialDesign:HintAssist.Hint="Total Amount"
-                         materialDesign:HintAssist.IsFloating="True"
-                         Grid.Row="2">
+                    <TextBox Text="{Binding TotalAmount, Converter={StaticResource CurrentValueConverter}}"
+                             materialDesign:HintAssist.Hint="Total Amount"
+                             materialDesign:HintAssist.IsFloating="True" 
+                             Grid.Column="0">
                         <i:Interaction.Behaviors>
                             <behaviors:SelectAllOnFocusBehavior />
                         </i:Interaction.Behaviors>
+                        <TextBox.Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedType}" Value="Income">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding SelectedType}" Value="Transfer">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding SelectedType}" Value="Transaction" />
+                                            <Condition Binding="{Binding LineItems.Count, Converter={StaticResource AtLeastValueConverter}, ConverterParameter='2'}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
                     </TextBox>
                     <Button Command="{Binding AutoAllocateCommand}" Grid.Column="1">
                         <Button.Style>
@@ -248,6 +235,27 @@
                             </Style>
                         </Button.Style>
                         <materialDesign:PackIcon Kind="TableColumnPlusAfter" />
+                    </Button>
+
+                    <Button Command="{Binding AddItemCommand}"
+                            Grid.Column="2"
+                            HorizontalAlignment="Right"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            ToolTip="Add another item (Ctrl+T)"
+                            Margin="3,3,0,0"
+                            Padding="0">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignFlatButton}">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedType}" Value="Transaction">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <materialDesign:PackIcon Kind="PlusBoxOutline" Margin="10,3,6,1"/>
                     </Button>
                 </Grid>
 
@@ -278,10 +286,14 @@
                     <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
                         <Setter Property="Visibility" Value="Collapsed" />
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding SelectedType}" Value="Transaction">
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding SelectedType}" Value="Transaction" />
+                                    <Condition Binding="{Binding LineItems.Count, Converter={StaticResource AtLeastValueConverter}, ConverterParameter='2'}" Value="True" />
+                                </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible" />
-                                <Setter Property="Text" Value="{Binding TotalAmount, StringFormat='Total: {0}', Converter={StaticResource CurrentValueConverter}}" />
-                            </DataTrigger>
+                                <Setter Property="Text" Value="{Binding RemainingAmount, StringFormat='Remaining: {0}', Converter={StaticResource CurrentValueConverter}}" />
+                            </MultiDataTrigger>
                             <DataTrigger Binding="{Binding SelectedType}" Value="Income">
                                 <Setter Property="Visibility" Value="Visible" />
                                 <Setter Property="Text" Value="{Binding RemainingAmount, StringFormat='Remaining: {0}', Converter={StaticResource CurrentValueConverter}}" />

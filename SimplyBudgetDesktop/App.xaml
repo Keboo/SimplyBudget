@@ -21,6 +21,7 @@
             <valueConverter:PercentageValueConverter x:Key="PercentageValueConverter"/>
             <valueConverter:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
             <valueConverter:InvertBoolValueConverter x:Key="InvertBoolValueConverter" />
+            <valueConverter:AtLeastValueConverter x:Key="AtLeastValueConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

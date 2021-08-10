@@ -298,11 +298,9 @@ namespace SimplyBudget.ViewModels
         {
             switch (SelectedType)
             {
+                case AddType.Transaction:
                 case AddType.Income:
                     UpdateRemaining();
-                    break;
-                case AddType.Transaction:
-                    TotalAmount = LineItems.Sum(x => x.Amount);
                     break;
             }
         }

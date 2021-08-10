@@ -183,5 +183,27 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             Assert.AreEqual(1, errorsBefore.Count);
             Assert.AreEqual(0, errorsAfter.Count);
         }
+
+        [TestMethod]
+        public void TotalAmount_Transaction_UpdatesRemainingAmount()
+        {
+            var mocker = new AutoMocker().WithDefaults();
+            using var _ = mocker.WithDbScope();
+            using var __ = mocker.WithAutoDIResolver();
+            using var ___ = mocker.WithSynchonousTaskRunner();
+
+            var vm = mocker.CreateInstance<AddItemViewModel>();
+
+            vm.SelectedType = AddType.Transaction;
+            vm.AddItemCommand.Execute(null);
+            vm.TotalAmount = 100_00;
+
+            vm.LineItems[0].Amount = 25_00;
+
+            Assert.AreEqual(2, vm.LineItems.Count);
+            Assert.AreEqual(25_00, vm.LineItems[0].Amount);
+            Assert.AreEqual(0, vm.LineItems[1].Amount);
+            Assert.AreEqual(75_00, vm.RemainingAmount);
+        }
     }
 }
