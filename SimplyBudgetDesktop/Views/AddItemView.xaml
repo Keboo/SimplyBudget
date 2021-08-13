@@ -4,7 +4,7 @@
                     xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" 
                     xmlns:valueconverter="clr-namespace:SimplyBudget.ValueConverter" 
                     xmlns:i="http://schemas.microsoft.com/xaml/behaviors" 
-                    xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors">
+                    xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors" xmlns:system="clr-namespace:System;assembly=System.Runtime">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Button.xaml" />
         <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.ValidationErrorTemplate.xaml" />
@@ -122,6 +122,8 @@
                 </Grid>
             </DataTemplate>
 
+            <system:Boolean x:Key="BoolTrue">True</system:Boolean>
+            <system:Boolean x:Key="BoolFalse">False</system:Boolean>
         </DataTemplate.Resources>
         
         <Grid MinWidth="300" Margin="10">
@@ -310,12 +312,34 @@
                 </TextBlock.Style>
             </TextBlock>
 
-            <Button Content="Submit"
-                    Command="{Binding SubmitCommand}" 
-                    Grid.Row="3"
-                    materialDesign:ValidationAssist.PopupPlacement="Top"
-                    materialDesign:ValidationAssist.UsePopup="True"
-                    Validation.ErrorTemplate="{StaticResource MaterialDesignValidationErrorTemplate}"/>
+            <Grid Grid.Row="3" Width="300" HorizontalAlignment="Center">
+                <materialDesign:PopupBox Grid.Column="1" HorizontalAlignment="Stretch"
+                                         HorizontalContentAlignment="Right">
+                    <materialDesign:PopupBox.ToggleContent>
+                        <Button materialDesign:ButtonAssist.CornerRadius="0,4,4,0" 
+                                IsHitTestVisible="False" 
+                                HorizontalContentAlignment="Right"
+                                Width="50"
+                                Content="{materialDesign:PackIcon Kind=ArrowDown}" />
+                    </materialDesign:PopupBox.ToggleContent>
+                    <materialDesign:PopupBox.PopupContent>
+                        <Button Content="Submit (Ignore Budget)" 
+                                Width="300"
+                                Command="{Binding SubmitCommand}"
+                                CommandParameter="{StaticResource BoolTrue}"
+                                />
+                    </materialDesign:PopupBox.PopupContent>
+                </materialDesign:PopupBox>
+                <Button Content="Submit"
+                        Command="{Binding SubmitCommand}"
+                        CommandParameter="{StaticResource BoolTrue}"
+                        materialDesign:ValidationAssist.PopupPlacement="Top"
+                        materialDesign:ValidationAssist.UsePopup="True"
+                        materialDesign:ButtonAssist.CornerRadius="4,0,0,4"
+                        HorizontalAlignment="Left"
+                        Width="250"
+                        Validation.ErrorTemplate="{StaticResource MaterialDesignValidationErrorTemplate}"/>
+            </Grid>
         </Grid>
     </DataTemplate>
 </ResourceDictionary>

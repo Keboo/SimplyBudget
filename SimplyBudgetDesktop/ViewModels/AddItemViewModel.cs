@@ -19,7 +19,7 @@ namespace SimplyBudget.ViewModels
         IRecipient<LineItemAmountUpdated>,
         IRecipient<CurrentMonthChanged>
     {
-        public ICommand SubmitCommand { get; }
+        public IAsyncRelayCommand<bool?> SubmitCommand { get; }
         public ICommand AddItemCommand { get; }
         public ICommand RemoveItemCommand { get; }
         public ICommand CancelCommand { get; }
@@ -128,7 +128,7 @@ namespace SimplyBudget.ViewModels
             Messenger.Register<LineItemAmountUpdated>(this);
             Messenger.Register<CurrentMonthChanged>(this);
 
-            SubmitCommand = new AsyncRelayCommand(OnSubmit);
+            SubmitCommand = new AsyncRelayCommand<bool?>(OnSubmit);
             AddItemCommand = new RelayCommand(OnAddItem);
             RemoveItemCommand = new RelayCommand<LineItemViewModel>(OnRemoveItem);
             CancelCommand = new RelayCommand(OnCancel);
@@ -191,13 +191,13 @@ namespace SimplyBudget.ViewModels
             }
         }
 
-        private async Task OnSubmit()
+        private async Task OnSubmit(bool? ignoreBudget)
         {
             var errors = await (SelectedType switch
             {
-                AddType.Transaction => TrySubmitTransaction(),
-                AddType.Income => TrySubmitIncome(),
-                AddType.Transfer => TrySubmitTransfer(),
+                AddType.Transaction => TrySubmitTransaction(ignoreBudget == true),
+                AddType.Income => TrySubmitIncome(ignoreBudget == true),
+                AddType.Transfer => TrySubmitTransfer(ignoreBudget == true),
                 _ => throw new InvalidOperationException()
             }).ToListAsync();
 
@@ -209,12 +209,9 @@ namespace SimplyBudget.ViewModels
             }
         }
 
-        private void UpdateRemaining()
-        {
-            RemainingAmount = TotalAmount - LineItems.Sum(x => x.Amount);
-        }
+        private void UpdateRemaining() => RemainingAmount = TotalAmount - LineItems.Sum(x => x.Amount);
 
-        private async IAsyncEnumerable<string> TrySubmitTransfer()
+        private async IAsyncEnumerable<string> TrySubmitTransfer(bool ignoreBudget)
         {
             if (Date is null)
             {
@@ -240,11 +237,11 @@ namespace SimplyBudget.ViewModels
                 yield break;
             }
 
-            await Context.AddTransfer(Description ?? "", Date.Value, TotalAmount,
+            await Context.AddTransfer(Description ?? "", Date.Value, ignoreBudget, TotalAmount,
                 items[0].SelectedCategory!, items[1].SelectedCategory!);
         }
 
-        private async IAsyncEnumerable<string> TrySubmitIncome()
+        private async IAsyncEnumerable<string> TrySubmitIncome(bool ignoreBudget)
         {
             if (Date is null)
             {
@@ -270,10 +267,10 @@ namespace SimplyBudget.ViewModels
                 yield break;
             }
 
-            await Context.AddIncome(Description ?? "", Date.Value, items.Select(x => (x.Amount, x.SelectedCategory!.ID)).ToArray());
+            await Context.AddIncome(Description ?? "", Date.Value, ignoreBudget, items.Select(x => (x.Amount, x.SelectedCategory!.ID)).ToArray());
         }
 
-        private async IAsyncEnumerable<string> TrySubmitTransaction()
+        private async IAsyncEnumerable<string> TrySubmitTransaction(bool ignoreBudget)
         {
             if (Date is null)
             {
@@ -288,7 +285,7 @@ namespace SimplyBudget.ViewModels
                 yield break;
             }
 
-            await Context.AddTransaction(Description ?? "", Date.Value, items.Select(vm => (vm.Amount, vm.SelectedCategory!.ID)).ToArray());
+            await Context.AddTransaction(Description ?? "", Date.Value, ignoreBudget, items.Select(vm => (vm.Amount, vm.SelectedCategory!.ID)).ToArray());
         }
 
         private IEnumerable<LineItemViewModel> GetValidLineItems()

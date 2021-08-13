@@ -53,6 +53,41 @@ namespace SimplyBudgetSharedTests.Data
         }
 
         [TestMethod]
+        public async Task AddIncomeItem_WithIgnoreBudget_UpdatesAllDetails()
+        {
+            //Arrange
+            var fixture = new BudgetDatabaseContext();
+
+            var category = new ExpenseCategory { CurrentBalance = 100 };
+            var now = DateTime.Now;
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.AddRange(category);
+                await context.SaveChangesAsync();
+            });
+
+            //Act
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                await context.AddIncome("Test", now, true, (50, category.ID));
+            });
+
+            //Assert
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                ExpenseCategoryItem? item = await context.ExpenseCategoryItems
+                    .Include(x => x.Details)
+                    .SingleAsync();
+                Assert.AreEqual(1, item.Details?.Count);
+                Assert.IsTrue(item.IgnoreBudget);
+
+                var cat1 = await context.ExpenseCategories.FindAsync(category.ID);
+                Assert.AreEqual(150, cat1.CurrentBalance);
+            });
+        }
+
+        [TestMethod]
         public async Task AddTransaction_UpdatesTotalAmount()
         {
             //Arrange
@@ -70,7 +105,7 @@ namespace SimplyBudgetSharedTests.Data
             //Act
             await fixture.PerformDatabaseOperation(async context =>
             {
-                await context.AddTransaction("transaction description", DateTime.Today, (80, category1.ID), (20, category2.ID));
+                await context.AddTransaction("transaction description", DateTime.Today, false, (80, category1.ID), (20, category2.ID));
             });
 
             //Assert
@@ -86,6 +121,40 @@ namespace SimplyBudgetSharedTests.Data
                 Assert.AreEqual(70, cat1.CurrentBalance);
                 var cat2 = await context.ExpenseCategories.FindAsync(category2.ID);
                 Assert.AreEqual(80, cat2.CurrentBalance);
+            });
+        }
+
+        [TestMethod]
+        public async Task AddTransaction_WithIgnoreBudget_UpdatesAllDetails()
+        {
+            //Arrange
+            var fixture = new BudgetDatabaseContext();
+
+            var category = new ExpenseCategory { CurrentBalance = 150 };
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.AddRange(category);
+                await context.SaveChangesAsync();
+            });
+
+            //Act
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                await context.AddTransaction("transaction description", DateTime.Today, true, (50, category.ID));
+            });
+
+            //Assert
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                var item = await context.ExpenseCategoryItems
+                    .Include(x => x.Details)
+                    .SingleOrDefaultAsync();
+                Assert.AreEqual(1, item.Details!.Count);
+                Assert.IsTrue(item.IgnoreBudget);
+
+                var cat1 = await context.ExpenseCategories.FindAsync(category.ID);
+                Assert.AreEqual(100, cat1.CurrentBalance);
             });
         }
 
@@ -132,6 +201,46 @@ namespace SimplyBudgetSharedTests.Data
                 Assert.AreEqual(50, transfer.Details?[1].Amount);
             });
         }
+
+        [TestMethod]
+        public async Task AddTransfer_WithIgnoreBudget_UpdatesAllDetails()
+        {
+            // Arrange
+            var fixture = new BudgetDatabaseContext();
+
+            var category1 = new ExpenseCategory { CurrentBalance = 150 };
+            var category2 = new ExpenseCategory { CurrentBalance = 150 };
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.AddRange(category1, category2);
+                await context.SaveChangesAsync();
+            });
+            var now = DateTime.Now;
+
+            //Act
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                await context.AddTransfer("Test", now, true, 50, category1, category2);
+            });
+
+            //Assert
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                category1 = await context.FindAsync<ExpenseCategory>(category1.ID);
+                category2 = await context.FindAsync<ExpenseCategory>(category2.ID);
+
+                Assert.AreEqual(100, category1.CurrentBalance);
+                Assert.AreEqual(200, category2.CurrentBalance);
+
+                var transfer = await context.ExpenseCategoryItems
+                    .Include(x => x.Details)
+                    .SingleAsync();
+
+                Assert.IsTrue(transfer.IgnoreBudget);
+            });
+        }
+
 
         [TestMethod]
         public async Task GetCurrentAmount_ReturnsAmountInAccount()
@@ -298,6 +407,36 @@ namespace SimplyBudgetSharedTests.Data
             await fixture.PerformDatabaseOperation(async context =>
             {
                 Assert.AreEqual(0, await context.GetRemainingBudgetAmount(category, now));
+            });
+        }
+
+        [TestMethod]
+        [Description("Issue 29")]
+        public async Task GetRemainingBudgetAmount_IgnoresNonBudgetItems()
+        {
+            // Arrange
+            var fixture = new BudgetDatabaseContext();
+
+            var category = new ExpenseCategory
+            {
+                CurrentBalance = 100,
+                BudgetedAmount = 50
+            };
+
+            var now = DateTime.Now;
+
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                context.AddRange(category);
+                await context.SaveChangesAsync();
+                var transaction = await context.AddTransaction("Test", DateTime.Today, false, (20, category.ID));
+                transaction.Details![0].IgnoreBudget = true;
+            });
+
+            //Act/Assert
+            await fixture.PerformDatabaseOperation(async context =>
+            {
+                Assert.AreEqual(50, await context.GetRemainingBudgetAmount(category, now));
             });
         }
     }

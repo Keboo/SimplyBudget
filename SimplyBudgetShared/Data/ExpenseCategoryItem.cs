@@ -32,5 +32,36 @@ namespace SimplyBudgetShared.Data
         public bool IsTransfer =>
             Details?.Count == 2 &&
             Details[0].Amount + Details[1].Amount == 0;
+
+        [NotMapped]
+        public bool? IgnoreBudget
+        {
+            get
+            {
+                bool? result = null;
+                foreach(var detail in Details ?? Enumerable.Empty<ExpenseCategoryItemDetail>())
+                {
+                    if (result is null)
+                    {
+                        result = detail.IgnoreBudget;
+                    }
+                    else if (result != detail.IgnoreBudget)
+                    {
+                        //Mismatching items, return null
+                        return null;
+                    }
+                }
+                return result;
+            }
+            set
+            {
+                if (value is null) throw new ArgumentNullException(nameof(value));
+
+                foreach(var detail in Details ?? Enumerable.Empty<ExpenseCategoryItemDetail>())
+                {
+                    detail.IgnoreBudget = value.Value;
+                }
+            }
+        }
     }
 }

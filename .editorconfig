@@ -2,3 +2,4 @@
 
 # IDE0011: Add braces
 csharp_prefer_braces = when_multiline
+csharp_style_expression_bodied_lambdas=when_on_single_line:silent

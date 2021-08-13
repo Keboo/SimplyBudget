@@ -15,6 +15,8 @@ namespace SimplyBudgetShared.Data
 
         public int Amount { get; set; }
 
+        public bool IgnoreBudget { get; set; }
+
         public async Task BeforeCreate(BudgetContext context)
         {
             var category = await context.FindAsync<ExpenseCategory>(ExpenseCategoryId);

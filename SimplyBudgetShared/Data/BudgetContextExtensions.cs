@@ -61,8 +61,21 @@ namespace SimplyBudgetShared.Data
         }
 
         public static async Task<ExpenseCategoryItem> AddTransfer(this BudgetContext context,
-            string description, DateTime date, int amount,
+            string description,
+            DateTime date,
+            int amount,
             ExpenseCategory fromCategory, ExpenseCategory toCategory)
+        {
+            return await context.AddTransfer(description, date, false, amount, fromCategory, toCategory);
+        }
+
+        public static async Task<ExpenseCategoryItem> AddTransfer(this BudgetContext context,
+            string description,
+            DateTime date,
+            bool ignoreBudget,
+            int amount,
+            ExpenseCategory fromCategory,
+            ExpenseCategory toCategory)
         {
             var item = new ExpenseCategoryItem
             {
@@ -80,7 +93,8 @@ namespace SimplyBudgetShared.Data
                         Amount = amount,
                         ExpenseCategoryId = toCategory.ID
                     }
-                }
+                },
+                IgnoreBudget = ignoreBudget //NB: Order matters here, must be after Details
             };
             context.ExpenseCategoryItems.Add(item);
 
@@ -89,8 +103,8 @@ namespace SimplyBudgetShared.Data
             return item;
         }
 
-        public static async Task AddIncome(this BudgetContext context,
-            string description, DateTime date,
+        public static async Task<ExpenseCategoryItem> AddIncome(this BudgetContext context,
+            string description, DateTime date, bool ignoreBudget,
             params (int Amount, int ExpenseCategory)[] items)
         {
             if (context is null)
@@ -109,14 +123,21 @@ namespace SimplyBudgetShared.Data
                         Amount = x.Amount,
                         ExpenseCategoryId = x.ExpenseCategory,
                     };
-                }).ToList()
+                }).ToList(),
+                IgnoreBudget = ignoreBudget //NB: Order matters here, must be after Details
             };
             context.ExpenseCategoryItems.Add(item);
             await context.SaveChangesAsync();
+            return item;
         }
 
+        public static async Task<ExpenseCategoryItem> AddIncome(this BudgetContext context,
+            string description, DateTime date,
+            params (int Amount, int ExpenseCategory)[] items) 
+            => await context.AddIncome(description, date, false, items);
+
         public static async Task<ExpenseCategoryItem> AddTransaction(this BudgetContext context,
-            string description, DateTime date, params (int amount, int expenseCategory)[] items)
+            string description, DateTime date, bool ignoreBudget, params (int amount, int expenseCategory)[] items)
         {
             var item = new ExpenseCategoryItem
             {
@@ -129,7 +150,8 @@ namespace SimplyBudgetShared.Data
                         Amount = -x.amount,
                         ExpenseCategoryId = x.expenseCategory,
                     };
-                }).ToList()
+                }).ToList(),
+                IgnoreBudget = ignoreBudget //NB: Order matters here, must be after Details
             };
 
             context.ExpenseCategoryItems.Add(item);
@@ -138,10 +160,19 @@ namespace SimplyBudgetShared.Data
         }
 
         public static async Task<ExpenseCategoryItem> AddTransaction(this BudgetContext context,
-            int expenseCategoryId,
-            int amount, string description, DateTime? date = null)
+            string description, DateTime date, params (int amount, int expenseCategory)[] items)
         {
-            return await AddTransaction(context, description, date ?? DateTime.Today, (amount, expenseCategoryId));
+            return await context.AddTransaction(description, date, false, items);
+        }
+
+        //TODO: the order of parameters here doesn't match the others.
+        public static async Task<ExpenseCategoryItem> AddTransaction(this BudgetContext context,
+            int expenseCategoryId,
+            int amount,
+            string description,
+            DateTime? date = null)
+        {
+            return await AddTransaction(context, description, date ?? DateTime.Today, false, (amount, expenseCategoryId));
         }
 
         public static async Task<IList<ExpenseCategoryItem>> GetTransfers(this BudgetContext context, ExpenseCategory expenseCategory, DateTime? queryStart = null, DateTime? queryEnd = null)
@@ -195,6 +226,7 @@ namespace SimplyBudgetShared.Data
                     .Where(x => x.ExpenseCategoryId == expenseCategory.ID)
                     .Where(x => x.Amount > 0)
                     .Where(x => x.ExpenseCategoryItem!.Date >= start && x.ExpenseCategoryItem.Date <= end)
+                    .Where(x => x.IgnoreBudget == false)
                     .SumAsync(x => x.Amount);
             int remaining = Math.Max(0, expenseCategory.BudgetedAmount - allocatedAmount);
             if (expenseCategory.Cap is int cap)

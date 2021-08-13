@@ -1,9 +1,11 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq.AutoMock;
 using SimplyBudget;
 using SimplyBudget.ViewModels;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
+using SimplyBudgetSharedTests.Data;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -204,6 +206,115 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             Assert.AreEqual(25_00, vm.LineItems[0].Amount);
             Assert.AreEqual(0, vm.LineItems[1].Amount);
             Assert.AreEqual(75_00, vm.RemainingAmount);
+        }
+
+        [TestMethod]
+        public async Task SubmitCommand_TransactionIgnoreBudget_CreatesTransaction()
+        {
+            var mocker = new AutoMocker().WithDefaults();
+            using var _ = mocker.WithDbScope();
+            using var __ = mocker.WithAutoDIResolver();
+            using var ___ = mocker.WithSynchonousTaskRunner();
+            var context = mocker.Get<BudgetContext>();
+
+            var category = new ExpenseCategory();
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+
+            var vm = mocker.CreateInstance<AddItemViewModel>();
+
+            var today = DateTime.Today;
+            vm.SelectedType = AddType.Transaction;
+            vm.Description = "Test description";
+            vm.Date = today;
+            vm.LineItems[0].Amount = 25_00;
+            vm.LineItems[0].SelectedCategory = category;
+
+            await vm.SubmitCommand.ExecuteAsync(true);
+
+            ExpenseCategoryItem transaction = await context.ExpenseCategoryItems.SingleAsync();
+
+            Assert.AreEqual("Test description", transaction.Description);
+            Assert.AreEqual(today, transaction.Date);
+            Assert.IsTrue(transaction.IgnoreBudget);
+            Assert.AreEqual(1, transaction.Details?.Count);
+            Assert.AreEqual(-25_00, transaction.Details![0].Amount);
+            Assert.AreEqual(category.ID, transaction.Details![0].ExpenseCategoryId);
+        }
+
+        [TestMethod]
+        public async Task SubmitCommand_IncomeIgnoreBudget_CreatesIncome()
+        {
+            var mocker = new AutoMocker().WithDefaults();
+            using var _ = mocker.WithDbScope();
+            using var __ = mocker.WithAutoDIResolver();
+            using var ___ = mocker.WithSynchonousTaskRunner();
+            var context = mocker.Get<BudgetContext>();
+
+            var category = new ExpenseCategory();
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+
+            var vm = mocker.CreateInstance<AddItemViewModel>();
+
+            var today = DateTime.Today;
+            vm.SelectedType = AddType.Income;
+            vm.Description = "Test description";
+            vm.Date = today;
+            vm.TotalAmount = 25_00;
+            vm.LineItems[0].Amount = 25_00;
+            vm.LineItems[0].SelectedCategory = category;
+
+            await vm.SubmitCommand.ExecuteAsync(true);
+
+            ExpenseCategoryItem income = await context.ExpenseCategoryItems.SingleAsync();
+
+            Assert.AreEqual("Test description", income.Description);
+            Assert.AreEqual(today, income.Date);
+            Assert.IsTrue(income.IgnoreBudget);
+            Assert.AreEqual(1, income.Details?.Count);
+            Assert.AreEqual(25_00, income.Details![0].Amount);
+            Assert.AreEqual(category.ID, income.Details![0].ExpenseCategoryId);
+        }
+
+        [TestMethod]
+        public async Task SubmitCommand_TransferIgnoreBudget_CreatesTransfer()
+        {
+            var mocker = new AutoMocker().WithDefaults();
+            using var _ = mocker.WithDbScope();
+            using var __ = mocker.WithAutoDIResolver();
+            using var ___ = mocker.WithSynchonousTaskRunner();
+            var context = mocker.Get<BudgetContext>();
+
+            var category1 = new ExpenseCategory();
+            var category2 = new ExpenseCategory();
+            context.ExpenseCategories.Add(category1);
+            context.ExpenseCategories.Add(category2);
+            await context.SaveChangesAsync();
+
+            var vm = mocker.CreateInstance<AddItemViewModel>();
+
+            var today = DateTime.Today;
+            vm.SelectedType = AddType.Transfer;
+            vm.Description = "Test description";
+            vm.Date = today;
+            vm.TotalAmount = 25_00;
+            vm.LineItems[0].SelectedCategory = category1;
+            vm.LineItems[1].SelectedCategory = category2;
+
+            await vm.SubmitCommand.ExecuteAsync(true);
+
+            ExpenseCategoryItem transfer = await context.ExpenseCategoryItems.SingleAsync();
+
+            Assert.IsTrue(transfer.IsTransfer);
+            Assert.AreEqual("Test description", transfer.Description);
+            Assert.AreEqual(today, transfer.Date);
+            Assert.IsTrue(transfer.IgnoreBudget);
+            Assert.AreEqual(2, transfer.Details?.Count);
+            Assert.AreEqual(-25_00, transfer.Details![0].Amount);
+            Assert.AreEqual(category1.ID, transfer.Details![0].ExpenseCategoryId);
+            Assert.AreEqual(25_00, transfer.Details![1].Amount);
+            Assert.AreEqual(category2.ID, transfer.Details![1].ExpenseCategoryId);
         }
     }
 }
