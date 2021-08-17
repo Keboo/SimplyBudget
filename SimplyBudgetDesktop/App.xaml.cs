@@ -23,7 +23,15 @@ namespace SimplyBudget
         protected override void OnStartup(StartupEventArgs e)
         {
 #if DEBUG
-            Settings.Default.StorageLocation = Path.GetFullPath(@".\Database");
+            try
+            {
+                _ = global::Windows.ApplicationModel.Package.Current;
+            }
+            catch (InvalidOperationException)
+            {
+                //This is throw when run outside of an MSIX deployment
+                Settings.Default.StorageLocation = Path.GetFullPath(@".\Database");
+            }
 #endif
             ShutdownOnConnectionStringChanged();
             MakeDataBackup();
@@ -56,12 +64,25 @@ namespace SimplyBudget
         private static void MakeDataBackup()
         {
             string backupsDirectory = Path.Combine(Settings.GetStorageDirectory(), "Backups");
-            DirectoryInfo backups = Directory.CreateDirectory(backupsDirectory);
+            DirectoryInfo backups;
+            try
+            {
+                backups = Directory.CreateDirectory(backupsDirectory);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                backupsDirectory = Path.Combine(Path.GetTempPath(), "SimplyBudget", "Backups");
+                backups = Directory.CreateDirectory(backupsDirectory);
+            }
             const int maxBackups = 30;
             var fileName = $"{DateTime.Now:yyyyMMddhhmmss}.db";
             try
             {
-                File.Copy(Settings.GetDatabasePath(), Path.Combine(backups.FullName, fileName));
+                string sourcePath = Settings.GetDatabasePath();
+                if (File.Exists(sourcePath))
+                {
+                    File.Copy(sourcePath, Path.Combine(backups.FullName, fileName));
+                }
             }
             catch (FileNotFoundException)
             { }

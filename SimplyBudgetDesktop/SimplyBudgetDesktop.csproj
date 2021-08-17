@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
+    <TargetFramework>net6.0-windows10.0.19041.0</TargetFramework>
     <LangVersion>9.0</LangVersion>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
@@ -11,6 +11,7 @@
     <StartupObject>SimplyBudget.App</StartupObject>
     <ApplicationIcon>Resources\Icon.ico</ApplicationIcon>
     <RuntimeIdentifiers>win-x86;win-x64</RuntimeIdentifiers>
+    <MinimumPlatformVersion>10.0.19041.0</MinimumPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>

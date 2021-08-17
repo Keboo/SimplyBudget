@@ -2,7 +2,9 @@
 using SimplyBudget.Messaging;
 using SimplyBudget.ViewModels;
 using SimplyBudgetShared.Data;
+using System;
 using System.Linq;
+using Windows.ApplicationModel;
 
 namespace SimplyBudget.Windows
 {
@@ -18,6 +20,19 @@ namespace SimplyBudget.Windows
             DataContext = viewModel;
             InitializeComponent();
             viewModel.Messenger.Register(this);
+
+            try
+            {
+                if (Package.Current?.Id?.Version is { } version)
+                {
+                    Title += $" - {version.Major}.{version.Minor}.{version.Revision}";
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                //This is throw when run outside of an MSIX deployment
+                Title += " - Local";
+            }
         }
 
         public void Receive(OpenHistory message)
