@@ -1,11 +1,12 @@
-﻿using SimplyBudgetShared.Data;
+﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
+using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using System;
 using System.Windows;
 
 namespace SimplyBudget.ViewModels
 {
-    public class ExpenseCategoryViewModel : Microsoft.Toolkit.Mvvm.ComponentModel.ObservableObject, IClipboardData
+    public class ExpenseCategoryViewModel : ObservableObject, IClipboardData
     {
         public static ExpenseCategoryViewModel Create(ExpenseCategory expenseCategory)
         {

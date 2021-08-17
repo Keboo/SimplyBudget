@@ -92,6 +92,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBox materialDesign:HintAssist.Hint="Name" 
                              materialDesign:HintAssist.IsFloating="True" 
@@ -149,15 +150,22 @@
                             <behaviors:SelectAllOnFocusBehavior />
                         </i:Interaction.Behaviors>
                     </TextBox>
+                    <ComboBox ItemsSource="{Binding Accounts}"
+                              SelectedItem="{Binding Account}"
+                              DisplayMemberPath="Name" 
+                              Grid.Column="4" 
+                              Margin="10,0"
+                              MinWidth="80"
+                              VerticalAlignment="Bottom"/>
 
                     <Button Content="{materialDesign:PackIcon Kind=Delete}" 
-                            Grid.Column="4" 
+                            Grid.Column="5" 
                             Style="{StaticResource MaterialDesignFlatButton}"
                             Command="{x:Static ApplicationCommands.Delete}"
                             CommandParameter="{Binding}"/>
 
                     <Button Content="{materialDesign:PackIcon Kind=ContentSave}" 
-                            Grid.Column="5" 
+                            Grid.Column="6" 
                             Style="{StaticResource MaterialDesignFlatButton}"
                             Command="{x:Static ApplicationCommands.Save}"
                             CommandParameter="{Binding}"/>

@@ -1,6 +1,5 @@
 ﻿using SimplyBudgetShared.Utilities;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Threading.Tasks;
 
 namespace SimplyBudgetShared.Data
 {

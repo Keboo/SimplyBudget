@@ -127,12 +127,14 @@ namespace SimplyBudget.ViewModels
                 dbCategory.BudgetedPercentage = !category.EditIsAmountType ? category.EditAmount : 0;
                 dbCategory.BudgetedAmount = category.EditIsAmountType ? category.EditAmount : 0;
                 dbCategory.Cap = category.EditingCap;
+                dbCategory.AccountID = category.Account?.ID;
                 await Context.SaveChangesAsync();
                 category.Name = dbCategory.Name;
                 category.CategoryName = dbCategory.CategoryName;
                 category.BudgetedAmount = dbCategory.BudgetedAmount;
                 category.BudgetedPercentage = dbCategory.BudgetedPercentage;
                 category.Cap = dbCategory.Cap;
+                category.Account = dbCategory.Account;
                 return true;
             }
             return false;

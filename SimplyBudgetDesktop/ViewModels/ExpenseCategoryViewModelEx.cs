@@ -1,6 +1,8 @@
-﻿using SimplyBudgetShared.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -24,7 +26,11 @@ namespace SimplyBudget.ViewModels
 
             var categoryItems = await context.GetCategoryItemDetails(expenseCategory, month.StartOfMonth(), month.EndOfMonth());
 
-            var rv = new ExpenseCategoryViewModelEx(expenseCategory.ID);
+            var rv = new ExpenseCategoryViewModelEx(expenseCategory.ID)
+            {
+                Accounts = await context.Accounts.ToListAsync(),
+                Account = expenseCategory.Account ?? await context.Accounts.FirstOrDefaultAsync(x => x.ID == expenseCategory.AccountID)
+            };
             SetProperties(expenseCategory, rv);
             rv.MonthlyExpenses = categoryItems
                 .Where(x => x.IgnoreBudget == false)
@@ -42,6 +48,15 @@ namespace SimplyBudget.ViewModels
         private ExpenseCategoryViewModelEx(int expenseCategoryID)
             : base(expenseCategoryID)
         { }
+
+        public IList<Account>? Accounts { get; init; }
+
+        private Account? _account;
+        public Account? Account
+        {
+            get => _account;
+            set => SetProperty(ref _account, value);
+        }
 
         private int _monthlyExpenses;
         public int MonthlyExpenses
