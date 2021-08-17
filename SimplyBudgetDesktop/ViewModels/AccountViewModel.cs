@@ -11,17 +11,12 @@ namespace SimplyBudget.ViewModels
             if (account is null) throw new ArgumentNullException(nameof(account));
             var currentAmount = await context.GetCurrentAmount(account.ID);
             return new AccountViewModel(account.ID)
-                       {
-                           Name = account.Name,
-                           LastValidatedDate = account.ValidatedDate,
-                           IsDefault = account.IsDefault,
-                           CurrentAmount = currentAmount
-                       };
-        }
-
-        public static AccountViewModel CreateEmpty()
-        {
-            return new AccountViewModel(0);
+            {
+                Name = account.Name,
+                LastValidatedDate = account.ValidatedDate,
+                IsDefault = account.IsDefault,
+                CurrentAmount = currentAmount
+            };
         }
 
         private AccountViewModel(int accountID)

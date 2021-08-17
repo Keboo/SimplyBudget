@@ -22,6 +22,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="../Resources/DrawerHost.CustomTemplate.xaml" />
                 <ResourceDictionary Source="../Views/AddItemView.xaml" />
+                <ResourceDictionary Source="../Views/AccountsView.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
@@ -31,113 +32,119 @@
         <KeyBinding Gesture="Ctrl+R" Command="{Binding ShowAddCommand}" CommandParameter="{x:Static vm:AddType.Transfer}"/>
         <KeyBinding Gesture="Ctrl+I" Command="{Binding ShowAddCommand}" CommandParameter="{x:Static vm:AddType.Income}"/>
     </Window.InputBindings>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-        <materialDesign:DrawerHost>
-            <materialDesign:DrawerHost.Style>
-                <Style TargetType="materialDesign:DrawerHost" BasedOn="{StaticResource MaterialDesignPushDrawerHost}">
-                    <Setter Property="IsRightDrawerOpen" Value="True" />
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding AddItem}" Value="{x:Null}">
-                            <Setter Property="IsRightDrawerOpen" Value="False" />
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </materialDesign:DrawerHost.Style>
-            <materialDesign:DrawerHost.RightDrawerContent>
-                <ContentControl Content="{Binding AddItem}" />
-            </materialDesign:DrawerHost.RightDrawerContent>
+    <materialDesign:DialogHost CloseOnClickAway="True">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <materialDesign:DrawerHost>
+                <materialDesign:DrawerHost.Style>
+                    <Style TargetType="materialDesign:DrawerHost" BasedOn="{StaticResource MaterialDesignPushDrawerHost}">
+                        <Setter Property="IsRightDrawerOpen" Value="True" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding AddItem}" Value="{x:Null}">
+                                <Setter Property="IsRightDrawerOpen" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </materialDesign:DrawerHost.Style>
+                <materialDesign:DrawerHost.RightDrawerContent>
+                    <ContentControl Content="{Binding AddItem}" />
+                </materialDesign:DrawerHost.RightDrawerContent>
 
-            <TabControl Style="{StaticResource MaterialDesignNavigatilRailTabControl}"
+                <TabControl Style="{StaticResource MaterialDesignNavigatilRailTabControl}"
                         materialDesign:ColorZoneAssist.Mode="PrimaryMid"
                         x:Name="TabControl">
-                <materialDesign:NavigationRailAssist.FloatingContent>
-                    <Button Style="{StaticResource MaterialDesignFloatingActionAccentButton}"
+                    <materialDesign:NavigationRailAssist.FloatingContent>
+                        <Button Style="{StaticResource MaterialDesignFloatingActionAccentButton}"
                             Margin="0,8" Command="{Binding ShowAddCommand}">
-                        <materialDesign:PackIcon Kind="Plus" Width="30" Height="30" />
-                    </Button>
-                </materialDesign:NavigationRailAssist.FloatingContent>
+                            <materialDesign:PackIcon Kind="Plus" Width="30" Height="30" />
+                        </Button>
+                    </materialDesign:NavigationRailAssist.FloatingContent>
 
-                <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
-                    <TabItem.Header>
-                        <materialDesign:PackIcon Kind="FormatListBulletedSquare" Width="30" Height="30" />
-                    </TabItem.Header>
-                    <views:BudgetView DataContext="{Binding Budget}" />
-                </TabItem>
+                    <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
+                        <TabItem.Header>
+                            <materialDesign:PackIcon Kind="FormatListBulletedSquare" Width="30" Height="30" />
+                        </TabItem.Header>
+                        <views:BudgetView DataContext="{Binding Budget}" />
+                    </TabItem>
 
-                <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
-                    <TabItem.Header>
-                        <materialDesign:PackIcon Kind="History" Width="30" Height="30" />
-                    </TabItem.Header>
+                    <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
+                        <TabItem.Header>
+                            <materialDesign:PackIcon Kind="History" Width="30" Height="30" />
+                        </TabItem.Header>
 
-                    <views:HistoryView DataContext="{Binding History}" />
-                </TabItem>
+                        <views:HistoryView DataContext="{Binding History}" />
+                    </TabItem>
 
-                <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
-                    <TabItem.Header>
-                        <materialDesign:PackIcon Kind="Import" Width="30" Height="30" />
-                    </TabItem.Header>
+                    <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
+                        <TabItem.Header>
+                            <materialDesign:PackIcon Kind="Import" Width="30" Height="30" />
+                        </TabItem.Header>
 
-                    <views:ImportView DataContext="{Binding Import}" />
-                </TabItem>
+                        <views:ImportView DataContext="{Binding Import}" />
+                    </TabItem>
 
-                <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
-                    <TabItem.Header>
-                        <materialDesign:PackIcon Kind="Settings" Width="30" Height="30" />
-                    </TabItem.Header>
+                    <TabItem Style="{StaticResource MaterialDesignNavigationRailTabItem}">
+                        <TabItem.Header>
+                            <materialDesign:PackIcon Kind="Settings" Width="30" Height="30" />
+                        </TabItem.Header>
 
-                    <views:SettingsView DataContext="{Binding Settings}" />
-                </TabItem>
-            </TabControl>
-        </materialDesign:DrawerHost>
+                        <views:SettingsView DataContext="{Binding Settings}" />
+                    </TabItem>
+                </TabControl>
+            </materialDesign:DrawerHost>
 
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-            <ComboBox HorizontalAlignment="Right" 
+                <ComboBox HorizontalAlignment="Right" 
                       SelectedItem="{Binding SelectedMonth}"
                       ItemsSource="{Binding PastMonths}"
                       materialDesign:ComboBoxAssist.ClassicMode="True"
                       materialDesign:ComboBoxAssist.ShowSelectedItem="True">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding StringFormat='MMMM yyyy'}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding StringFormat='MMMM yyyy'}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
 
-            <TextBlock Text="{Binding Budget.TotalBudget, StringFormat='Total Monthly Budget: {0}', Converter={valueConverter:CurrencyValueConverter}}" 
+                <TextBlock Text="{Binding Budget.TotalBudget, StringFormat='Total Monthly Budget: {0}', Converter={valueConverter:CurrencyValueConverter}}" 
                        VerticalAlignment="Center"
                        Grid.Column="2"/>
 
-            <ItemsControl DataContext="{Binding Accounts}"
-                          ItemsSource="{Binding AccountsView}"
-                          HorizontalAlignment="Right"
-                          VerticalAlignment="Center"
-                          Grid.Column="3">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
+                <ItemsControl DataContext="{Binding Accounts}"
+                              ItemsSource="{Binding AccountsView}"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Center"
+                              Cursor="Hand"
+                              Grid.Column="3">
+                    <ItemsControl.InputBindings>
+                        <MouseBinding MouseAction="LeftClick" Command="{Binding ShowAccountsCommand}" />
+                    </ItemsControl.InputBindings>
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
 
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type vm:AccountViewModel}">
-                        <TextBlock Margin="10,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:AccountViewModel}">
+                            <TextBlock Margin="10,0">
                             <Run Text="{Binding Name}" />
                             <Run Text="{Binding CurrentAmount, Converter={valueConverter:CurrencyValueConverter}}" />
-                        </TextBlock>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                            </TextBlock>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
         </Grid>
-    </Grid>
+    </materialDesign:DialogHost>
 </Window>

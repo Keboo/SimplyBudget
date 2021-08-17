@@ -1,9 +1,12 @@
-﻿using Microsoft.Toolkit.Mvvm.Messaging;
+﻿using MaterialDesignThemes.Wpf;
+using Microsoft.Toolkit.Mvvm.Input;
+using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Events;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
 {
@@ -12,7 +15,9 @@ namespace SimplyBudget.ViewModels
         IRecipient<AccountEvent>, 
         IRecipient<ExpenseCategoryEvent>
     {
-        public BudgetContext Context { get; }
+        public ICommand ShowAccountsCommand { get; }
+        
+        private BudgetContext Context { get; }
 
         public ICollectionView AccountsView => _view;
 
@@ -21,6 +26,7 @@ namespace SimplyBudget.ViewModels
             Context = context ?? throw new ArgumentNullException(nameof(context));
             messenger.Register<AccountEvent>(this);
             messenger.Register<ExpenseCategoryEvent>(this);
+            ShowAccountsCommand = new RelayCommand(OnShowAccounts);
         }
 
         protected override async IAsyncEnumerable<AccountViewModel> GetItems()
@@ -34,5 +40,10 @@ namespace SimplyBudget.ViewModels
         public void Receive(AccountEvent message) => LoadItemsAsync();
 
         public void Receive(ExpenseCategoryEvent message) => LoadItemsAsync();
+
+        private async void OnShowAccounts()
+        {
+            await DialogHost.Show(this);
+        }
     }
 }
