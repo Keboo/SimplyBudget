@@ -1,7 +1,5 @@
 ﻿using CsvHelper.Configuration.Attributes;
 using SimplyBudgetShared.Data;
-using System;
-using System.IO;
 
 namespace SimplyBudgetShared.Import
 {

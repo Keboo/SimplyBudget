@@ -39,12 +39,12 @@ namespace SimplyBudget.Views
             switch (e.PropertyName)
             {
                 case nameof(ImportViewModel.SelectedItems):
-                    IList<ImportRecord>? selectedItems = ViewModel.SelectedItems;
-                    if (!selectedItems?.SequenceEqual(DataGrid.SelectedItems.OfType<ImportRecord>()) != true)
+                    IList<ImportItem>? selectedItems = ViewModel.SelectedItems;
+                    if (!selectedItems?.SequenceEqual(DataGrid.SelectedItems.OfType<ImportItem>()) != true)
                     {
                         DataGrid.SelectionChanged -= DataGrid_SelectionChanged;
                         DataGrid.SelectedItems.Clear();
-                        foreach (var item in selectedItems ?? Enumerable.Empty<ImportRecord>())
+                        foreach (var item in selectedItems ?? Enumerable.Empty<ImportItem>())
                         {
                             DataGrid.SelectedItems.Add(item);
                         }
@@ -56,7 +56,7 @@ namespace SimplyBudget.Views
 
         private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            ViewModel.SelectedItems = DataGrid.SelectedItems.OfType<ImportRecord>().ToArray();
+            ViewModel.SelectedItems = DataGrid.SelectedItems.OfType<ImportItem>().ToArray();
         }
 
         private void OnDrop(object sender, DragEventArgs e)

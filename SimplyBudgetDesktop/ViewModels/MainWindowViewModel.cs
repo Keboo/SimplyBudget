@@ -78,7 +78,7 @@ namespace SimplyBudget.ViewModels
             Budget = new(context, messenger, currentMonth);
             History = new(context, messenger, currentMonth);
             Accounts = new(context, messenger);
-            Import = new(messenger);
+            Import = new(context, messenger);
             Settings = new(messenger);
 
             Budget.LoadItemsAsync();

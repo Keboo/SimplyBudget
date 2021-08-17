@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading.Tasks;
 
 namespace SimplyBudgetShared.Data
 {
@@ -19,7 +18,8 @@ namespace SimplyBudgetShared.Data
 
         public async Task BeforeCreate(BudgetContext context)
         {
-            var category = await context.FindAsync<ExpenseCategory>(ExpenseCategoryId);
+            var category = await context.FindAsync<ExpenseCategory>(ExpenseCategory?.ID ?? ExpenseCategoryId)
+                ?? throw new InvalidOperationException("Could not find expense category for item");
             category.CurrentBalance += Amount;
         }
 

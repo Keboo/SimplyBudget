@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Mvvm.ComponentModel;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
@@ -11,24 +12,23 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Data;
-using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
 {
     public class ImportViewModel : ObservableObject
     {
-        public ICommand ImportCommand { get; }
+        public IAsyncRelayCommand ImportCommand { get; }
         public IRelayCommand AddItemCommand { get; }
         public IRelayCommand DeleteCommand { get; }
         public IRelayCommand MarkAsDoneCommand { get; }
         public IRelayCommand UnmarkAsDoneCommand { get; }
-
+        public BudgetContext Context { get; }
         public IMessenger Messenger { get; }
 
-        public ObservableCollection<ImportRecord> ImportedRecords { get; } = new();
+        public ObservableCollection<ImportItem> ImportedRecords { get; } = new();
 
         private bool _IsViewingCsv = true;
         public bool IsViewingCsv
@@ -46,8 +46,8 @@ namespace SimplyBudget.ViewModels
 
         public int SelectedAmount => SelectedItems?.Sum(x => x.Item.Details?.Sum(x => x.Amount) ?? 0) ?? 0;
 
-        private IList<ImportRecord>? _SelectedItems;
-        public IList<ImportRecord>? SelectedItems
+        private IList<ImportItem>? _SelectedItems;
+        public IList<ImportItem>? SelectedItems
         {
             get => _SelectedItems;
             set
@@ -63,15 +63,16 @@ namespace SimplyBudget.ViewModels
             }
         }
 
-        public ImportViewModel(IMessenger messenger)
+        public ImportViewModel(BudgetContext context, IMessenger messenger)
         {
-            ImportCommand = new RelayCommand(OnImport);
+            ImportCommand = new AsyncRelayCommand(OnImport);
             AddItemCommand = new RelayCommand(OnAddItem, CanAddItem);
             DeleteCommand = new RelayCommand(OnDeleteItem, () => SelectedItems?.Any() == true);
             MarkAsDoneCommand = new RelayCommand(OnMarkAsDone, () => SelectedItems?.Any(x => x.IsDone == false) == true);
             UnmarkAsDoneCommand = new RelayCommand(OnUnmarkAsDone, () => SelectedItems?.Any(x => x.IsDone) == true);
 
             BindingOperations.EnableCollectionSynchronization(ImportedRecords, new object());
+            Context = context ?? throw new ArgumentNullException(nameof(context));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
         }
 
@@ -105,17 +106,28 @@ namespace SimplyBudget.ViewModels
             });
         }
 
-        private async void OnImport()
+        private async Task OnImport()
         {
             if (string.IsNullOrWhiteSpace(CsvData)) return;
+
+            await Task.Yield();
 
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(CsvData));
             IImport importer = new StcuCsvImport(stream);
 
-            List<ImportRecord> records = new();
+            List<ImportItem> records = new();
             await foreach (ExpenseCategoryItem item in importer.GetItems())
             {
-                records.Add(new ImportRecord(item));
+                bool? isDone = null;
+                foreach(var detail in item.Details ?? Enumerable.Empty<ExpenseCategoryItemDetail>())
+                {
+                    isDone = await Context.ExpenseCategoryItemDetails
+                        .Include(x => x.ExpenseCategoryItem)
+                        .Where(x => x.ExpenseCategoryItem!.Date == item.Date)
+                        .AnyAsync(x => x.Amount == detail.Amount);
+                    if (isDone == false) break;
+                }
+                records.Add(new ImportItem(item) { IsDone = isDone ?? false });
             }
 
             ImportedRecords.Clear();
@@ -129,7 +141,7 @@ namespace SimplyBudget.ViewModels
 
         private void OnDeleteItem()
         {
-            foreach (var item in SelectedItems?.ToList() ?? Enumerable.Empty<ImportRecord>())
+            foreach (var item in SelectedItems?.ToList() ?? Enumerable.Empty<ImportItem>())
             {
                 ImportedRecords.Remove(item);
             }
@@ -137,7 +149,7 @@ namespace SimplyBudget.ViewModels
 
         private void OnMarkAsDone()
         {
-            foreach (var item in SelectedItems ?? Enumerable.Empty<ImportRecord>())
+            foreach (var item in SelectedItems ?? Enumerable.Empty<ImportItem>())
             {
                 item.IsDone = true;
             }
@@ -145,17 +157,17 @@ namespace SimplyBudget.ViewModels
 
         private void OnUnmarkAsDone()
         {
-            foreach (var item in SelectedItems ?? Enumerable.Empty<ImportRecord>())
+            foreach (var item in SelectedItems ?? Enumerable.Empty<ImportItem>())
             {
                 item.IsDone = false;
             }
         }
     }
 
-    public class ImportRecord : INotifyPropertyChanged
+    public class ImportItem : ObservableObject
     {
         public ExpenseCategoryItem Item { get; }
-        public ImportRecord(ExpenseCategoryItem item)
+        public ImportItem(ExpenseCategoryItem item)
         {
             Item = item;
         }
@@ -172,18 +184,5 @@ namespace SimplyBudget.ViewModels
             get => _isDone;
             set => SetProperty(ref _isDone, value);
         }
-
-        private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
-        {
-            if (!EqualityComparer<T>.Default.Equals(field, value))
-            {
-                field = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-                return true;
-            }
-            return false;
-        }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
     }
 }
