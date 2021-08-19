@@ -25,7 +25,7 @@ namespace SimplyBudget.Windows
             {
                 if (Package.Current?.Id?.Version is { } version)
                 {
-                    Title += $" - {version.Major}.{version.Minor}.{version.Revision}";
+                    Title += $" - {version.Major}.{version.Minor}.{version.Build}";
                 }
             }
             catch (InvalidOperationException)
