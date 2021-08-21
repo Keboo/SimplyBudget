@@ -45,7 +45,8 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             var category1 = new ExpenseCategory { Name = "Foo" };
             var category2 = new ExpenseCategory { Name = "Bar" };
             var category3 = new ExpenseCategory { Name = "Cat" };
-            context.AddRange(category1, category2, category3);
+            var category4 = new ExpenseCategory { Name = "Hidden", IsHidden = true };
+            context.AddRange(category1, category2, category3, category4);
             await context.SaveChangesAsync();
 
             var vm = mocker.CreateInstance<AddItemViewModel>();

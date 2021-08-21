@@ -120,18 +120,18 @@ namespace SimplyBudget.ViewModels
 
         public IList<ExpenseCategory> ExpenseCategories { get; }
 
-        private static int _count;
-        ~AddItemViewModel()
-        {
-            Interlocked.Decrement(ref _count); 
-        }
+        //private static int _count;
+        //~AddItemViewModel()
+        //{
+        //    Interlocked.Decrement(ref _count); 
+        //}
 
         public AddItemViewModel(BudgetContext context, ICurrentMonth currentMonth, IMessenger messenger)
         {
-            if (Interlocked.Increment(ref _count) > 1)
-            {
+            //if (Interlocked.Increment(ref _count) > 1)
+            //{
 
-            }
+            //}
 
             Context = context ?? throw new ArgumentNullException(nameof(context));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
@@ -146,7 +146,9 @@ namespace SimplyBudget.ViewModels
             CancelCommand = new RelayCommand(OnCancel);
             AutoAllocateCommand = new RelayCommand(OnAutoAllocate);
 
-            ExpenseCategories = context.ExpenseCategories.OrderBy(x => x.Name).ToList();
+            ExpenseCategories = context.ExpenseCategories
+                .Where(x => x.IsHidden == false)
+                .OrderBy(x => x.Name).ToList();
 
             SelectedType = AddType.Transaction;
 
