@@ -127,6 +127,20 @@ namespace SimplyBudget.ViewModels
                         .AnyAsync(x => x.Amount == detail.Amount);
                     if (isDone == false) break;
                 }
+                if (isDone != true)
+                {
+                    decimal? expectedTotal = item.Details?.Sum(x => x.Amount);
+                    await foreach(var eci in Context.ExpenseCategoryItems
+                        .Include(x => x.Details)
+                        .Where(x => x.Date == item.Date)
+                        .AsAsyncEnumerable())
+                    {
+                        if (eci.Details?.Sum(d => d.Amount) == expectedTotal)
+                        {
+                            isDone = true;
+                        }
+                    }
+                }
                 records.Add(new ImportItem(item) { IsDone = isDone ?? false });
             }
 

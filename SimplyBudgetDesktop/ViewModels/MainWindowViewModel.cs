@@ -101,7 +101,7 @@ namespace SimplyBudget.ViewModels
             }
         }
 
-        public void Receive(DoneAddingItemMessage message)
+        public void Receive(DoneAddingItemMessage _)
             => AddItem = null;
 
         public void Receive(CurrentMonthChanged message)

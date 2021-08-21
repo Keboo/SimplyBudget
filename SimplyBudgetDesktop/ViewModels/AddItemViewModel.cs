@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -119,8 +120,19 @@ namespace SimplyBudget.ViewModels
 
         public IList<ExpenseCategory> ExpenseCategories { get; }
 
+        private static int _count;
+        ~AddItemViewModel()
+        {
+            Interlocked.Decrement(ref _count); 
+        }
+
         public AddItemViewModel(BudgetContext context, ICurrentMonth currentMonth, IMessenger messenger)
         {
+            if (Interlocked.Increment(ref _count) > 1)
+            {
+
+            }
+
             Context = context ?? throw new ArgumentNullException(nameof(context));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
