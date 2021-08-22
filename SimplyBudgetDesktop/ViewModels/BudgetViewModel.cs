@@ -14,21 +14,21 @@ using System.Windows.Input;
 namespace SimplyBudget.ViewModels
 {
     public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelEx>,
-        IRecipient<ExpenseCategoryEvent>,
+        IRecipient<DatabaseEvent<ExpenseCategory>>,
         IRecipient<CurrentMonthChanged>
     {
-        private BudgetContext Context { get; }
+        private Func<BudgetContext> ContextFactory { get; }
 
         public IMessenger Messenger { get; }
         public ICurrentMonth CurrentMonth { get; }
         public ICommand DoSearchCommand { get; }
 
-        public BudgetViewModel(BudgetContext context, IMessenger messenger, ICurrentMonth currentMonth)
+        public BudgetViewModel(Func<BudgetContext> contextFactory, IMessenger messenger, ICurrentMonth currentMonth)
         {
-            Context = context ?? throw new ArgumentNullException(nameof(context));
+            ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
-            messenger.Register<ExpenseCategoryEvent>(this);
+            messenger.Register<DatabaseEvent<ExpenseCategory>>(this);
             messenger.Register<CurrentMonthChanged>(this);
             DoSearchCommand = new RelayCommand(OnDoSearch);
             GroupItems = true;
@@ -90,15 +90,16 @@ namespace SimplyBudget.ViewModels
 
         protected override async IAsyncEnumerable<ExpenseCategoryViewModelEx> GetItems()
         {
-            await foreach (var category in Context.ExpenseCategories)
+            using var context = ContextFactory();
+            await foreach (var category in context.ExpenseCategories)
             {
-                yield return await ExpenseCategoryViewModelEx.Create(Context, category, CurrentMonth.CurrenMonth);
+                yield return await ExpenseCategoryViewModelEx.Create(context, category, CurrentMonth.CurrenMonth);
             }
         }
 
-        public async void Receive(ExpenseCategoryEvent @event)
+        public async void Receive(DatabaseEvent<ExpenseCategory> @event)
         {
-            var expenseCategory = @event.ExpenseCategory;
+            var expenseCategory = @event.Item;
 
             switch (@event.Type)
             {
@@ -120,7 +121,8 @@ namespace SimplyBudget.ViewModels
 
         public async Task<bool> SaveChanges(ExpenseCategoryViewModelEx category)
         {
-            if (Context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
+            using var context = ContextFactory();
+            if (context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
             {
                 dbCategory.Name = category.EditingName;
                 dbCategory.CategoryName = category.EditingCategory;
@@ -128,7 +130,7 @@ namespace SimplyBudget.ViewModels
                 dbCategory.BudgetedAmount = category.EditIsAmountType ? category.EditAmount : 0;
                 dbCategory.Cap = category.EditingCap;
                 dbCategory.AccountID = category.Account?.ID;
-                await Context.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 category.Name = dbCategory.Name;
                 category.CategoryName = dbCategory.CategoryName;
                 category.BudgetedAmount = dbCategory.BudgetedAmount;
@@ -142,20 +144,23 @@ namespace SimplyBudget.ViewModels
 
         public async Task Delete(ExpenseCategoryViewModelEx category)
         {
-            if (Context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
+            using var context = ContextFactory();
+            if (context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
             {
                 dbCategory.IsHidden = true;
-                await Context.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 category.IsHidden = true;
             }
         }
 
         public async Task Undelete(ExpenseCategoryViewModelEx category)
         {
-            if (Context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
+            using var context = ContextFactory();
+
+            if (context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
             {
                 dbCategory.IsHidden = false;
-                await Context.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 category.IsHidden = false;
             }
         }

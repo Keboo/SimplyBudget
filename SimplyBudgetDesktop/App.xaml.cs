@@ -3,7 +3,6 @@ using AutoDI;
 using MaterialDesignThemes.Wpf;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Toolkit.Mvvm.Messaging;
-using SimplyBudget.Messaging;
 using SimplyBudget.Properties;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Threading;
@@ -18,7 +17,7 @@ namespace SimplyBudget
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>
-    public partial class App : IRecipient<StorageLocationChanged>
+    public partial class App
     {
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -33,7 +32,7 @@ namespace SimplyBudget
                 Settings.Default.StorageLocation = Path.GetFullPath(@".\Database");
             }
 #endif
-            ShutdownOnConnectionStringChanged();
+            //ShutdownOnConnectionStringChanged();
             MakeDataBackup();
             using (var context = new BudgetContext(Settings.GetDatabaseConnectionString()))
             {
@@ -57,8 +56,8 @@ namespace SimplyBudget
 #endif
             base.OnStartup(e);
 
-            void ShutdownOnConnectionStringChanged([Dependency] IMessenger? messenger = null)
-                => messenger!.Register(this);
+            //void ShutdownOnConnectionStringChanged([Dependency] IMessenger? messenger = null)
+            //    => messenger!.Register(this);
         }
 
         private static void MakeDataBackup()
@@ -102,7 +101,5 @@ namespace SimplyBudget
                 }
             }
         }
-
-        public void Receive(StorageLocationChanged message) => Shutdown();
     }
 }

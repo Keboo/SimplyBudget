@@ -133,7 +133,7 @@ namespace SimplyBudgetSharedTests.Data
         public async Task CreateAccount_PostsNotification()
         {
             //Arrange
-            var watcher = new MessageWatcher<AccountEvent>();
+            var watcher = new MessageWatcher<DatabaseEvent<Account>>();
             var fixture = new BudgetDatabaseContext();
             fixture.Messenger.Register(watcher);
 
@@ -147,8 +147,8 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Assert
-            AccountEvent? message = watcher.Messages.Last();
-            Assert.AreEqual(account1.ID, message.Account.ID);
+            DatabaseEvent<Account>? message = watcher.Messages.Last();
+            Assert.AreEqual(account1.ID, message.Item.ID);
             Assert.AreEqual(EventType.Created, message.Type);
         }
 
@@ -157,7 +157,7 @@ namespace SimplyBudgetSharedTests.Data
         {
             //Arrange
             var messenger = new WeakReferenceMessenger();
-            var watcher = new MessageWatcher<AccountEvent>();
+            var watcher = new MessageWatcher<DatabaseEvent<Account>>();
             var fixture = new BudgetDatabaseContext();
             fixture.Messenger.Register(watcher);
 
@@ -178,8 +178,8 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Assert
-            AccountEvent? message = watcher.Messages.Last();
-            Assert.AreEqual(account1.ID, message.Account.ID);
+            DatabaseEvent<Account>? message = watcher.Messages.Last();
+            Assert.AreEqual(account1.ID, message.Item.ID);
             Assert.AreEqual(EventType.Updated, message.Type);
         }
 
@@ -188,7 +188,7 @@ namespace SimplyBudgetSharedTests.Data
         {
             //Arrange
             var messenger = new WeakReferenceMessenger();
-            var watcher = new MessageWatcher<AccountEvent>();
+            var watcher = new MessageWatcher<DatabaseEvent<Account>>();
             var fixture = new BudgetDatabaseContext();
             fixture.Messenger.Register(watcher);
 
@@ -209,8 +209,8 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Assert
-            AccountEvent? message = watcher.Messages.Last();
-            Assert.AreEqual(account1.ID, message.Account.ID);
+            DatabaseEvent<Account>? message = watcher.Messages.Last();
+            Assert.AreEqual(account1.ID, message.Item.ID);
             Assert.AreEqual(EventType.Deleted, message.Type);
         }
     }

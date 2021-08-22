@@ -16,7 +16,7 @@ namespace SimplyBudgetDesktop.Tests
 {
     public static class AutoMockerExtensions
     {
-        public static IDisposable WithSynchonousTaskRunner(this AutoMocker mocker)
+        public static IDisposable WithSynchonousTaskRunner(this AutoMocker _)
         {
             TaskEx.Default = new SynchonousTaskScheduler();
             return new Disposable(() => TaskEx.Default = null!);
@@ -121,6 +121,10 @@ namespace SimplyBudgetDesktop.Tests
                 if (context.RequestType == typeof(BudgetContext))
                 {
                     context.Value = Context;
+                }
+                else if (context.RequestType == typeof(Func<BudgetContext>))
+                {
+                    context.Value = new Func<BudgetContext>(() => Context!);
                 }
             }
 

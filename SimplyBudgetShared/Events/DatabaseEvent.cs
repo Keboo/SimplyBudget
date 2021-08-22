@@ -1,5 +1,4 @@
 ﻿using SimplyBudgetShared.Data;
-using System;
 
 namespace SimplyBudgetShared.Events
 {

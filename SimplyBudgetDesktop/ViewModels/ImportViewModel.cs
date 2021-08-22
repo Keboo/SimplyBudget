@@ -25,7 +25,7 @@ namespace SimplyBudget.ViewModels
         public IRelayCommand DeleteCommand { get; }
         public IRelayCommand MarkAsDoneCommand { get; }
         public IRelayCommand UnmarkAsDoneCommand { get; }
-        public BudgetContext Context { get; }
+        public Func<BudgetContext> ContextFactory { get; }
         public IMessenger Messenger { get; }
 
         public ObservableCollection<ImportItem> ImportedRecords { get; } = new();
@@ -63,7 +63,7 @@ namespace SimplyBudget.ViewModels
             }
         }
 
-        public ImportViewModel(BudgetContext context, IMessenger messenger)
+        public ImportViewModel(Func<BudgetContext> contextFactory, IMessenger messenger)
         {
             ImportCommand = new AsyncRelayCommand(OnImport);
             AddItemCommand = new RelayCommand(OnAddItem, CanAddItem);
@@ -72,7 +72,7 @@ namespace SimplyBudget.ViewModels
             UnmarkAsDoneCommand = new RelayCommand(OnUnmarkAsDone, () => SelectedItems?.Any(x => x.IsDone) == true);
 
             BindingOperations.EnableCollectionSynchronization(ImportedRecords, new object());
-            Context = context ?? throw new ArgumentNullException(nameof(context));
+            ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
         }
 
@@ -114,6 +114,7 @@ namespace SimplyBudget.ViewModels
 
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(CsvData));
             IImport importer = new StcuCsvImport(stream);
+            using var context = ContextFactory();
 
             List<ImportItem> records = new();
             await foreach (ExpenseCategoryItem item in importer.GetItems())
@@ -121,7 +122,7 @@ namespace SimplyBudget.ViewModels
                 bool? isDone = null;
                 foreach(var detail in item.Details ?? Enumerable.Empty<ExpenseCategoryItemDetail>())
                 {
-                    isDone = await Context.ExpenseCategoryItemDetails
+                    isDone = await context.ExpenseCategoryItemDetails
                         .Include(x => x.ExpenseCategoryItem)
                         .Where(x => x.ExpenseCategoryItem!.Date == item.Date)
                         .AnyAsync(x => x.Amount == detail.Amount);
@@ -130,7 +131,7 @@ namespace SimplyBudget.ViewModels
                 if (isDone != true)
                 {
                     decimal? expectedTotal = item.Details?.Sum(x => x.Amount);
-                    await foreach(var eci in Context.ExpenseCategoryItems
+                    await foreach(var eci in context.ExpenseCategoryItems
                         .Include(x => x.Details)
                         .Where(x => x.Date == item.Date)
                         .AsAsyncEnumerable())

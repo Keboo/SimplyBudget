@@ -88,7 +88,7 @@ namespace SimplyBudgetShared.Data
                 switch (entity.Entity)
                 {
                     case ExpenseCategory category:
-                        notifications.Add(() => Messenger.Send(new ExpenseCategoryEvent(this, category, type)));
+                        notifications.Add(() => Messenger.Send(new DatabaseEvent<ExpenseCategory>(this, category, type)));
                         break;
                     case ExpenseCategoryItem item:
                         notifications.Add(() => Messenger.Send(new DatabaseEvent<ExpenseCategoryItem>(this, item, type)));
@@ -97,7 +97,7 @@ namespace SimplyBudgetShared.Data
                         notifications.Add(() => Messenger.Send(new DatabaseEvent<ExpenseCategoryItemDetail>(this, detailItem, type)));
                         break;
                     case Account account:
-                        notifications.Add(() => Messenger.Send(new AccountEvent(this, account, type)));
+                        notifications.Add(() => Messenger.Send(new DatabaseEvent<Account>(this, account, type)));
                         break;
                 }
             }

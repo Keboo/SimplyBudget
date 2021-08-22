@@ -62,23 +62,23 @@ namespace SimplyBudget.ViewModels
         public ICommand ShowAddCommand { get; }
         public IMessenger Messenger { get; }
         public ICurrentMonth CurrentMonth { get; }
-        private BudgetContext Context { get; }
+        private Func<BudgetContext> ContextFactory { get; }
 
         public MainWindowViewModel(
             [Dependency] IMessenger? messenger = null,
             [Dependency] ICurrentMonth? currentMonth = null,
-            [Dependency] BudgetContext? context = null)
+            [Dependency] Func<BudgetContext>? contextFactory = null)
         {
             ShowAddCommand = new RelayCommand<AddType?>(OnShowAdd);
 
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
-            Context = context ?? throw new ArgumentNullException(nameof(context));
+            ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
 
-            Budget = new(context, messenger, currentMonth);
-            History = new(context, messenger, currentMonth);
-            Accounts = new(context, messenger);
-            Import = new(context, messenger);
+            Budget = new(contextFactory, messenger, currentMonth);
+            History = new(contextFactory, messenger, currentMonth);
+            Accounts = new(contextFactory, messenger);
+            Import = new(contextFactory, messenger);
             Settings = new(messenger);
 
             Budget.LoadItemsAsync();
@@ -94,7 +94,7 @@ namespace SimplyBudget.ViewModels
 
         private void OnShowAdd(AddType? addType)
         {
-            AddItem = new AddItemViewModel(Context, CurrentMonth, Messenger);
+            AddItem = new AddItemViewModel(ContextFactory, CurrentMonth, Messenger);
             if (addType != null && addType != AddType.None)
             {
                 AddItem.SelectedType = addType.Value;
@@ -109,7 +109,7 @@ namespace SimplyBudget.ViewModels
 
         public void Receive(AddItemMessage message)
         {
-            AddItem = new AddItemViewModel(Context, CurrentMonth, Messenger)
+            AddItem = new AddItemViewModel(ContextFactory, CurrentMonth, Messenger)
             {
                 SelectedType = message.Type,
                 Date = message.Date,

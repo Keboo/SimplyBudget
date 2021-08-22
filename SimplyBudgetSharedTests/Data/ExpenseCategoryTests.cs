@@ -397,7 +397,7 @@ namespace SimplyBudgetSharedTests.Data
         {
             //Arrange
             var messenger = new WeakReferenceMessenger();
-            var watcher = new MessageWatcher<ExpenseCategoryEvent>();
+            var watcher = new MessageWatcher<DatabaseEvent<ExpenseCategory>>();
             var fixture = new BudgetDatabaseContext();
             fixture.Messenger.Register(watcher);
 
@@ -421,8 +421,8 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Assert
-            ExpenseCategoryEvent? message = watcher.Messages.Last();
-            Assert.AreEqual(expenseCategory.ID, message.ExpenseCategory.ID);
+            DatabaseEvent<ExpenseCategory>? message = watcher.Messages.Last();
+            Assert.AreEqual(expenseCategory.ID, message.Item.ID);
             Assert.AreEqual(EventType.Deleted, message.Type);
         }
 
@@ -431,7 +431,7 @@ namespace SimplyBudgetSharedTests.Data
         {
             //Arrange
             var messenger = new WeakReferenceMessenger();
-            var watcher = new MessageWatcher<ExpenseCategoryEvent>();
+            var watcher = new MessageWatcher<DatabaseEvent<ExpenseCategory>>();
             var fixture = new BudgetDatabaseContext();
             fixture.Messenger.Register(watcher);
 
@@ -448,8 +448,8 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Assert
-            ExpenseCategoryEvent? message = watcher.Messages.Last();
-            Assert.AreEqual(expenseCategory.ID, message.ExpenseCategory.ID);
+            DatabaseEvent<ExpenseCategory>? message = watcher.Messages.Last();
+            Assert.AreEqual(expenseCategory.ID, message.Item.ID);
             Assert.AreEqual(EventType.Created, message.Type);
         }
 
@@ -458,7 +458,7 @@ namespace SimplyBudgetSharedTests.Data
         {
             //Arrange
             var messenger = new WeakReferenceMessenger();
-            var watcher = new MessageWatcher<ExpenseCategoryEvent>();
+            var watcher = new MessageWatcher<DatabaseEvent<ExpenseCategory>>();
             var fixture = new BudgetDatabaseContext();
             fixture.Messenger.Register(watcher);
 
@@ -482,8 +482,8 @@ namespace SimplyBudgetSharedTests.Data
             });
 
             //Assert
-            ExpenseCategoryEvent? message = watcher.Messages.Last();
-            Assert.AreEqual(expenseCategory.ID, message.ExpenseCategory.ID);
+            DatabaseEvent<ExpenseCategory>? message = watcher.Messages.Last();
+            Assert.AreEqual(expenseCategory.ID, message.Item.ID);
             Assert.AreEqual(EventType.Updated, message.Type);
         }
 

@@ -25,7 +25,7 @@ namespace SimplyBudget.ViewModels
         public ICommand RemoveItemCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand AutoAllocateCommand { get; }
-        public BudgetContext Context { get; }
+        public Func<BudgetContext> ContextFactory { get; }
         public ICurrentMonth CurrentMonth { get; }
         public IMessenger Messenger { get; }
 
@@ -126,14 +126,14 @@ namespace SimplyBudget.ViewModels
         //    Interlocked.Decrement(ref _count); 
         //}
 
-        public AddItemViewModel(BudgetContext context, ICurrentMonth currentMonth, IMessenger messenger)
+        public AddItemViewModel(Func<BudgetContext> contextFacory, ICurrentMonth currentMonth, IMessenger messenger)
         {
             //if (Interlocked.Increment(ref _count) > 1)
             //{
 
             //}
 
-            Context = context ?? throw new ArgumentNullException(nameof(context));
+            ContextFactory = contextFacory ?? throw new ArgumentNullException(nameof(contextFacory));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
 
@@ -146,6 +146,7 @@ namespace SimplyBudget.ViewModels
             CancelCommand = new RelayCommand(OnCancel);
             AutoAllocateCommand = new RelayCommand(OnAutoAllocate);
 
+            using var context = contextFacory();
             ExpenseCategories = context.ExpenseCategories
                 .Where(x => x.IsHidden == false)
                 .OrderBy(x => x.Name).ToList();
@@ -190,9 +191,10 @@ namespace SimplyBudget.ViewModels
 
         private async void LoadDesiredAmounts()
         {
+            using var context = ContextFactory();
             foreach (var lineItem in LineItems.Where(x => x.SelectedCategory is not null))
             {
-                var desiredAmount = await Context.GetRemainingBudgetAmount(lineItem.SelectedCategory!, CurrentMonth.CurrenMonth);
+                var desiredAmount = await context.GetRemainingBudgetAmount(lineItem.SelectedCategory!, CurrentMonth.CurrenMonth);
                 lineItem.DesiredAmount = desiredAmount;
                 lineItem.SetAmountCallback = x =>
                 {
@@ -251,7 +253,8 @@ namespace SimplyBudget.ViewModels
                 yield break;
             }
 
-            await Context.AddTransfer(Description ?? "", Date.Value, ignoreBudget, TotalAmount,
+            using var context = ContextFactory();
+            await context.AddTransfer(Description ?? "", Date.Value, ignoreBudget, TotalAmount,
                 items[0].SelectedCategory!, items[1].SelectedCategory!);
         }
 
@@ -281,7 +284,8 @@ namespace SimplyBudget.ViewModels
                 yield break;
             }
 
-            await Context.AddIncome(Description ?? "", Date.Value, ignoreBudget, items.Select(x => (x.Amount, x.SelectedCategory!.ID)).ToArray());
+            using var context = ContextFactory();
+            await context.AddIncome(Description ?? "", Date.Value, ignoreBudget, items.Select(x => (x.Amount, x.SelectedCategory!.ID)).ToArray());
         }
 
         private async IAsyncEnumerable<string> TrySubmitTransaction(bool ignoreBudget)
@@ -299,7 +303,8 @@ namespace SimplyBudget.ViewModels
                 yield break;
             }
 
-            await Context.AddTransaction(Description ?? "", Date.Value, ignoreBudget, items.Select(vm => (vm.Amount, vm.SelectedCategory!.ID)).ToArray());
+            using var context = ContextFactory();
+            await context.AddTransaction(Description ?? "", Date.Value, ignoreBudget, items.Select(vm => (vm.Amount, vm.SelectedCategory!.ID)).ToArray());
         }
 
         private IEnumerable<LineItemViewModel> GetValidLineItems()
