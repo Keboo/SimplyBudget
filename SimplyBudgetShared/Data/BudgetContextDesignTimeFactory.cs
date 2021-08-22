@@ -4,7 +4,7 @@ using Microsoft.Toolkit.Mvvm.Messaging;
 
 namespace SimplyBudgetShared.Data
 {
-    public class BudgetContextFactory : IDesignTimeDbContextFactory<BudgetContext>
+    public class BudgetContextDesignTimeFactory : IDesignTimeDbContextFactory<BudgetContext>
     {
         public BudgetContext CreateDbContext(string[] args)
         {
