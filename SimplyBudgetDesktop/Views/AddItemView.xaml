@@ -126,7 +126,7 @@
             <system:Boolean x:Key="BoolFalse">False</system:Boolean>
         </DataTemplate.Resources>
         
-        <Grid MinWidth="300" Margin="10">
+        <Grid Width="320" Margin="10">
             <Grid.InputBindings>
                 <KeyBinding Key="Escape" Command="{Binding CancelCommand}"/>
                 <KeyBinding Gesture="Ctrl+T" Command="{Binding AddItemCommand}" />
@@ -178,7 +178,6 @@
                          materialDesign:HintAssist.Hint="Description"
                          TextWrapping="Wrap" 
                          HorizontalContentAlignment="Left"
-                         MaxWidth="300"
                          SpellCheck.IsEnabled="True">
                     <i:Interaction.Behaviors>
                         <behaviors:FocusOnVisibleBehavior />
