@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq.AutoMock;
 using SimplyBudget.ViewModels;
 using SimplyBudgetShared.Data;
+using SimplyBudgetSharedTests;
 using System.Threading.Tasks;
 
 namespace SimplyBudgetDesktop.Tests.ViewModels
@@ -20,7 +21,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             using var _ = mocker.WithDbScope();
 
             var vm = mocker.CreateInstance<BudgetViewModel>();
-            var expenseCategory = await ExpenseCategoryViewModelEx.Create(mocker.Get<BudgetContext>(), new ExpenseCategory { ID = 42 });
+            var expenseCategory = await ExpenseCategoryViewModelEx.Create(mocker.Get<Func<BudgetContext>>(), new ExpenseCategory { ID = 42 });
 
             bool result = await vm.SaveChanges(expenseCategory);
 
@@ -31,8 +32,8 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SaveChanges_WithFoundCategory_UpdatesBudgettedAmount()
         {
             AutoMocker mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.WithDbScope();
-            var context = mocker.Get<BudgetContext>();
+            using var factory = mocker.WithDbScope();
+            using var context = factory.Create();
             context.ExpenseCategories.Add(new ExpenseCategory
             {
                 ID = 42,
@@ -43,7 +44,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             await context.SaveChangesAsync();
 
             var vm = mocker.CreateInstance<BudgetViewModel>();
-            var expenseCategory = await ExpenseCategoryViewModelEx.Create(context, new ExpenseCategory { ID = 42 });
+            var expenseCategory = await ExpenseCategoryViewModelEx.Create(mocker.Get<Func<BudgetContext>>(), new ExpenseCategory { ID = 42 });
             expenseCategory.EditingCategory = "CategoryNameChanged";
             expenseCategory.EditingName = "NameChanged";
             expenseCategory.EditAmount = 120;
@@ -52,7 +53,8 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             bool result = await vm.SaveChanges(expenseCategory);
 
             Assert.IsTrue(result);
-            var existing = await context.ExpenseCategories.FindAsync(42);
+            using var verificationContext = factory.Create();
+            var existing = await verificationContext.ExpenseCategories.FindAsync(42);
             Assert.AreEqual("CategoryNameChanged", existing.CategoryName);
             Assert.AreEqual("NameChanged", existing.Name);
             Assert.AreEqual(120, existing.BudgetedAmount);
@@ -63,8 +65,8 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SaveChanges_WithFoundCategory_UpdatesBudgettedPercentage()
         {
             AutoMocker mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.WithDbScope();
-            var context = mocker.Get<BudgetContext>();
+            using var factory = mocker.WithDbScope();
+            using var context = factory.Create();
             context.ExpenseCategories.Add(new ExpenseCategory
             {
                 ID = 42,
@@ -75,7 +77,7 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             await context.SaveChangesAsync();
 
             var vm = mocker.CreateInstance<BudgetViewModel>();
-            var expenseCategory = await ExpenseCategoryViewModelEx.Create(context, new ExpenseCategory { ID = 42 });
+            var expenseCategory = await ExpenseCategoryViewModelEx.Create(mocker.Get<Func<BudgetContext>>(), new ExpenseCategory { ID = 42 });
             expenseCategory.EditingCategory = "CategoryNameChanged";
             expenseCategory.EditingName = "NameChanged";
             expenseCategory.EditAmount = 10;
@@ -84,7 +86,8 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
             bool result = await vm.SaveChanges(expenseCategory);
 
             Assert.IsTrue(result);
-            var existing = await context.ExpenseCategories.FindAsync(42);
+            using var verificationContext = factory.Create();
+            var existing = await verificationContext.ExpenseCategories.FindAsync(42);
             Assert.AreEqual("CategoryNameChanged", existing.CategoryName);
             Assert.AreEqual("NameChanged", existing.Name);
             Assert.AreEqual(0, existing.BudgetedAmount);

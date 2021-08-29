@@ -1,12 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq.AutoMock;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Events;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace SimplyBudgetSharedTests.Data
 {
@@ -17,51 +14,42 @@ namespace SimplyBudgetSharedTests.Data
         public async Task AddTransactionWithoutDate_CreatesTransaction()
         {
             //Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             const string description = "Test Description";
             const int amount = 100;
-            var category = new ExpenseCategory 
+            var category = new ExpenseCategory
             {
                 Account = new Account()
             };
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.Add(category);
-                await context.SaveChangesAsync();
-            });
+            using var setupContext = factory.Create();
+            setupContext.ExpenseCategories.Add(category);
+            await setupContext.SaveChangesAsync();
 
             //Act
-            ExpenseCategoryItem? transaction = null;
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                transaction = await context.AddTransaction(category.ID, amount, description);
-            });
+            using var actContext = factory.Create();
+            ExpenseCategoryItem transaction = await actContext.AddTransaction(category.ID, amount, description);
 
             //Assert
-            Assert.IsNotNull(transaction);
-            
-            await fixture.PerformDatabaseOperation(context =>
-            {
-                var foundTransaction = context.ExpenseCategoryItems
-                    .Include(x => x.Details)
-                    .Single(x => x.ID == transaction!.ID);
-                Assert.AreEqual(description, foundTransaction.Description);
+            using var assertContext = factory.Create();
+            var foundTransaction = assertContext.ExpenseCategoryItems
+                .Include(x => x.Details)
+                .Single(x => x.ID == transaction!.ID);
+            Assert.AreEqual(description, foundTransaction.Description);
 
-                Assert.AreEqual(1, foundTransaction.Details?.Count);
-                Assert.AreEqual(-amount, foundTransaction.Details?[0].Amount);
-                Assert.AreEqual(category.ID, foundTransaction.Details?[0].ExpenseCategoryId);
-
-                return Task.CompletedTask;
-            });
+            Assert.AreEqual(1, foundTransaction.Details?.Count);
+            Assert.AreEqual(-amount, foundTransaction.Details?[0].Amount);
+            Assert.AreEqual(category.ID, foundTransaction.Details?[0].ExpenseCategoryId);
         }
 
         [TestMethod]
         public async Task AddTransactionWithDate_CreatesTransaction()
         {
             //Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             const string description = "Test Description";
             const int amount = 100;
@@ -71,146 +59,110 @@ namespace SimplyBudgetSharedTests.Data
                 Account = new Account()
             };
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.Add(category);
-                await context.SaveChangesAsync();
-            });
+            using var setupContext = factory.Create();
+            setupContext.ExpenseCategories.Add(category);
+            await setupContext.SaveChangesAsync();
 
             //Act
-            ExpenseCategoryItem? transaction = null;
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                transaction = await context.AddTransaction(category.ID, amount, description, transactionDate);
-            });
+            using var actContext = factory.Create();
+            ExpenseCategoryItem transaction = await actContext.AddTransaction(category.ID, amount, description, transactionDate);
 
             //Assert
-            Assert.IsNotNull(transaction);
+            using var assertContext = factory.Create();
+            var foundTransaction = await assertContext.ExpenseCategoryItems
+                .Include(x => x.Details)
+                .SingleAsync(x => x.ID == transaction!.ID);
+            Assert.AreEqual(description, foundTransaction.Description);
+            Assert.AreEqual(transactionDate.Date, foundTransaction.Date);
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                var foundTransaction = await context.ExpenseCategoryItems
-                    .Include(x => x.Details)
-                    .SingleAsync(x => x.ID == transaction!.ID);
-                Assert.AreEqual(description, foundTransaction.Description);
-                Assert.AreEqual(transactionDate.Date, foundTransaction.Date);
-
-                var foundTransactionItem = foundTransaction.Details!.Single();
-                Assert.AreEqual(-amount, foundTransactionItem.Amount);
-                Assert.AreEqual(category.ID, foundTransactionItem.ExpenseCategoryId);
-            });
+            var foundTransactionItem = foundTransaction.Details!.Single();
+            Assert.AreEqual(-amount, foundTransactionItem.Amount);
+            Assert.AreEqual(category.ID, foundTransactionItem.ExpenseCategoryId);
         }
 
         [TestMethod]
         public async Task GetTransfersWithoutDateRange_ReturnsTransfersForCategory()
         {
             //Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             var account = new Account();
             var category1 = new ExpenseCategory { Account = account };
             var category2 = new ExpenseCategory { Account = account };
             var category3 = new ExpenseCategory { Account = account };
 
-            ExpenseCategoryItem? transfer1 = null;
-            ExpenseCategoryItem? transfer2 = null;
-            ExpenseCategoryItem? transfer3 = null;
+            using var setupContext = factory.Create();
+            setupContext.ExpenseCategories.AddRange(category1, category2, category3);
+            await setupContext.SaveChangesAsync();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.AddRange(category1, category2, category3);
-                await context.SaveChangesAsync();
-
-                transfer1 = await context.AddTransfer("", DateTime.Now, 10, category1, category2);
-                transfer2 = await context.AddTransfer("", DateTime.Now, 10, category2, category3);
-                transfer3 = await context.AddTransfer("", DateTime.Now, 10, category3, category1);
-            });
+            ExpenseCategoryItem transfer1 = await setupContext.AddTransfer("", DateTime.Now, 10, category1, category2);
+            ExpenseCategoryItem transfer2 = await setupContext.AddTransfer("", DateTime.Now, 10, category2, category3);
+            ExpenseCategoryItem transfer3 = await setupContext.AddTransfer("", DateTime.Now, 10, category3, category1);
 
             //Act
-            IList<ExpenseCategoryItem>? transfers = null;
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                transfers = await context.GetTransfers(category2);
-            });
+            using var actContext = factory.Create();
+            IList<ExpenseCategoryItem> transfers = await actContext.GetTransfers(category2);
 
             //Assert
-            Assert.IsNotNull(transfers);
-            CollectionAssert.AreEquivalent(new[] { transfer1?.ID, transfer2?.ID }, transfers.Select(x => x.ID).ToList());
+            CollectionAssert.AreEquivalent(new[] { transfer1.ID, transfer2.ID }, transfers.Select(x => x.ID).ToList());
         }
 
         [TestMethod]
         public async Task GetTransfersWithDateRange_ReturnsTransfersForCategory()
         {
             //Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             var account = new Account();
             var category1 = new ExpenseCategory { Account = account };
             var category2 = new ExpenseCategory { Account = account };
 
             var now = DateTime.Now;
-            ExpenseCategoryItem? transfer1 = null;
-            ExpenseCategoryItem? transfer2 = null;
-            ExpenseCategoryItem? transfer3 = null;
+            using var setupContext = factory.Create();
+            setupContext.ExpenseCategories.AddRange(category1, category2);
+            await setupContext.SaveChangesAsync();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.AddRange(category1, category2);
-                await context.SaveChangesAsync();
+            ExpenseCategoryItem transfer1 = await setupContext.AddTransfer("", now.AddDays(-3).Date, 10, category1, category2);
+            ExpenseCategoryItem transfer2 = await setupContext.AddTransfer("", now.AddDays(-2).Date, 10, category2, category1);
+            ExpenseCategoryItem transfer3 = await setupContext.AddTransfer("", now.AddDays(-1).Date, 10, category1, category2);
 
-                transfer1 = await context.AddTransfer("", now.AddDays(-3).Date, 10, category1, category2);
-                transfer2 = await context.AddTransfer("", now.AddDays(-2).Date, 10, category2, category1);
-                transfer3 = await context.AddTransfer("", now.AddDays(-1).Date, 10, category1, category2);
-
-                await context.SaveChangesAsync();
-            });
+            await setupContext.SaveChangesAsync();
 
             //Act
-            IList<ExpenseCategoryItem>? transfers = null;
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                transfers = await context.GetTransfers(category2, now.AddDays(-2).Date, now);
-            });
+            using var actContext = factory.Create();
+            IList<ExpenseCategoryItem> transfers = await actContext.GetTransfers(category2, now.AddDays(-2).Date, now);
 
             //Assert
-            Assert.IsNotNull(transfers);
-            CollectionAssert.AreEquivalent(new[] { transfer2?.ID, transfer3?.ID }, transfers.Select(x => x.ID).ToList());
+            CollectionAssert.AreEquivalent(new[] { transfer2.ID, transfer3.ID }, transfers.Select(x => x.ID).ToList());
         }
 
         [TestMethod]
         public async Task GetTransactionItemsWithoutDateRange_ReturnsTransactionItems()
         {
             // Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             var account = new Account();
             var category1 = new ExpenseCategory { Account = account };
             var category2 = new ExpenseCategory { Account = account };
 
-            ExpenseCategoryItem? transaction1 = null;
-            ExpenseCategoryItem? transaction2 = null;
-            ExpenseCategoryItem? transaction3 = null;
+            using var setupContext = factory.Create();
+            setupContext.ExpenseCategories.AddRange(category1, category2);
+            await setupContext.SaveChangesAsync();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.AddRange(category1, category2);
-                await context.SaveChangesAsync();
-
-                transaction1 = await context.AddTransaction(category1.ID, 100, "Transaction 1");
-                transaction2 = await context.AddTransaction(category2.ID, 200, "Transaction 2");
-                transaction3 = await context.AddTransaction(category1.ID, 300, "Transaction 3");
-            });
+            ExpenseCategoryItem transaction1 = await setupContext.AddTransaction(category1.ID, 100, "Transaction 1");
+            ExpenseCategoryItem transaction2 = await setupContext.AddTransaction(category2.ID, 200, "Transaction 2");
+            ExpenseCategoryItem transaction3 = await setupContext.AddTransaction(category1.ID, 300, "Transaction 3");
 
             //Act
-            IList<ExpenseCategoryItemDetail>? transactionItems = null;
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                transactionItems = await context.GetCategoryItemDetails(category1);
-            });
+            using var actContext = factory.Create();
+            IList<ExpenseCategoryItemDetail> transactionItems = await actContext.GetCategoryItemDetails(category1);
 
             //Assert
-            Assert.IsNotNull(transactionItems);
-            Assert.AreEqual(2, transactionItems!.Count);
+            Assert.AreEqual(2, transactionItems.Count);
 
             Assert.AreEqual(-100, transactionItems[0].Amount);
             Assert.AreEqual("Transaction 1", transactionItems[0].ExpenseCategoryItem?.Description);
@@ -223,37 +175,27 @@ namespace SimplyBudgetSharedTests.Data
         public async Task GetTransactionItemsWithDateRange_ReturnsTransactionItems()
         {
             // Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             var account = new Account();
             var category1 = new ExpenseCategory { Account = account };
 
             DateTime now = DateTime.Now;
-            ExpenseCategoryItem? transaction1 = null;
-            ExpenseCategoryItem? transaction2 = null;
-            ExpenseCategoryItem? transaction3 = null;
+            using var setupContext = factory.Create();
+            setupContext.ExpenseCategories.AddRange(category1);
+            await setupContext.SaveChangesAsync();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.AddRange(category1);
-                await context.SaveChangesAsync();
-
-                transaction1 = await context.AddTransaction(category1.ID, 100, "Transaction 1", now.AddDays(-1).Date);
-                transaction2 = await context.AddTransaction(category1.ID, 200, "Transaction 2", now.AddDays(-2).Date);
-                transaction3 = await context.AddTransaction(category1.ID, 300, "Transaction 3", now.AddDays(-3).Date);
-
-            });
+            ExpenseCategoryItem transaction1 = await setupContext.AddTransaction(category1.ID, 100, "Transaction 1", now.AddDays(-1).Date);
+            ExpenseCategoryItem transaction2 = await setupContext.AddTransaction(category1.ID, 200, "Transaction 2", now.AddDays(-2).Date);
+            ExpenseCategoryItem transaction3 = await setupContext.AddTransaction(category1.ID, 300, "Transaction 3", now.AddDays(-3).Date);
 
             //Act
-            IList<ExpenseCategoryItemDetail>? transactionItems = null;
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                transactionItems = await context.GetCategoryItemDetails(category1, now.AddDays(-2).Date, now);
-            });
+            using var actContext = factory.Create();
+            IList<ExpenseCategoryItemDetail> transactionItems = await actContext.GetCategoryItemDetails(category1, now.AddDays(-2).Date, now);
 
             //Assert
-            Assert.IsNotNull(transactionItems);
-            Assert.AreEqual(2, transactionItems!.Count);
+            Assert.AreEqual(2, transactionItems.Count);
 
             Assert.AreEqual(-100, transactionItems[0].Amount);
             Assert.AreEqual("Transaction 1", transactionItems[0].ExpenseCategoryItem?.Description);
@@ -266,29 +208,25 @@ namespace SimplyBudgetSharedTests.Data
         public async Task GetIncomeItems_WithoutDateRange_ReturnsIncomeItems()
         {
             // Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             var account = new Account();
             var category1 = new ExpenseCategory { Account = account };
 
             DateTime now = DateTime.Now;
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.AddRange(category1);
-                await context.SaveChangesAsync();
-                
-                await context.AddIncome("Income description", now.AddDays(-1), 
-                    (100, category1.ID), 
-                    (200, category1.ID));
-            });
+            using var setupContext = factory.Create();
+            setupContext.ExpenseCategories.AddRange(category1);
+            await setupContext.SaveChangesAsync();
+
+            await setupContext.AddIncome("Income description", now.AddDays(-1),
+                (100, category1.ID),
+                (200, category1.ID));
 
             //Act
-            IList<ExpenseCategoryItemDetail>? incomeItems = null;
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                incomeItems = await context.GetCategoryItemDetails(category1);
-            });
+            using var actContext = factory.Create();
+            IList<ExpenseCategoryItemDetail>? incomeItems = await actContext.GetCategoryItemDetails(category1);
 
             //Assert
             Assert.IsNotNull(incomeItems);
@@ -305,28 +243,23 @@ namespace SimplyBudgetSharedTests.Data
         public async Task GetIncomeItems_WithDateRange_ReturnsIncomeItems()
         {
             // Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             var account = new Account();
             var category1 = new ExpenseCategory { Account = account };
 
             DateTime now = DateTime.Today;
+            using var setupContext = factory.Create();
+            setupContext.ExpenseCategories.AddRange(category1);
+            await setupContext.SaveChangesAsync();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.AddRange(category1);
-                await context.SaveChangesAsync();
-                
-                await context.AddIncome("Income 1 description", now.AddDays(-1), (100, category1.ID), (200, category1.ID));
-                await context.AddIncome("Income 2 description", now.AddDays(-2), (200, category1.ID), (300, category1.ID));
-            });
+            await setupContext.AddIncome("Income 1 description", now.AddDays(-1), (100, category1.ID), (200, category1.ID));
+            await setupContext.AddIncome("Income 2 description", now.AddDays(-2), (200, category1.ID), (300, category1.ID));
 
             //Act
-            IList<ExpenseCategoryItemDetail>? incomeItems = null;
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                incomeItems = await context.GetCategoryItemDetails(category1, now.AddDays(-3), now.AddDays(-2));
-            });
+            using var actContext = factory.Create();
+            IList<ExpenseCategoryItemDetail> incomeItems = await actContext.GetCategoryItemDetails(category1, now.AddDays(-3), now.AddDays(-2));
 
             //Assert
             Assert.IsNotNull(incomeItems);
@@ -342,54 +275,46 @@ namespace SimplyBudgetSharedTests.Data
         public async Task CreateExpenseCategory_WithoutAccount_SetsAccountToDefaultAccount()
         {
             // Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             var account = new Account();
             var category = new ExpenseCategory();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Accounts.Add(account);
-                await context.SaveChangesAsync();
-                await context.SetAsDefaultAsync(account);
-            });
+            using var setupContext = factory.Create();
+            setupContext.Accounts.Add(account);
+            await setupContext.SaveChangesAsync();
+            await setupContext.SetAsDefaultAsync(account);
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.Add(category);
-                await context.SaveChangesAsync();
-            });
+            using var actContext = factory.Create();
+            actContext.ExpenseCategories.Add(category);
+            await actContext.SaveChangesAsync();
 
             //Assert
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                var expenseCategory = await context.ExpenseCategories.FindAsync(category.ID);
-                Assert.AreEqual(account.ID, expenseCategory.AccountID);
-            });
+            using var assertContext = factory.Create();
+            var expenseCategory = await assertContext.ExpenseCategories.FindAsync(category.ID);
+            Assert.AreEqual(account.ID, expenseCategory.AccountID);
         }
 
         [TestMethod]
         public async Task CreateExpenseCategory_AllowsNullDefaultAccount()
         {
             // Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             var category = new ExpenseCategory();
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.Add(category);
-                await context.SaveChangesAsync();
-            });
+            using var setupContext = factory.Create();
+            setupContext.ExpenseCategories.Add(category);
+            await setupContext.SaveChangesAsync();
 
             //Assert
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                var expenseCategory = await context.ExpenseCategories.FindAsync(category.ID);
-                Assert.AreEqual(null, expenseCategory.AccountID);
-            });
+            using var assertContext = factory.Create();
+            var expenseCategory = await assertContext.ExpenseCategories.FindAsync(category.ID);
+            Assert.AreEqual(null, expenseCategory.AccountID);
         }
 
         [TestMethod]
@@ -398,30 +323,27 @@ namespace SimplyBudgetSharedTests.Data
             //Arrange
             var messenger = new WeakReferenceMessenger();
             var watcher = new MessageWatcher<DatabaseEvent<ExpenseCategory>>();
-            var fixture = new BudgetDatabaseContext();
-            fixture.Messenger.Register(watcher);
+            messenger.Register(watcher);
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope(messenger);
 
             var expenseCategory = new ExpenseCategory
             {
                 Account = new Account()
             };
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.Add(expenseCategory);
-                await context.SaveChangesAsync();
-            });
+            using var setupContext = factory.Create();
+            setupContext.ExpenseCategories.Add(expenseCategory);
+            await setupContext.SaveChangesAsync();
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                var category = await context.ExpenseCategories.FindAsync(expenseCategory.ID);
-                context.ExpenseCategories.Remove(category);
-                await context.SaveChangesAsync();
-            });
+            using var actContext = factory.Create();
+            var category = await actContext.ExpenseCategories.FindAsync(expenseCategory.ID);
+            actContext.ExpenseCategories.Remove(category);
+            await actContext.SaveChangesAsync();
 
             //Assert
-            DatabaseEvent<ExpenseCategory>? message = watcher.Messages.Last();
+            DatabaseEvent<ExpenseCategory> message = watcher.Messages.Last();
             Assert.AreEqual(expenseCategory.ID, message.Item.ID);
             Assert.AreEqual(EventType.Deleted, message.Type);
         }
@@ -432,8 +354,9 @@ namespace SimplyBudgetSharedTests.Data
             //Arrange
             var messenger = new WeakReferenceMessenger();
             var watcher = new MessageWatcher<DatabaseEvent<ExpenseCategory>>();
-            var fixture = new BudgetDatabaseContext();
-            fixture.Messenger.Register(watcher);
+            messenger.Register(watcher);
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope(messenger);
 
             var expenseCategory = new ExpenseCategory
             {
@@ -441,11 +364,9 @@ namespace SimplyBudgetSharedTests.Data
             };
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.Add(expenseCategory);
-                await context.SaveChangesAsync();
-            });
+            using var actContext = factory.Create();
+            actContext.ExpenseCategories.Add(expenseCategory);
+            await actContext.SaveChangesAsync();
 
             //Assert
             DatabaseEvent<ExpenseCategory>? message = watcher.Messages.Last();
@@ -459,27 +380,24 @@ namespace SimplyBudgetSharedTests.Data
             //Arrange
             var messenger = new WeakReferenceMessenger();
             var watcher = new MessageWatcher<DatabaseEvent<ExpenseCategory>>();
-            var fixture = new BudgetDatabaseContext();
-            fixture.Messenger.Register(watcher);
+            messenger.Register(watcher);
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope(messenger);
 
             var expenseCategory = new ExpenseCategory
             {
                 Account = new Account()
             };
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.ExpenseCategories.Add(expenseCategory);
-                await context.SaveChangesAsync();
-            });
+            using var setupContext = factory.Create();
+            setupContext.ExpenseCategories.Add(expenseCategory);
+            await setupContext.SaveChangesAsync();
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                var category = await context.ExpenseCategories.FindAsync(expenseCategory.ID);
-                category.CategoryName += "-Edited";
-                await context.SaveChangesAsync();
-            });
+            using var actContext = factory.Create();
+            var category = await actContext.ExpenseCategories.FindAsync(expenseCategory.ID);
+            category.CategoryName += "-Edited";
+            await actContext.SaveChangesAsync();
 
             //Assert
             DatabaseEvent<ExpenseCategory>? message = watcher.Messages.Last();

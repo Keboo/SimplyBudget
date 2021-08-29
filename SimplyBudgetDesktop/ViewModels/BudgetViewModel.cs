@@ -1,4 +1,5 @@
-﻿using Microsoft.Toolkit.Mvvm.Input;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
 using SimplyBudgetShared.Data;
@@ -93,7 +94,7 @@ namespace SimplyBudget.ViewModels
             using var context = ContextFactory();
             await foreach (var category in context.ExpenseCategories)
             {
-                yield return await ExpenseCategoryViewModelEx.Create(context, category, CurrentMonth.CurrenMonth);
+                yield return await ExpenseCategoryViewModelEx.Create(ContextFactory, category, CurrentMonth.CurrenMonth);
             }
         }
 
@@ -104,11 +105,11 @@ namespace SimplyBudget.ViewModels
             switch (@event.Type)
             {
                 case EventType.Created:
-                    Items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
+                    Items.Add(await ExpenseCategoryViewModelEx.Create(ContextFactory, expenseCategory));
                     break;
                 case EventType.Updated:
                     Items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
-                    Items.Add(await ExpenseCategoryViewModelEx.Create(@event.Context, expenseCategory));
+                    Items.Add(await ExpenseCategoryViewModelEx.Create(ContextFactory, expenseCategory));
                     break;
                 case EventType.Deleted:
                     Items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
@@ -122,7 +123,7 @@ namespace SimplyBudget.ViewModels
         public async Task<bool> SaveChanges(ExpenseCategoryViewModelEx category)
         {
             using var context = ContextFactory();
-            if (context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
+            if (await context.ExpenseCategories.FirstOrDefaultAsync(x => x.ID == category.ExpenseCategoryID) is ExpenseCategory dbCategory)
             {
                 dbCategory.Name = category.EditingName;
                 dbCategory.CategoryName = category.EditingCategory;

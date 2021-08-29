@@ -10,20 +10,21 @@ namespace SimplyBudget.ViewModels
 {
     public class ExpenseCategoryViewModelEx : ExpenseCategoryViewModel
     {
-        public static async Task<ExpenseCategoryViewModelEx> Create(BudgetContext context, ExpenseCategory expenseCategory)
+        public static async Task<ExpenseCategoryViewModelEx> Create(Func<BudgetContext> contextFactory, ExpenseCategory expenseCategory)
         {
-            return await Create(context, expenseCategory, DateTime.Today);
+            return await Create(contextFactory, expenseCategory, DateTime.Today);
         }
 
-        public static async Task<ExpenseCategoryViewModelEx> Create(BudgetContext context, ExpenseCategory expenseCategory, DateTime month)
+        public static async Task<ExpenseCategoryViewModelEx> Create(Func<BudgetContext> contextFactory, ExpenseCategory expenseCategory, DateTime month)
         {
-            if (context is null)
+            if (contextFactory is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                throw new ArgumentNullException(nameof(contextFactory));
             }
 
             if (expenseCategory is null) throw new ArgumentNullException(nameof(expenseCategory));
 
+            using var context = contextFactory();
             var categoryItems = await context.GetCategoryItemDetails(expenseCategory, month.StartOfMonth(), month.EndOfMonth());
 
             var rv = new ExpenseCategoryViewModelEx(expenseCategory.ID)

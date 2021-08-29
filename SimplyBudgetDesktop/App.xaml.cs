@@ -2,7 +2,6 @@
 using AutoDI;
 using MaterialDesignThemes.Wpf;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Properties;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Threading;
@@ -21,17 +20,17 @@ namespace SimplyBudget
     {
         protected override void OnStartup(StartupEventArgs e)
         {
-#if DEBUG
-            try
-            {
-                _ = global::Windows.ApplicationModel.Package.Current;
-            }
-            catch (InvalidOperationException)
-            {
-                //This is throw when run outside of an MSIX deployment
-                Settings.Default.StorageLocation = Path.GetFullPath(@".\Database");
-            }
-#endif
+//#if DEBUG
+//            try
+//            {
+//                _ = global::Windows.ApplicationModel.Package.Current;
+//            }
+//            catch (InvalidOperationException)
+//            {
+//                //This is throw when run outside of an MSIX deployment
+//                Settings.Default.StorageLocation = Path.GetFullPath(@".\Database");
+//            }
+//#endif
             //ShutdownOnConnectionStringChanged();
             MakeDataBackup();
             using (var context = new BudgetContext(Settings.GetDatabaseConnectionString()))

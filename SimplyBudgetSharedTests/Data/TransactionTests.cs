@@ -1,9 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq.AutoMock;
 using SimplyBudgetShared.Data;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace SimplyBudgetSharedTests.Data
 {
@@ -14,57 +12,50 @@ namespace SimplyBudgetSharedTests.Data
         public async Task OnRemove_RemovesChildren()
         {
             //Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             ExpenseCategoryItem? transaction = null;
             var category = new ExpenseCategory { CurrentBalance = 250 };
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Add(category);
-                await context.SaveChangesAsync();
-                transaction = await context.AddTransaction("Test", DateTime.Now, (100, category.ID));
-            });
+            var setupContext = factory.Create();
+            setupContext.Add(category);
+            await setupContext.SaveChangesAsync();
+            transaction = await setupContext.AddTransaction("Test", DateTime.Now, (100, category.ID));
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                var item = await context.FindAsync<ExpenseCategoryItem>(transaction!.ID);
-                context.Remove(item);
-                await context.SaveChangesAsync();
-            });
+            var actContext = factory.Create();
+            var item = await actContext.FindAsync<ExpenseCategoryItem>(transaction!.ID);
+            actContext.Remove(item);
+            await actContext.SaveChangesAsync();
 
             //Assert
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                Assert.IsFalse(await context.ExpenseCategoryItems.AnyAsync());
-                Assert.IsFalse(await context.ExpenseCategoryItemDetails.AnyAsync());
-                Assert.AreEqual(250, (await context.FindAsync<ExpenseCategory>(category.ID)).CurrentBalance);
-            });
+            var assertContext = factory.Create();
+            Assert.IsFalse(await assertContext.ExpenseCategoryItems.AnyAsync());
+            Assert.IsFalse(await assertContext.ExpenseCategoryItemDetails.AnyAsync());
+            Assert.AreEqual(250, (await assertContext.FindAsync<ExpenseCategory>(category.ID)).CurrentBalance);
         }
 
         [TestMethod]
         public async Task OnRetrieve_GetsRelatedItems()
         {
             //Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
 
             var category = new ExpenseCategory { CurrentBalance = 250 };
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Add(category);
-                await context.SaveChangesAsync();
-                await context.AddTransaction("Test", DateTime.Now, (100, category.ID));
-            });
+            var setupContext = factory.Create();
+            setupContext.Add(category);
+            await setupContext.SaveChangesAsync();
+            await setupContext.AddTransaction("Test", DateTime.Now, (100, category.ID));
+
 
             //Act
             ExpenseCategoryItem? transaction = null;
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                transaction = await context.ExpenseCategoryItems
-                    .Include(x => x.Details)
-                    .ThenInclude(x => x.ExpenseCategory)
-                    .SingleAsync();
-            });
+            var actContext = factory.Create();
+            transaction = await actContext.ExpenseCategoryItems
+                .Include(x => x.Details)
+                .ThenInclude(x => x.ExpenseCategory)
+                .SingleAsync();
 
             //Assert
             Assert.IsNotNull(transaction?.Details);
