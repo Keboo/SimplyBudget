@@ -333,7 +333,7 @@
                 </materialDesign:PopupBox>
                 <Button Content="Submit"
                         Command="{Binding SubmitCommand}"
-                        CommandParameter="{StaticResource BoolTrue}"
+                        CommandParameter="{StaticResource BoolFalse}"
                         materialDesign:ValidationAssist.PopupPlacement="Top"
                         materialDesign:ValidationAssist.UsePopup="True"
                         materialDesign:ButtonAssist.CornerRadius="4,0,0,4"
