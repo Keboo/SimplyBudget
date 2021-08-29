@@ -4,7 +4,6 @@ using SimplyBudget.ViewModels;
 using SimplyBudgetShared.Data;
 using System;
 using System.Linq;
-//using Windows.ApplicationModel;
 
 namespace SimplyBudget.Windows
 {
@@ -23,10 +22,10 @@ namespace SimplyBudget.Windows
 
             try
             {
-                //if (Package.Current?.Id?.Version is { } version)
-                //{
-                //    Title += $" - {version.Major}.{version.Minor}.{version.Build}";
-                //}
+                if (global::Windows.ApplicationModel.Package.Current?.Id?.Version is { } version)
+                {
+                    Title += $" - {version.Major}.{version.Minor}.{version.Build}";
+                }
             }
             catch (InvalidOperationException)
             {
