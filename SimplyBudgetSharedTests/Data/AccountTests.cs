@@ -1,10 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq.AutoMock;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Events;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace SimplyBudgetSharedTests.Data
 {
@@ -15,140 +14,118 @@ namespace SimplyBudgetSharedTests.Data
         public async Task SetAsDefault_SetsDefaultAccount()
         {
             //Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
             var account = new Account();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Accounts.Add(account);
-                await context.SaveChangesAsync();
-            });
-
+            using var setupContext = factory.Create();
+            setupContext.Accounts.Add(account);
+            await setupContext.SaveChangesAsync();
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                account = await context.SetAsDefaultAsync(account);
-                await context.SaveChangesAsync();
-            });
-
+            using var actContext = factory.Create();
+            account = await actContext.SetAsDefaultAsync(account);
+            await actContext.SaveChangesAsync();
 
             //Assert
             Assert.IsTrue(account.IsDefault);
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                Assert.IsTrue((await context.Accounts.SingleAsync(x => x.ID == account.ID)).IsDefault);
-            });
+            using var assertContext = factory.Create();
+            Assert.IsTrue((await assertContext.Accounts.SingleAsync(x => x.ID == account.ID)).IsDefault);
         }
 
         [TestMethod]
         public async Task SetAsDefault_UpdatesPreviousDefaultAccount()
         {
             //Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
             var account = new Account();
             var previousAccount = new Account();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Accounts.Add(account);
-                context.Accounts.Add(previousAccount);
-                previousAccount = await context.SetAsDefaultAsync(previousAccount);
-                await context.SaveChangesAsync();
-            });
-
+            using var setupContext = factory.Create();
+            setupContext.Accounts.Add(account);
+            setupContext.Accounts.Add(previousAccount);
+            previousAccount = await setupContext.SetAsDefaultAsync(previousAccount);
+            await setupContext.SaveChangesAsync();
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                account = await context.SetAsDefaultAsync(account);
-                await context.SaveChangesAsync();
-            });
+            using var actContext = factory.Create();
+            account = await actContext.SetAsDefaultAsync(account);
+            await actContext.SaveChangesAsync();
 
 
             //Assert
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                Assert.IsTrue((await context.Accounts.SingleAsync(x => x.ID == account.ID)).IsDefault);
-                Assert.IsFalse((await context.Accounts.SingleAsync(x => x.ID == previousAccount.ID)).IsDefault);
-            });
+            using var assertContext = factory.Create();
+            Assert.IsTrue((await assertContext.Accounts.SingleAsync(x => x.ID == account.ID)).IsDefault);
+            Assert.IsFalse((await assertContext.Accounts.SingleAsync(x => x.ID == previousAccount.ID)).IsDefault);
         }
 
         [TestMethod]
         public async Task DeletingDefaultAccount_SelectsFirstAccountAsNewDefault()
         {
             //Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
             var account = new Account();
             var firstAccount = new Account();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Accounts.Add(account);
-                context.Accounts.Add(firstAccount);
-                account = await context.SetAsDefaultAsync(account);
-                await context.SaveChangesAsync();
-            });
+            using var setupContext = factory.Create();
+            setupContext.Accounts.Add(account);
+            setupContext.Accounts.Add(firstAccount);
+            account = await setupContext.SetAsDefaultAsync(account);
+            await setupContext.SaveChangesAsync();
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Accounts.Remove(account);
-                await context.SaveChangesAsync();
-            });
+            using var actContext = factory.Create();
+            actContext.Accounts.Remove(account);
+            await actContext.SaveChangesAsync();
 
             //Assert
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                Assert.AreEqual(firstAccount.ID, (await context.GetDefaultAccountAsync())!.ID);
-            });
+            using var assertContext = factory.Create();
+            Assert.AreEqual(firstAccount.ID, (await assertContext.GetDefaultAccountAsync())!.ID);
         }
 
         [TestMethod]
         public async Task GetDefaultAccountAsync_ReturnsDefaultAccount()
         {
             //Arrange
-            var fixture = new BudgetDatabaseContext();
+            AutoMocker mocker = new();
+            using var factory = mocker.WithDbScope();
+
             var account1 = new Account();
             var account2 = new Account();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Accounts.Add(account1);
-                context.Accounts.Add(account2);
-                account2 = await context.SetAsDefaultAsync(account2);
-                await context.SaveChangesAsync();
-            });
-
+            using var setupContext = factory.Create();
+            setupContext.Accounts.Add(account1);
+            setupContext.Accounts.Add(account2);
+            account2 = await setupContext.SetAsDefaultAsync(account2);
+            await setupContext.SaveChangesAsync();
 
             //Act, Assert
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                var defaultAccount = await context.GetDefaultAccountAsync();
-                Assert.AreEqual(account2.ID, defaultAccount?.ID);
-            });
+            using var context = factory.Create();
+            var defaultAccount = await context.GetDefaultAccountAsync();
+            Assert.AreEqual(account2.ID, defaultAccount?.ID);
         }
 
         [TestMethod]
         public async Task CreateAccount_PostsNotification()
         {
             //Arrange
-            var watcher = new MessageWatcher<AccountEvent>();
-            var fixture = new BudgetDatabaseContext();
-            fixture.Messenger.Register(watcher);
+            var mocker = new AutoMocker().WithMessenger();
+            var watcher = new MessageWatcher<DatabaseEvent<Account>>();
+            mocker.Get<IMessenger>().Register(watcher);
+            using var factory = mocker.WithDbScope();
 
             var account1 = new Account();
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Accounts.Add(account1);
-                await context.SaveChangesAsync();
-            });
+            using var context = factory.Create();
+            context.Accounts.Add(account1);
+            await context.SaveChangesAsync();
 
             //Assert
-            AccountEvent? message = watcher.Messages.Last();
-            Assert.AreEqual(account1.ID, message.Account.ID);
+            DatabaseEvent<Account>? message = watcher.Messages.Last();
+            Assert.AreEqual(account1.ID, message.Item.ID);
             Assert.AreEqual(EventType.Created, message.Type);
         }
 
@@ -156,30 +133,26 @@ namespace SimplyBudgetSharedTests.Data
         public async Task UpdateAccount_PostsNotification()
         {
             //Arrange
-            var messenger = new WeakReferenceMessenger();
-            var watcher = new MessageWatcher<AccountEvent>();
-            var fixture = new BudgetDatabaseContext();
-            fixture.Messenger.Register(watcher);
+            var mocker = new AutoMocker().WithMessenger();
+            var watcher = new MessageWatcher<DatabaseEvent<Account>>();
+            mocker.Get<IMessenger>().Register(watcher);
+            using var factory = mocker.WithDbScope();
 
             var account1 = new Account();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Accounts.Add(account1);
-                await context.SaveChangesAsync();
-            });
+            using var setupContext = factory.Create();
+            setupContext.Accounts.Add(account1);
+            await setupContext.SaveChangesAsync();
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                var account = await context.Accounts.FindAsync(account1.ID);
-                account.Name += "-Edited";
-                await context.SaveChangesAsync();
-            });
+            using var actContext = factory.Create();
+            var account = await actContext.Accounts.FindAsync(account1.ID);
+            account.Name += "-Edited";
+            await actContext.SaveChangesAsync();
 
             //Assert
-            AccountEvent? message = watcher.Messages.Last();
-            Assert.AreEqual(account1.ID, message.Account.ID);
+            DatabaseEvent<Account>? message = watcher.Messages.Last();
+            Assert.AreEqual(account1.ID, message.Item.ID);
             Assert.AreEqual(EventType.Updated, message.Type);
         }
 
@@ -187,30 +160,26 @@ namespace SimplyBudgetSharedTests.Data
         public async Task DeleteAccount_PostsNotification()
         {
             //Arrange
-            var messenger = new WeakReferenceMessenger();
-            var watcher = new MessageWatcher<AccountEvent>();
-            var fixture = new BudgetDatabaseContext();
-            fixture.Messenger.Register(watcher);
+            var mocker = new AutoMocker().WithMessenger();
+            var watcher = new MessageWatcher<DatabaseEvent<Account>>();
+            mocker.Get<IMessenger>().Register(watcher);
+            using var factory = mocker.WithDbScope();
 
             var account1 = new Account();
 
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                context.Accounts.Add(account1);
-                await context.SaveChangesAsync();
-            });
+            using var setupContext = factory.Create();
+            setupContext.Accounts.Add(account1);
+            await setupContext.SaveChangesAsync();
 
             //Act
-            await fixture.PerformDatabaseOperation(async context =>
-            {
-                var account = await context.Accounts.FindAsync(account1.ID);
-                context.Accounts.Remove(account);
-                await context.SaveChangesAsync();
-            });
+            using var actContext = factory.Create();
+            var account = await actContext.Accounts.FindAsync(account1.ID);
+            actContext.Accounts.Remove(account);
+            await actContext.SaveChangesAsync();
 
             //Assert
-            AccountEvent? message = watcher.Messages.Last();
-            Assert.AreEqual(account1.ID, message.Account.ID);
+            DatabaseEvent<Account>? message = watcher.Messages.Last();
+            Assert.AreEqual(account1.ID, message.Item.ID);
             Assert.AreEqual(EventType.Deleted, message.Type);
         }
     }

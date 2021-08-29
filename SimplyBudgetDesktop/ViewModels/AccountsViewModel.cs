@@ -12,34 +12,35 @@ namespace SimplyBudget.ViewModels
 {
     public class AccountsViewModel :
         CollectionViewModelBase<AccountViewModel>,
-        IRecipient<AccountEvent>, 
-        IRecipient<ExpenseCategoryEvent>
+        IRecipient<DatabaseEvent<Account>>, 
+        IRecipient<DatabaseEvent<ExpenseCategory>>
     {
         public ICommand ShowAccountsCommand { get; }
         
-        private BudgetContext Context { get; }
+        private Func<BudgetContext> ContextFactory { get; }
 
         public ICollectionView AccountsView => _view;
 
-        public AccountsViewModel(BudgetContext context, IMessenger messenger)
+        public AccountsViewModel(Func<BudgetContext> contextFactory, IMessenger messenger)
         {
-            Context = context ?? throw new ArgumentNullException(nameof(context));
-            messenger.Register<AccountEvent>(this);
-            messenger.Register<ExpenseCategoryEvent>(this);
+            ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+            messenger.Register<DatabaseEvent<Account>>(this);
+            messenger.Register<DatabaseEvent<ExpenseCategory>>(this);
             ShowAccountsCommand = new RelayCommand(OnShowAccounts);
         }
 
         protected override async IAsyncEnumerable<AccountViewModel> GetItems()
         {
-            await foreach(var account in Context.Accounts)
+            using var context = ContextFactory();
+            await foreach (var account in context.Accounts)
             {
-                yield return await AccountViewModel.Create(Context, account);
+                yield return await AccountViewModel.Create(context, account);
             }
         }
 
-        public void Receive(AccountEvent message) => LoadItemsAsync();
+        public void Receive(DatabaseEvent<Account> _) => LoadItemsAsync();
 
-        public void Receive(ExpenseCategoryEvent message) => LoadItemsAsync();
+        public void Receive(DatabaseEvent<ExpenseCategory> _) => LoadItemsAsync();
 
         private async void OnShowAccounts()
         {

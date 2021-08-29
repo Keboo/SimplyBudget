@@ -5,6 +5,7 @@ using SimplyBudget;
 using SimplyBudget.ViewModels;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
+using SimplyBudgetSharedTests;
 using SimplyBudgetSharedTests.Data;
 using System;
 using System.Linq;
@@ -19,9 +20,8 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SelectedType_Transaction_LoadsItems()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.WithDbScope();
-
-            var context = mocker.Get<BudgetContext>();
+            using var factory = mocker.WithDbScope();
+            using var context = factory.Create();
             var category1 = new ExpenseCategory { Name = "Foo" };
             var category2 = new ExpenseCategory { Name = "Bar" };
             context.AddRange(category1, category2);
@@ -39,9 +39,9 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SelectedType_Income_LoadsItems()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.WithDbScope();
+            using var factory = mocker.WithDbScope();
 
-            var context = mocker.Get<BudgetContext>();
+            using var context = factory.Create();
             var category1 = new ExpenseCategory { Name = "Foo" };
             var category2 = new ExpenseCategory { Name = "Bar" };
             var category3 = new ExpenseCategory { Name = "Cat" };
@@ -63,10 +63,10 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SelectedType_Transfer_LoadsItems()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.WithDbScope();
-            using var __ = mocker.WithAutoDIResolver();
+            using var factory = mocker.WithDbScope();
+            using var _ = mocker.WithAutoDIResolver();
 
-            var context = mocker.Get<BudgetContext>();
+            using var context = factory.Create();
             var category1 = new ExpenseCategory { Name = "Foo" };
             var category2 = new ExpenseCategory { Name = "Bar" };
             var category3 = new ExpenseCategory { Name = "Cat" };
@@ -105,9 +105,9 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task AutoAllocateCommand_AllocatesIncomeAmount()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.WithDbScope();
+            using var factory = mocker.WithDbScope();
 
-            var context = mocker.Get<BudgetContext>();
+            using var context = factory.Create();
             var category1 = new ExpenseCategory { Name = "Bar", BudgetedPercentage = 10 };
             var category2 = new ExpenseCategory { Name = "Cat", BudgetedAmount = 100 };
             var category3 = new ExpenseCategory { Name = "Foo", BudgetedAmount = 200 };
@@ -213,10 +213,10 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SubmitCommand_TransactionIgnoreBudget_CreatesTransaction()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.WithDbScope();
-            using var __ = mocker.WithAutoDIResolver();
-            using var ___ = mocker.WithSynchonousTaskRunner();
-            var context = mocker.Get<BudgetContext>();
+            using var factory = mocker.WithDbScope();
+            using var _ = mocker.WithAutoDIResolver();
+            using var __ = mocker.WithSynchonousTaskRunner();
+            using var context = factory.Create();
 
             var category = new ExpenseCategory();
             context.ExpenseCategories.Add(category);
@@ -233,7 +233,10 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
 
             await vm.SubmitCommand.ExecuteAsync(true);
 
-            ExpenseCategoryItem transaction = await context.ExpenseCategoryItems.SingleAsync();
+            using var verificationContext = factory.Create();
+            ExpenseCategoryItem transaction = await verificationContext.ExpenseCategoryItems
+                .Include(x => x.Details)
+                .SingleAsync();
 
             Assert.AreEqual("Test description", transaction.Description);
             Assert.AreEqual(today, transaction.Date);
@@ -247,10 +250,10 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SubmitCommand_IncomeIgnoreBudget_CreatesIncome()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.WithDbScope();
-            using var __ = mocker.WithAutoDIResolver();
-            using var ___ = mocker.WithSynchonousTaskRunner();
-            var context = mocker.Get<BudgetContext>();
+            using var factory = mocker.WithDbScope();
+            using var _ = mocker.WithAutoDIResolver();
+            using var __ = mocker.WithSynchonousTaskRunner();
+            using var context = factory.Create();
 
             var category = new ExpenseCategory();
             context.ExpenseCategories.Add(category);
@@ -268,7 +271,10 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
 
             await vm.SubmitCommand.ExecuteAsync(true);
 
-            ExpenseCategoryItem income = await context.ExpenseCategoryItems.SingleAsync();
+            using var verfictionContext = factory.Create();
+            ExpenseCategoryItem income = await verfictionContext.ExpenseCategoryItems
+                .Include(x => x.Details)
+                .SingleAsync();
 
             Assert.AreEqual("Test description", income.Description);
             Assert.AreEqual(today, income.Date);
@@ -282,10 +288,10 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task SubmitCommand_TransferIgnoreBudget_CreatesTransfer()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.WithDbScope();
-            using var __ = mocker.WithAutoDIResolver();
-            using var ___ = mocker.WithSynchonousTaskRunner();
-            var context = mocker.Get<BudgetContext>();
+            using var factory = mocker.WithDbScope();
+            using var _ = mocker.WithAutoDIResolver();
+            using var __ = mocker.WithSynchonousTaskRunner();
+            using var context = factory.Create();
 
             var category1 = new ExpenseCategory();
             var category2 = new ExpenseCategory();
@@ -305,7 +311,10 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
 
             await vm.SubmitCommand.ExecuteAsync(true);
 
-            ExpenseCategoryItem transfer = await context.ExpenseCategoryItems.SingleAsync();
+            using var verificationContext = factory.Create();
+            ExpenseCategoryItem transfer = await verificationContext.ExpenseCategoryItems
+                .Include(x => x.Details)
+                .SingleAsync();
 
             Assert.IsTrue(transfer.IsTransfer);
             Assert.AreEqual("Test description", transfer.Description);

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudgetShared.Data;
+using System;
 
 namespace SimplyBudget.Properties
 {
@@ -14,7 +15,7 @@ namespace SimplyBudget.Properties
             application.ConfigureServices(collection =>
             {
                 collection.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
-                collection.AddSingleton(x => new BudgetContext(Settings.GetDatabaseConnectionString()));
+                collection.AddSingleton(ctx => new Func<BudgetContext>(() => new BudgetContext(Settings.GetDatabaseConnectionString())));
             });
         }
     }

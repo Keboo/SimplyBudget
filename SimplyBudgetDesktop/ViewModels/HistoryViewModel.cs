@@ -20,7 +20,7 @@ namespace SimplyBudget.ViewModels
         IRecipient<DatabaseEvent<ExpenseCategoryItemDetail>>,
         IRecipient<CurrentMonthChanged>
     {
-        public BudgetContext Context { get; }
+        public Func<BudgetContext> ContextFactory { get; }
         public ICurrentMonth CurrentMonth { get; }
 
         public IRelayCommand AddFilterCommand { get; }
@@ -82,11 +82,12 @@ namespace SimplyBudget.ViewModels
             private set => SetProperty(ref _filterDisplay, value);
         }
 
-        public HistoryViewModel(BudgetContext context, IMessenger messenger, ICurrentMonth currentMonth)
+        public HistoryViewModel(Func<BudgetContext> contextFactory, IMessenger messenger, ICurrentMonth currentMonth)
         {
-            Context = context ?? throw new ArgumentNullException(nameof(context));
+            ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
 
+            using var context = contextFactory();
             ExpenseCategories.AddRange(context.ExpenseCategories);
 
             AddFilterCommand = new RelayCommand<ExpenseCategory>(OnAddFilter, x => x != null);
@@ -140,6 +141,7 @@ namespace SimplyBudget.ViewModels
         protected override async IAsyncEnumerable<BudgetHistoryViewModel> GetItems()
         {
             var oldestTime = CurrentMonth.CurrenMonth.AddMonths(-2).StartOfMonth();
+            using var context = ContextFactory();
 
             int currentAccountAmount = 0;
             var categoryList = new List<int>();
@@ -149,10 +151,10 @@ namespace SimplyBudget.ViewModels
             }
             else if (SelectedAccount?.ID is int selectedId)
             {
-                currentAccountAmount = await Context.GetCurrentAmount(selectedId);
+                currentAccountAmount = await context.GetCurrentAmount(selectedId);
             }
 
-            IQueryable<ExpenseCategoryItem> query = Context.ExpenseCategoryItems
+            IQueryable<ExpenseCategoryItem> query = context.ExpenseCategoryItems
                 .Include(x => x.Details)
                 .ThenInclude(x => x.ExpenseCategory);
 
@@ -188,11 +190,13 @@ namespace SimplyBudget.ViewModels
 
         protected override async Task ReloadItemsAsync()
         {
+            using var context = ContextFactory();
+
             int? selectedId = SelectedAccount?.ID;
             Accounts.Clear();
-            Accounts.AddRange(Context.Accounts);
+            Accounts.AddRange(context.Accounts);
             _selectedAccount = Accounts.FirstOrDefault(x => x.ID == selectedId) ??
-                await Context.GetDefaultAccountAsync();
+                await context.GetDefaultAccountAsync();
             await base.ReloadItemsAsync();
             OnPropertyChanged(nameof(SelectedAccount));
         }
@@ -204,9 +208,11 @@ namespace SimplyBudget.ViewModels
                 throw new ArgumentNullException(nameof(items));
             }
 
+            using var context = ContextFactory();
+
             foreach (var item in items.ToList())
             {
-                await item.Delete(Context);
+                await item.Delete(context);
             }
         }
 

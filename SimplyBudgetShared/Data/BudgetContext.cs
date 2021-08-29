@@ -33,6 +33,16 @@ namespace SimplyBudgetShared.Data
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
         }
 
+        public override void Dispose()
+        {
+            base.Dispose();
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            return base.DisposeAsync();
+        }
+
         public static string GetFilePathFromConnectionString(string connectionString)
         {
             if (Regex.Match(connectionString, @"Data Source=([^;]+)") is Match match &&
@@ -88,16 +98,16 @@ namespace SimplyBudgetShared.Data
                 switch (entity.Entity)
                 {
                     case ExpenseCategory category:
-                        notifications.Add(() => Messenger.Send(new ExpenseCategoryEvent(this, category, type)));
+                        notifications.Add(() => Messenger.Send(new DatabaseEvent<ExpenseCategory>(category, type)));
                         break;
                     case ExpenseCategoryItem item:
-                        notifications.Add(() => Messenger.Send(new DatabaseEvent<ExpenseCategoryItem>(this, item, type)));
+                        notifications.Add(() => Messenger.Send(new DatabaseEvent<ExpenseCategoryItem>(item, type)));
                         break;
                     case ExpenseCategoryItemDetail detailItem:
-                        notifications.Add(() => Messenger.Send(new DatabaseEvent<ExpenseCategoryItemDetail>(this, detailItem, type)));
+                        notifications.Add(() => Messenger.Send(new DatabaseEvent<ExpenseCategoryItemDetail>(detailItem, type)));
                         break;
                     case Account account:
-                        notifications.Add(() => Messenger.Send(new AccountEvent(this, account, type)));
+                        notifications.Add(() => Messenger.Send(new DatabaseEvent<Account>(account, type)));
                         break;
                 }
             }
@@ -116,7 +126,7 @@ namespace SimplyBudgetShared.Data
 
         public override int SaveChanges(bool acceptAllChangesOnSuccess) => throw new InvalidOperationException($"Must use {nameof(SaveChangesAsync)}");
 
-        public static IEnumerable<T> PumpItems<T>(Func<IEnumerable<T>> items, IEqualityComparer<T>? comparer = null)
+        private static IEnumerable<T> PumpItems<T>(Func<IEnumerable<T>> items, IEqualityComparer<T>? comparer = null)
         {
             if (items is null)
             {

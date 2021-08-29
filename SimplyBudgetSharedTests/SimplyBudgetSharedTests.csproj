@@ -8,14 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!--<PackageReference Include="IntelliTect.TestTools.Data" Version="0.1.0" />-->
-    <PackageReference Include="IntelliTect.TestTools.Data" Version="0.2.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.6" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
-    <PackageReference Include="Moq.AutoMock" Version="2.3.0" />
-    <PackageReference Include="MSTest.TestAdapter" Version="2.2.3" />
-    <PackageReference Include="MSTest.TestFramework" Version="2.2.3" />
-    <PackageReference Include="coverlet.collector" Version="3.0.3">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.9">
+      <NoWarn>NU1608</NoWarn>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
+    <PackageReference Include="Moq.AutoMock" Version="3.0.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="2.2.6" />
+    <PackageReference Include="MSTest.TestFramework" Version="2.2.6" />
+    <PackageReference Include="coverlet.collector" Version="3.1.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

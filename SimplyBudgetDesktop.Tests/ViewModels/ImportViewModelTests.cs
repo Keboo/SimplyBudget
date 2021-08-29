@@ -2,6 +2,7 @@
 using Moq.AutoMock;
 using SimplyBudget.ViewModels;
 using SimplyBudgetShared.Data;
+using SimplyBudgetSharedTests;
 
 namespace SimplyBudgetDesktop.Tests.ViewModels
 {
@@ -12,9 +13,9 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task OnImport_WhenItemMatchesExistingTransaction_IsMarkedDone()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.WithDbScope();
+            using var factory = mocker.WithDbScope();
 
-            var context = mocker.Get<BudgetContext>();
+            using var context = factory.Create();
             var date = DateTime.Today.AddDays(-2);
             var category = new ExpenseCategory();
             context.ExpenseCategories.Add(category);
@@ -49,9 +50,9 @@ namespace SimplyBudgetDesktop.Tests.ViewModels
         public async Task OnImport_WhenItemMatchesExistingIncome_IsMarkedDone()
         {
             var mocker = new AutoMocker().WithDefaults();
-            using var _ = mocker.WithDbScope();
+            using var factory = mocker.WithDbScope();
 
-            var context = mocker.Get<BudgetContext>();
+            using var context = factory.Create();
             var date = DateTime.Today.AddDays(-1);
             var category = new ExpenseCategory();
             context.ExpenseCategories.Add(category);
