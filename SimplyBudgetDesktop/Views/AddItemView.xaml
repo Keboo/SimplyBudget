@@ -177,6 +177,7 @@
                          materialDesign:HintAssist.IsFloating="True"
                          materialDesign:HintAssist.Hint="Description"
                          TextWrapping="Wrap" 
+                         HorizontalContentAlignment="Left"
                          MaxWidth="300"
                          SpellCheck.IsEnabled="True">
                     <i:Interaction.Behaviors>
