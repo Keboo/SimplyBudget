@@ -1,10 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace SimplyBudget.ViewModels
 {
@@ -43,7 +39,22 @@ namespace SimplyBudget.ViewModels
                 .Where(x => x.Amount > 0 || x.ExpenseCategoryItem?.IsTransfer == true)
                 .Sum(x => x.Amount);
             rv.BudgetedAmountDisplay = expenseCategory.GetBudgetedDisplayString();
+
+            rv.ThreeMonthAverage = await GetAverage(context, expenseCategory, month.AddMonths(-3).StartOfMonth(), month.EndOfMonth());
+            rv.SixMonthAverage = await GetAverage(context, expenseCategory, month.AddMonths(-6).StartOfMonth(), month.EndOfMonth());
+            rv.TwelveMonthAverage = await GetAverage(context, expenseCategory, month.AddMonths(-12).StartOfMonth(), month.EndOfMonth());
             return rv;
+
+            static async Task<int> GetAverage(BudgetContext context, ExpenseCategory expenseCategory, DateTime start, DateTime end)
+            {
+                var categoryItems = await context.GetCategoryItemDetails(expenseCategory, start, end);
+                var items = categoryItems
+                            .Where(x => x.IgnoreBudget == false && x.Amount < 0)
+                            .GroupBy(x => x.ExpenseCategoryItem?.Date.StartOfMonth())
+                            .Select(g => g.Select(x => -x.Amount).Sum())
+                            .ToList();
+                return items.Any() ? (int)items.Average() : 0;
+            }
         }
 
         private ExpenseCategoryViewModelEx(int expenseCategoryID)
@@ -78,6 +89,27 @@ namespace SimplyBudget.ViewModels
         {
             get => _budgetedAmountDisplay;
             set => SetProperty(ref _budgetedAmountDisplay, value);
+        }
+
+        private int _threeMonthAverage;
+        public int ThreeMonthAverage
+        {
+            get => _threeMonthAverage;
+            set => SetProperty(ref _threeMonthAverage, value);
+        }
+
+        private int _sixMonthAverage;
+        public int SixMonthAverage
+        {
+            get => _sixMonthAverage;
+            set => SetProperty(ref _sixMonthAverage, value);
+        }
+
+        private int _twelveMonthAverage;
+        public int TwelveMonthAverage
+        {
+            get => _twelveMonthAverage;
+            set => SetProperty(ref _twelveMonthAverage, value);
         }
 
         private bool _isEditing;

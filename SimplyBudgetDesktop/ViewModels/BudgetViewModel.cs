@@ -5,10 +5,7 @@ using SimplyBudget.Messaging;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Events;
 using SimplyBudgetShared.Utilities;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
 
