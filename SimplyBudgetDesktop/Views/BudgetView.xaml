@@ -241,7 +241,7 @@
       <TextBlock Text="12 Month Avg." Grid.Column="7" VerticalAlignment="Bottom"
                  Visibility="{Binding IsChecked, ElementName=TwelveMonthAverageCheckBox, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
-      <StackPanel Orientation="Horizontal" Margin="0,0,10,0" Grid.Column="8" VerticalAlignment="Bottom">
+      <StackPanel Orientation="Horizontal" Margin="0,0,10,0" Grid.Column="9" VerticalAlignment="Bottom">
         <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" 
                  materialDesign:HintAssist.Hint="Search"
                  Margin="5,0"
