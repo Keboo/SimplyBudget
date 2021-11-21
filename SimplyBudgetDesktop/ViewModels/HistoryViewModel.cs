@@ -5,12 +5,8 @@ using SimplyBudget.Messaging;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Events;
 using SimplyBudgetShared.Utilities;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels
@@ -140,7 +136,7 @@ namespace SimplyBudget.ViewModels
 
         protected override async IAsyncEnumerable<BudgetHistoryViewModel> GetItems()
         {
-            var oldestTime = CurrentMonth.CurrenMonth.AddMonths(-2).StartOfMonth();
+            var oldestTime = CurrentMonth.CurrenMonth.AddMonths(-12).StartOfMonth();
             using var context = ContextFactory();
 
             int currentAccountAmount = 0;

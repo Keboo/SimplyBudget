@@ -1,6 +1,5 @@
 ﻿using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
-using System;
 
 namespace SimplyBudget.ViewModels
 {
