@@ -1,6 +1,7 @@
 ﻿using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
+using SimplyBudget.Properties;
 using SimplyBudget.Validation;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Threading;
@@ -120,19 +121,11 @@ namespace SimplyBudget.ViewModels
 
         public IList<ExpenseCategory> ExpenseCategories { get; }
 
-        //private static int _count;
-        //~AddItemViewModel()
-        //{
-        //    Interlocked.Decrement(ref _count); 
-        //}
-
-        public AddItemViewModel(Func<BudgetContext> contextFacory, ICurrentMonth currentMonth, IMessenger messenger)
+        public AddItemViewModel(Func<BudgetContext> contextFacory, 
+            ICurrentMonth currentMonth, 
+            IMessenger messenger, 
+            IDispatcher dispatcher)
         {
-            //if (Interlocked.Increment(ref _count) > 1)
-            //{
-
-            //}
-
             ContextFactory = contextFacory ?? throw new ArgumentNullException(nameof(contextFacory));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
@@ -153,8 +146,8 @@ namespace SimplyBudget.ViewModels
 
             SelectedType = AddType.Transaction;
 
-            PropertyChanged += (_, __) => ClearValidationErrors(nameof(SubmitCommand));
-            BindingOperations.EnableCollectionSynchronization(LineItems, new object());
+            PropertyChanged += (_, _) => ClearValidationErrors(nameof(SubmitCommand));
+            dispatcher.InvokeAsync(() => BindingOperations.EnableCollectionSynchronization(LineItems, new object()));
         }
 
         private void OnCancel()

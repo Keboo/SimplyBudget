@@ -1,6 +1,4 @@
 ﻿using SimplyBudget.ViewModels;
-using System;
-using System.Collections.Generic;
 
 namespace SimplyBudget.Messaging
 {

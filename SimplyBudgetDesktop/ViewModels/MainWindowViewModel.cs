@@ -3,6 +3,7 @@ using Microsoft.Toolkit.Mvvm.ComponentModel;
 using Microsoft.Toolkit.Mvvm.Input;
 using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudget.Messaging;
+using SimplyBudget.Properties;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using System.Windows.Input;
@@ -60,18 +61,20 @@ namespace SimplyBudget.ViewModels
         public IMessenger Messenger { get; }
         public ICurrentMonth CurrentMonth { get; }
         private Func<BudgetContext> ContextFactory { get; }
+        private IDispatcher Dispatcher { get; }
 
         public MainWindowViewModel(
             [Dependency] IMessenger? messenger = null,
             [Dependency] ICurrentMonth? currentMonth = null,
-            [Dependency] Func<BudgetContext>? contextFactory = null)
+            [Dependency] Func<BudgetContext>? contextFactory = null,
+            [Dependency] IDispatcher? dispatcher = null)
         {
             ShowAddCommand = new RelayCommand<AddType?>(OnShowAdd);
 
             Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
             CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
             ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
-
+            Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Budget = new(contextFactory, messenger, currentMonth);
             History = new(contextFactory, messenger, currentMonth);
             Accounts = new(contextFactory, messenger);
@@ -91,7 +94,7 @@ namespace SimplyBudget.ViewModels
 
         private void OnShowAdd(AddType? addType)
         {
-            AddItem = new AddItemViewModel(ContextFactory, CurrentMonth, Messenger);
+            AddItem = new AddItemViewModel(ContextFactory, CurrentMonth, Messenger, Dispatcher);
             if (addType != null && addType != AddType.None)
             {
                 AddItem.SelectedType = addType.Value;
@@ -106,7 +109,7 @@ namespace SimplyBudget.ViewModels
 
         public void Receive(AddItemMessage message)
         {
-            AddItem = new AddItemViewModel(ContextFactory, CurrentMonth, Messenger)
+            AddItem = new AddItemViewModel(ContextFactory, CurrentMonth, Messenger, Dispatcher)
             {
                 SelectedType = message.Type,
                 Date = message.Date,
