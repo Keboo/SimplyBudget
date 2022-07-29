@@ -26,7 +26,7 @@ jobs:
       run: dotnet build --configuration Release
       
     #- name: Test
-    #  run: dotnet test --no-build --verbosity normal
+    #  run: dotnet test --no-build --configuration Release --verbosity normal
 
     - name: dotnet publish
       if: github.event_name != 'pull_request'
@@ -34,7 +34,9 @@ jobs:
 
     - name: Clowd.Squirrel
       if: github.event_name != 'pull_request'
-      run: '%userprofile%\.nuget\packages\clowd.squirrel\2.9.42\tools\Squirrel.exe pack --framework net6,vcredist143-x86 --packId "SimplyBudget" --packVersion "1.0.0" --packAuthors "Kevin Bost" --packDir .\publish\ --releaseDir .\Release'
+      run:
+        Set-Alias Squirrel ($env:USERPROFILE + "\.nuget\packages\clowd.squirrel\2.9.42\tools\Squirrel.exe")
+        Squirrel pack --framework net6,vcredist143-x86 --packId "SimplyBudget" --packVersion "1.0.0" --packAuthors "Kevin Bost" --packDir .\publish\ --releaseDir .\Release'
 
     - name: Upload artifact for deployment job
       if: github.event_name != 'pull_request'
