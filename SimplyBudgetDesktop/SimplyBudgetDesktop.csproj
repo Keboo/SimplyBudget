@@ -13,10 +13,12 @@
     <ApplicationIcon>Resources\Icon.ico</ApplicationIcon>
     <RuntimeIdentifiers>win-x86;win-x64</RuntimeIdentifiers>
     <MinimumPlatformVersion>10.0.19041.0</MinimumPlatformVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="AutoDI.Build" Version="4.1.0-ci24" />
+    <PackageReference Include="Clowd.Squirrel" Version="2.9.42" />
     <PackageReference Include="MaterialDesignThemes" Version="4.2.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
     <PackageReference Include="Microsoft.Toolkit.Mvvm" Version="7.0.2" />

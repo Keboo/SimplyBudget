@@ -3,9 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudget.Properties;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Threading;
-using System;
+using Squirrel;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 
@@ -16,8 +15,28 @@ namespace SimplyBudget
     /// </summary>
     public partial class App
     {
+        private static void OnAppInstall(SemanticVersion version, IAppTools tools)
+        {
+            tools.CreateShortcutForThisExe(ShortcutLocation.StartMenu);
+        }
+
+        private static void OnAppUninstall(SemanticVersion version, IAppTools tools)
+        {
+            tools.RemoveShortcutForThisExe(ShortcutLocation.StartMenu);
+        }
+
+        private static void OnAppRun(SemanticVersion version, IAppTools tools, bool firstRun)
+        {
+            tools.SetProcessAppUserModelId();
+        }
+
         protected override void OnStartup(StartupEventArgs e)
         {
+            SquirrelAwareApp.HandleEvents(
+                onInitialInstall: OnAppInstall,
+                onAppUninstall: OnAppUninstall,
+                onEveryRun: OnAppRun);
+
 #if DEBUG
             try
             {
