@@ -2,9 +2,12 @@ name: .NET
 
 on:
   push:
-    branches: [ main ]
+    branches: 
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,14 +15,30 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
+    
     - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: 5.0.x
-    - name: Restore dependencies
-      run: dotnet restore
+        dotnet-version: 6.x
+      
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --configuration Release
+      
     - name: Test
       run: dotnet test --no-build --verbosity normal
+
+    - name: dotnet publish
+      if: github.event_name != 'pull_request'
+      run: dotnet publish --configuration Release -o ./publish
+
+    - name: Clowd.Squirrel
+      if: github.event_name != 'pull_request'
+      run: '%userprofile%\.nuget\packages\clowd.squirrel\2.9.42\tools\Squirrel.exe pack --framework net6,vcredist143-x86 --packId "SimplyBudget" --packVersion "1.0.0" --packAuthors "Kevin Bost" --packDir .\publish\ --releaseDir .\Release'
+
+    - name: Upload artifact for deployment job
+      if: github.event_name != 'pull_request'
+      uses: actions/upload-artifact@v2
+      with:
+        name: Installer
+        path: ./Release
