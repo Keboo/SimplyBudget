@@ -15,6 +15,8 @@ namespace SimplyBudget
     /// </summary>
     public partial class App
     {
+        public static SemanticVersion? Version { get; set; }
+
         private static void OnAppInstall(SemanticVersion version, IAppTools tools)
         {
             tools.CreateShortcutForThisExe(ShortcutLocation.StartMenu);
@@ -27,6 +29,7 @@ namespace SimplyBudget
 
         private static void OnAppRun(SemanticVersion version, IAppTools tools, bool firstRun)
         {
+            Version = version;
             tools.SetProcessAppUserModelId();
         }
 
