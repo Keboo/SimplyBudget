@@ -43,17 +43,24 @@ namespace SimplyBudget.Windows
 
         private async void MainWindow_Loaded(object sender, System.Windows.RoutedEventArgs e)
         {
-            using var mgr = new UpdateManager(urlOrPath:null);
+            using var mgr = new UpdateManager(urlOrPath: null);
             if (mgr.IsInstalledApp)
             {
-                const string channel = "production";
-                using var remoteManager = new UpdateManager($"https://localhost:7155/Squirrel/{mgr.AppId}/{channel}");
-                var newVersion = await remoteManager.UpdateApp();
-
-                // optionally restart the app automatically, or ask the user if/when they want to restart
-                if (newVersion != null)
+                try
                 {
-                    UpdateManager.RestartApp();
+                    const string channel = "production";
+                    using var remoteManager = new UpdateManager($"https://localhost:7155/Squirrel/{mgr.AppId}/{channel}");
+                    var newVersion = await remoteManager.UpdateApp();
+
+                    // optionally restart the app automatically, or ask the user if/when they want to restart
+                    if (newVersion != null)
+                    {
+                        UpdateManager.RestartApp();
+                    }
+                }
+                catch
+                {
+                    //TODO: handle failures?
                 }
             }
         }
