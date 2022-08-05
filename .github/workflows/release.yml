@@ -51,4 +51,7 @@ jobs:
           ./Release/RELEASES
           ./Release/SimplyBudget-${{ github.ref_name }}-full.nupkg
           ./Release/SimplyBudgetSetup.exe
-   
+     
+    - name: Update Service
+      run: |
+        iwr https://sciuridae.azurewebsites.net/App/update/SimplyBudget?version=${{ github.ref_name }}
