@@ -49,7 +49,7 @@ namespace SimplyBudget.Windows
                 try
                 {
                     const string channel = "production";
-                    using var remoteManager = new UpdateManager($"https://localhost:7155/Squirrel/{mgr.AppId}/{channel}");
+                    using var remoteManager = new UpdateManager($"https://sciuridae.azurewebsites.net/Squirrel/{mgr.AppId}/{channel}");
                     var newVersion = await remoteManager.UpdateApp();
 
                     // optionally restart the app automatically, or ask the user if/when they want to restart
