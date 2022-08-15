@@ -23,35 +23,25 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release
       
-    #- name: Test
-    #  run: dotnet test --no-build --configuration Release --verbosity normal
+    - name: Test
+      run: dotnet test --no-build --configuration Release --verbosity normal
 
     - name: dotnet publish
       if: github.event_name != 'pull_request'
-      run: dotnet publish --configuration Release -o ./publish
-
-    - name: Clowd.Squirrel
-      run: |
-        Set-Alias Squirrel ($env:USERPROFILE + "\.nuget\packages\clowd.squirrel\2.9.42\tools\Squirrel.exe");
-        Squirrel pack --framework net6,vcredist143-x86 --packId "SimplyBudget" --packVersion "${{ github.ref_name }}" --packAuthors "Kevin Bost" --packDir .\publish\ --releaseDir .\Release
+      run: dotnet publish --configuration Release -p:SciuridaeApiKey=${{ secrets.SCIURIDAEAPIKEY }}
 
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v2
       with:
         name: Installer
-        path: ./Release
+        path: ./SciuridaeReleases
     
     - name: Release
       uses: softprops/action-gh-release@v1
-      #if: startsWith(github.ref, 'refs/tags/')
       with:
         fail_on_unmatched_files: true
         generate_release_notes: true
         files: |
-          ./Release/RELEASES
-          ./Release/SimplyBudget-${{ github.ref_name }}-full.nupkg
-          ./Release/SimplyBudgetSetup.exe
-     
-    - name: Update Service
-      run: |
-        iwr https://sciuridae.azurewebsites.net/App/update/SimplyBudget?version=${{ github.ref_name }}
+          ./SciuridaeReleases/RELEASES
+          ./SciuridaeReleases/SimplyBudget-${{ github.ref_name }}-full.nupkg
+          ./SciuridaeReleases/SimplyBudgetSetup.exe
