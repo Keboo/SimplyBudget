@@ -13,7 +13,9 @@ public class MainWindowViewModelTests
     [TestMethod]
     public void Constructor_CreatesDependencies()
     {
-        var mocker = new AutoMocker().WithMessenger();
+        var mocker = new AutoMocker()
+            .WithMessenger()
+            .WithCurrentMonth();
         using var scope = mocker.WithDbScope();
 
         var vm = mocker.CreateInstance<MainWindowViewModel>();
@@ -47,7 +49,9 @@ public class MainWindowViewModelTests
     [TestMethod]
     public void OnDoneAddingItemMessage_AddItemCleared()
     {
-        var mocker = new AutoMocker().WithMessenger();
+        var mocker = new AutoMocker()
+            .WithMessenger()
+            .WithCurrentMonth();
         using var scope = mocker.WithDbScope();
 
         var vm = mocker.CreateInstance<MainWindowViewModel>();
