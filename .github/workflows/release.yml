@@ -27,8 +27,7 @@ jobs:
       run: dotnet test --no-build --configuration Release --verbosity normal
 
     - name: dotnet publish
-      if: github.event_name != 'pull_request'
-      run: dotnet publish --configuration Release -p:SciuridaeApiKey=${{ secrets.SCIURIDAEAPIKEY }}
+      run: dotnet publish --no-build --configuration Release -p:Version=${{ github.ref_name }} -p:SciuridaeApiKey=${{ secrets.SCIURIDAEAPIKEY }}
 
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v2
