@@ -4,5 +4,5 @@ You can watch me work on this project as part of my [live streams](https://twitc
 
 
 ## Releases
-The latest version of the application can be downloaded [here](https://simplybudget.blob.core.windows.net/app/index.html).
+The latest version of the application can be downloaded [here](https://sciuridae.azurewebsites.net/App/download-setup/SimplyBudget).
 
