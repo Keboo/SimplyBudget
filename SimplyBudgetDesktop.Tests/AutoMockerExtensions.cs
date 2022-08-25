@@ -1,69 +1,68 @@
 ﻿using AutoDI;
-using Microsoft.Toolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using Moq.AutoMock;
 using SimplyBudget;
 using SimplyBudgetSharedTests;
 
-namespace SimplyBudgetDesktop.Tests
+namespace SimplyBudgetDesktop.Tests;
+
+public static class AutoMockerExtensions
 {
-    public static class AutoMockerExtensions
+    public static AutoMocker WithDefaults(this AutoMocker mocker)
+        => mocker.WithMessenger()
+                 .WithCurrentMonth();
+
+    public static AutoMocker WithCurrentMonth(this AutoMocker mocker, DateTime? month = null)
     {
-        public static AutoMocker WithDefaults(this AutoMocker mocker)
-            => mocker.WithMessenger()
-                     .WithCurrentMonth();
-
-        public static AutoMocker WithCurrentMonth(this AutoMocker mocker, DateTime? month = null)
+        var currentMonth = new CurrentMonth(mocker.Get<IMessenger>());
+        if (month != null)
         {
-            var currentMonth = new CurrentMonth(mocker.Get<IMessenger>());
-            if (month != null)
-            {
-                currentMonth.CurrenMonth = month.Value;
-            }
-            mocker.Use<ICurrentMonth>(currentMonth);
-            return mocker;
+            currentMonth.CurrenMonth = month.Value;
+        }
+        mocker.Use<ICurrentMonth>(currentMonth);
+        return mocker;
+    }
+
+    public static IDisposable WithAutoDIResolver(this AutoMocker mocker)
+    {
+        var provider = new AutoDIServiceProvider(mocker);
+        GlobalDI.Register(provider);
+        return new Disposable(() => GlobalDI.Unregister(provider));
+    }
+
+    private class Disposable : IDisposable
+    {
+        public Disposable(Action onDispose)
+        {
+            OnDispose = onDispose ?? throw new ArgumentNullException(nameof(onDispose));
         }
 
-        public static IDisposable WithAutoDIResolver(this AutoMocker mocker)
+        private Action OnDispose { get; }
+
+        public void Dispose() => OnDispose();
+    }
+
+    private class AutoDIServiceProvider : IServiceProvider
+    {
+        private static readonly AsyncLocal<AutoMocker?> _AsyncLocalBuilder = new();
+
+        private static AutoMocker? CurrentBuilder
         {
-            var provider = new AutoDIServiceProvider(mocker);
-            GlobalDI.Register(provider);
-            return new Disposable(() => GlobalDI.Unregister(provider));
+            get => _AsyncLocalBuilder.Value;
+            set => _AsyncLocalBuilder.Value = value;
         }
 
-        private class Disposable : IDisposable
+        public AutoDIServiceProvider(AutoMocker mocker)
         {
-            public Disposable(Action onDispose)
-            {
-                OnDispose = onDispose ?? throw new ArgumentNullException(nameof(onDispose));
-            }
-
-            private Action OnDispose { get; }
-
-            public void Dispose() => OnDispose();
+            CurrentBuilder = mocker ?? throw new ArgumentNullException(nameof(mocker));
         }
 
-        private class AutoDIServiceProvider : IServiceProvider
+        public object GetService(Type serviceType)
         {
-            private static readonly AsyncLocal<AutoMocker?> _AsyncLocalBuilder = new();
+            AutoMocker? mocker = CurrentBuilder;
+            _ = mocker ?? throw new InvalidOperationException($"'mocker' was null when resolving {serviceType.FullName}.");
 
-            private static AutoMocker? CurrentBuilder
-            {
-                get => _AsyncLocalBuilder.Value;
-                set => _AsyncLocalBuilder.Value = value;
-            }
-
-            public AutoDIServiceProvider(AutoMocker mocker)
-            {
-                CurrentBuilder = mocker ?? throw new ArgumentNullException(nameof(mocker));
-            }
-
-            public object GetService(Type serviceType)
-            {
-                AutoMocker? mocker = CurrentBuilder;
-                _ = mocker ?? throw new InvalidOperationException($"'mocker' was null when resolving {serviceType.FullName}.");
-
-                return mocker.Get(serviceType);
-            }
+            return mocker.Get(serviceType);
         }
     }
 }

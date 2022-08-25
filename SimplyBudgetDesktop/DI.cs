@@ -1,6 +1,6 @@
 ﻿using AutoDI;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Toolkit.Mvvm.Messaging;
 using SimplyBudgetShared.Data;
 
 namespace SimplyBudget;

@@ -1,20 +1,18 @@
-﻿using Microsoft.Toolkit.Mvvm.Messaging;
-using System.Collections.Generic;
+﻿using CommunityToolkit.Mvvm.Messaging;
 
-namespace SimplyBudgetSharedTests
+namespace SimplyBudgetSharedTests;
+
+public class MessageWatcher<TMessage> : IRecipient<TMessage>
+    where TMessage : class
 {
-    public class MessageWatcher<TMessage> : IRecipient<TMessage>
-        where TMessage : class
-    {
-        private readonly List<TMessage> _Messages = new List<TMessage>();
-        public IReadOnlyList<TMessage> Messages => _Messages.AsReadOnly();
+    private readonly List<TMessage> _Messages = new();
+    public IReadOnlyList<TMessage> Messages => _Messages.AsReadOnly();
 
-        public void Receive(TMessage message)
+    public void Receive(TMessage message)
+    {
+        lock (_Messages)
         {
-            lock (_Messages)
-            {
-                _Messages.Add(message);
-            }
+            _Messages.Add(message);
         }
     }
 }
