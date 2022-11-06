@@ -102,11 +102,11 @@ public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelE
         switch (@event.Type)
         {
             case EventType.Created:
-                Items.Add(await ExpenseCategoryViewModelEx.Create(ContextFactory, expenseCategory));
+                Items.Add(await ExpenseCategoryViewModelEx.Create(ContextFactory, expenseCategory, CurrentMonth.CurrenMonth));
                 break;
             case EventType.Updated:
                 Items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
-                Items.Add(await ExpenseCategoryViewModelEx.Create(ContextFactory, expenseCategory));
+                Items.Add(await ExpenseCategoryViewModelEx.Create(ContextFactory, expenseCategory, CurrentMonth.CurrenMonth));
                 break;
             case EventType.Deleted:
                 Items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
