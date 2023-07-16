@@ -1,11 +1,9 @@
-﻿namespace SimplyBudget.ViewModels
-{
-    public enum AddType
-    {
-        None,
-        Transaction,
-        Income,
-        Transfer
-    }
+﻿namespace SimplyBudget.ViewModels;
 
+public enum AddType
+{
+    None,
+    Transaction,
+    Income,
+    Transfer
 }

@@ -1,5 +1,4 @@
-﻿namespace SimplyBudget.Messaging
-{
-    public record StorageLocationChanged
-    { }
-}
+﻿namespace SimplyBudget.Messaging;
+
+public record StorageLocationChanged
+{ }

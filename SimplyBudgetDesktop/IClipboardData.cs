@@ -1,7 +1,6 @@
-﻿namespace SimplyBudget
+﻿namespace SimplyBudget;
+
+interface IClipboardData
 {
-    interface IClipboardData
-    {
-        void OnCopy();
-    }
+    void OnCopy();
 }

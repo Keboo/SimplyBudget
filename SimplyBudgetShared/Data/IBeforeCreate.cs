@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace SimplyBudgetShared.Data
+namespace SimplyBudgetShared.Data;
+
+internal interface IBeforeCreate
 {
-    internal interface IBeforeCreate
-    {
-        Task BeforeCreate(BudgetContext context);
-    }
+    Task BeforeCreate(BudgetContext context);
 }

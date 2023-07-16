@@ -3,22 +3,21 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace SimplyBudget.ValueConverter
-{
-    public class ExpenseCategoryBudgettedDisplayStringConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is ExpenseCategory category)
-            {
-                return category.GetBudgetedDisplayString();
-            }
-            return "";
-        }
+namespace SimplyBudget.ValueConverter;
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+public class ExpenseCategoryBudgettedDisplayStringConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is ExpenseCategory category)
         {
-            throw new NotImplementedException();
+            return category.GetBudgetedDisplayString();
         }
+        return "";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
     }
 }

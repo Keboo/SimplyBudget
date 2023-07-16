@@ -1,8 +1,7 @@
 ﻿using System;
 
-namespace SimplyBudget.Messaging
+namespace SimplyBudget.Messaging;
+
+public record CurrentMonthChanged(DateTime StartOfMonth)
 {
-    public record CurrentMonthChanged(DateTime StartOfMonth)
-    {
-    }
 }

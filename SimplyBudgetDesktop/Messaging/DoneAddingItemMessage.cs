@@ -1,5 +1,3 @@
-﻿namespace SimplyBudget.Messaging
-{
-    public record DoneAddingItemMessage { }
+﻿namespace SimplyBudget.Messaging;
 
-}
+public record DoneAddingItemMessage { }

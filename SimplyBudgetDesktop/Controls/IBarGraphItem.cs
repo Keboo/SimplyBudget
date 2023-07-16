@@ -1,9 +1,8 @@
-﻿namespace SimplyBudget.Controls
+﻿namespace SimplyBudget.Controls;
+
+public interface IBarGraphItem
 {
-    public interface IBarGraphItem
-    {
-        string BarTitle { get; }
-        int BarPercentHeight { get; }
-        int? LinePercentHeight { get; }
-    }
+    string BarTitle { get; }
+    int BarPercentHeight { get; }
+    int? LinePercentHeight { get; }
 }

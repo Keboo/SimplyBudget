@@ -2,32 +2,31 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace SimplyBudget.Behaviors
+namespace SimplyBudget.Behaviors;
+
+public class FocusOnVisibleBehavior : Behavior<TextBox>
 {
-    public class FocusOnVisibleBehavior : Behavior<TextBox>
+    protected override void OnAttached()
     {
-        protected override void OnAttached()
-        {
-            base.OnAttached();
-            DoFocus();
-            AssociatedObject.IsVisibleChanged += OnIsVisibleChanged;
-        }
+        base.OnAttached();
+        DoFocus();
+        AssociatedObject.IsVisibleChanged += OnIsVisibleChanged;
+    }
 
-        protected override void OnDetaching()
-        {
-            AssociatedObject.IsVisibleChanged -= OnIsVisibleChanged;
-            base.OnDetaching();
-        }
+    protected override void OnDetaching()
+    {
+        AssociatedObject.IsVisibleChanged -= OnIsVisibleChanged;
+        base.OnDetaching();
+    }
 
-        private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-            DoFocus();
-        }
+    private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        DoFocus();
+    }
 
-        private void DoFocus()
-        {
-            if (AssociatedObject.Focusable)
-                AssociatedObject.Focus();
-        }
+    private void DoFocus()
+    {
+        if (AssociatedObject.Focusable)
+            AssociatedObject.Focus();
     }
 }

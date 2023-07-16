@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace SimplyBudgetShared.Data
+namespace SimplyBudgetShared.Data;
+
+internal interface IBeforeRemove
 {
-    internal interface IBeforeRemove
-    {
-        Task BeforeRemove(BudgetContext context);
-    }
+    Task BeforeRemove(BudgetContext context);
 }

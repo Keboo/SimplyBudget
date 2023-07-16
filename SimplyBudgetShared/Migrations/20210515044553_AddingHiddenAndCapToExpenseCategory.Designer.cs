@@ -6,296 +6,295 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SimplyBudgetShared.Data;
 
-namespace SimplyBudgetShared.Migrations
+namespace SimplyBudgetShared.Migrations;
+
+[DbContext(typeof(BudgetContext))]
+[Migration("20210515044553_AddingHiddenAndCapToExpenseCategory")]
+partial class AddingHiddenAndCapToExpenseCategory
 {
-    [DbContext(typeof(BudgetContext))]
-    [Migration("20210515044553_AddingHiddenAndCapToExpenseCategory")]
-    partial class AddingHiddenAndCapToExpenseCategory
+    protected override void BuildTargetModel(ModelBuilder modelBuilder)
     {
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
-        {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "5.0.6");
+        modelBuilder
+            .HasAnnotation("ProductVersion", "5.0.6");
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.Account", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+        modelBuilder.Entity("SimplyBudgetShared.Data.Account", b =>
+            {
+                b.Property<int>("ID")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
 
-                    b.Property<bool>("IsDefault")
-                        .HasColumnType("INTEGER");
+                b.Property<bool>("IsDefault")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                b.Property<string>("Name")
+                    .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("ValidatedDate")
-                        .HasColumnType("TEXT");
+                b.Property<DateTime>("ValidatedDate")
+                    .HasColumnType("TEXT");
 
-                    b.HasKey("ID");
+                b.HasKey("ID");
 
-                    b.HasIndex("IsDefault");
+                b.HasIndex("IsDefault");
 
-                    b.ToTable("Account");
-                });
+                b.ToTable("Account");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategory", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+        modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategory", b =>
+            {
+                b.Property<int>("ID")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
 
-                    b.Property<int?>("AccountID")
-                        .HasColumnType("INTEGER");
+                b.Property<int?>("AccountID")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<int>("BudgetedAmount")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("BudgetedAmount")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<int>("BudgetedPercentage")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("BudgetedPercentage")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<int?>("Cap")
-                        .HasColumnType("INTEGER");
+                b.Property<int?>("Cap")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<string>("CategoryName")
-                        .HasColumnType("TEXT");
+                b.Property<string>("CategoryName")
+                    .HasColumnType("TEXT");
 
-                    b.Property<int>("CurrentBalance")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("CurrentBalance")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<bool>("IsHidden")
-                        .HasColumnType("INTEGER");
+                b.Property<bool>("IsHidden")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                b.Property<string>("Name")
+                    .HasColumnType("TEXT");
 
-                    b.HasKey("ID");
+                b.HasKey("ID");
 
-                    b.HasIndex("AccountID");
+                b.HasIndex("AccountID");
 
-                    b.HasIndex("CategoryName");
+                b.HasIndex("CategoryName");
 
-                    b.ToTable("ExpenseCategory");
-                });
+                b.ToTable("ExpenseCategory");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryItem", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+        modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryItem", b =>
+            {
+                b.Property<int>("ID")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("TEXT");
+                b.Property<DateTime>("Date")
+                    .HasColumnType("TEXT");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                b.Property<string>("Description")
+                    .HasColumnType("TEXT");
 
-                    b.HasKey("ID");
+                b.HasKey("ID");
 
-                    b.ToTable("ExpenseCategoryItem");
-                });
+                b.ToTable("ExpenseCategoryItem");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryItemDetail", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+        modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryItemDetail", b =>
+            {
+                b.Property<int>("ID")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
 
-                    b.Property<int>("Amount")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("Amount")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<int>("ExpenseCategoryId")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("ExpenseCategoryId")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<int>("ExpenseCategoryItemId")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("ExpenseCategoryItemId")
+                    .HasColumnType("INTEGER");
 
-                    b.HasKey("ID");
+                b.HasKey("ID");
 
-                    b.HasIndex("ExpenseCategoryId");
+                b.HasIndex("ExpenseCategoryId");
 
-                    b.HasIndex("ExpenseCategoryItemId");
+                b.HasIndex("ExpenseCategoryItemId");
 
-                    b.ToTable("ExpenseCategoryItemDetail");
-                });
+                b.ToTable("ExpenseCategoryItemDetail");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.Metadata", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+        modelBuilder.Entity("SimplyBudgetShared.Data.Metadata", b =>
+            {
+                b.Property<int>("ID")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
 
-                    b.Property<string>("Key")
-                        .HasColumnType("TEXT");
+                b.Property<string>("Key")
+                    .HasColumnType("TEXT");
 
-                    b.Property<string>("Value")
-                        .HasColumnType("TEXT");
+                b.Property<string>("Value")
+                    .HasColumnType("TEXT");
 
-                    b.HasKey("ID");
+                b.HasKey("ID");
 
-                    b.ToTable("MetaData");
-                });
+                b.ToTable("MetaData");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.Transaction", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+        modelBuilder.Entity("SimplyBudgetShared.Data.Transaction", b =>
+            {
+                b.Property<int>("ID")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("TEXT");
+                b.Property<DateTime>("Date")
+                    .HasColumnType("TEXT");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                b.Property<string>("Description")
+                    .HasColumnType("TEXT");
 
-                    b.HasKey("ID");
+                b.HasKey("ID");
 
-                    b.HasIndex("Date");
+                b.HasIndex("Date");
 
-                    b.ToTable("Transaction");
-                });
+                b.ToTable("Transaction");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.TransactionItem", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+        modelBuilder.Entity("SimplyBudgetShared.Data.TransactionItem", b =>
+            {
+                b.Property<int>("ID")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
 
-                    b.Property<int>("Amount")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("Amount")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                b.Property<string>("Description")
+                    .HasColumnType("TEXT");
 
-                    b.Property<int>("ExpenseCategoryID")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("ExpenseCategoryID")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<int>("TransactionID")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("TransactionID")
+                    .HasColumnType("INTEGER");
 
-                    b.HasKey("ID");
+                b.HasKey("ID");
 
-                    b.HasIndex("ExpenseCategoryID");
+                b.HasIndex("ExpenseCategoryID");
 
-                    b.HasIndex("TransactionID");
+                b.HasIndex("TransactionID");
 
-                    b.ToTable("TransactionItem");
-                });
+                b.ToTable("TransactionItem");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.Transfer", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+        modelBuilder.Entity("SimplyBudgetShared.Data.Transfer", b =>
+            {
+                b.Property<int>("ID")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("INTEGER");
 
-                    b.Property<int>("Amount")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("Amount")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("TEXT");
+                b.Property<DateTime>("Date")
+                    .HasColumnType("TEXT");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                b.Property<string>("Description")
+                    .HasColumnType("TEXT");
 
-                    b.Property<int>("FromExpenseCategoryID")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("FromExpenseCategoryID")
+                    .HasColumnType("INTEGER");
 
-                    b.Property<int>("ToExpenseCategoryID")
-                        .HasColumnType("INTEGER");
+                b.Property<int>("ToExpenseCategoryID")
+                    .HasColumnType("INTEGER");
 
-                    b.HasKey("ID");
+                b.HasKey("ID");
 
-                    b.HasIndex("Date");
+                b.HasIndex("Date");
 
-                    b.HasIndex("FromExpenseCategoryID");
+                b.HasIndex("FromExpenseCategoryID");
 
-                    b.HasIndex("ToExpenseCategoryID");
+                b.HasIndex("ToExpenseCategoryID");
 
-                    b.ToTable("Transfer");
-                });
+                b.ToTable("Transfer");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategory", b =>
-                {
-                    b.HasOne("SimplyBudgetShared.Data.Account", "Account")
-                        .WithMany("ExpenseCategories")
-                        .HasForeignKey("AccountID");
+        modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategory", b =>
+            {
+                b.HasOne("SimplyBudgetShared.Data.Account", "Account")
+                    .WithMany("ExpenseCategories")
+                    .HasForeignKey("AccountID");
 
-                    b.Navigation("Account");
-                });
+                b.Navigation("Account");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryItemDetail", b =>
-                {
-                    b.HasOne("SimplyBudgetShared.Data.ExpenseCategory", "ExpenseCategory")
-                        .WithMany()
-                        .HasForeignKey("ExpenseCategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+        modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryItemDetail", b =>
+            {
+                b.HasOne("SimplyBudgetShared.Data.ExpenseCategory", "ExpenseCategory")
+                    .WithMany()
+                    .HasForeignKey("ExpenseCategoryId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.HasOne("SimplyBudgetShared.Data.ExpenseCategoryItem", "ExpenseCategoryItem")
-                        .WithMany("Details")
-                        .HasForeignKey("ExpenseCategoryItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                b.HasOne("SimplyBudgetShared.Data.ExpenseCategoryItem", "ExpenseCategoryItem")
+                    .WithMany("Details")
+                    .HasForeignKey("ExpenseCategoryItemId")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.Navigation("ExpenseCategory");
+                b.Navigation("ExpenseCategory");
 
-                    b.Navigation("ExpenseCategoryItem");
-                });
+                b.Navigation("ExpenseCategoryItem");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.TransactionItem", b =>
-                {
-                    b.HasOne("SimplyBudgetShared.Data.ExpenseCategory", "ExpenseCategory")
-                        .WithMany()
-                        .HasForeignKey("ExpenseCategoryID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+        modelBuilder.Entity("SimplyBudgetShared.Data.TransactionItem", b =>
+            {
+                b.HasOne("SimplyBudgetShared.Data.ExpenseCategory", "ExpenseCategory")
+                    .WithMany()
+                    .HasForeignKey("ExpenseCategoryID")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.HasOne("SimplyBudgetShared.Data.Transaction", "Transaction")
-                        .WithMany("TransactionItems")
-                        .HasForeignKey("TransactionID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                b.HasOne("SimplyBudgetShared.Data.Transaction", "Transaction")
+                    .WithMany("TransactionItems")
+                    .HasForeignKey("TransactionID")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.Navigation("ExpenseCategory");
+                b.Navigation("ExpenseCategory");
 
-                    b.Navigation("Transaction");
-                });
+                b.Navigation("Transaction");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.Transfer", b =>
-                {
-                    b.HasOne("SimplyBudgetShared.Data.ExpenseCategory", "FromExpenseCategory")
-                        .WithMany()
-                        .HasForeignKey("FromExpenseCategoryID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+        modelBuilder.Entity("SimplyBudgetShared.Data.Transfer", b =>
+            {
+                b.HasOne("SimplyBudgetShared.Data.ExpenseCategory", "FromExpenseCategory")
+                    .WithMany()
+                    .HasForeignKey("FromExpenseCategoryID")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.HasOne("SimplyBudgetShared.Data.ExpenseCategory", "ToExpenseCategory")
-                        .WithMany()
-                        .HasForeignKey("ToExpenseCategoryID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                b.HasOne("SimplyBudgetShared.Data.ExpenseCategory", "ToExpenseCategory")
+                    .WithMany()
+                    .HasForeignKey("ToExpenseCategoryID")
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .IsRequired();
 
-                    b.Navigation("FromExpenseCategory");
+                b.Navigation("FromExpenseCategory");
 
-                    b.Navigation("ToExpenseCategory");
-                });
+                b.Navigation("ToExpenseCategory");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.Account", b =>
-                {
-                    b.Navigation("ExpenseCategories");
-                });
+        modelBuilder.Entity("SimplyBudgetShared.Data.Account", b =>
+            {
+                b.Navigation("ExpenseCategories");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryItem", b =>
-                {
-                    b.Navigation("Details");
-                });
+        modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryItem", b =>
+            {
+                b.Navigation("Details");
+            });
 
-            modelBuilder.Entity("SimplyBudgetShared.Data.Transaction", b =>
-                {
-                    b.Navigation("TransactionItems");
-                });
+        modelBuilder.Entity("SimplyBudgetShared.Data.Transaction", b =>
+            {
+                b.Navigation("TransactionItems");
+            });
 #pragma warning restore 612, 618
-        }
     }
 }

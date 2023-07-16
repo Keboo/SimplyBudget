@@ -1,6 +1,5 @@
-﻿namespace SimplyBudget.Messaging
+﻿namespace SimplyBudget.Messaging;
+
+public record LineItemAmountUpdated
 {
-    public record LineItemAmountUpdated
-    {
-    }
 }

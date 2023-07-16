@@ -1,19 +1,18 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 
-namespace SimplyBudget.TemplateSelectors
+namespace SimplyBudget.TemplateSelectors;
+
+
+public class NullTemplateSelector : DataTemplateSelector
 {
+    public DataTemplate? NullTemplate { get; set; }
+    public DataTemplate? DefaultTemplate { get; set; }
 
-    public class NullTemplateSelector : DataTemplateSelector
+    public override DataTemplate? SelectTemplate(object item, DependencyObject container)
     {
-        public DataTemplate? NullTemplate { get; set; }
-        public DataTemplate? DefaultTemplate { get; set; }
-
-        public override DataTemplate? SelectTemplate(object item, DependencyObject container)
-        {
-            if (item is null)
-                return NullTemplate;
-            return DefaultTemplate;
-        }
+        if (item is null)
+            return NullTemplate;
+        return DefaultTemplate;
     }
 }

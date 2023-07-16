@@ -3,43 +3,42 @@ using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Markup;
 
-namespace SimplyBudget.ValueConverter
+namespace SimplyBudget.ValueConverter;
+
+[MarkupExtensionReturnType(typeof(IValueConverter))]
+public abstract class MarkupValueConverter<T> : MarkupExtension, IValueConverter where T : IValueConverter, new()
 {
-    [MarkupExtensionReturnType(typeof(IValueConverter))]
-    public abstract class MarkupValueConverter<T> : MarkupExtension, IValueConverter where T : IValueConverter, new()
+    public override object ProvideValue(IServiceProvider serviceProvider)
     {
-        public override object ProvideValue(IServiceProvider serviceProvider)
-        {
-            return new T();
-        }
-
-        public virtual object? Convert(object? value, Type? targetType, object? parameter, CultureInfo? culture)
-        {
-            throw new InvalidOperationException();
-        }
-
-        public virtual object? ConvertBack(object? value, Type? targetType, object? parameter, CultureInfo? culture)
-        {
-            throw new InvalidOperationException();
-        }
+        return new T();
     }
 
-    [MarkupExtensionReturnType(typeof(IValueConverter))]
-    public abstract class MarkupMultiValueConverter<T> : MarkupExtension, IMultiValueConverter where T : IMultiValueConverter, new()
+    public virtual object? Convert(object? value, Type? targetType, object? parameter, CultureInfo? culture)
     {
-        public override object ProvideValue(IServiceProvider serviceProvider)
-        {
-            return new T();
-        }
+        throw new InvalidOperationException();
+    }
 
-        public virtual object? Convert(object[]? values, Type? targetType, object? parameter, CultureInfo? culture)
-        {
-            throw new NotImplementedException();
-        }
+    public virtual object? ConvertBack(object? value, Type? targetType, object? parameter, CultureInfo? culture)
+    {
+        throw new InvalidOperationException();
+    }
+}
 
-        public virtual object[]? ConvertBack(object? value, Type[]? targetTypes, object? parameter, CultureInfo? culture)
-        {
-            throw new NotImplementedException();
-        }
+[MarkupExtensionReturnType(typeof(IValueConverter))]
+public abstract class MarkupMultiValueConverter<T> : MarkupExtension, IMultiValueConverter where T : IMultiValueConverter, new()
+{
+    public override object ProvideValue(IServiceProvider serviceProvider)
+    {
+        return new T();
+    }
+
+    public virtual object? Convert(object[]? values, Type? targetType, object? parameter, CultureInfo? culture)
+    {
+        throw new NotImplementedException();
+    }
+
+    public virtual object[]? ConvertBack(object? value, Type[]? targetTypes, object? parameter, CultureInfo? culture)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -4,45 +4,44 @@ using SimplyBudgetShared.Utilities;
 using System;
 using System.Globalization;
 
-namespace SimplyBudget.ValueConverter
+namespace SimplyBudget.ValueConverter;
+
+public class CurrencyValueConverter : MarkupValueConverter<CurrencyValueConverter>
 {
-    public class CurrencyValueConverter : MarkupValueConverter<CurrencyValueConverter>
+    // ReSharper disable EmptyConstructor
+    public CurrencyValueConverter() { }
+    // ReSharper restore EmptyConstructor
+
+    public override object? Convert(object? value, Type? targetType, object? parameter, CultureInfo? culture)
     {
-        // ReSharper disable EmptyConstructor
-        public CurrencyValueConverter() { }
-        // ReSharper restore EmptyConstructor
-
-        public override object? Convert(object? value, Type? targetType, object? parameter, CultureInfo? culture)
+        if (value is int)
         {
-            if (value is int)
-            {
-                var intValue = (int) value;
-                return intValue.FormatCurrency();
-            }
-            if (value is ExpenseCategoryItem item)
-            {
-                return item.GetDisplayAmount();
-            }
-            return null;
+            var intValue = (int) value;
+            return intValue.FormatCurrency();
         }
-
-        public override object? ConvertBack(object? value, Type? targetType, object? parameter, CultureInfo? culture)
+        if (value is ExpenseCategoryItem item)
         {
-            if (value != null)
-            {
-                var stringValue = value.ToString();
-                if (string.IsNullOrWhiteSpace(stringValue)) return 0;
+            return item.GetDisplayAmount();
+        }
+        return null;
+    }
 
-                decimal rv;
-                if (decimal.TryParse(stringValue, NumberStyles.Currency, culture, out rv))
-                {
-                    return (int)decimal.Round(rv * 100);
-                }
+    public override object? ConvertBack(object? value, Type? targetType, object? parameter, CultureInfo? culture)
+    {
+        if (value != null)
+        {
+            var stringValue = value.ToString();
+            if (string.IsNullOrWhiteSpace(stringValue)) return 0;
+
+            decimal rv;
+            if (decimal.TryParse(stringValue, NumberStyles.Currency, culture, out rv))
+            {
+                return (int)decimal.Round(rv * 100);
             }
+        }
 #if DEBUG
-            System.Diagnostics.Debugger.Break();
+        System.Diagnostics.Debugger.Break();
 #endif
-            return null;
-        }
+        return null;
     }
 }

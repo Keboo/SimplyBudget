@@ -1,28 +1,27 @@
-﻿namespace SimplyBudgetShared.Data
+﻿namespace SimplyBudgetShared.Data;
+
+public abstract class BaseItem
 {
-    public abstract class BaseItem
+    public int ID { get; set; }
+
+    public override bool Equals(object? obj)
     {
-        public int ID { get; set; }
+        if (obj is BaseItem other)
+            return Equals(other);
+        return false;
+    }
 
-        public override bool Equals(object? obj)
+    protected virtual bool Equals(BaseItem other)
+    {
+        if (ID == 0)
         {
-            if (obj is BaseItem other)
-                return Equals(other);
-            return false;
+            return ReferenceEquals(this, other);
         }
+        return ID == other?.ID;
+    }
 
-        protected virtual bool Equals(BaseItem other)
-        {
-            if (ID == 0)
-            {
-                return ReferenceEquals(this, other);
-            }
-            return ID == other?.ID;
-        }
-
-        public override int GetHashCode()
-        {
-            return ID;
-        }
+    public override int GetHashCode()
+    {
+        return ID;
     }
 }

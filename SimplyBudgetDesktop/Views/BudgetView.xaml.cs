@@ -4,95 +4,94 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace SimplyBudget.Views
+namespace SimplyBudget.Views;
+
+/// <summary>
+/// Interaction logic for BudgetView.xaml
+/// </summary>
+public partial class BudgetView
 {
-    /// <summary>
-    /// Interaction logic for BudgetView.xaml
-    /// </summary>
-    public partial class BudgetView
+    private BudgetViewModel ViewModel => (BudgetViewModel)DataContext;
+
+    public BudgetView()
     {
-        private BudgetViewModel ViewModel => (BudgetViewModel)DataContext;
+        InitializeComponent();
+    }
 
-        public BudgetView()
+    private void Open_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+        var category = (ExpenseCategoryViewModelEx)e.Parameter;
+        ViewModel.OpenExpenseCategory(category);
+    }
+
+    private void Properties_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+        if (e.Parameter is ExpenseCategoryViewModelEx category)
         {
-            InitializeComponent();
+            category.IsEditing = true;
         }
+    }
 
-        private void Open_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    private void ListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        foreach (var category in e.RemovedItems.OfType<ExpenseCategoryViewModelEx>())
         {
-            var category = (ExpenseCategoryViewModelEx)e.Parameter;
-            ViewModel.OpenExpenseCategory(category);
+            category.IsEditing = false;
         }
+    }
 
-        private void Properties_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    private async void Save_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+        //TODO: debounce?
+        if (e.Parameter is ExpenseCategoryViewModelEx category &&
+            await ViewModel.SaveChanges(category))
         {
-            if (e.Parameter is ExpenseCategoryViewModelEx category)
-            {
-                category.IsEditing = true;
-            }
+            category.IsEditing = false;
         }
+    }
 
-        private void ListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private async void Delete_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+        if (e.Parameter is ExpenseCategoryViewModelEx category)
         {
-            foreach (var category in e.RemovedItems.OfType<ExpenseCategoryViewModelEx>())
-            {
-                category.IsEditing = false;
-            }
+            await ViewModel.Delete(category);
         }
+    }
 
-        private async void Save_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    private void Delete_CanExecute(object sender, System.Windows.Input.CanExecuteRoutedEventArgs e)
+    {
+        if (e.Parameter is ExpenseCategoryViewModelEx category)
         {
-            //TODO: debounce?
-            if (e.Parameter is ExpenseCategoryViewModelEx category &&
-                await ViewModel.SaveChanges(category))
-            {
-                category.IsEditing = false;
-            }
+            e.CanExecute = category.IsHidden == false;
         }
+    }
 
-        private async void Delete_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    private async void Restore_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+        if (e.Parameter is ExpenseCategoryViewModelEx category)
         {
-            if (e.Parameter is ExpenseCategoryViewModelEx category)
-            {
-                await ViewModel.Delete(category);
-            }
+            await ViewModel.Undelete(category);
         }
+    }
 
-        private void Delete_CanExecute(object sender, System.Windows.Input.CanExecuteRoutedEventArgs e)
+    private void Restore_CanExecute(object sender, System.Windows.Input.CanExecuteRoutedEventArgs e)
+    {
+        if (e.Parameter is ExpenseCategoryViewModelEx category)
         {
-            if (e.Parameter is ExpenseCategoryViewModelEx category)
-            {
-                e.CanExecute = category.IsHidden == false;
-            }
+            e.CanExecute = category.IsHidden;
         }
+    }
 
-        private async void Restore_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    private void Copy_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
+    {
+        switch (e.Parameter)
         {
-            if (e.Parameter is ExpenseCategoryViewModelEx category)
-            {
-                await ViewModel.Undelete(category);
-            }
-        }
-
-        private void Restore_CanExecute(object sender, System.Windows.Input.CanExecuteRoutedEventArgs e)
-        {
-            if (e.Parameter is ExpenseCategoryViewModelEx category)
-            {
-                e.CanExecute = category.IsHidden;
-            }
-        }
-
-        private void Copy_Executed(object sender, System.Windows.Input.ExecutedRoutedEventArgs e)
-        {
-            switch (e.Parameter)
-            {
-                case IClipboardData clipboardData:
-                    clipboardData.OnCopy();
-                    break;
-                case object obj:
-                    Clipboard.SetText(obj.ToString());
-                    break;
-            }
+            case IClipboardData clipboardData:
+                clipboardData.OnCopy();
+                break;
+            case object obj:
+                Clipboard.SetText(obj.ToString());
+                break;
         }
     }
 }

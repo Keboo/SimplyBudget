@@ -1,10 +1,9 @@
 ﻿using SimplyBudgetShared.Data;
 using System.Collections.Generic;
 
-namespace SimplyBudgetShared.Import
+namespace SimplyBudgetShared.Import;
+
+public interface IImport
 {
-    public interface IImport
-    {
-        IAsyncEnumerable<ExpenseCategoryItem> GetItems();
-    }
+    IAsyncEnumerable<ExpenseCategoryItem> GetItems();
 }

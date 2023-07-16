@@ -1,6 +1,5 @@
 ﻿using SimplyBudget.ViewModels;
 
-namespace SimplyBudget.Messaging
-{
-    public record OpenHistory(ExpenseCategoryViewModelEx ExpenseCategory) { }
-}
+namespace SimplyBudget.Messaging;
+
+public record OpenHistory(ExpenseCategoryViewModelEx ExpenseCategory) { }
