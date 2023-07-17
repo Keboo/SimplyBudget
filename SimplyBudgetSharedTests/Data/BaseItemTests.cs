@@ -26,16 +26,29 @@ public class BaseItemTests
     }
 
     [TestMethod]
-    public void HashCodeIsID()
+    public void GetHashCode_ReturnsSameValue_ForEqualObjects()
     {
-        var item1 = new TestableBaseItem { ID = 1 };
-        var item2 = new TestableBaseItem { ID = 2 };
+        TestableBaseItem item1 = new() { ID = 1 };
+        TestableBaseItem item2 = new() { ID = 1 };
 
-        Assert.AreEqual(1, item1.GetHashCode());
-        Assert.AreEqual(2, item2.GetHashCode());
+        Assert.AreEqual(item1.GetHashCode(), item2.GetHashCode());
+    }
+
+    [TestMethod]
+    public void GetHashCode_ReturnsDifferentValues_ForEqualObjectsOfDifferentTypes()
+    {
+        TestableBaseItem item1 = new() { ID = 1 };
+        TestableBaseItem2 item2 = new() { ID = 1 };
+
+        Assert.AreNotEqual(item1.GetHashCode(), item2.GetHashCode());
     }
 
     private class TestableBaseItem : BaseItem
+    {
+
+    }
+
+    private class TestableBaseItem2 : BaseItem
     {
 
     }

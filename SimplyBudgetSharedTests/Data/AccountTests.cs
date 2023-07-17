@@ -147,7 +147,7 @@ public class AccountTests
         //Act
         using var actContext = factory.Create();
         var account = await actContext.Accounts.FindAsync(account1.ID);
-        account.Name += "-Edited";
+        account!.Name += "-Edited";
         await actContext.SaveChangesAsync();
 
         //Assert
@@ -174,7 +174,7 @@ public class AccountTests
         //Act
         using var actContext = factory.Create();
         var account = await actContext.Accounts.FindAsync(account1.ID);
-        actContext.Accounts.Remove(account);
+        actContext.Accounts.Remove(account!);
         await actContext.SaveChangesAsync();
 
         //Assert

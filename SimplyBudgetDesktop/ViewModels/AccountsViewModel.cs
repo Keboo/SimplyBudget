@@ -36,9 +36,9 @@ public class AccountsViewModel :
         }
     }
 
-    public void Receive(DatabaseEvent<Account> _) => LoadItemsAsync();
+    public async void Receive(DatabaseEvent<Account> _) => await LoadItemsAsync();
 
-    public void Receive(DatabaseEvent<ExpenseCategory> _) => LoadItemsAsync();
+    public async void Receive(DatabaseEvent<ExpenseCategory> _) => await LoadItemsAsync();
 
     private async void OnShowAccounts()
     {

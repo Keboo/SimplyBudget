@@ -1,5 +1,6 @@
 ﻿using AutoDI;
 using CommunityToolkit.Mvvm.Messaging;
+using MaterialDesignThemes.Wpf;
 using Microsoft.Extensions.DependencyInjection;
 using SimplyBudgetShared.Data;
 
@@ -16,6 +17,7 @@ public static class DI
             collection.AddSingleton<IDispatcher, Dispatcher>();
             collection.AddSingleton<IMessenger>(WeakReferenceMessenger.Default);
             collection.AddSingleton(ctx => new Func<BudgetContext>(() => new BudgetContext(Properties.Settings.GetDatabaseConnectionString())));
+            collection.AddTransient<ISnackbarMessageQueue, SnackbarMessageQueue>();
         });
     }
 }

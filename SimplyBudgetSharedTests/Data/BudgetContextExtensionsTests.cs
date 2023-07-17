@@ -39,10 +39,10 @@ public class BudgetContextExtensionsTests
         CollectionAssert.AreEquivalent(new[] { 150, 50 }, item.Details!.Select(x => x.Amount).ToList());
 
         var cat1 = await assertContext.ExpenseCategories.FindAsync(category1.ID);
-        Assert.AreEqual(170, cat1.CurrentBalance);
+        Assert.AreEqual(170, cat1?.CurrentBalance);
 
         var cat2 = await assertContext.ExpenseCategories.FindAsync(category2.ID);
-        Assert.AreEqual(150, cat2.CurrentBalance);
+        Assert.AreEqual(150, cat2?.CurrentBalance);
     }
 
     [TestMethod]
@@ -72,7 +72,7 @@ public class BudgetContextExtensionsTests
         Assert.IsTrue(item.IgnoreBudget);
 
         var cat1 = await assertContext.ExpenseCategories.FindAsync(category.ID);
-        Assert.AreEqual(150, cat1.CurrentBalance);
+        Assert.AreEqual(150, cat1?.CurrentBalance);
     }
 
     [TestMethod]
@@ -98,13 +98,13 @@ public class BudgetContextExtensionsTests
         var item = await assertContext.ExpenseCategoryItems
             .Include(x => x.Details)
             .SingleOrDefaultAsync();
-        Assert.AreEqual(2, item.Details!.Count);
-        CollectionAssert.AreEquivalent(new[] { -80, -20 }, item.Details.Select(x => x.Amount).ToList());
+        Assert.AreEqual(2, item?.Details!.Count);
+        CollectionAssert.AreEquivalent(new[] { -80, -20 }, item!.Details!.Select(x => x.Amount).ToList());
 
         var cat1 = await assertContext.ExpenseCategories.FindAsync(category1.ID);
-        Assert.AreEqual(70, cat1.CurrentBalance);
+        Assert.AreEqual(70, cat1?.CurrentBalance);
         var cat2 = await assertContext.ExpenseCategories.FindAsync(category2.ID);
-        Assert.AreEqual(80, cat2.CurrentBalance);
+        Assert.AreEqual(80, cat2?.CurrentBalance);
     }
 
     [TestMethod]
@@ -129,11 +129,11 @@ public class BudgetContextExtensionsTests
         var item = await assertContext.ExpenseCategoryItems
             .Include(x => x.Details)
             .SingleOrDefaultAsync();
-        Assert.AreEqual(1, item.Details!.Count);
-        Assert.IsTrue(item.IgnoreBudget);
+        Assert.AreEqual(1, item?.Details!.Count);
+        Assert.IsTrue(item!.IgnoreBudget);
 
         var cat1 = await assertContext.ExpenseCategories.FindAsync(category.ID);
-        Assert.AreEqual(100, cat1.CurrentBalance);
+        Assert.AreEqual(100, cat1?.CurrentBalance);
     }
 
     [TestMethod]
@@ -160,8 +160,8 @@ public class BudgetContextExtensionsTests
         category1 = await assertContext.FindAsync<ExpenseCategory>(category1.ID);
         category2 = await assertContext.FindAsync<ExpenseCategory>(category2.ID);
 
-        Assert.AreEqual(100, category1.CurrentBalance);
-        Assert.AreEqual(200, category2.CurrentBalance);
+        Assert.AreEqual(100, category1?.CurrentBalance);
+        Assert.AreEqual(200, category2?.CurrentBalance);
 
         var transfer = await assertContext.ExpenseCategoryItems
             .Include(x => x.Details)
@@ -169,8 +169,8 @@ public class BudgetContextExtensionsTests
 
         Assert.AreEqual(now.Date, transfer.Date);
         Assert.AreEqual("Test", transfer.Description);
-        Assert.AreEqual(category1.ID, transfer.Details?[0].ExpenseCategoryId);
-        Assert.AreEqual(category2.ID, transfer.Details?[1].ExpenseCategoryId);
+        Assert.AreEqual(category1!.ID, transfer.Details?[0].ExpenseCategoryId);
+        Assert.AreEqual(category2!.ID, transfer.Details?[1].ExpenseCategoryId);
         Assert.AreEqual(-50, transfer.Details?[0].Amount);
         Assert.AreEqual(50, transfer.Details?[1].Amount);
     }
@@ -201,8 +201,8 @@ public class BudgetContextExtensionsTests
         category1 = await assertContext.FindAsync<ExpenseCategory>(category1.ID);
         category2 = await assertContext.FindAsync<ExpenseCategory>(category2.ID);
 
-        Assert.AreEqual(100, category1.CurrentBalance);
-        Assert.AreEqual(200, category2.CurrentBalance);
+        Assert.AreEqual(100, category1?.CurrentBalance);
+        Assert.AreEqual(200, category2?.CurrentBalance);
 
         var transfer = await assertContext.ExpenseCategoryItems
             .Include(x => x.Details)

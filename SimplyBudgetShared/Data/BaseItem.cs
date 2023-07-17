@@ -7,7 +7,9 @@ public abstract class BaseItem
     public override bool Equals(object? obj)
     {
         if (obj is BaseItem other)
+        {
             return Equals(other);
+        }
         return false;
     }
 
@@ -17,11 +19,13 @@ public abstract class BaseItem
         {
             return ReferenceEquals(this, other);
         }
-        return ID == other?.ID;
+        return 
+            GetType() == other.GetType() &&
+            ID == other?.ID;
     }
 
     public override int GetHashCode()
     {
-        return ID;
+        return HashCode.Combine(GetType(), ID);
     }
 }

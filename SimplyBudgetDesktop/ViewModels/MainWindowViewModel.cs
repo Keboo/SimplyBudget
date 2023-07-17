@@ -2,14 +2,17 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using MaterialDesignThemes.Wpf;
+using Microsoft.EntityFrameworkCore;
 using SimplyBudget.Messaging;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
+using System.Text.RegularExpressions;
 using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels;
 
-public class MainWindowViewModel : ObservableObject,
+public partial class MainWindowViewModel : ObservableObject,
     IRecipient<DoneAddingItemMessage>,
     IRecipient<CurrentMonthChanged>,
     IRecipient<AddItemMessage>
@@ -24,12 +27,8 @@ public class MainWindowViewModel : ObservableObject,
 
     public SettingsViewModel Settings { get; }
 
+    [ObservableProperty]
     private AddItemViewModel? _addItem;
-    public AddItemViewModel? AddItem
-    {
-        get => _addItem;
-        set => SetProperty(ref _addItem, value);
-    }
 
     private DateTime _selectedMonth;
     public DateTime SelectedMonth
@@ -66,7 +65,8 @@ public class MainWindowViewModel : ObservableObject,
         [Dependency] IMessenger? messenger = null,
         [Dependency] ICurrentMonth? currentMonth = null,
         [Dependency] Func<BudgetContext>? contextFactory = null,
-        [Dependency] IDispatcher? dispatcher = null)
+        [Dependency] IDispatcher? dispatcher = null,
+        [Dependency] ISnackbarMessageQueue? messageQueue = null)
     {
         ShowAddCommand = new RelayCommand<AddType?>(OnShowAdd);
 
@@ -74,15 +74,18 @@ public class MainWindowViewModel : ObservableObject,
         CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
         ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
         Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        ArgumentNullException.ThrowIfNull(messageQueue);
+
         Budget = new(contextFactory, messenger, currentMonth);
         History = new(contextFactory, messenger, currentMonth);
         Accounts = new(contextFactory, messenger);
         Import = new(contextFactory, messenger);
-        Settings = new(messenger);
+        Settings = new(contextFactory, messageQueue, messenger);
 
-        Budget.LoadItemsAsync();
-        History.LoadItemsAsync();
-        Accounts.LoadItemsAsync();
+        _ = Budget.LoadItemsAsync();
+        _ = History.LoadItemsAsync();
+        _ = Accounts.LoadItemsAsync();
+        _ = Settings.LoadItemsAsync();
 
         SelectedMonth = PastMonths.First();
 
@@ -117,13 +120,21 @@ public class MainWindowViewModel : ObservableObject,
         switch (message.Type)
         {
             case AddType.Transaction:
-                AddItem.LineItems.Clear();
-                AddItem.LineItems.AddRange(message.Items
-                    .Select(x => new LineItemViewModel(AddItem.ExpenseCategories, Messenger)
-                    {
-                        Amount = x.Amount
-                    }));
-                break;
+                {
+                    using var context = ContextFactory();
+                    var rules = context.ExpenseCategoryRules
+                        .Where(x => x.RuleRegex != null && x.ExpenseCategoryID != null)
+                        .ToList();
+                    var matchingRule = rules.Where(r => Regex.IsMatch(message.Description ?? "", r.RuleRegex ?? "")).LastOrDefault();
+                    AddItem.LineItems.Clear();
+                    AddItem.LineItems.AddRange(message.Items
+                        .Select(x => new LineItemViewModel(AddItem.ExpenseCategories, Messenger)
+                        {
+                            Amount = x.Amount,
+                            SelectedCategory = AddItem.ExpenseCategories.FirstOrDefault(x => x.ID == matchingRule?.ExpenseCategoryID)
+                        }));
+                    break;
+                }
             case AddType.Income:
                 AddItem.TotalAmount = message.Items.Sum(x => x.Amount);
                 break;

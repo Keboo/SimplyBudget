@@ -1,42 +1,53 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows.Data;
-using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels;
 
-public abstract class CollectionViewModelBase : ObservableObject
+public abstract partial class CollectionViewModelBase : ObservableObject
 {
-    public ICommand RefreshCommand { get; }
+    protected CollectionViewModelBase() { }
 
-    protected CollectionViewModelBase()
-    {
-        RefreshCommand = new RelayCommand(OnRefresh);
-    }
+    [RelayCommand]
+    private Task OnRefreshAsync() => LoadItemsAsync();
 
-    private void OnRefresh() => LoadItemsAsync();
-
-    public abstract void LoadItemsAsync();
+    public abstract Task LoadItemsAsync();
 
     public abstract void UnloadItems();
 }
 
-public abstract class CollectionViewModelBase<T> : CollectionViewModelBase
+public abstract partial class CollectionViewModelBase<T> : CollectionViewModelBase
 {
     public ObservableCollection<T> Items { get; }
     protected readonly ICollectionView _view;
-    private readonly RelayCommand<string> _sortCommand;
     private SemaphoreSlim LoadLock { get; } = new SemaphoreSlim(1);
     protected CollectionViewModelBase()
     {
         Items = new ObservableCollection<T>();
         BindingOperations.EnableCollectionSynchronization(Items, new object());
         _view = CollectionViewSource.GetDefaultView(Items);
-        _sortCommand = new RelayCommand<string>(OnSort);
+
+        Items.CollectionChanged += Items_CollectionChanged;
     }
 
+    private void Items_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        //NB: Volatile read of the semaphore count.
+        if (LoadLock.CurrentCount <= 0) return;
+        foreach (var item in e.OldItems?.OfType<T>() ?? Enumerable.Empty<T>())
+        {
+            ItemRemoved(item);
+        }
+        foreach (var item in e.NewItems?.OfType<T>() ?? Enumerable.Empty<T>())
+        {
+            ItemAdded(item);
+        }
+    }
+
+    [RelayCommand]
     private void OnSort(string? sortProperty)
     {
         if (string.IsNullOrWhiteSpace(sortProperty)) return;
@@ -78,14 +89,15 @@ public abstract class CollectionViewModelBase<T> : CollectionViewModelBase
         Items.Clear();
     }
 
-    public override async void LoadItemsAsync()
+    public override async Task LoadItemsAsync()
     {
         await ReloadItemsAsync();
     }
 
-    public ICommand SortCommand => _sortCommand;
-
     protected abstract IAsyncEnumerable<T> GetItems();
+
+    protected virtual void ItemAdded(T item) { }
+    protected virtual void ItemRemoved(T item) { }
 
     protected virtual async Task ReloadItemsAsync()
     {

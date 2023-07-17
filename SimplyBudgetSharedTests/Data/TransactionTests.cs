@@ -25,14 +25,14 @@ public class TransactionTests
         //Act
         var actContext = factory.Create();
         var item = await actContext.FindAsync<ExpenseCategoryItem>(transaction!.ID);
-        actContext.Remove(item);
+        actContext.Remove(item!);
         await actContext.SaveChangesAsync();
 
         //Assert
         var assertContext = factory.Create();
         Assert.IsFalse(await assertContext.ExpenseCategoryItems.AnyAsync());
         Assert.IsFalse(await assertContext.ExpenseCategoryItemDetails.AnyAsync());
-        Assert.AreEqual(250, (await assertContext.FindAsync<ExpenseCategory>(category.ID)).CurrentBalance);
+        Assert.AreEqual(250, (await assertContext.FindAsync<ExpenseCategory>(category.ID))?.CurrentBalance);
     }
 
     [TestMethod]
@@ -53,7 +53,7 @@ public class TransactionTests
         ExpenseCategoryItem? transaction = null;
         var actContext = factory.Create();
         transaction = await actContext.ExpenseCategoryItems
-            .Include(x => x.Details)
+            .Include(x => x.Details!)
             .ThenInclude(x => x.ExpenseCategory)
             .SingleAsync();
 

@@ -294,7 +294,7 @@ public class ExpenseCategoryTests
         //Assert
         using var assertContext = factory.Create();
         var expenseCategory = await assertContext.ExpenseCategories.FindAsync(category.ID);
-        Assert.AreEqual(account.ID, expenseCategory.AccountID);
+        Assert.AreEqual(account.ID, expenseCategory?.AccountID);
     }
 
     [TestMethod]
@@ -339,7 +339,7 @@ public class ExpenseCategoryTests
         //Act
         using var actContext = factory.Create();
         var category = await actContext.ExpenseCategories.FindAsync(expenseCategory.ID);
-        actContext.ExpenseCategories.Remove(category);
+        actContext.ExpenseCategories.Remove(category!);
         await actContext.SaveChangesAsync();
 
         //Assert
@@ -396,7 +396,7 @@ public class ExpenseCategoryTests
         //Act
         using var actContext = factory.Create();
         var category = await actContext.ExpenseCategories.FindAsync(expenseCategory.ID);
-        category.CategoryName += "-Edited";
+        category!.CategoryName += "-Edited";
         await actContext.SaveChangesAsync();
 
         //Assert

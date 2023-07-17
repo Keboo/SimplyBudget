@@ -53,7 +53,7 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
         {
             if (SetProperty(ref _selectedAccount, value))
             {
-                LoadItemsAsync();
+                _ = LoadItemsAsync();
             }
         }
     }
@@ -108,7 +108,7 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
         SelectedCategory = null;
     }
 
-    private void OnDoSearch() => LoadItemsAsync();
+    private async void OnDoSearch() => await LoadItemsAsync();
 
     private void SetFilterDisplay()
     {
@@ -130,7 +130,7 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
 
     private void FilterCategories_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        LoadItemsAsync();
+        _ = LoadItemsAsync();
         SetFilterDisplay();
     }
 
@@ -151,12 +151,12 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
         }
 
         IQueryable<ExpenseCategoryItem> query = context.ExpenseCategoryItems
-            .Include(x => x.Details)
+            .Include(x => x.Details!)
             .ThenInclude(x => x.ExpenseCategory);
 
         if (!string.IsNullOrWhiteSpace(Search))
         {
-            query = query.Where(x => EF.Functions.Like(x.Description, $"%{Search}%"));
+            query = query.Where(x => EF.Functions.Like(x.Description!, $"%{Search}%"));
         }
         else
         {
@@ -212,9 +212,9 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
         }
     }
 
-    public void Receive(DatabaseEvent<ExpenseCategoryItemDetail> message) => LoadItemsAsync();
+    public async void Receive(DatabaseEvent<ExpenseCategoryItemDetail> message) => await LoadItemsAsync();
 
-    public void Receive(DatabaseEvent<ExpenseCategoryItem> message) => LoadItemsAsync();
+    public async void Receive(DatabaseEvent<ExpenseCategoryItem> message) => await LoadItemsAsync();
 
-    public void Receive(CurrentMonthChanged message) => LoadItemsAsync();
+    public async void Receive(CurrentMonthChanged message) => await LoadItemsAsync();
 }

@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq.AutoMock;
 using SimplyBudget.Messaging;
 using SimplyBudget.ViewModels;
+using SimplyBudgetShared.Data;
 using SimplyBudgetSharedTests;
 
 namespace SimplyBudgetDesktop.Tests.ViewModels;
@@ -61,5 +62,48 @@ public class MainWindowViewModelTests
         messenger.Send(new DoneAddingItemMessage());
 
         Assert.IsNull(vm.AddItem);
+    }
+
+    [TestMethod]
+    public async Task OnAddNewItem_MatchingRule_SetsCategory()
+    {
+        var mocker = new AutoMocker()
+            .WithMessenger()
+            .WithCurrentMonth();
+        using var _ = mocker.WithAutoDIResolver();
+        using var scope = mocker.WithDbScope();
+        int categoryId;
+        using (var context = scope.Create())
+        {
+            ExpenseCategory cellCategory = new() { Name = "Cell Category" };
+            context.ExpenseCategories.Add(cellCategory);
+
+            context.ExpenseCategoryRules.Add(new()
+            {
+                Name = "Cell Rule",
+                RuleRegex = "Cell",
+                ExpenseCategory = cellCategory
+            });
+            await context.SaveChangesAsync();
+            categoryId = cellCategory.ID;
+        }
+
+        DateTime today = DateTime.Today;
+        var vm = mocker.CreateInstance<MainWindowViewModel>();
+
+        IMessenger messenger = mocker.Get<IMessenger>();
+
+        messenger.Send(new AddItemMessage(AddType.Transaction, today, "My Cell Phone", new[]
+        {
+            new LineItem(500)
+        }));
+
+        Assert.IsNotNull(vm.AddItem);
+        Assert.AreEqual(AddType.Transaction, vm.AddItem.SelectedType);
+        Assert.AreEqual(today, vm.AddItem.Date);
+        Assert.AreEqual("My Cell Phone", vm.AddItem.Description);
+        Assert.AreEqual(1, vm.AddItem.LineItems.Count);
+        Assert.AreEqual(500, vm.AddItem.LineItems[0].Amount);
+        Assert.AreEqual(categoryId, vm.AddItem.LineItems[0].SelectedCategory?.ID);
     }
 }

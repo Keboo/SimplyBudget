@@ -25,8 +25,10 @@ public class ExpenseCategoryItemDetail : BaseItem, IBeforeCreate, IBeforeRemove
 
     public async Task BeforeRemove(BudgetContext context)
     {
-        var category = await context.FindAsync<ExpenseCategory>(ExpenseCategoryId);
-        category.CurrentBalance -= Amount;
+        if (await context.FindAsync<ExpenseCategory>(ExpenseCategoryId) is { } category)
+        {
+            category.CurrentBalance -= Amount;
+        }
     }
 
     public bool Equals([AllowNull] ExpenseCategoryItemDetail other)

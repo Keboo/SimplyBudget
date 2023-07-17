@@ -136,11 +136,11 @@ public class ExpenseCategoryViewModelEx : ExpenseCategoryViewModel
         set => SetProperty(ref _editingName, value);
     }
 
-    private string? _editingCatergory;
+    private string? _editingCategory;
     public string? EditingCategory
     {
-        get => _editingCatergory;
-        set => SetProperty(ref _editingCatergory, value);
+        get => _editingCategory;
+        set => SetProperty(ref _editingCategory, value);
     }
 
     private bool _editIsAmountType;

@@ -167,7 +167,7 @@ public class AddItemViewModelTests
         var mocker = new AutoMocker().WithDefaults();
         using var _ = mocker.WithDbScope();
         using var __ = mocker.WithAutoDIResolver();
-        using var ___ = mocker.WithSynchonousTaskRunner();
+        using var ___ = mocker.WithSynchronousTaskRunner();
 
         ICurrentMonth current = mocker.Get<ICurrentMonth>();
 
@@ -189,7 +189,7 @@ public class AddItemViewModelTests
         var mocker = new AutoMocker().WithDefaults();
         using var _ = mocker.WithDbScope();
         using var __ = mocker.WithAutoDIResolver();
-        using var ___ = mocker.WithSynchonousTaskRunner();
+        using var ___ = mocker.WithSynchronousTaskRunner();
 
         var vm = mocker.CreateInstance<AddItemViewModel>();
 
@@ -211,7 +211,7 @@ public class AddItemViewModelTests
         var mocker = new AutoMocker().WithDefaults();
         using var factory = mocker.WithDbScope();
         using var _ = mocker.WithAutoDIResolver();
-        using var __ = mocker.WithSynchonousTaskRunner();
+        using var __ = mocker.WithSynchronousTaskRunner();
         using var context = factory.Create();
 
         var category = new ExpenseCategory();
@@ -248,7 +248,7 @@ public class AddItemViewModelTests
         var mocker = new AutoMocker().WithDefaults();
         using var factory = mocker.WithDbScope();
         using var _ = mocker.WithAutoDIResolver();
-        using var __ = mocker.WithSynchonousTaskRunner();
+        using var __ = mocker.WithSynchronousTaskRunner();
         using var context = factory.Create();
 
         var category = new ExpenseCategory();
@@ -267,8 +267,8 @@ public class AddItemViewModelTests
 
         await vm.SubmitCommand.ExecuteAsync(true);
 
-        using var verfictionContext = factory.Create();
-        ExpenseCategoryItem income = await verfictionContext.ExpenseCategoryItems
+        using var verificationContext = factory.Create();
+        ExpenseCategoryItem income = await verificationContext.ExpenseCategoryItems
             .Include(x => x.Details)
             .SingleAsync();
 
@@ -286,7 +286,7 @@ public class AddItemViewModelTests
         var mocker = new AutoMocker().WithDefaults();
         using var factory = mocker.WithDbScope();
         using var _ = mocker.WithAutoDIResolver();
-        using var __ = mocker.WithSynchonousTaskRunner();
+        using var __ = mocker.WithSynchronousTaskRunner();
         using var context = factory.Create();
 
         var category1 = new ExpenseCategory();

@@ -10,9 +10,9 @@ namespace SimplyBudgetSharedTests;
 
 public static class AutoMockerExtensions
 {
-    public static IDisposable WithSynchonousTaskRunner(this AutoMocker _)
+    public static IDisposable WithSynchronousTaskRunner(this AutoMocker _)
     {
-        TaskEx.Default = new SynchonousTaskScheduler();
+        TaskEx.Default = new SynchronousTaskScheduler();
         return new Disposable(() => TaskEx.Default = null!);
     }
 
@@ -57,7 +57,7 @@ public static class AutoMockerExtensions
         {
             FilePath = Path.Combine(
                 Path.GetTempPath(),
-                "SiplyBudgetTests",
+                "SimplyBudgetTests",
                 Guid.NewGuid().ToString("N")
                 );
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
@@ -112,7 +112,7 @@ public static class AutoMockerExtensions
         }
     }
 
-    private class SynchonousTaskScheduler : TaskScheduler
+    private class SynchronousTaskScheduler : TaskScheduler
     {
         public override int MaximumConcurrencyLevel => 1;
 

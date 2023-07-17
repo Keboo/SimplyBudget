@@ -3,9 +3,6 @@ using Moq.AutoMock;
 using SimplyBudget.ViewModels;
 using SimplyBudgetShared.Data;
 using SimplyBudgetSharedTests;
-using SimplyBudgetSharedTests.Data;
-using System;
-using System.Threading.Tasks;
 
 namespace SimplyBudgetDesktop.Tests.ViewModels;
 

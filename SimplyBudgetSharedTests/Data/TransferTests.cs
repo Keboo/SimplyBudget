@@ -2,8 +2,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq.AutoMock;
 using SimplyBudgetShared.Data;
-using System;
-using System.Threading.Tasks;
 
 namespace SimplyBudgetSharedTests.Data;
 
@@ -27,14 +25,15 @@ public class TransferTests
 
         //Act
         using var actContext = factory.Create();
-        var item = await actContext.FindAsync<ExpenseCategoryItem>(transfer!.ID);
+        ExpenseCategoryItem? item = await actContext.FindAsync<ExpenseCategoryItem>(transfer!.ID);
+        Assert.IsNotNull(item);
         actContext.Remove(item);
         await actContext.SaveChangesAsync();
 
         //Assert
         using var assertContext = factory.Create();
-        Assert.AreEqual(100, (await assertContext.FindAsync<ExpenseCategory>(category1.ID)).CurrentBalance);
-        Assert.AreEqual(200, (await assertContext.FindAsync<ExpenseCategory>(category2.ID)).CurrentBalance);
+        Assert.AreEqual(100, (await assertContext.FindAsync<ExpenseCategory>(category1.ID))?.CurrentBalance);
+        Assert.AreEqual(200, (await assertContext.FindAsync<ExpenseCategory>(category2.ID))?.CurrentBalance);
     }
 
     [TestMethod]
@@ -57,7 +56,7 @@ public class TransferTests
         //Act
         using var actContext = factory.Create();
         transfer = await actContext.ExpenseCategoryItems
-            .Include(x => x.Details)
+            .Include(x => x.Details!)
             .ThenInclude(x => x.ExpenseCategory)
             .SingleAsync();
 

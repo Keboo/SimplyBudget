@@ -1,9 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace SimplyBudgetShared.Data;
 
@@ -53,7 +49,7 @@ public static class BudgetContextExtensions
             throw new ArgumentNullException(nameof(context));
         }
 
-        Account account = await context.Accounts
+        Account? account = await context.Accounts
             .Include(x => x.ExpenseCategories)
             .FirstOrDefaultAsync(x => x.ID == accountId);
 

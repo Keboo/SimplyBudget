@@ -163,8 +163,8 @@ public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelE
         }
     }
 
-    public void Receive(CurrentMonthChanged message)
-        => LoadItemsAsync();
+    public async void Receive(CurrentMonthChanged message)
+        => await LoadItemsAsync();
 
     private void OnDoSearch() => SetDescriptors();
 

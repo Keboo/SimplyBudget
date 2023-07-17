@@ -6,13 +6,10 @@ using SimplyBudgetSharedTests;
 
 namespace SimplyBudgetDesktop.Tests.ViewModels;
 
+[ConstructorTests(typeof(BudgetViewModel))]
 [TestClass]
-public class BudgetViewModelTests
+public partial class BudgetViewModelTests
 {
-    [TestMethod]
-    public void ConstructorThrowsExpectedExceptions()
-        => ConstructorTest.AssertArgumentNullExceptions<BudgetViewModel>();
-
     [TestMethod]
     public async Task SaveChanges_CategoryNotFound_ReturnsFalse()
     {
@@ -28,7 +25,7 @@ public class BudgetViewModelTests
     }
 
     [TestMethod]
-    public async Task SaveChanges_WithFoundCategory_UpdatesBudgettedAmount()
+    public async Task SaveChanges_WithFoundCategory_UpdatesBudgetedAmount()
     {
         AutoMocker mocker = new AutoMocker().WithDefaults();
         using var factory = mocker.WithDbScope();
@@ -54,14 +51,14 @@ public class BudgetViewModelTests
         Assert.IsTrue(result);
         using var verificationContext = factory.Create();
         var existing = await verificationContext.ExpenseCategories.FindAsync(42);
-        Assert.AreEqual("CategoryNameChanged", existing.CategoryName);
-        Assert.AreEqual("NameChanged", existing.Name);
+        Assert.AreEqual("CategoryNameChanged", existing?.CategoryName);
+        Assert.AreEqual("NameChanged", existing!.Name);
         Assert.AreEqual(120, existing.BudgetedAmount);
         Assert.AreEqual(0, existing.BudgetedPercentage);
     }
 
     [TestMethod]
-    public async Task SaveChanges_WithFoundCategory_UpdatesBudgettedPercentage()
+    public async Task SaveChanges_WithFoundCategory_UpdatesBudgetedPercentage()
     {
         AutoMocker mocker = new AutoMocker().WithDefaults();
         using var factory = mocker.WithDbScope();
@@ -87,8 +84,8 @@ public class BudgetViewModelTests
         Assert.IsTrue(result);
         using var verificationContext = factory.Create();
         var existing = await verificationContext.ExpenseCategories.FindAsync(42);
-        Assert.AreEqual("CategoryNameChanged", existing.CategoryName);
-        Assert.AreEqual("NameChanged", existing.Name);
+        Assert.AreEqual("CategoryNameChanged", existing?.CategoryName);
+        Assert.AreEqual("NameChanged", existing!.Name);
         Assert.AreEqual(0, existing.BudgetedAmount);
         Assert.AreEqual(10, existing.BudgetedPercentage);
     }

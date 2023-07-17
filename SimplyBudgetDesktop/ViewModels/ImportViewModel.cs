@@ -14,9 +14,8 @@ using System.Windows.Data;
 
 namespace SimplyBudget.ViewModels;
 
-public class ImportViewModel : ObservableObject
+public partial class ImportViewModel : ObservableObject
 {
-    public IAsyncRelayCommand ImportCommand { get; }
     public IRelayCommand AddItemCommand { get; }
     public IRelayCommand DeleteCommand { get; }
     public IRelayCommand MarkAsDoneCommand { get; }
@@ -26,19 +25,11 @@ public class ImportViewModel : ObservableObject
 
     public ObservableCollection<ImportItem> ImportedRecords { get; } = new();
 
+    [ObservableProperty]
     private bool _IsViewingCsv = true;
-    public bool IsViewingCsv
-    {
-        get => _IsViewingCsv;
-        set => SetProperty(ref _IsViewingCsv, value);
-    }
 
+    [ObservableProperty]
     private string? _CsvData;
-    public string? CsvData
-    {
-        get => _CsvData;
-        set => SetProperty(ref _CsvData, value);
-    }
 
     public int SelectedAmount => SelectedItems?.Sum(x => x.Item.Details?.Sum(x => x.Amount) ?? 0) ?? 0;
 
@@ -61,15 +52,15 @@ public class ImportViewModel : ObservableObject
 
     public ImportViewModel(Func<BudgetContext> contextFactory, IMessenger messenger)
     {
-        ImportCommand = new AsyncRelayCommand(OnImport);
+        ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+        Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+        
         AddItemCommand = new RelayCommand(OnAddItem, CanAddItem);
         DeleteCommand = new RelayCommand(OnDeleteItem, () => SelectedItems?.Any() == true);
         MarkAsDoneCommand = new RelayCommand(OnMarkAsDone, () => SelectedItems?.Any(x => x.IsDone == false) == true);
         UnmarkAsDoneCommand = new RelayCommand(OnUnmarkAsDone, () => SelectedItems?.Any(x => x.IsDone) == true);
 
         BindingOperations.EnableCollectionSynchronization(ImportedRecords, new object());
-        ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
-        Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
     }
 
     private bool CanAddItem()
@@ -102,6 +93,7 @@ public class ImportViewModel : ObservableObject
         });
     }
 
+    [RelayCommand]
     private async Task OnImport()
     {
         if (string.IsNullOrWhiteSpace(CsvData)) return;
@@ -175,7 +167,7 @@ public class ImportViewModel : ObservableObject
     }
 }
 
-public class ImportItem : ObservableObject
+public partial class ImportItem : ObservableObject
 {
     public ExpenseCategoryItem Item { get; }
     public ImportItem(ExpenseCategoryItem item)
@@ -189,10 +181,6 @@ public class ImportItem : ObservableObject
 
     public DateTime Date => Item.Date;
 
+    [ObservableProperty]
     private bool _isDone;
-    public bool IsDone
-    {
-        get => _isDone;
-        set => SetProperty(ref _isDone, value);
-    }
 }

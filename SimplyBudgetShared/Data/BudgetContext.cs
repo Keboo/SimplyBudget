@@ -15,6 +15,7 @@ public class BudgetContext : DbContext
     public DbSet<ExpenseCategoryItem> ExpenseCategoryItems => Set<ExpenseCategoryItem>();
     public DbSet<ExpenseCategoryItemDetail> ExpenseCategoryItemDetails => Set<ExpenseCategoryItemDetail>();
     public DbSet<Metadata> Metadatas => Set<Metadata>();
+    public DbSet<ExpenseCategoryRule> ExpenseCategoryRules => Set<ExpenseCategoryRule>();
 
     private IMessenger Messenger { get; }
 

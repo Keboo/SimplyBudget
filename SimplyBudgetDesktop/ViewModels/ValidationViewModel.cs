@@ -47,8 +47,7 @@ public abstract class ValidationViewModel : ObservableObject, INotifyDataErrorIn
     }
 
     private readonly Dictionary<string, IValidator> _ValidatorsByName;
-    private readonly Dictionary<string, IList<object>> _ValidationErrorsByProperty =
-        new Dictionary<string, IList<object>>();
+    private readonly Dictionary<string, IList<object>> _ValidationErrorsByProperty = new();
 
     protected ValidationViewModel()
     {
