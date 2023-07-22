@@ -1,5 +1,4 @@
-﻿using AutoDI;
-using SimplyBudgetShared.Utilities;
+﻿using SimplyBudgetShared.Utilities;
 using System.ComponentModel.DataAnnotations;
 
 namespace SimplyBudget.Validation;
@@ -14,10 +13,10 @@ public class ReasonableDateAttribute : ValidationAttribute
     {
     }
 
-    public ReasonableDateAttribute(
-        [Dependency]ICurrentMonth currentMonth = null!)
+    public ReasonableDateAttribute(ICurrentMonth currentMonth)
     {
-        CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
+        CurrentMonth = currentMonth ?? DI.GetService<ICurrentMonth>() 
+            ?? throw new ArgumentNullException(nameof(currentMonth));
     }
 
     public override bool IsValid(object? value)

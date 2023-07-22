@@ -12,9 +12,8 @@ namespace SimplyBudget.Windows;
 public partial class MainWindow :
     IRecipient<OpenHistory>
 {
-    public MainWindow()
+    public MainWindow(MainWindowViewModel viewModel)
     {
-        var viewModel = new MainWindowViewModel();
         DataContext = viewModel;
         InitializeComponent();
         viewModel.Messenger.Register(this);

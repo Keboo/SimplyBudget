@@ -1,14 +1,16 @@
-﻿using AutoDI;
+﻿using System.Text.RegularExpressions;
+using System.Windows.Input;
+
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+
 using MaterialDesignThemes.Wpf;
-using Microsoft.EntityFrameworkCore;
+
 using SimplyBudget.Messaging;
+
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
-using System.Text.RegularExpressions;
-using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels;
 
@@ -62,11 +64,11 @@ public partial class MainWindowViewModel : ObservableObject,
     private IDispatcher Dispatcher { get; }
 
     public MainWindowViewModel(
-        [Dependency] IMessenger? messenger = null,
-        [Dependency] ICurrentMonth? currentMonth = null,
-        [Dependency] Func<BudgetContext>? contextFactory = null,
-        [Dependency] IDispatcher? dispatcher = null,
-        [Dependency] ISnackbarMessageQueue? messageQueue = null)
+        IMessenger messenger,
+        ICurrentMonth currentMonth,
+        Func<BudgetContext> contextFactory,
+        IDispatcher dispatcher,
+        ISnackbarMessageQueue messageQueue)
     {
         ShowAddCommand = new RelayCommand<AddType?>(OnShowAdd);
 

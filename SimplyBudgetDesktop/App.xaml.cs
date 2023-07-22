@@ -1,6 +1,15 @@
-﻿using MaterialDesignThemes.Wpf;
+﻿using CommunityToolkit.Mvvm.Messaging;
+
+using MaterialDesignThemes.Wpf;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
 using SimplyBudget.Properties;
+using SimplyBudget.ViewModels;
+using SimplyBudget.Windows;
+
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Threading;
 using Squirrel;
@@ -15,6 +24,39 @@ namespace SimplyBudget;
 /// </summary>
 public partial class App
 {
+    [STAThread]
+    public static void Main(string[] args)
+    {
+        using IHost host = CreateHostBuilder(args).Build();
+        DI.Register(host.Services);
+        host.Start();
+
+        App app = new();
+        app.InitializeComponent();
+        app.MainWindow = host.Services.GetRequiredService<MainWindow>();
+        app.MainWindow.Visibility = Visibility.Visible;
+        app.Run();
+    }
+
+    public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+        .ConfigureAppConfiguration((hostBuilderContext, configurationBuilder)
+            => configurationBuilder.AddUserSecrets(typeof(App).Assembly))
+        .ConfigureServices((hostContext, services) =>
+        {
+            services.AddSingleton<MainWindow>();
+            services.AddSingleton<MainWindowViewModel>();
+
+            services.AddSingleton(WeakReferenceMessenger.Default);
+            services.AddSingleton<IMessenger, WeakReferenceMessenger>(provider => provider.GetRequiredService<WeakReferenceMessenger>());
+
+            services.AddSingleton<ICurrentMonth, CurrentMonth>();
+
+            services.AddSingleton<IDispatcher, Dispatcher>();
+            services.AddSingleton(ctx => new Func<BudgetContext>(() => new BudgetContext(Settings.GetDatabaseConnectionString())));
+            services.AddTransient<ISnackbarMessageQueue, SnackbarMessageQueue>();
+        });
+
     public static SemanticVersion? Version { get; set; }
 
     private static void OnAppInstall(SemanticVersion version, IAppTools tools)

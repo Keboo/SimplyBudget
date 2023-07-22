@@ -1,7 +1,9 @@
-﻿using AutoDI;
-using CommunityToolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.Messaging;
+
 using Moq.AutoMock;
+
 using SimplyBudget;
+
 using SimplyBudgetSharedTests;
 
 namespace SimplyBudgetDesktop.Tests;
@@ -25,9 +27,9 @@ public static class AutoMockerExtensions
 
     public static IDisposable WithAutoDIResolver(this AutoMocker mocker)
     {
-        var provider = new AutoDIServiceProvider(mocker);
-        GlobalDI.Register(provider);
-        return new Disposable(() => GlobalDI.Unregister(provider));
+        var provider = new AsyncLocalServiceProvider(mocker);
+        DI.Register(provider);
+        return new Disposable(() => DI.Unregister(provider));
     }
 
     private class Disposable : IDisposable
@@ -42,7 +44,7 @@ public static class AutoMockerExtensions
         public void Dispose() => OnDispose();
     }
 
-    private class AutoDIServiceProvider : IServiceProvider
+    private class AsyncLocalServiceProvider : IServiceProvider
     {
         private static readonly AsyncLocal<AutoMocker?> _AsyncLocalBuilder = new();
 
@@ -52,7 +54,7 @@ public static class AutoMockerExtensions
             set => _AsyncLocalBuilder.Value = value;
         }
 
-        public AutoDIServiceProvider(AutoMocker mocker)
+        public AsyncLocalServiceProvider(AutoMocker mocker)
         {
             CurrentBuilder = mocker ?? throw new ArgumentNullException(nameof(mocker));
         }
