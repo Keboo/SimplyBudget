@@ -81,7 +81,7 @@ public class MainWindowViewModelTests
             context.ExpenseCategoryRules.Add(new()
             {
                 Name = "Cell Rule",
-                RuleRegex = "Cell",
+                RuleRegex = "cell",
                 ExpenseCategory = cellCategory
             });
             await context.SaveChangesAsync();
