@@ -125,13 +125,25 @@ public partial class AddItemViewModel : ValidationViewModel,
             item is not null)
         {
             LineItems.Remove(item);
-            TotalAmount = LineItems.Sum(x => x.Amount);
+            if (LineItems.Count == 1)
+            {
+                LineItems[0].Amount = TotalAmount;
+            }
+            UpdateRemaining();
         }
     }
 
     [RelayCommand]
     private void OnAddItem()
-        => LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
+    {
+        if (SelectedType == AddType.Transaction &&
+            LineItems.Count == 1)
+        {
+            TotalAmount = LineItems[0].Amount;
+            LineItems[0].Amount = 0;
+        }
+        LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
+    }
 
     [RelayCommand]
     private void OnAutoAllocate()

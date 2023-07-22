@@ -89,12 +89,15 @@ public class AddItemViewModelTests
 
         vm.SelectedType = AddType.Transaction;
         vm.AddItemCommand.Execute(null);
+        vm.AddItemCommand.Execute(null);
+        vm.TotalAmount = 1000;
         vm.LineItems[0].Amount = 300;
         vm.LineItems[1].Amount = 400;
+        vm.LineItems[2].Amount = 200;
 
         vm.RemoveItemCommand.Execute(vm.LineItems[0]);
 
-        Assert.AreEqual(400, vm.TotalAmount);
+        Assert.AreEqual(400, vm.RemainingAmount);
     }
 
     [TestMethod]
@@ -321,5 +324,42 @@ public class AddItemViewModelTests
         Assert.AreEqual(category1.ID, transfer.Details![0].ExpenseCategoryId);
         Assert.AreEqual(25_00, transfer.Details![1].Amount);
         Assert.AreEqual(category2.ID, transfer.Details![1].ExpenseCategoryId);
+    }
+
+    [TestMethod]
+    public void AddItemCommand_WithTransactionLineItemAmount_MovesToTotalAmount()
+    {
+        var mocker = new AutoMocker().WithDefaults();
+        using var _ = mocker.WithDbScope();
+
+        var vm = mocker.CreateInstance<AddItemViewModel>();
+
+        vm.SelectedType = AddType.Transaction;
+        vm.LineItems[0].Amount = 300;
+
+        vm.AddItemCommand.Execute(null);
+
+        Assert.AreEqual(300, vm.TotalAmount);
+        Assert.AreEqual(0, vm.LineItems[0].Amount);
+        Assert.AreEqual(0, vm.LineItems[1].Amount);
+    }
+
+    [TestMethod]
+    public void RemoveItemCommand_AfterSplitting_MovesTotalAmountBackToFirstLineItem()
+    {
+        var mocker = new AutoMocker().WithDefaults();
+        using var _ = mocker.WithDbScope();
+
+        var vm = mocker.CreateInstance<AddItemViewModel>();
+
+        vm.SelectedType = AddType.Transaction;
+        vm.LineItems[0].Amount = 300;
+        vm.AddItemCommand.Execute(null);
+        vm.LineItems[0].Amount = 100;
+        vm.LineItems[1].Amount = 50;
+
+        vm.RemoveItemCommand.Execute(vm.LineItems[1]);
+
+        Assert.AreEqual(300, vm.LineItems[0].Amount);
     }
 }
