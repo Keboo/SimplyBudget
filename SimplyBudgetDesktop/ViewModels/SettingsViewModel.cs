@@ -52,7 +52,9 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
         Settings.Default.StorageLocation = StorageLocation;
         Settings.Default.Save();
         using var context = ContextFactory();
-        foreach (ExpenseCategoryRuleViewModel ruleViewModel in Items)
+        foreach (ExpenseCategoryRuleViewModel ruleViewModel in Items
+            .Where(x => !string.IsNullOrWhiteSpace(x.Name) &&
+                        !string.IsNullOrWhiteSpace(x.RuleRegex)))
         {
             if (ruleViewModel.ExistingRuleId is { } ruleId)
             {

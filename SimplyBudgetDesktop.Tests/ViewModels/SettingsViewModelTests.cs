@@ -75,6 +75,35 @@ public partial class SettingsViewModelTests
     }
 
     [TestMethod]
+    public async Task NewEmptyExpenseCategoryRule_WithSave_IsNotAdded()
+    {
+        //Arrange
+        var mocker = new AutoMocker().WithDefaults();
+        using var factory = mocker.WithDbScope();
+        using var context = factory.Create();
+        ExpenseCategory category1 = new() { Name = "Test Category" };
+        context.ExpenseCategories.Add(category1);
+        await context.SaveChangesAsync();
+
+        var vm = mocker.CreateInstance<SettingsViewModel>();
+
+        //Act
+        vm.Items.Add(new()
+        {
+            Name = "",
+            RuleRegex = "",
+            ExpenseCategoryId = category1.ID
+        });
+        //NB: Saving twice to ensure that the rule is not duplicated
+        await vm.SaveCommand.ExecuteAsync(null);
+
+        //Assert
+        using var assertContext = factory.Create();
+        var foundRules = await assertContext.ExpenseCategoryRules.ToListAsync();
+        Assert.AreEqual(0, foundRules.Count);
+    }
+
+    [TestMethod]
     public async Task UpdateExistingExpenseCategoryRule_WithSave_SavesInTheDatabase()
     {
         //Arrange
