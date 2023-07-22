@@ -61,6 +61,8 @@ public partial class SettingsViewModelTests
             RuleRegex = ".*",
             ExpenseCategoryId = category1.ID
         });
+        //NB: Saving twice to ensure that the rule is not duplicated
+        await vm.SaveCommand.ExecuteAsync(null);
         await vm.SaveCommand.ExecuteAsync(null);
 
         //Assert

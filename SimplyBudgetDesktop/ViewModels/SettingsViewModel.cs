@@ -86,6 +86,7 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
         RemovedRuleIds.Clear();
         Messenger.Send(new StorageLocationChanged());
         MessageQueue.Enqueue("Saved");
+        await ReloadItemsAsync();
     }
 
     [ObservableProperty]
