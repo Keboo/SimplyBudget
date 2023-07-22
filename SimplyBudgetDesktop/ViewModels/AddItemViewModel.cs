@@ -1,25 +1,23 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using System.Collections.ObjectModel;
+using System.Windows.Data;
+
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+
 using SimplyBudget.Messaging;
 using SimplyBudget.Validation;
+
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Threading;
 using SimplyBudgetShared.Utilities;
-using System.Collections.ObjectModel;
-using System.Windows.Data;
-using System.Windows.Input;
 
 namespace SimplyBudget.ViewModels;
 
-public class AddItemViewModel : ValidationViewModel,
+public partial class AddItemViewModel : ValidationViewModel,
     IRecipient<LineItemAmountUpdated>,
     IRecipient<CurrentMonthChanged>
 {
-    public IAsyncRelayCommand<bool?> SubmitCommand { get; }
-    public ICommand AddItemCommand { get; }
-    public ICommand RemoveItemCommand { get; }
-    public ICommand CancelCommand { get; }
-    public ICommand AutoAllocateCommand { get; }
     public Func<BudgetContext> ContextFactory { get; }
     public ICurrentMonth CurrentMonth { get; }
     public IMessenger Messenger { get; }
@@ -34,106 +32,77 @@ public class AddItemViewModel : ValidationViewModel,
         AddType.Transfer
     };
 
+    [ObservableProperty]
     private AddType _selectedType;
-    public AddType SelectedType
+    partial void OnSelectedTypeChanged(AddType value)
     {
-        get => _selectedType;
-        set
-        {
-            if (SetProperty(ref _selectedType, value))
-            {
-                LineItems.Clear();
-                TotalAmount = 0;
-                UpdateRemaining();
+        LineItems.Clear();
+        TotalAmount = 0;
+        UpdateRemaining();
 
-                switch (value)
-                {
-                    case AddType.Transaction:
-                        LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
-                        break;
-                    case AddType.Income:
-                        LineItems.AddRange(ExpenseCategories
-                            .Select(x => new LineItemViewModel(ExpenseCategories, Messenger)
-                            {
-                                SelectedCategory = x
-                            })
-                            .OrderByDescending(x => x.SelectedCategory?.UsePercentage)
-                            .ThenBy(x => x.SelectedCategory?.Name));
-                        LoadDesiredAmounts();
-                        break;
-                    case AddType.Transfer:
-                        LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
-                        LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger) { DesiredAmount = -1 });
-                        Date = DateTime.Today;
-                        break;
-                }
-            }
-        }
-    }
-
-    private int _totalAmount;
-    public int TotalAmount
-    {
-        get => _totalAmount;
-        set
+        switch (value)
         {
-            if (SetProperty(ref _totalAmount, value))
-            {
-                if (SelectedType == AddType.Income)
-                {
-                    foreach (var lineItem in LineItems.Where(x => x.SelectedCategory?.UsePercentage == true))
+            case AddType.Transaction:
+                LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
+                break;
+            case AddType.Income:
+                LineItems.AddRange(ExpenseCategories
+                    .Select(x => new LineItemViewModel(ExpenseCategories, Messenger)
                     {
-                        lineItem.DesiredAmount = (int)(value * lineItem.SelectedCategory!.BudgetedPercentage / 100.0);
-                    }
-                }
-                UpdateRemaining();
-            }
+                        SelectedCategory = x
+                    })
+                    .OrderByDescending(x => x.SelectedCategory?.UsePercentage)
+                    .ThenBy(x => x.SelectedCategory?.Name));
+                LoadDesiredAmounts();
+                break;
+            case AddType.Transfer:
+                LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
+                LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger) { DesiredAmount = -1 });
+                Date = DateTime.Today;
+                break;
         }
     }
 
+    [ObservableProperty]
+    private int _totalAmount;
+
+    partial void OnTotalAmountChanged(int value)
+    {
+        if (SelectedType == AddType.Income)
+        {
+            foreach (var lineItem in LineItems.Where(x => x.SelectedCategory?.UsePercentage == true))
+            {
+                lineItem.DesiredAmount = (int)(value * lineItem.SelectedCategory!.BudgetedPercentage / 100.0);
+            }
+        }
+        UpdateRemaining();
+    }
+
+    [ObservableProperty]
     private int _remainingAmount;
-    public int RemainingAmount
-    {
-        get => _remainingAmount;
-        private set => SetProperty(ref _remainingAmount, value);
-    }
 
+    [ObservableProperty]
     private string? _description;
-    public string? Description
-    {
-        get => _description;
-        set => SetProperty(ref _description, value);
-    }
 
+    [property:ReasonableDate]
+    [ObservableProperty]
     private DateTime? _date;
-    [ReasonableDate]
-    public DateTime? Date
-    {
-        get => _date;
-        set => SetProperty(ref _date, value);
-    }
 
     public IList<ExpenseCategory> ExpenseCategories { get; }
 
-    public AddItemViewModel(Func<BudgetContext> contextFacory, 
+    public AddItemViewModel(Func<BudgetContext> contextFactory, 
         ICurrentMonth currentMonth, 
         IMessenger messenger, 
         IDispatcher dispatcher)
     {
-        ContextFactory = contextFacory ?? throw new ArgumentNullException(nameof(contextFacory));
+        ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
         CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
         Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
 
         Messenger.Register<LineItemAmountUpdated>(this);
         Messenger.Register<CurrentMonthChanged>(this);
 
-        SubmitCommand = new AsyncRelayCommand<bool?>(OnSubmit);
-        AddItemCommand = new RelayCommand(OnAddItem);
-        RemoveItemCommand = new RelayCommand<LineItemViewModel>(OnRemoveItem);
-        CancelCommand = new RelayCommand(OnCancel);
-        AutoAllocateCommand = new RelayCommand(OnAutoAllocate);
-
-        using var context = contextFacory();
+        using var context = contextFactory();
         ExpenseCategories = context.ExpenseCategories
             .Where(x => x.IsHidden == false)
             .OrderBy(x => x.Name).ToList();
@@ -144,9 +113,11 @@ public class AddItemViewModel : ValidationViewModel,
         dispatcher.InvokeAsync(() => BindingOperations.EnableCollectionSynchronization(LineItems, new object()));
     }
 
+    [RelayCommand]
     private void OnCancel()
         => Messenger.Send(new DoneAddingItemMessage());
 
+    [RelayCommand]
     private void OnRemoveItem(LineItemViewModel? item)
     {
         if (SelectedType == AddType.Transaction &&
@@ -158,9 +129,11 @@ public class AddItemViewModel : ValidationViewModel,
         }
     }
 
+    [RelayCommand]
     private void OnAddItem()
         => LineItems.Add(new LineItemViewModel(ExpenseCategories, Messenger));
 
+    [RelayCommand]
     private void OnAutoAllocate()
     {
         int total = RemainingAmount;
@@ -194,6 +167,7 @@ public class AddItemViewModel : ValidationViewModel,
         }
     }
 
+    [RelayCommand]
     private async Task OnSubmit(bool? ignoreBudget)
     {
         var errors = await (SelectedType switch
