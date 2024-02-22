@@ -313,9 +313,9 @@
         <GroupStyle HidesIfEmpty="True">
           <GroupStyle.HeaderTemplate>
             <DataTemplate>
-              <Grid Background="{DynamicResource PrimaryHueLightBrush}">
+              <Grid Background="{DynamicResource MaterialDesign.Brush.Primary.Light}">
                 <TextBlock Text="{Binding Name}" Margin="15,3,3,3"
-                           Foreground="{DynamicResource PrimaryHueLightForegroundBrush}"/>
+                           Foreground="{DynamicResource MaterialDesign.Brush.Primary.Light.Foreground}"/>
               </Grid>
             </DataTemplate>
           </GroupStyle.HeaderTemplate>

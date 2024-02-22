@@ -23,7 +23,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageVersion>
     <PackageVersion Include="CsvHelper" Version="31.0.0" />
-    <PackageVersion Include="MaterialDesignThemes" Version="4.8.0" />
+    <PackageVersion Include="MaterialDesignThemes" Version="5.0.0-ci540" />
     <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="8.0.2" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.2" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.2" />

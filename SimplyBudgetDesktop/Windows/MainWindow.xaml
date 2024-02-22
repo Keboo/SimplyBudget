@@ -8,19 +8,13 @@
         xmlns:valueConverter="clr-namespace:SimplyBudget.ValueConverter"
         xmlns:views="clr-namespace:SimplyBudget.Views"
         mc:Ignorable="d"
-        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-        TextElement.FontWeight="Regular"
-        TextElement.FontSize="13"
-        TextOptions.TextFormattingMode="Ideal" 
-        TextOptions.TextRenderingMode="Auto"
-        Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{materialDesign:MaterialDesignFont}" 
         Title="Simply Budget" Height="800" Width="1200"
+        Style="{StaticResource MaterialDesignWindow}"
         d:DataContext="{d:DesignInstance Type={x:Type vm:MainWindowViewModel}}">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="../Resources/DrawerHost.CustomTemplate.xaml" />
                 <ResourceDictionary Source="../Views/AddItemView.xaml" />
                 <ResourceDictionary Source="../Views/AccountsView.xaml" />
             </ResourceDictionary.MergedDictionaries>
@@ -38,9 +32,9 @@
                 <RowDefinition />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <materialDesign:DrawerHost>
+            <materialDesign:DrawerHost OpenMode="Standard">
                 <materialDesign:DrawerHost.Style>
-                    <Style TargetType="materialDesign:DrawerHost" BasedOn="{StaticResource MaterialDesignPushDrawerHost}">
+                    <Style TargetType="materialDesign:DrawerHost">
                         <Setter Property="IsRightDrawerOpen" Value="True" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding AddItem}" Value="{x:Null}">
@@ -53,11 +47,11 @@
                     <ContentControl Content="{Binding AddItem}" />
                 </materialDesign:DrawerHost.RightDrawerContent>
 
-                <TabControl Style="{StaticResource MaterialDesignNavigatilRailTabControl}"
+              <TabControl Style="{StaticResource MaterialDesignNavigationRailTabControl}"
                         materialDesign:ColorZoneAssist.Mode="PrimaryMid"
                         x:Name="TabControl">
                     <materialDesign:NavigationRailAssist.FloatingContent>
-                        <Button Style="{StaticResource MaterialDesignFloatingActionAccentButton}"
+                    <Button Style="{StaticResource MaterialDesignFloatingActionSecondaryButton}"
                             Margin="0,8" Command="{Binding ShowAddCommand}">
                             <materialDesign:PackIcon Kind="Plus" Width="30" Height="30" />
                         </Button>
@@ -107,7 +101,6 @@
                 <ComboBox HorizontalAlignment="Right" 
                       SelectedItem="{Binding SelectedMonth}"
                       ItemsSource="{Binding PastMonths}"
-                      materialDesign:ComboBoxAssist.ClassicMode="True"
                       materialDesign:ComboBoxAssist.ShowSelectedItem="True">
                     <ComboBox.ItemTemplate>
                         <DataTemplate>

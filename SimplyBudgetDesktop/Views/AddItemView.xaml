@@ -32,7 +32,6 @@
                               SelectedItem="{Binding SelectedCategory}"
                               materialDesign:HintAssist.Hint="Category"
                               materialDesign:HintAssist.IsFloating="True"
-                              materialDesign:ComboBoxAssist.ClassicMode="True"
                               DisplayMemberPath="Name" 
                               Grid.Column="1"
                               Margin="10,0"/>
@@ -104,7 +103,6 @@
                     <ComboBox ItemsSource="{Binding ExpenseCategories}"
                               SelectedItem="{Binding SelectedCategory}"
                               materialDesign:HintAssist.IsFloating="True"
-                              materialDesign:ComboBoxAssist.ClassicMode="True"
                               DisplayMemberPath="Name" 
                               Grid.Column="1"
                               Margin="0">
