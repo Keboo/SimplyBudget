@@ -24,11 +24,11 @@
     </PackageVersion>
     <PackageVersion Include="CsvHelper" Version="31.0.0" />
     <PackageVersion Include="MaterialDesignThemes" Version="4.8.0" />
-    <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="7.0.9" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.9" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
+    <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="8.0.2" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.2" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <PackageVersion Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
     <PackageVersion Include="MSTest.TestAdapter" Version="3.2.1" />
