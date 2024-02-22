@@ -8,34 +8,31 @@
   Uncomment if you need to enable inclusion of another Directory.Packages.props file from a parent directory
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Packages.props, $(MSBuildThisFileDirectory)..))" />
   -->
-
   <!-- This property enables the Central Package Management feature -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
-
   <!--
   This defines the set of centrally managed packages.
   This would typically list all NuGet packages used within this solution.
   -->
   <ItemGroup>
-    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.1.0" />
-    <PackageVersion Include="coverlet.collector" Version="3.2.0">
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageVersion>
-    <PackageVersion Include="CsvHelper" Version="30.0.1" />
+    <PackageVersion Include="CsvHelper" Version="31.0.0" />
     <PackageVersion Include="MaterialDesignThemes" Version="4.8.0" />
     <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="7.0.9" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.9"/>
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.9" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="7.0.9" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
-
-    <PackageVersion Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.39" />
-    <PackageVersion Include="MSTest.TestAdapter" Version="3.1.1" />
-    <PackageVersion Include="MSTest.TestFramework" Version="3.1.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageVersion Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="3.2.1" />
+    <PackageVersion Include="MSTest.TestFramework" Version="3.2.1" />
     <PackageVersion Include="Moq" Version="4.18.4" />
     <PackageVersion Include="Moq.AutoMock" Version="3.5.0" />
     <PackageVersion Include="Sciuridae" Version="0.0.3-ci1" />
