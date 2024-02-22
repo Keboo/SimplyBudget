@@ -33,7 +33,7 @@ public static class SampleBudget
             2..5);
 
         await AddCategory(
-            "Houshold Products",
+            "Household Products",
             120_00,
             0,
             CheckingAccount,
@@ -206,7 +206,7 @@ public static class SampleBudget
             }
         }
 
-        DateTime RandomDateInMonth(DateTime month)
+        static DateTime RandomDateInMonth(DateTime month)
         {
             var startOfMonth = month.EndOfMonth();
             var day = Random.Next(startOfMonth.Day + 1);
