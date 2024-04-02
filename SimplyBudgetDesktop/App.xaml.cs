@@ -28,7 +28,7 @@ public partial class App
     public static void Main(string[] args)
     {
         using IHost host = CreateHostBuilder(args).Build();
-        DI.Register(host.Services);
+        StaticDI.Register(host.Services);
         host.Start();
 
         App app = new();

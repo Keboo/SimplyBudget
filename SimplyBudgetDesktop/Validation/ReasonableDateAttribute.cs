@@ -15,7 +15,7 @@ public class ReasonableDateAttribute : ValidationAttribute
 
     public ReasonableDateAttribute(ICurrentMonth currentMonth)
     {
-        CurrentMonth = currentMonth ?? DI.GetService<ICurrentMonth>() 
+        CurrentMonth = currentMonth ?? StaticDI.GetService<ICurrentMonth>() 
             ?? throw new ArgumentNullException(nameof(currentMonth));
     }
 

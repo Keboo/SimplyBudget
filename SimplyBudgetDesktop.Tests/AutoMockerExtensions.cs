@@ -28,8 +28,8 @@ public static class AutoMockerExtensions
     public static IDisposable WithAutoDIResolver(this AutoMocker mocker)
     {
         var provider = new AsyncLocalServiceProvider(mocker);
-        DI.Register(provider);
-        return new Disposable(() => DI.Unregister(provider));
+        StaticDI.Register(provider);
+        return new Disposable(() => StaticDI.Unregister(provider));
     }
 
     private class Disposable : IDisposable

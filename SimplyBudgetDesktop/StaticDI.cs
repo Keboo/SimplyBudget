@@ -2,7 +2,7 @@
 
 namespace SimplyBudget;
 
-public static class DI
+public static class StaticDI
 {
     private static readonly List<IServiceProvider> _providers = new();
 
