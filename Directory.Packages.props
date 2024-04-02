@@ -18,21 +18,21 @@
   -->
   <ItemGroup>
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.2.2" />
-    <PackageVersion Include="coverlet.collector" Version="6.0.1">
+    <PackageVersion Include="coverlet.collector" Version="6.0.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageVersion>
-    <PackageVersion Include="CsvHelper" Version="31.0.0" />
-    <PackageVersion Include="MaterialDesignThemes" Version="5.0.0-ci540" />
-    <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="8.0.2" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.2" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.2" />
+    <PackageVersion Include="CsvHelper" Version="31.0.2" />
+    <PackageVersion Include="MaterialDesignThemes" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="8.0.3" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.3" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.3" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <PackageVersion Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
-    <PackageVersion Include="MSTest.TestAdapter" Version="3.2.1" />
-    <PackageVersion Include="MSTest.TestFramework" Version="3.2.1" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="3.2.2" />
+    <PackageVersion Include="MSTest.TestFramework" Version="3.2.2" />
     <PackageVersion Include="Moq" Version="4.18.4" />
     <PackageVersion Include="Moq.AutoMock" Version="3.5.0" />
     <PackageVersion Include="Sciuridae" Version="0.0.3-ci1" />
