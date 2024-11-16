@@ -45,16 +45,21 @@ public partial class MainWindowViewModel : ObservableObject,
         }
     }
 
-    public List<DateTime> PastMonths { get; } = new List<DateTime>
-    {
+    public List<DateTime> PastMonths { get; } =
+    [
         DateTime.Today.AddMonths(0).StartOfMonth(),
         DateTime.Today.AddMonths(-1).StartOfMonth(),
         DateTime.Today.AddMonths(-2).StartOfMonth(),
         DateTime.Today.AddMonths(-3).StartOfMonth(),
         DateTime.Today.AddMonths(-4).StartOfMonth(),
         DateTime.Today.AddMonths(-5).StartOfMonth(),
-        DateTime.Today.AddMonths(-6).StartOfMonth()
-    };
+        DateTime.Today.AddMonths(-6).StartOfMonth(),
+        DateTime.Today.AddMonths(-7).StartOfMonth(),
+        DateTime.Today.AddMonths(-8).StartOfMonth(),
+        DateTime.Today.AddMonths(-9).StartOfMonth(),
+        DateTime.Today.AddMonths(-10).StartOfMonth(),
+        DateTime.Today.AddMonths(-11).StartOfMonth()
+    ];
 
 
     public ICommand ShowAddCommand { get; }
