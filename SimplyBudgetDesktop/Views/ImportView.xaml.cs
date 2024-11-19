@@ -1,10 +1,9 @@
-﻿using SimplyBudget.ViewModels;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+
+using SimplyBudget.ViewModels;
 
 namespace SimplyBudget.Views;
 
@@ -73,7 +72,9 @@ public partial class ImportView
                     break;
                 }
                 catch (IOException)
-                { }
+                { 
+                    //TODO: Show some UI indicator indicating the failure
+                }
             }
         }
     }

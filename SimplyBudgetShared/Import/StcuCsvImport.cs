@@ -18,29 +18,29 @@ public class StcuCsvImport : CsvImport<StcuRecord>
             case "debit" when !string.Equals(row.Type, "Transfer", StringComparison.Ordinal):
                 return new()
                 {
-                    Date = row.PostingDate?.Date ?? DateTime.Today,
+                    Date = row.EffectiveDate?.Date ?? row.PostingDate?.Date ?? DateTime.Today,
                     Description = row.Description,
-                    Details = new()
-                    {
+                    Details =
+                    [
                         new()
                         {
                             Amount = (int)(row.Amount * 100),
                         }
-                    }
+                    ]
                 };
             case "debit": return null;
             case "credit":
                 return new()
                 {
-                    Date = row.PostingDate?.Date ?? DateTime.Today,
+                    Date = row.EffectiveDate?.Date ?? row.PostingDate?.Date ?? DateTime.Today,
                     Description = row.Description,
-                    Details = new()
-                    {
+                    Details =
+                    [
                         new()
                         {
                             Amount = (int)(row.Amount * 100),
                         }
-                    }
+                    ]
                 };
             default:
                 throw new InvalidOperationException($"Unknown transaction type '{row.TransactionType}'");
@@ -52,6 +52,9 @@ public class StcuRecord
 {
     [Name("Posting Date")]
     public DateTime? PostingDate { get; set; }
+
+    [Name("Effective Date")]
+    public DateTime? EffectiveDate { get; set; }
 
     [Name("Transaction Type")]
     public string? TransactionType { get; set; }
