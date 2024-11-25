@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>12</LangVersion>
+    <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
+  </PropertyGroup>
+
+  <!--
+  This allows all projects to share the same user secrets file.
+  If you want project to have their own, set it to a different GUID on each project.
+  See: https://learn.microsoft.com/dotnet/architecture/microservices/secure-net-microservices-web-applications/developer-app-secrets-storage
+  -->
+  <PropertyGroup Label="User Secrets">
+    <UserSecretsId>736f64ad-86ce-4df1-93bf-3d0b2c0c3f1e</UserSecretsId>
+  </PropertyGroup>
+</Project>
