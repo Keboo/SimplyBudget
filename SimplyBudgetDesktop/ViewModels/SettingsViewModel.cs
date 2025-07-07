@@ -19,7 +19,6 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
     private List<int> RemovedRuleIds { get; } = new();
     private Func<BudgetContext> ContextFactory { get; }
     private IMessenger Messenger { get; }
-    public ICommand OpenFolderCommand { get; }
     public ISnackbarMessageQueue MessageQueue { get; }
     public ObservableCollection<ExpenseCategory> ExpenseCategories { get; } = new();
 
@@ -31,7 +30,6 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
         ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
         Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
         MessageQueue = messageQueue ?? throw new ArgumentNullException(nameof(messageQueue));
-        OpenFolderCommand = new RelayCommand(OpenFolder);
         BindingOperations.EnableCollectionSynchronization(ExpenseCategories, new());
     }
 
@@ -49,8 +47,6 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
     [RelayCommand]
     private async Task OnSave()
     {
-        Settings.Default.StorageLocation = StorageLocation;
-        Settings.Default.Save();
         using var context = ContextFactory();
         foreach (ExpenseCategoryRuleViewModel ruleViewModel in Items
             .Where(x => !string.IsNullOrWhiteSpace(x.Name) &&
@@ -89,15 +85,6 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
         Messenger.Send(new StorageLocationChanged());
         MessageQueue.Enqueue("Saved");
         await ReloadItemsAsync();
-    }
-
-    [ObservableProperty]
-    private string _StorageLocation = Settings.Default.StorageLocation;
-
-    private void OpenFolder()
-    {
-        string targetPath = Path.GetFullPath(Environment.ExpandEnvironmentVariables(StorageLocation));
-        Process.Start("explorer.exe", targetPath);
     }
 
     public override async Task LoadItemsAsync()

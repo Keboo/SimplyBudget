@@ -1,14 +1,18 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using SimplyBudgetShared.Events;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
+using CommunityToolkit.Mvvm.Messaging;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+
+using SimplyBudgetShared.Events;
+
 namespace SimplyBudgetShared.Data;
 
-public class BudgetContext : DbContext
+public class BudgetContext (IMessenger messenger, DbContextOptions<BudgetContext> options)
+    : DbContext(options)
 {
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
@@ -17,31 +21,16 @@ public class BudgetContext : DbContext
     public DbSet<Metadata> Metadatas => Set<Metadata>();
     public DbSet<ExpenseCategoryRule> ExpenseCategoryRules => Set<ExpenseCategoryRule>();
 
-    private IMessenger Messenger { get; }
+    private IMessenger Messenger { get; } = messenger;
 
     public BudgetContext()
-        : this("Data Source=data.db")
-    { }
-
-    public BudgetContext(string connectionString)
-        : this (WeakReferenceMessenger.Default, 
-              new DbContextOptionsBuilder<BudgetContext>().UseSqlite(connectionString).Options)
-    { }
-
-    public BudgetContext(IMessenger messenger, DbContextOptions options)
-        : base(options)
+        : this(
+              WeakReferenceMessenger.Default,
+              new DbContextOptionsBuilder<BudgetContext>()
+                .UseAzureSql("Server=tcp:simplybudget.database.windows.net,1433;Initial Catalog=simplybudget;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=\"Active Directory Interactive\";")
+                .Options)
     {
-        Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
-    }
 
-    public override void Dispose()
-    {
-        base.Dispose();
-    }
-
-    public override ValueTask DisposeAsync()
-    {
-        return base.DisposeAsync();
     }
 
     public static string GetFilePathFromConnectionString(string connectionString)

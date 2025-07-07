@@ -1,5 +1,4 @@
-﻿using System.IO;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 
 using CommunityToolkit.Mvvm.Messaging;
@@ -11,12 +10,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-using SimplyBudget.Properties;
 using SimplyBudget.ViewModels;
 using SimplyBudget.Windows;
 
 using SimplyBudgetShared.Data;
-using SimplyBudgetShared.Threading;
 
 namespace SimplyBudget;
 
@@ -34,6 +31,7 @@ public partial class App
 
         App app = new();
         app.InitializeComponent();
+        MigrateDatabaseAsync(host.Services.GetRequiredService<Func<BudgetContext>>()).Wait();
         app.MainWindow = host.Services.GetRequiredService<MainWindow>();
         app.MainWindow.Visibility = Visibility.Visible;
         app.Run();
@@ -54,27 +52,36 @@ public partial class App
             services.AddSingleton<ICurrentMonth, CurrentMonth>();
 
             services.AddSingleton<IDispatcher, Dispatcher>();
-            services.AddSingleton(ctx => new Func<BudgetContext>(() => new BudgetContext(Settings.GetDatabaseConnectionString())));
+            services.AddSingleton(ctx => new Func<BudgetContext>(() => new BudgetContext()));
             services.AddTransient<ISnackbarMessageQueue, SnackbarMessageQueue>();
         });
 
+    private static async Task MigrateDatabaseAsync(Func<BudgetContext> contextFactory)
+    {
+        using BudgetContext context = contextFactory();
+        context.Database.Migrate();
+
+        //TODO: Async this
+        if (!context.ExpenseCategories.Any())
+        {
+            await SampleBudget.GenerateBudget(context);
+            await context.SaveChangesAsync();
+        }
+    }
+
     protected override void OnStartup(StartupEventArgs e)
     {
-        MakeDataBackup();
-        using (var context = new BudgetContext(Settings.GetDatabaseConnectionString()))
-        {
-            context.Database.Migrate();
+        //TODO: Resolve the dbcontext
 
-            //TODO: Async this
-            if (!context.ExpenseCategories.Any())
-            {
-                TaskEx.Run(async () =>
-                {
-                    await SampleBudget.GenerateBudget(context);
-                    await context.SaveChangesAsync();
-                }).Wait();
-            }
-        }
+        //DefaultAzureCredential creds = new(new DefaultAzureCredentialOptions()
+        //{
+        //    InteractiveBrowserTenantId = "043a9423-4a81-43ca-af56-558108fb8f06",
+        //    TenantId = "043a9423-4a81-43ca-af56-558108fb8f06",
+
+        //    ExcludeAzureCliCredential = false,
+        //    ExcludeInteractiveBrowserCredential = false
+        //});
+
 #if DEBUG
         var helper = new PaletteHelper();
         var theme = helper.GetTheme();
@@ -82,47 +89,5 @@ public partial class App
         helper.SetTheme(theme);
 #endif
         base.OnStartup(e);
-    }
-
-    private static void MakeDataBackup()
-    {
-        string backupsDirectory = Path.Combine(Settings.GetStorageDirectory(), "Backups");
-        DirectoryInfo backups;
-        try
-        {
-            backups = Directory.CreateDirectory(backupsDirectory);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            backupsDirectory = Path.Combine(Path.GetTempPath(), "SimplyBudget", "Backups");
-            backups = Directory.CreateDirectory(backupsDirectory);
-        }
-        const int maxBackups = 30;
-        var fileName = $"{DateTime.Now:yyyyMMddhhmmss}.db";
-        try
-        {
-            string sourcePath = Settings.GetDatabasePath();
-            if (File.Exists(sourcePath))
-            {
-                File.Copy(sourcePath, Path.Combine(backups.FullName, fileName));
-            }
-        }
-        catch (FileNotFoundException)
-        { }
-
-        foreach (var oldBackup in backups.EnumerateFiles($"*.db")
-            .OrderByDescending(x => x.Name)
-            .Skip(maxBackups)
-            .ToList())
-        {
-            try
-            {
-                oldBackup.Delete();
-            }
-            catch
-            {
-                //TODO: Notification
-            }
-        }
     }
 }
