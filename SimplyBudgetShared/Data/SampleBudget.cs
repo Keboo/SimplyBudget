@@ -9,7 +9,7 @@ namespace SimplyBudgetShared.Data;
 public static class SampleBudget
 {
     //fixed seed just so things are consistent
-    private static Random Random = new(87654321);
+    private static readonly Random Random = new(87654321);
 
     public static Account CheckingAccount { get; } = new Account { Name = "Checking", IsDefault = true };
     public static Account SavingsAccount { get; } = new Account { Name = "Savings" };

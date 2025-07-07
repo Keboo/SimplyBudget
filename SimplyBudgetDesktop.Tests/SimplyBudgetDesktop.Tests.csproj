@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
-    <SupportedOSPlatform>windows10.0.19041.0</SupportedOSPlatform>
+    <TargetFramework>net9.0-windows</TargetFramework>
 
     <IsPackable>false</IsPackable>
     <IsPublishable>false</IsPublishable>

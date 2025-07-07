@@ -1,6 +1,11 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+﻿using System.IO;
+using System.Windows;
+using System.Windows.Media;
+
+using CommunityToolkit.Mvvm.Messaging;
 
 using MaterialDesignThemes.Wpf;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,10 +17,6 @@ using SimplyBudget.Windows;
 
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Threading;
-using Squirrel;
-using System.IO;
-using System.Windows;
-using System.Windows.Media;
 
 namespace SimplyBudget;
 
@@ -57,42 +58,8 @@ public partial class App
             services.AddTransient<ISnackbarMessageQueue, SnackbarMessageQueue>();
         });
 
-    public static SemanticVersion? Version { get; set; }
-
-    private static void OnAppInstall(SemanticVersion version, IAppTools tools)
-    {
-        tools.CreateShortcutForThisExe(ShortcutLocation.StartMenu);
-    }
-
-    private static void OnAppUninstall(SemanticVersion version, IAppTools tools)
-    {
-        tools.RemoveShortcutForThisExe(ShortcutLocation.StartMenu);
-    }
-
-    private static void OnAppRun(SemanticVersion version, IAppTools tools, bool firstRun)
-    {
-        Version = version;
-        tools.SetProcessAppUserModelId();
-    }
-
     protected override void OnStartup(StartupEventArgs e)
     {
-        SquirrelAwareApp.HandleEvents(
-            onInitialInstall: OnAppInstall,
-            onAppUninstall: OnAppUninstall,
-            onEveryRun: OnAppRun);
-
-#if DEBUG
-        try
-        {
-            _ = global::Windows.ApplicationModel.Package.Current;
-        }
-        catch (InvalidOperationException)
-        {
-            //This is throw when run outside of an MSIX deployment
-            Settings.Default.StorageLocation = Path.GetFullPath(@".\Database");
-        }
-#endif
         MakeDataBackup();
         using (var context = new BudgetContext(Settings.GetDatabaseConnectionString()))
         {
