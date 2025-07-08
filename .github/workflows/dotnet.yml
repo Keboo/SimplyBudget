@@ -45,7 +45,7 @@ jobs:
 
     - name: Push Release
       if: github.event_name == 'workflow_dispatch'
-      run: dotnet vpk publish -o .\publish --waitForLive --api-key ${{ secrets.VPK_API_KEY }}
+      run: dotnet vpk publish -o .\Releases --waitForLive --api-key ${{ secrets.VPK_API_KEY }}
 
 
 
