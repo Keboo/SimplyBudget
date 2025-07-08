@@ -5,6 +5,8 @@ using SimplyBudget.ViewModels;
 
 using SimplyBudgetShared.Data;
 
+using Velopack;
+
 namespace SimplyBudget.Windows;
 
 /// <summary>
@@ -19,6 +21,15 @@ public partial class MainWindow :
         InitializeComponent();
         viewModel.Messenger.Register(this);
 
+        UpdateManager updateManager = new(new Velopack.Sources.VelopackFlowSource());
+        if (updateManager.IsInstalled && updateManager.CurrentVersion is { } version)
+        {
+            Title += $"{version.Major}.{version.Minor}.{version.Patch}";
+        }
+        else
+        {
+            Title += " - Local";
+        }
         //if (App.Version is { } version)
         //{
         //    Title += $" - {version.Major}.{version.Minor}.{version.Build}";

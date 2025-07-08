@@ -39,6 +39,7 @@
     <PackageVersion Include="Moq" Version="4.18.4" />
     <PackageVersion Include="Moq.AutoMock" Version="3.5.0" />
     <PackageVersion Include="System.Linq.Async" Version="6.0.3" />
+    <PackageVersion Include="Velopack" Version="0.0.1350-g3ba32af" />
     <PackageVersion Include="xunit" Version="2.4.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

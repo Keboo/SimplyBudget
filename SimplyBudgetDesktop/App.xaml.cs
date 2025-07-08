@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 
@@ -18,6 +19,8 @@ using SimplyBudget.Windows;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Threading;
 
+using Velopack;
+
 namespace SimplyBudget;
 
 /// <summary>
@@ -28,6 +31,8 @@ public partial class App
     [STAThread]
     public static void Main(string[] args)
     {
+        VelopackApp.Build().Run();
+
         using IHost host = CreateHostBuilder(args).Build();
         StaticDI.Register(host.Services);
         host.Start();
@@ -75,6 +80,8 @@ public partial class App
                 }).Wait();
             }
         }
+
+        _ = CheckForUpdatesAsync();
 #if DEBUG
         var helper = new PaletteHelper();
         var theme = helper.GetTheme();
@@ -82,6 +89,23 @@ public partial class App
         helper.SetTheme(theme);
 #endif
         base.OnStartup(e);
+    }
+
+    private static async Task<bool> CheckForUpdatesAsync()
+    {
+        var mgr = new UpdateManager(new Velopack.Sources.VelopackFlowSource());
+
+        // check for new version
+        var newVersion = await mgr.CheckForUpdatesAsync();
+        if (newVersion is null)
+            return false; // no update available
+
+        // download new version
+        await mgr.DownloadUpdatesAsync(newVersion);
+
+        // install new version and restart app
+        mgr.ApplyUpdatesAndRestart(newVersion);
+        return true;
     }
 
     private static void MakeDataBackup()
