@@ -4,7 +4,7 @@ namespace SimplyBudget;
 
 public static class StaticDI
 {
-    private static readonly List<IServiceProvider> _providers = new();
+    private static readonly List<IServiceProvider> _providers = [];
 
     public static IReadOnlyList<IServiceProvider> Providers => _providers.AsReadOnly();
 

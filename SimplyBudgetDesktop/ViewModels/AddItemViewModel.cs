@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Data;
 
+using CommunityToolkit.Datasync.Client;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -18,19 +19,18 @@ public partial class AddItemViewModel : ValidationViewModel,
     IRecipient<LineItemAmountUpdated>,
     IRecipient<CurrentMonthChanged>
 {
-    public Func<BudgetContext> ContextFactory { get; }
+    public IDataClient DataClient { get; }
     public ICurrentMonth CurrentMonth { get; }
     public IMessenger Messenger { get; }
 
-    public ObservableCollection<LineItemViewModel> LineItems { get; }
-        = new ObservableCollection<LineItemViewModel>();
+    public ObservableCollection<LineItemViewModel> LineItems { get; } = [];
 
-    public IList<AddType> AddTypes { get; } = new List<AddType>
-    {
+    public IList<AddType> AddTypes { get; } =
+    [
         AddType.Transaction,
         AddType.Income,
         AddType.Transfer
-    };
+    ];
 
     [ObservableProperty]
     private AddType _selectedType;
@@ -88,29 +88,37 @@ public partial class AddItemViewModel : ValidationViewModel,
     [ObservableProperty]
     private DateTime? _date;
 
-    public IList<ExpenseCategory> ExpenseCategories { get; }
+    public ObservableCollection<ExpenseCategory> ExpenseCategories { get; } = [];
 
-    public AddItemViewModel(Func<BudgetContext> contextFactory, 
+    public AddItemViewModel(IDataClient dataClient,
         ICurrentMonth currentMonth, 
         IMessenger messenger, 
         IDispatcher dispatcher)
     {
-        ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+        DataClient = dataClient ?? throw new ArgumentNullException(nameof(dataClient));
         CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
         Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
 
         Messenger.Register<LineItemAmountUpdated>(this);
         Messenger.Register<CurrentMonthChanged>(this);
 
-        using var context = contextFactory();
-        ExpenseCategories = context.ExpenseCategories
-            .Where(x => x.IsHidden == false)
-            .OrderBy(x => x.Name).ToList();
+        ExpenseCategories = [];
 
         SelectedType = AddType.Transaction;
 
         PropertyChanged += (_, _) => ClearValidationErrors(nameof(SubmitCommand));
         dispatcher.InvokeAsync(() => BindingOperations.EnableCollectionSynchronization(LineItems, new object()));
+    }
+
+    public async Task LoadAsync()
+    {
+        var expenseCategories = await DataClient.ExpenseCategories
+            .Query()
+            .Where(x => x.IsHidden == false)
+            .OrderBy(x => x.Name)
+            .ToListAsync();
+        ExpenseCategories.Clear();
+        ExpenseCategories.AddRange(expenseCategories);
     }
 
     [RelayCommand]
@@ -163,10 +171,9 @@ public partial class AddItemViewModel : ValidationViewModel,
 
     private async void LoadDesiredAmounts()
     {
-        await using var context = ContextFactory();
         foreach (var lineItem in LineItems.Where(x => x.SelectedCategory is not null))
         {
-            var desiredAmount = await context.GetRemainingBudgetAmount(lineItem.SelectedCategory!, CurrentMonth.CurrenMonth);
+            var desiredAmount = await DataClient.GetRemainingBudgetAmount(lineItem.SelectedCategory!, CurrentMonth.CurrenMonth);
             lineItem.DesiredAmount = desiredAmount;
             lineItem.SetAmountCallback = x =>
             {

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 
+using CommunityToolkit.Datasync.Client.Http;
 using CommunityToolkit.Mvvm.Messaging;
 
 using MaterialDesignThemes.Wpf;
@@ -59,7 +60,12 @@ public partial class App
             services.AddSingleton<ICurrentMonth, CurrentMonth>();
 
             services.AddSingleton<IDispatcher, Dispatcher>();
-            services.AddSingleton(ctx => new Func<BudgetContext>(() => new BudgetContext(Settings.GetDatabaseConnectionString())));
+            services.AddSingleton(sp => new Func<BudgetContext>(() => new BudgetContext(Settings.GetDatabaseConnectionString())));
+            services.AddSingleton(sp => new HttpClientOptions()
+            {
+                Endpoint = new Uri("https://localhost:5678")
+            });
+            services.AddScoped<IDataClient, DataClient>();
             services.AddTransient<ISnackbarMessageQueue, SnackbarMessageQueue>();
         });
 

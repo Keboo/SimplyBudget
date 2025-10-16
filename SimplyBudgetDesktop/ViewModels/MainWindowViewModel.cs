@@ -61,31 +61,30 @@ public partial class MainWindowViewModel : ObservableObject,
         DateTime.Today.AddMonths(-11).StartOfMonth()
     ];
 
-
-    public ICommand ShowAddCommand { get; }
     public IMessenger Messenger { get; }
     public ICurrentMonth CurrentMonth { get; }
     private Func<BudgetContext> ContextFactory { get; }
+    private IDataClient DataClient { get; }
     private IDispatcher Dispatcher { get; }
 
     public MainWindowViewModel(
         IMessenger messenger,
         ICurrentMonth currentMonth,
+        IDataClient dataClient,
         Func<BudgetContext> contextFactory,
         IDispatcher dispatcher,
         ISnackbarMessageQueue messageQueue)
     {
-        ShowAddCommand = new RelayCommand<AddType?>(OnShowAdd);
-
         Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
         CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
         ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+        DataClient = dataClient ?? throw new ArgumentNullException(nameof(dataClient));
         Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         ArgumentNullException.ThrowIfNull(messageQueue);
 
         Budget = new(contextFactory, messenger, currentMonth);
         History = new(contextFactory, messenger, currentMonth);
-        Accounts = new(contextFactory, messenger);
+        Accounts = new(dataClient, messenger);
         Import = new(contextFactory, messenger);
         Settings = new(contextFactory, messageQueue, messenger);
 
@@ -101,9 +100,10 @@ public partial class MainWindowViewModel : ObservableObject,
         messenger.Register<AddItemMessage>(this);
     }
 
+    [RelayCommand]
     private void OnShowAdd(AddType? addType)
     {
-        AddItem = new AddItemViewModel(ContextFactory, CurrentMonth, Messenger, Dispatcher);
+        AddItem = new AddItemViewModel(DataClient, CurrentMonth, Messenger, Dispatcher);
         if (addType != null && addType != AddType.None)
         {
             AddItem.SelectedType = addType.Value;
@@ -118,7 +118,7 @@ public partial class MainWindowViewModel : ObservableObject,
 
     public void Receive(AddItemMessage message)
     {
-        AddItem = new AddItemViewModel(ContextFactory, CurrentMonth, Messenger, Dispatcher)
+        AddItem = new AddItemViewModel(DataClient, CurrentMonth, Messenger, Dispatcher)
         {
             SelectedType = message.Type,
             Date = message.Date,

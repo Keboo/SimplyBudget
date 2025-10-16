@@ -5,10 +5,10 @@ namespace SimplyBudget.ViewModels;
 
 public class AccountViewModel : ObservableObject
 {
-    public static async Task<AccountViewModel> Create(BudgetContext context, Account account)
+    public static async Task<AccountViewModel> Create(IDataClient<ExpenseCategory> expenseCategories, Account account)
     {
-        if (account is null) throw new ArgumentNullException(nameof(account));
-        var currentAmount = await context.GetCurrentAmount(account.ID);
+        ArgumentNullException.ThrowIfNull(account);
+        var currentAmount = await expenseCategories.GetCurrentAmountAsync(account.ID, CancellationToken.None);
         return new AccountViewModel(account.ID)
         {
             Name = account.Name,

@@ -77,19 +77,19 @@ public static class BudgetContextExtensions
         {
             Date = date.Date,
             Description = description,
-            Details = new List<ExpenseCategoryItemDetail>
-            {
-                new ExpenseCategoryItemDetail
+            Details =
+            [
+                new()
                 {
                     Amount = -amount,
                     ExpenseCategoryId = fromCategory.ID,
                 },
-                new ExpenseCategoryItemDetail
+                new() 
                 {
                     Amount = amount,
                     ExpenseCategoryId = toCategory.ID
                 }
-            },
+            ],
             IgnoreBudget = ignoreBudget //NB: Order matters here, must be after Details
         };
         context.ExpenseCategoryItems.Add(item);

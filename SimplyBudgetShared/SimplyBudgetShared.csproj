@@ -5,6 +5,7 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Datasync.Client" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="CsvHelper" />
     <PackageReference Include="Microsoft.Data.Sqlite.Core" />

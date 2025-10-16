@@ -15,13 +15,13 @@ public class AccountsViewModel :
 {
     public ICommand ShowAccountsCommand { get; }
     
-    private Func<BudgetContext> ContextFactory { get; }
+    private IDataClient DataClient { get; }
 
     public ICollectionView AccountsView => _view;
 
-    public AccountsViewModel(Func<BudgetContext> contextFactory, IMessenger messenger)
+    public AccountsViewModel(IDataClient dataClient, IMessenger messenger)
     {
-        ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+        DataClient = dataClient ?? throw new ArgumentNullException(nameof(dataClient));
         messenger.Register<DatabaseEvent<Account>>(this);
         messenger.Register<DatabaseEvent<ExpenseCategory>>(this);
         ShowAccountsCommand = new RelayCommand(OnShowAccounts);
@@ -29,10 +29,9 @@ public class AccountsViewModel :
 
     protected override async IAsyncEnumerable<AccountViewModel> GetItems()
     {
-        using var context = ContextFactory();
-        await foreach (var account in context.Accounts)
+        await foreach (var account in DataClient.Accounts.GetAllAsync())
         {
-            yield return await AccountViewModel.Create(context, account);
+            yield return await AccountViewModel.Create(DataClient.ExpenseCategories, account);
         }
     }
 
