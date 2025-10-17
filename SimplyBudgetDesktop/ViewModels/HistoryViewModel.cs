@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Datasync.Client;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.EntityFrameworkCore;
 using SimplyBudget.Messaging;
@@ -16,21 +17,18 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
     IRecipient<DatabaseEvent<ExpenseCategoryItemDetail>>,
     IRecipient<CurrentMonthChanged>
 {
-    public Func<BudgetContext> ContextFactory { get; }
+    private IDataClient DataClient { get; }
     public ICurrentMonth CurrentMonth { get; }
 
     public IRelayCommand AddFilterCommand { get; }
     public ICommand DoSearchCommand { get; }
     public ICommand RemoveFilterCommand { get; }
 
-    public ObservableCollection<Account> Accounts { get; }
-        = new ObservableCollection<Account>();
+    public ObservableCollection<Account> Accounts { get; } = [];
 
-    public ObservableCollection<ExpenseCategory> ExpenseCategories { get; }
-        = new ObservableCollection<ExpenseCategory>();
+    public ObservableCollection<ExpenseCategory> ExpenseCategories { get; } = [];
 
-    public ObservableCollection<ExpenseCategory> FilterCategories { get; }
-        = new ObservableCollection<ExpenseCategory>();
+    public ObservableCollection<ExpenseCategory> FilterCategories { get; } = [];
 
     private ExpenseCategory? _selectedCategory;
     public ExpenseCategory? SelectedCategory
@@ -78,13 +76,10 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
         private set => SetProperty(ref _filterDisplay, value);
     }
 
-    public HistoryViewModel(Func<BudgetContext> contextFactory, IMessenger messenger, ICurrentMonth currentMonth)
+    public HistoryViewModel(IDataClient dataClient, IMessenger messenger, ICurrentMonth currentMonth)
     {
-        ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+        DataClient = dataClient ?? throw new ArgumentNullException(nameof(dataClient));
         CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
-
-        using var context = contextFactory();
-        ExpenseCategories.AddRange(context.ExpenseCategories);
 
         AddFilterCommand = new RelayCommand<ExpenseCategory>(OnAddFilter, x => x != null);
         RemoveFilterCommand = new RelayCommand<ExpenseCategory>(
@@ -96,6 +91,16 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
         messenger.Register<DatabaseEvent<ExpenseCategoryItem>>(this);
         messenger.Register<DatabaseEvent<ExpenseCategoryItemDetail>>(this);
         messenger.Register<CurrentMonthChanged>(this);
+    }
+
+    public override async Task LoadItemsAsync()
+    {
+        await base.LoadItemsAsync();
+        ExpenseCategories.Clear();
+        await foreach(var category in DataClient.ExpenseCategories.GetAllAsync())
+        {
+            ExpenseCategories.Add(category);
+        }
     }
 
     private void OnAddFilter(ExpenseCategory? category)
@@ -137,7 +142,6 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
     protected override async IAsyncEnumerable<BudgetHistoryViewModel> GetItems()
     {
         var oldestTime = CurrentMonth.CurrenMonth.AddMonths(-12).StartOfMonth();
-        using var context = ContextFactory();
 
         int currentAccountAmount = 0;
         var categoryList = new List<int>();
@@ -147,12 +151,10 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
         }
         else if (SelectedAccount?.ID is int selectedId)
         {
-            currentAccountAmount = await context.GetCurrentAmount(selectedId);
+            currentAccountAmount = await DataClient.GetCurrentAmountAsync(selectedId, CancellationToken.None);
         }
 
-        IQueryable<ExpenseCategoryItem> query = context.ExpenseCategoryItems
-            .Include(x => x.Details!)
-            .ThenInclude(x => x.ExpenseCategory);
+        IDatasyncQueryable<ExpenseCategoryItem> query = DataClient.ExpenseCategoryItems.Query();
 
         if (!string.IsNullOrWhiteSpace(Search))
         {
@@ -163,7 +165,7 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
             query = query.Where(x => x.Date >= oldestTime);
         }
 
-        if (categoryList.Any())
+        if (categoryList.Count != 0)
         {
             query = query.Where(x => x.Details!.Any(x => categoryList.Contains(x.ExpenseCategoryId)));
         }
@@ -172,7 +174,7 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
             .OrderByDescending(x => x.Date)
             .ThenByDescending(x => x.ID);
 
-        await foreach (var item in query.AsAsyncEnumerable())
+        await foreach (var item in query.ToAsyncEnumerable())
         {
             yield return new BudgetHistoryViewModel(item, currentAccountAmount);
             if (!FilterCategories.Any() && SelectedAccount?.ID is int selectedId)
@@ -186,29 +188,24 @@ public class HistoryViewModel : CollectionViewModelBase<BudgetHistoryViewModel>,
 
     protected override async Task ReloadItemsAsync()
     {
-        using var context = ContextFactory();
-
         int? selectedId = SelectedAccount?.ID;
         Accounts.Clear();
-        Accounts.AddRange(context.Accounts);
-        _selectedAccount = Accounts.FirstOrDefault(x => x.ID == selectedId) ??
-            await context.GetDefaultAccountAsync();
+        await foreach(var account in DataClient.Accounts.GetAllAsync())
+        {
+            Accounts.Add(account);
+        }
+        _selectedAccount = Accounts.FirstOrDefault(x => x.ID == selectedId) 
+            ?? await DataClient.GetDefaultAccountAsync();
         await base.ReloadItemsAsync();
         OnPropertyChanged(nameof(SelectedAccount));
     }
 
     public async Task DeleteItems(IEnumerable<BudgetHistoryViewModel> items)
     {
-        if (items is null)
+        ArgumentNullException.ThrowIfNull(items);
+        foreach (BudgetHistoryViewModel? item in items.ToList())
         {
-            throw new ArgumentNullException(nameof(items));
-        }
-
-        using var context = ContextFactory();
-
-        foreach (var item in items.ToList())
-        {
-            await item.Delete(context);
+            await item.Delete(DataClient);
         }
     }
 

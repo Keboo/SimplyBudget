@@ -102,7 +102,7 @@ public class MainWindowViewModelTests
         Assert.AreEqual(AddType.Transaction, vm.AddItem.SelectedType);
         Assert.AreEqual(today, vm.AddItem.Date);
         Assert.AreEqual("My Cell Phone", vm.AddItem.Description);
-        Assert.AreEqual(1, vm.AddItem.LineItems.Count);
+        Assert.HasCount(1, vm.AddItem.LineItems);
         Assert.AreEqual(500, vm.AddItem.LineItems[0].Amount);
         Assert.AreEqual(categoryId, vm.AddItem.LineItems[0].SelectedCategory?.ID);
     }

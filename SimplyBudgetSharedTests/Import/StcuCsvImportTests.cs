@@ -18,7 +18,7 @@ public class StcuCsvImportTests
 
         var items = await csvImport.GetItems().ToListAsync();
 
-        Assert.AreEqual(2, items.Count);
+        Assert.HasCount(2, items);
 
         Assert.AreEqual(new DateTime(2020, 11, 23), items[0].Date);
         Assert.AreEqual("Purchase GOOGLE Play", items[0].Description);
@@ -40,7 +40,7 @@ public class StcuCsvImportTests
 
         var items = await csvImport.GetItems().ToListAsync();
 
-        Assert.AreEqual(1, items.Count);
+        Assert.HasCount(1, items);
 
         Assert.AreEqual(new DateTime(2020, 11, 19), items[0].Date);
         Assert.AreEqual("Check #1471", items[0].Description);
@@ -57,7 +57,7 @@ public class StcuCsvImportTests
 
         var items = await csvImport.GetItems().ToListAsync();
 
-        Assert.AreEqual(1, items.Count);
+        Assert.HasCount(1, items);
 
         Assert.AreEqual(new DateTime(2020, 11, 20), items[0].Date);
         Assert.AreEqual("PAYROLL", items[0].Description);
@@ -74,7 +74,7 @@ public class StcuCsvImportTests
 
         var items = await csvImport.GetItems().ToListAsync();
 
-        Assert.AreEqual(0, items.Count);
+        Assert.IsEmpty(items);
     }
 
     [TestMethod]
@@ -87,7 +87,7 @@ public class StcuCsvImportTests
 
         var items = await csvImport.GetItems().ToListAsync();
 
-        Assert.AreEqual(1, items.Count);
+        Assert.HasCount(1, items);
         Assert.AreEqual(new DateTime(2021, 2, 1), items[0].Date);
     }
 

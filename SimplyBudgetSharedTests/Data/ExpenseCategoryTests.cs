@@ -162,7 +162,7 @@ public class ExpenseCategoryTests
         IList<ExpenseCategoryItemDetail> transactionItems = await actContext.GetCategoryItemDetails(category1);
 
         //Assert
-        Assert.AreEqual(2, transactionItems.Count);
+        Assert.HasCount(2, transactionItems);
 
         Assert.AreEqual(-100, transactionItems[0].Amount);
         Assert.AreEqual("Transaction 1", transactionItems[0].ExpenseCategoryItem?.Description);
@@ -195,7 +195,7 @@ public class ExpenseCategoryTests
         IList<ExpenseCategoryItemDetail> transactionItems = await actContext.GetCategoryItemDetails(category1, now.AddDays(-2).Date, now);
 
         //Assert
-        Assert.AreEqual(2, transactionItems.Count);
+        Assert.HasCount(2, transactionItems);
 
         Assert.AreEqual(-100, transactionItems[0].Amount);
         Assert.AreEqual("Transaction 1", transactionItems[0].ExpenseCategoryItem?.Description);
@@ -230,7 +230,7 @@ public class ExpenseCategoryTests
 
         //Assert
         Assert.IsNotNull(incomeItems);
-        Assert.AreEqual(2, incomeItems!.Count);
+        Assert.HasCount(2, incomeItems);
 
         Assert.AreEqual(100, incomeItems[0].Amount);
         Assert.AreEqual("Income description", incomeItems[0].ExpenseCategoryItem?.Description);
@@ -263,7 +263,7 @@ public class ExpenseCategoryTests
 
         //Assert
         Assert.IsNotNull(incomeItems);
-        Assert.AreEqual(2, incomeItems!.Count);
+        Assert.HasCount(2, incomeItems);
 
         Assert.AreEqual("Income 2 description", incomeItems[0].ExpenseCategoryItem?.Description);
         Assert.AreEqual("Income 2 description", incomeItems[1].ExpenseCategoryItem?.Description);
@@ -314,7 +314,7 @@ public class ExpenseCategoryTests
         //Assert
         using var assertContext = factory.Create();
         var expenseCategory = await assertContext.ExpenseCategories.FindAsync(category.ID);
-        Assert.AreEqual(null, expenseCategory!.AccountID);
+        Assert.IsNull(expenseCategory!.AccountID);
     }
 
     [TestMethod]

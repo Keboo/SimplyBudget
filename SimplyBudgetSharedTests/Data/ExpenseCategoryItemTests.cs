@@ -1,7 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SimplyBudgetShared.Data;
-using System;
-using System.Linq;
+﻿using SimplyBudgetShared.Data;
 
 namespace SimplyBudgetSharedTests.Data;
 
@@ -13,11 +10,11 @@ public class ExpenseCategoryItemTests
     {
         var item = new ExpenseCategoryItem
         {
-            Details = new()
-            {
+            Details =
+            [
                 new ExpenseCategoryItemDetail() { IgnoreBudget = true },
                 new ExpenseCategoryItemDetail() { IgnoreBudget = true }
-            }
+            ]
         };
 
         Assert.IsTrue(item.IgnoreBudget);
@@ -28,11 +25,11 @@ public class ExpenseCategoryItemTests
     {
         var item = new ExpenseCategoryItem
         {
-            Details = new()
-            {
+            Details =
+            [
                 new ExpenseCategoryItemDetail() { IgnoreBudget = false },
                 new ExpenseCategoryItemDetail() { IgnoreBudget = false }
-            }
+            ]
         };
 
         Assert.IsFalse(item.IgnoreBudget);
@@ -43,11 +40,11 @@ public class ExpenseCategoryItemTests
     {
         var item = new ExpenseCategoryItem
         {
-            Details = new()
-            {
+            Details =
+            [
                 new ExpenseCategoryItemDetail() { IgnoreBudget = true },
                 new ExpenseCategoryItemDetail() { IgnoreBudget = false }
-            }
+            ]
         };
 
         Assert.IsNull(item.IgnoreBudget);
@@ -66,7 +63,7 @@ public class ExpenseCategoryItemTests
     {
         var item = new ExpenseCategoryItem();
 
-        var ex = Assert.ThrowsException<ArgumentNullException>(() => item.IgnoreBudget = null);
+        var ex = Assert.Throws<ArgumentNullException>(() => item.IgnoreBudget = null);
         Assert.AreEqual("value", ex.ParamName);
     }
 
@@ -75,7 +72,7 @@ public class ExpenseCategoryItemTests
     {
         var item = new ExpenseCategoryItem();
 
-        var ex = Assert.ThrowsException<ArgumentNullException>(() => item.IgnoreBudget = null);
+        var ex = Assert.Throws<ArgumentNullException>(() => item.IgnoreBudget = null);
         Assert.AreEqual("value", ex.ParamName);
     }
 
@@ -86,11 +83,11 @@ public class ExpenseCategoryItemTests
     {
         var item = new ExpenseCategoryItem
         {
-            Details = new()
-            {
+            Details =
+            [
                 new ExpenseCategoryItemDetail() { IgnoreBudget = true },
                 new ExpenseCategoryItemDetail() { IgnoreBudget = false }
-            }
+            ]
         };
 
         item.IgnoreBudget = value;

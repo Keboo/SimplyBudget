@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using System.Windows.Input;
 
+using CommunityToolkit.Datasync.Client;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
@@ -63,7 +64,6 @@ public partial class MainWindowViewModel : ObservableObject,
 
     public IMessenger Messenger { get; }
     public ICurrentMonth CurrentMonth { get; }
-    private Func<BudgetContext> ContextFactory { get; }
     private IDataClient DataClient { get; }
     private IDispatcher Dispatcher { get; }
 
@@ -71,22 +71,20 @@ public partial class MainWindowViewModel : ObservableObject,
         IMessenger messenger,
         ICurrentMonth currentMonth,
         IDataClient dataClient,
-        Func<BudgetContext> contextFactory,
         IDispatcher dispatcher,
         ISnackbarMessageQueue messageQueue)
     {
         Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
         CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
-        ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
         DataClient = dataClient ?? throw new ArgumentNullException(nameof(dataClient));
         Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
         ArgumentNullException.ThrowIfNull(messageQueue);
 
-        Budget = new(contextFactory, messenger, currentMonth);
-        History = new(contextFactory, messenger, currentMonth);
+        Budget = new(dataClient, messenger, currentMonth);
+        History = new(dataClient, messenger, currentMonth);
         Accounts = new(dataClient, messenger);
-        Import = new(contextFactory, messenger);
-        Settings = new(contextFactory, messageQueue, messenger);
+        Import = new(dataClient, messenger);
+        Settings = new(dataClient, messageQueue, messenger);
 
         _ = Budget.LoadItemsAsync();
         _ = History.LoadItemsAsync();
@@ -116,7 +114,7 @@ public partial class MainWindowViewModel : ObservableObject,
     public void Receive(CurrentMonthChanged message)
         => SelectedMonth = message.StartOfMonth;
 
-    public void Receive(AddItemMessage message)
+    public async void Receive(AddItemMessage message)
     {
         AddItem = new AddItemViewModel(DataClient, CurrentMonth, Messenger, Dispatcher)
         {
@@ -128,10 +126,9 @@ public partial class MainWindowViewModel : ObservableObject,
         {
             case AddType.Transaction:
                 {
-                    using var context = ContextFactory();
-                    var rules = context.ExpenseCategoryRules
+                    var rules = await DataClient.ExpenseCategoryRules.Query()
                         .Where(x => x.RuleRegex != null && x.ExpenseCategoryID != null)
-                        .ToList();
+                        .ToListAsync();
                     var matchingRule = rules.Where(r => Regex.IsMatch(message.Description ?? "", r.RuleRegex ?? "", RegexOptions.IgnoreCase)).LastOrDefault();
                     AddItem.LineItems.Clear();
                     AddItem.LineItems.AddRange(message.Items

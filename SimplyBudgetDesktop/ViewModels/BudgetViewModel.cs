@@ -1,10 +1,15 @@
-﻿using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Datasync.Client;
+using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+
 using Microsoft.EntityFrameworkCore;
+
 using SimplyBudget.Messaging;
+
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Events;
 using SimplyBudgetShared.Utilities;
+
 using System.ComponentModel;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -15,15 +20,15 @@ public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelE
     IRecipient<DatabaseEvent<ExpenseCategory>>,
     IRecipient<CurrentMonthChanged>
 {
-    private Func<BudgetContext> ContextFactory { get; }
+    private IDataClient DataClient { get; }
 
     public IMessenger Messenger { get; }
     public ICurrentMonth CurrentMonth { get; }
     public ICommand DoSearchCommand { get; }
 
-    public BudgetViewModel(Func<BudgetContext> contextFactory, IMessenger messenger, ICurrentMonth currentMonth)
+    public BudgetViewModel(IDataClient dataClient, IMessenger messenger, ICurrentMonth currentMonth)
     {
-        ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+        DataClient = dataClient ?? throw new ArgumentNullException(nameof(dataClient));
         Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
         CurrentMonth = currentMonth ?? throw new ArgumentNullException(nameof(currentMonth));
         messenger.Register<DatabaseEvent<ExpenseCategory>>(this);
@@ -88,10 +93,9 @@ public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelE
 
     protected override async IAsyncEnumerable<ExpenseCategoryViewModelEx> GetItems()
     {
-        using var context = ContextFactory();
-        await foreach (var category in context.ExpenseCategories)
+        await foreach (var category in DataClient.ExpenseCategories.GetAllAsync())
         {
-            yield return await ExpenseCategoryViewModelEx.Create(ContextFactory, category, CurrentMonth.CurrenMonth);
+            yield return await ExpenseCategoryViewModelEx.Create(DataClient, category, CurrentMonth.CurrenMonth);
         }
     }
 
@@ -102,11 +106,11 @@ public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelE
         switch (@event.Type)
         {
             case EventType.Created:
-                Items.Add(await ExpenseCategoryViewModelEx.Create(ContextFactory, expenseCategory, CurrentMonth.CurrenMonth));
+                Items.Add(await ExpenseCategoryViewModelEx.Create(DataClient, expenseCategory, CurrentMonth.CurrenMonth));
                 break;
             case EventType.Updated:
                 Items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
-                Items.Add(await ExpenseCategoryViewModelEx.Create(ContextFactory, expenseCategory, CurrentMonth.CurrenMonth));
+                Items.Add(await ExpenseCategoryViewModelEx.Create(DataClient, expenseCategory, CurrentMonth.CurrenMonth));
                 break;
             case EventType.Deleted:
                 Items.RemoveFirst(x => x.ExpenseCategoryID == expenseCategory.ID);
@@ -119,8 +123,7 @@ public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelE
 
     public async Task<bool> SaveChanges(ExpenseCategoryViewModelEx category)
     {
-        using var context = ContextFactory();
-        if (await context.ExpenseCategories.FirstOrDefaultAsync(x => x.ID == category.ExpenseCategoryID) is ExpenseCategory dbCategory)
+        if (await DataClient.ExpenseCategories.Query().SingleOrDefaultAsync(x => x.ID == category.ExpenseCategoryID) is ExpenseCategory dbCategory)
         {
             dbCategory.Name = category.EditingName;
             dbCategory.CategoryName = category.EditingCategory;
@@ -128,37 +131,34 @@ public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelE
             dbCategory.BudgetedAmount = category.EditIsAmountType ? category.EditAmount : 0;
             dbCategory.Cap = category.EditingCap;
             dbCategory.AccountID = category.Account?.ID;
-            await context.SaveChangesAsync();
-            category.Name = dbCategory.Name;
-            category.CategoryName = dbCategory.CategoryName;
-            category.BudgetedAmount = dbCategory.BudgetedAmount;
-            category.BudgetedPercentage = dbCategory.BudgetedPercentage;
-            category.Cap = dbCategory.Cap;
-            category.Account = dbCategory.Account;
-            return true;
+
+            if (await DataClient.ExpenseCategories.ReplaceAsync(dbCategory) is { } updatedCategory)
+            {
+                category.Name = updatedCategory.Name;
+                category.CategoryName = updatedCategory.CategoryName;
+                category.BudgetedAmount = updatedCategory.BudgetedAmount;
+                category.BudgetedPercentage = updatedCategory.BudgetedPercentage;
+                category.Cap = updatedCategory.Cap;
+                category.Account = updatedCategory.Account;
+                return true;
+            }
+            return false;
         }
         return false;
     }
 
     public async Task Delete(ExpenseCategoryViewModelEx category)
     {
-        using var context = ContextFactory();
-        if (context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
+        if (await DataClient.ExpenseCategories.UpdateItemAsync(category.ExpenseCategoryID, x => x.IsHidden = true))
         {
-            dbCategory.IsHidden = true;
-            await context.SaveChangesAsync();
             category.IsHidden = true;
         }
     }
 
     public async Task Undelete(ExpenseCategoryViewModelEx category)
     {
-        using var context = ContextFactory();
-
-        if (context.ExpenseCategories.Find(category.ExpenseCategoryID) is ExpenseCategory dbCategory)
+        if (await DataClient.ExpenseCategories.UpdateItemAsync(category.ExpenseCategoryID, x => x.IsHidden = false))
         {
-            dbCategory.IsHidden = false;
-            await context.SaveChangesAsync();
             category.IsHidden = false;
         }
     }

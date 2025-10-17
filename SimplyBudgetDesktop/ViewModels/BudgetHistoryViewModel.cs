@@ -57,9 +57,6 @@ public class BudgetHistoryViewModel : ObservableObject
 
     public IReadOnlyList<BudgetHistoryDetailsViewModel> Details { get; }
 
-    public async Task Delete(BudgetContext context)
-    {
-        context.Remove(Item);
-        await context.SaveChangesAsync();
-    }
+    public ValueTask<bool> Delete(IDataClient dataClient)
+        => dataClient.ExpenseCategoryItems.RemoveAsync(Item);
 }

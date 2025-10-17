@@ -35,7 +35,7 @@ public partial class SettingsViewModelTests
         await vm.RefreshCommand.ExecuteAsync(null);
 
         //Assert
-        Assert.AreEqual(1, vm.Items.Count);
+        Assert.HasCount(1, vm.Items);
         Assert.AreEqual("Match All", vm.Items[0].Name);
         Assert.AreEqual(".*", vm.Items[0].RuleRegex);
         Assert.AreEqual(category1.ID, vm.Items[0].ExpenseCategoryId);
@@ -68,7 +68,7 @@ public partial class SettingsViewModelTests
         //Assert
         using var assertContext = factory.Create();
         var foundRules = await assertContext.ExpenseCategoryRules.ToListAsync();
-        Assert.AreEqual(1, foundRules.Count);
+        Assert.HasCount(1, foundRules);
         Assert.AreEqual("Match All", foundRules[0].Name);
         Assert.AreEqual(".*", foundRules[0].RuleRegex);
         Assert.AreEqual(category1.ID, foundRules[0].ExpenseCategoryID);
@@ -100,7 +100,7 @@ public partial class SettingsViewModelTests
         //Assert
         using var assertContext = factory.Create();
         var foundRules = await assertContext.ExpenseCategoryRules.ToListAsync();
-        Assert.AreEqual(0, foundRules.Count);
+        Assert.IsEmpty(foundRules);
     }
 
     [TestMethod]
@@ -136,7 +136,7 @@ public partial class SettingsViewModelTests
         //Assert
         using var assertContext = factory.Create();
         var foundRules = await assertContext.ExpenseCategoryRules.ToListAsync();
-        Assert.AreEqual(1, foundRules.Count);
+        Assert.HasCount(1, foundRules);
         Assert.AreEqual("Match All-Edit", foundRules[0].Name);
         Assert.AreEqual(".*-Edit", foundRules[0].RuleRegex);
         Assert.AreEqual(category2.ID, foundRules[0].ExpenseCategoryID);
@@ -170,6 +170,6 @@ public partial class SettingsViewModelTests
         //Assert
         using var assertContext = factory.Create();
         var foundRules = await assertContext.ExpenseCategoryRules.ToListAsync();
-        Assert.AreEqual(0, foundRules.Count);
+        Assert.IsEmpty(foundRules);
     }
 }

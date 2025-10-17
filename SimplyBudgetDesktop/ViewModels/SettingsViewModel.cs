@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Datasync.Client;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MaterialDesignThemes.Wpf;
@@ -6,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudget.Messaging;
 using SimplyBudget.Properties;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
+
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -16,19 +19,19 @@ namespace SimplyBudget.ViewModels;
 
 public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategoryRuleViewModel>
 {
-    private List<int> RemovedRuleIds { get; } = new();
-    private Func<BudgetContext> ContextFactory { get; }
+    private List<int> RemovedRuleIds { get; } = [];
+    private IDataClient DataClient { get; }
     private IMessenger Messenger { get; }
     public ICommand OpenFolderCommand { get; }
     public ISnackbarMessageQueue MessageQueue { get; }
-    public ObservableCollection<ExpenseCategory> ExpenseCategories { get; } = new();
+    public ObservableCollection<ExpenseCategory> ExpenseCategories { get; } = [];
 
     public SettingsViewModel(
-        Func<BudgetContext> contextFactory, 
+        IDataClient dataClient, 
         ISnackbarMessageQueue messageQueue,
         IMessenger messenger)
     {
-        ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+        DataClient = dataClient ?? throw new ArgumentNullException(nameof(dataClient));
         Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
         MessageQueue = messageQueue ?? throw new ArgumentNullException(nameof(messageQueue));
         OpenFolderCommand = new RelayCommand(OpenFolder);
@@ -51,14 +54,16 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
     {
         Settings.Default.StorageLocation = StorageLocation;
         Settings.Default.Save();
-        using var context = ContextFactory();
+
+        var existingRules = await DataClient.ExpenseCategoryRules.GetAllAsync().ToListAsync();
+
         foreach (ExpenseCategoryRuleViewModel ruleViewModel in Items
             .Where(x => !string.IsNullOrWhiteSpace(x.Name) &&
                         !string.IsNullOrWhiteSpace(x.RuleRegex)))
         {
             if (ruleViewModel.ExistingRuleId is { } ruleId)
             {
-                if (await context.FindAsync<ExpenseCategoryRule>(ruleId) is { } existingRule)
+                if (existingRules.FirstOrDefault(x => x.ID == ruleId) is { } existingRule)
                 {
                     existingRule.Name = ruleViewModel.Name;
                     existingRule.RuleRegex = ruleViewModel.RuleRegex;
@@ -74,17 +79,13 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
                     RuleRegex = ruleViewModel.RuleRegex,
                     ExpenseCategoryID = ruleViewModel.ExpenseCategoryId
                 };
-                context.ExpenseCategoryRules.Add(rule);
+                await DataClient.ExpenseCategoryRules.AddAsync(rule);
             }
         }
-        foreach(var ruleIdToRemove in RemovedRuleIds)
+        foreach(var ruleToRemove in RemovedRuleIds.Select(x => existingRules.Single(r => r.ID == x)))
         {
-            if (await context.ExpenseCategoryRules.FindAsync(ruleIdToRemove) is { } existingRule)
-            {
-                context.ExpenseCategoryRules.Remove(existingRule);
-            }
+            await DataClient.ExpenseCategoryRules.RemoveAsync(ruleToRemove);
         }
-        await context.SaveChangesAsync();
         RemovedRuleIds.Clear();
         Messenger.Send(new StorageLocationChanged());
         MessageQueue.Enqueue("Saved");
@@ -103,9 +104,8 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
     public override async Task LoadItemsAsync()
     {
         await base.LoadItemsAsync();
-        using var context = ContextFactory();
         ExpenseCategories.Clear();
-        await foreach (var category in context.ExpenseCategories.OrderBy(x => x.Name).AsAsyncEnumerable())
+        await foreach (var category in DataClient.ExpenseCategories.Query().OrderBy(x => x.Name).ToAsyncEnumerable())
         {
             ExpenseCategories.Add(category);
         }
@@ -114,8 +114,7 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
     protected override async IAsyncEnumerable<ExpenseCategoryRuleViewModel> GetItems()
     {
         RemovedRuleIds.Clear();
-        using var context = ContextFactory();
-        await foreach (var rule in context.ExpenseCategoryRules.AsAsyncEnumerable())
+        await foreach (var rule in DataClient.ExpenseCategoryRules.GetAllAsync())
         {
             yield return new ExpenseCategoryRuleViewModel(rule);
         }

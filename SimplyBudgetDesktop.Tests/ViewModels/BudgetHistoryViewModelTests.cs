@@ -140,7 +140,7 @@ public class BudgetHistoryViewModelTests
         Assert.AreEqual(transfer.Description, vm.Description);
         Assert.AreEqual(400, vm.CurrentAmount);
         Assert.AreEqual($"<{4.50:c}>", vm.DisplayAmount);
-        Assert.AreEqual(2, vm.Details.Count);
+        Assert.HasCount(2, vm.Details);
 
         var from = vm.Details[0];
         var to = vm.Details[1];

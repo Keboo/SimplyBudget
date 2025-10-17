@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Datasync.Client;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +21,7 @@ public partial class ImportViewModel : ObservableObject
     public IRelayCommand DeleteCommand { get; }
     public IRelayCommand MarkAsDoneCommand { get; }
     public IRelayCommand UnmarkAsDoneCommand { get; }
-    public Func<BudgetContext> ContextFactory { get; }
+    public IDataClient DataClient { get; }
     public IMessenger Messenger { get; }
 
     public ObservableCollection<ImportItem> ImportedRecords { get; } = new();
@@ -50,9 +51,9 @@ public partial class ImportViewModel : ObservableObject
         }
     }
 
-    public ImportViewModel(Func<BudgetContext> contextFactory, IMessenger messenger)
+    public ImportViewModel(IDataClient dataClient, IMessenger messenger)
     {
-        ContextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+        DataClient = dataClient ?? throw new ArgumentNullException(nameof(dataClient));
         Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
         
         AddItemCommand = new RelayCommand(OnAddItem, CanAddItem);
@@ -101,32 +102,31 @@ public partial class ImportViewModel : ObservableObject
         await Task.Yield();
 
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(CsvData));
-        IImport importer = new StcuCsvImport(stream);
-        using var context = ContextFactory();
+        StcuCsvImport importer = new(stream);
 
-        List<ImportItem> records = new();
+        List<ImportItem> records = [];
         await foreach (ExpenseCategoryItem item in importer.GetItems())
         {
             bool? isDone = null;
+            var itemsOnDate = await DataClient.ExpenseCategoryItems.Query().Where(x => x.Date == item.Date).ToListAsync();
+            var itemIds = itemsOnDate.Select(x => x.ID).ToHashSet();
+
             foreach(var detail in item.Details ?? Enumerable.Empty<ExpenseCategoryItemDetail>())
             {
-                isDone = await context.ExpenseCategoryItemDetails
-                    .Include(x => x.ExpenseCategoryItem)
-                    .Where(x => x.ExpenseCategoryItem!.Date == item.Date)
-                    .AnyAsync(x => x.Amount == detail.Amount);
+                isDone = await DataClient.ExpenseCategoryItemDetails.Query()
+                    .AnyAsync(x => itemIds.Contains(x.ExpenseCategoryItemId) && x.Amount == detail.Amount);
                 if (isDone == false) break;
             }
             if (isDone != true)
             {
                 decimal? expectedTotal = item.Details?.Sum(x => x.Amount);
-                await foreach(var eci in context.ExpenseCategoryItems
-                    .Include(x => x.Details)
-                    .Where(x => x.Date == item.Date)
-                    .AsAsyncEnumerable())
+                foreach(var itemId in itemIds)
                 {
-                    if (eci.Details?.Sum(d => d.Amount) == expectedTotal)
+                    var details = await DataClient.ExpenseCategoryItemDetails.Query().Where(x => x.ExpenseCategoryId == itemId).ToListAsync();
+                    if (details.Sum(d => d.Amount) == expectedTotal)
                     {
                         isDone = true;
+                        break;
                     }
                 }
             }

@@ -60,7 +60,7 @@ public partial class App
             services.AddSingleton<ICurrentMonth, CurrentMonth>();
 
             services.AddSingleton<IDispatcher, Dispatcher>();
-            services.AddSingleton(sp => new Func<BudgetContext>(() => new BudgetContext(Settings.GetDatabaseConnectionString())));
+            //services.AddSingleton(sp => new Func<BudgetContext>(() => new BudgetContext(Settings.GetDatabaseConnectionString())));
             services.AddSingleton(sp => new HttpClientOptions()
             {
                 Endpoint = new Uri("https://localhost:5678")
@@ -72,20 +72,20 @@ public partial class App
     protected override void OnStartup(StartupEventArgs e)
     {
         MakeDataBackup();
-        using (var context = new BudgetContext(Settings.GetDatabaseConnectionString()))
-        {
-            context.Database.Migrate();
+        //using (var context = new BudgetContext(Settings.GetDatabaseConnectionString()))
+        //{
+        //    context.Database.Migrate();
 
-            //TODO: Async this
-            if (!context.ExpenseCategories.Any())
-            {
-                TaskEx.Run(async () =>
-                {
-                    await SampleBudget.GenerateBudget(context);
-                    await context.SaveChangesAsync();
-                }).Wait();
-            }
-        }
+        //    //TODO: Async this
+        //    if (!context.ExpenseCategories.Any())
+        //    {
+        //        TaskEx.Run(async () =>
+        //        {
+        //            await SampleBudget.GenerateBudget(context);
+        //            await context.SaveChangesAsync();
+        //        }).Wait();
+        //    }
+        //}
 
         _ = CheckForUpdatesAsync();
 #if DEBUG

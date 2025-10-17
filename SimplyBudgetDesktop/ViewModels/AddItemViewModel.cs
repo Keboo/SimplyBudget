@@ -84,15 +84,15 @@ public partial class AddItemViewModel : ValidationViewModel,
     [ObservableProperty]
     private string? _description;
 
-    [property:ReasonableDate]
+    [property: ReasonableDate]
     [ObservableProperty]
     private DateTime? _date;
 
     public ObservableCollection<ExpenseCategory> ExpenseCategories { get; } = [];
 
     public AddItemViewModel(IDataClient dataClient,
-        ICurrentMonth currentMonth, 
-        IMessenger messenger, 
+        ICurrentMonth currentMonth,
+        IMessenger messenger,
         IDispatcher dispatcher)
     {
         DataClient = dataClient ?? throw new ArgumentNullException(nameof(dataClient));
@@ -233,9 +233,12 @@ public partial class AddItemViewModel : ValidationViewModel,
             yield break;
         }
 
-        await using var context = ContextFactory();
-        await context.AddTransfer(Description ?? "", Date.Value, ignoreBudget, TotalAmount,
-            items[0].SelectedCategory!, items[1].SelectedCategory!);
+        var rv = await DataClient.AddTransferAsync(Description ?? "", Date.Value, ignoreBudget, TotalAmount,
+            items[0].SelectedCategory!, items[1].SelectedCategory!, CancellationToken.None);
+        if (rv is null)
+        {
+            yield return "Failed to add transfer";
+        }
     }
 
     private async IAsyncEnumerable<string> TrySubmitIncome(bool ignoreBudget)
@@ -264,8 +267,12 @@ public partial class AddItemViewModel : ValidationViewModel,
             yield break;
         }
 
-        await using var context = ContextFactory();
-        await context.AddIncome(Description ?? "", Date.Value, ignoreBudget, items.Select(x => (x.Amount, x.SelectedCategory!.ID)).ToArray());
+        var rv = await DataClient.AddIncomeAsync(Description ?? "", Date.Value, ignoreBudget,
+            [.. items.Select(x => (x.Amount, x.SelectedCategory!.ID))], CancellationToken.None);
+        if (rv is null)
+        {
+            yield return "Failed to add income";
+        }
     }
 
     private async IAsyncEnumerable<string> TrySubmitTransaction(bool ignoreBudget)
@@ -277,14 +284,18 @@ public partial class AddItemViewModel : ValidationViewModel,
         }
 
         var items = GetValidLineItems().ToList();
-        if (!items.Any())
+        if (items.Count == 0)
         {
             yield return "At least one line item must be completed";
             yield break;
         }
 
-        await using var context = ContextFactory();
-        await context.AddTransaction(Description ?? "", Date.Value, ignoreBudget, items.Select(vm => (vm.Amount, vm.SelectedCategory!.ID)).ToArray());
+        var rv = await DataClient.AddTransactionAsync(Description ?? "", Date.Value, ignoreBudget,
+            [.. items.Select(vm => (vm.Amount, vm.SelectedCategory!.ID))], CancellationToken.None);
+        if (rv is null)
+        {
+            yield return "Failed to add transaction";
+        }
     }
 
     private IEnumerable<LineItemViewModel> GetValidLineItems()

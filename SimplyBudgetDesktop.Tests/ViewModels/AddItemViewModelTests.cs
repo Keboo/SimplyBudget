@@ -27,7 +27,7 @@ public class AddItemViewModelTests
 
         vm.SelectedType = AddType.Transaction;
 
-        Assert.AreEqual(1, vm.LineItems.Count);
+        Assert.HasCount(1, vm.LineItems);
         Assert.IsNull(vm.LineItems[0].SelectedCategory);
     }
 
@@ -49,7 +49,7 @@ public class AddItemViewModelTests
 
         vm.SelectedType = AddType.Income;
 
-        Assert.AreEqual(3, vm.LineItems.Count);
+        Assert.HasCount(3, vm.LineItems);
         Assert.AreEqual(category2, vm.LineItems[0].SelectedCategory);
         Assert.AreEqual(category3, vm.LineItems[1].SelectedCategory);
         Assert.AreEqual(category1, vm.LineItems[2].SelectedCategory);
@@ -73,7 +73,7 @@ public class AddItemViewModelTests
 
         vm.SelectedType = AddType.Transfer;
 
-        Assert.AreEqual(2, vm.LineItems.Count);
+        Assert.HasCount(2, vm.LineItems);
         Assert.IsNull(vm.LineItems[0].SelectedCategory);
         Assert.IsNull(vm.LineItems[1].SelectedCategory);
         Assert.AreEqual(DateTime.Today, vm.Date);
@@ -120,7 +120,7 @@ public class AddItemViewModelTests
 
         vm.AutoAllocateCommand.Execute(null);
 
-        Assert.AreEqual(3, vm.LineItems.Count);
+        Assert.HasCount(3, vm.LineItems);
         Assert.AreEqual(20, vm.LineItems[0].Amount);
         Assert.AreEqual(100, vm.LineItems[1].Amount);
         Assert.AreEqual(80, vm.LineItems[2].Amount);
@@ -141,7 +141,7 @@ public class AddItemViewModelTests
         vm.Date = DateTime.Now.AddMonths(monthOffset);
 
         var errors = vm.GetErrors(nameof(vm.Date)).OfType<string>().ToList();
-        Assert.AreEqual(1, errors.Count);
+        Assert.HasCount(1, errors);
         Assert.AreEqual($"Date should be between {now.AddMonths(-2).StartOfMonth():d} and {now.AddMonths(1).EndOfMonth():d}", errors[0]);
     }
 
@@ -160,7 +160,7 @@ public class AddItemViewModelTests
         vm.Date = DateTime.Now.AddMonths(monthOffset);
 
         var errors = vm.GetErrors(nameof(vm.Date)).OfType<string>().ToList();
-        Assert.AreEqual(0, errors.Count);
+        Assert.IsEmpty(errors);
     }
 
     [TestMethod]
@@ -182,8 +182,8 @@ public class AddItemViewModelTests
         current.CurrenMonth = DateTime.Now;
         var errorsAfter = vm.GetErrors(nameof(vm.Date)).OfType<string>().ToList();
 
-        Assert.AreEqual(1, errorsBefore.Count);
-        Assert.AreEqual(0, errorsAfter.Count);
+        Assert.HasCount(1, errorsBefore);
+        Assert.IsEmpty(errorsAfter);
     }
 
     [TestMethod]
@@ -202,7 +202,7 @@ public class AddItemViewModelTests
 
         vm.LineItems[0].Amount = 25_00;
 
-        Assert.AreEqual(2, vm.LineItems.Count);
+        Assert.HasCount(2, vm.LineItems);
         Assert.AreEqual(25_00, vm.LineItems[0].Amount);
         Assert.AreEqual(0, vm.LineItems[1].Amount);
         Assert.AreEqual(75_00, vm.RemainingAmount);
