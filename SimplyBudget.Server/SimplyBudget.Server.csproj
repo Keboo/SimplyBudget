@@ -12,4 +12,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SimplyBudget.ServiceDefaults\SimplyBudget.ServiceDefaults.csproj" />
+  </ItemGroup>
 </Project>

@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudget.Server.Db;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
@@ -10,6 +12,8 @@ builder.Services.AddDatasyncServices();
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+app.MapDefaultEndpoints();
 
 // Initialize the database
 using (var scope = app.Services.CreateScope())
