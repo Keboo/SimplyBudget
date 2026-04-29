@@ -405,7 +405,13 @@ gh secret set AZURE_SUBSCRIPTION_ID --repo "$GitHubOwner/$GitHubRepo" --body $Su
 
 # Try to fetch SWA token if the SWA already exists
 Write-Host "  Checking for SWA deployment token..." -ForegroundColor Yellow
-$swaToken = az staticwebapp secrets list --name $SwaName --resource-group $SwaResourceGroup --query "properties.apiKey" -o tsv 2>$null
+$swaToken = $null
+try {
+    $swaToken = az staticwebapp secrets list --name $SwaName --resource-group $SwaResourceGroup --query "properties.apiKey" -o tsv 2>$null
+    if ($LASTEXITCODE -ne 0) { $swaToken = $null }
+} catch {
+    $swaToken = $null
+}
 
 if ($swaToken) {
     Write-Host "  Setting SWA_DEPLOYMENT_TOKEN..." -ForegroundColor Yellow
