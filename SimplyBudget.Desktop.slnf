@@ -1,0 +1,11 @@
+{
+  "solution": {
+    "path": "./SimplyBudget.sln",
+    "projects": [
+      "./SimplyBudgetShared/SimplyBudgetShared.csproj",
+      "./SimplyBudgetDesktop/SimplyBudgetDesktop.csproj",
+      "./SimplyBudgetDesktop.Tests/SimplyBudgetDesktop.Tests.csproj",
+      "./SimplyBudgetSharedTests/SimplyBudgetSharedTests.csproj"
+    ]
+  }
+}

@@ -43,13 +43,13 @@ jobs:
           dotnet-version: '10.x'
 
       - name: Restore
-        run: dotnet restore SimplyBudget.sln
+        run: dotnet restore SimplyBudget.WebApi.slnf
 
       - name: Build
-        run: dotnet build SimplyBudget.sln --no-restore --configuration Release
+        run: dotnet build SimplyBudget.WebApi.slnf --no-restore --configuration Release
 
       - name: Test
-        run: dotnet test SimplyBudget.sln --no-build --configuration Release
+        run: dotnet test SimplyBudget.WebApi.slnf --no-build --configuration Release
 
   build-frontend:
     name: Build React Frontend
