@@ -25,13 +25,13 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: 9.x
+        dotnet-version: 10.x
       
     - name: Build
-      run: dotnet build --configuration Release
+      run: dotnet build SimplyBudget.Desktop.slnf --configuration Release
       
     - name: Test
-      run: dotnet test --no-build --configuration Release --verbosity normal
+      run: dotnet test SimplyBudget.Desktop.slnf --no-build --configuration Release --verbosity normal
 
     - name: Restore Tools
       run: dotnet tool restore
