@@ -413,7 +413,7 @@ if ($swaToken) {
     Write-Host "  SWA_DEPLOYMENT_TOKEN set" -ForegroundColor Green
 }
 else {
-    Write-Host "  Static Web App '$SwaName' not found yet — skipping SWA_DEPLOYMENT_TOKEN." -ForegroundColor Yellow
+    Write-Host "  Static Web App '$SwaName' not found yet - skipping SWA_DEPLOYMENT_TOKEN." -ForegroundColor Yellow
     Write-Host "  After running 'terraform apply', set it with:" -ForegroundColor Yellow
     Write-Host "    .\Setup.ps1 -SetSwaToken" -ForegroundColor Cyan
 }
