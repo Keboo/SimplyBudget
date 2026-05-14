@@ -4,16 +4,13 @@ import { SnackbarProvider } from 'notistack'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import Layout from './components/Layout'
-import ProtectedRoute from './components/ProtectedRoute'
 
 // Pages
-import Home from './pages/Home'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import MyRooms from './pages/MyRooms'
-import Room from './pages/Room'
-import RoomManage from './pages/RoomManage'
-import QuestionDisplay from './pages/QuestionDisplay'
+import Budget from './pages/Budget'
+import History from './pages/History'
+import Accounts from './pages/Accounts'
+import Settings from './pages/Settings'
+import Import from './pages/Import'
 
 function App() {
   return (
@@ -23,25 +20,13 @@ function App() {
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Layout />}>
-              <Route index element={<Home />} />
-              <Route path="login" element={<Login />} />
-              <Route path="register" element={<Register />} />
-              <Route path="room/:friendlyName" element={<Room />} />
-              <Route path="room/:friendlyName/display" element={<QuestionDisplay />} />
-              
-              {/* Protected routes */}
-              <Route path="my-rooms" element={
-                <ProtectedRoute>
-                  <MyRooms />
-                </ProtectedRoute>
-              } />
-              <Route path="room/:friendlyName/manage" element={
-                <ProtectedRoute>
-                  <RoomManage />
-                </ProtectedRoute>
-              } />
-              
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route index element={<Navigate to="/budget" replace />} />
+              <Route path="budget" element={<Budget />} />
+              <Route path="history" element={<History />} />
+              <Route path="accounts" element={<Accounts />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="import" element={<Import />} />
+              <Route path="*" element={<Navigate to="/budget" replace />} />
             </Route>
           </Routes>
         </AuthProvider>

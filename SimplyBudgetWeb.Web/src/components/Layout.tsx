@@ -1,19 +1,13 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { AppBar, Toolbar, Typography, Button, Box, IconButton, Container } from '@mui/material'
 import { Brightness4, Brightness7 } from '@mui/icons-material'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
 
 export default function Layout() {
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { account, isAuthenticated, login, logout } = useAuth()
   const { mode, toggleTheme } = useTheme()
-
-  const handleLogout = async () => {
-    await logout()
-    navigate('/login')
-  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -22,39 +16,42 @@ export default function Layout() {
           <Typography
             variant="h6"
             component="div"
-            sx={{ flexGrow: 1, cursor: 'pointer' }}
-            onClick={() => navigate('/')}
+            sx={{ cursor: 'pointer', mr: 3 }}
+            onClick={() => navigate('/budget')}
           >
-            Q&A Rooms
+            Simply Budget
           </Typography>
 
-          <IconButton 
-            sx={{ ml: 1 }} 
-            onClick={toggleTheme} 
+          {isAuthenticated && (
+            <Box sx={{ display: 'flex', gap: 1, flexGrow: 1 }}>
+              <Button color="inherit" onClick={() => navigate('/budget')}>Budget</Button>
+              <Button color="inherit" onClick={() => navigate('/history')}>History</Button>
+              <Button color="inherit" onClick={() => navigate('/accounts')}>Accounts</Button>
+              <Button color="inherit" onClick={() => navigate('/settings')}>Settings</Button>
+              <Button color="inherit" onClick={() => navigate('/import')}>Import</Button>
+            </Box>
+          )}
+
+          {!isAuthenticated && <Box sx={{ flexGrow: 1 }} />}
+
+          <IconButton
+            sx={{ ml: 1 }}
+            onClick={toggleTheme}
             color="inherit"
             aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {mode === 'dark' ? <Brightness7 /> : <Brightness4 />}
           </IconButton>
 
-          {user?.isAuthenticated ? (
+          {isAuthenticated ? (
             <>
-              <Button color="inherit" onClick={() => navigate('/my-rooms')}>
-                My Rooms
-              </Button>
-              <Button color="inherit" onClick={handleLogout}>
-                Logout
-              </Button>
+              {account?.name && (
+                <Typography variant="body2" sx={{ mx: 1 }}>{account.name}</Typography>
+              )}
+              <Button color="inherit" onClick={() => logout()}>Sign out</Button>
             </>
           ) : (
-            <>
-              <Button color="inherit" onClick={() => navigate('/login')}>
-                Login
-              </Button>
-              <Button color="inherit" onClick={() => navigate('/register')}>
-                Register
-              </Button>
-            </>
+            <Button color="inherit" onClick={() => login()}>Sign in</Button>
           )}
         </Toolbar>
       </AppBar>
@@ -65,7 +62,7 @@ export default function Layout() {
 
       <Box component="footer" sx={{ py: 2, px: 2, mt: 'auto', backgroundColor: 'background.paper' }}>
         <Typography variant="body2" color="text.secondary" align="center">
-          © {new Date().getFullYear()} SimplyBudgetWeb
+          © {new Date().getFullYear()} Simply Budget
         </Typography>
       </Box>
     </Box>

@@ -1,54 +1,49 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { UserInfo, LoginRequest, RegisterRequest } from '@/types'
-import { apiClient } from '@/services/apiClient'
+import { createContext, useContext, useEffect, ReactNode } from 'react'
+import { useMsal, useIsAuthenticated } from '@azure/msal-react'
+import { AccountInfo, InteractionRequiredAuthError } from '@azure/msal-browser'
+import { loginRequest, apiScopes } from '@/authConfig'
+import { setTokenProvider } from '@/services/apiClient'
 
 interface AuthContextType {
-  user: UserInfo | null
-  loading: boolean
-  login: (credentials: LoginRequest) => Promise<void>
-  register: (data: RegisterRequest) => Promise<void>
-  logout: () => Promise<void>
-  refreshUser: () => Promise<void>
+  account: AccountInfo | null
+  isAuthenticated: boolean
+  login: () => void
+  logout: () => void
+  getToken: () => Promise<string>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserInfo | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { instance, accounts } = useMsal()
+  const isAuthenticated = useIsAuthenticated()
+  const account = accounts[0] ?? null
 
-  const refreshUser = async () => {
+  const login = () => instance.loginRedirect(loginRequest)
+  const logout = () => instance.logoutRedirect()
+
+  const getToken = async (): Promise<string> => {
     try {
-      const userData = await apiClient.get<UserInfo>('/api/auth/user')
-      setUser(userData)
-    } catch {
-      setUser(null)
-    } finally {
-      setLoading(false)
+      const result = await instance.acquireTokenSilent({
+        ...apiScopes,
+        account: account ?? undefined,
+      })
+      return result.accessToken
+    } catch (e) {
+      if (e instanceof InteractionRequiredAuthError) {
+        await instance.acquireTokenRedirect(apiScopes)
+      }
+      throw e
     }
   }
 
   useEffect(() => {
-    refreshUser()
-  }, [])
-
-  const login = async (credentials: LoginRequest) => {
-    const userData = await apiClient.post<UserInfo>('/api/auth/login', credentials)
-    setUser(userData)
-  }
-
-  const register = async (data: RegisterRequest) => {
-    const userData = await apiClient.post<UserInfo>('/api/auth/register', data)
-    setUser(userData)
-  }
-
-  const logout = async () => {
-    await apiClient.post('/api/auth/logout')
-    setUser(null)
-  }
+    setTokenProvider(getToken)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account])
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ account, isAuthenticated, login, logout, getToken }}>
       {children}
     </AuthContext.Provider>
   )
@@ -57,8 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider')
   return context
 }
