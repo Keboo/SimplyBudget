@@ -7,9 +7,9 @@ using Microsoft.Extensions.Hosting;
 
 namespace SimplyBudgetWeb.AppHost;
 
-public class DesignTimeAppDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
+public class DesignTimeAppDbContextFactory : IDesignTimeDbContextFactory<BudgetWebContext>
 {
-    public ApplicationDbContext CreateDbContext(string[] args)
+    public BudgetWebContext CreateDbContext(string[] args)
     {
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
         var factory = new DefaultServiceProviderFactory(new ServiceProviderOptions()
@@ -22,6 +22,6 @@ public class DesignTimeAppDbContextFactory : IDesignTimeDbContextFactory<Applica
 
         var host = builder.Build();
 
-        return host.Services.GetRequiredService<ApplicationDbContext>();
+        return host.Services.GetRequiredService<BudgetWebContext>();
     }
 }

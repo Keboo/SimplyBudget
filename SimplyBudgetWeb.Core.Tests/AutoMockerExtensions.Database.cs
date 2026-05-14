@@ -22,15 +22,15 @@ public static partial class AutoMockerExtensions
             mocker.Resolvers.Insert(0, sqliteResolver);
         }
 
-        public async Task InDbScopeAsync(Func<ApplicationDbContext, Task> action)
+        public async Task InDbScopeAsync(Func<BudgetWebContext, Task> action)
         {
-            using var context = mocker.Get<ApplicationDbContext>();
+            using var context = mocker.Get<BudgetWebContext>();
             await action(context);
         }
 
-        public async Task<T> InDbScopeAsync<T>(Func<ApplicationDbContext, Task<T>> action)
+        public async Task<T> InDbScopeAsync<T>(Func<BudgetWebContext, Task<T>> action)
         {
-            using var context = mocker.Get<ApplicationDbContext>();
+            using var context = mocker.Get<BudgetWebContext>();
             return await action(context);
         }
     }

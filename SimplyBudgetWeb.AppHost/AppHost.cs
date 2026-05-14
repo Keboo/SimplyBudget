@@ -6,8 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Use the existing Container App Environment in KebooDev resource group
+var envName = builder.AddParameter("keboodev-env-name", "keboodev-env");
+var resourceGroup = builder.AddParameter("keboodev-rg-name", "KebooDev");
 builder.AddAzureContainerAppEnvironment("keboodev-env")
-    .AsExisting();
+    .AsExisting(envName, resourceGroup);
 
 var docsGroup = builder.AddLogicalGroup("docs");
 builder.AddAspireDocs().WithParentRelationship(docsGroup);
