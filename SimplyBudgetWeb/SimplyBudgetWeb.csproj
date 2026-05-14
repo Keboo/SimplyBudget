@@ -14,6 +14,7 @@
     <ProjectReference Include="..\SimplyBudgetWeb.ServiceDefaults\SimplyBudgetWeb.ServiceDefaults.csproj" />
     <ProjectReference Include="..\SimplyBudgetWeb.Web\SimplyBudgetWeb.Web.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.SpaProxy" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
     <PackageReference Include="Microsoft.Identity.Web" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
   </ItemGroup>
