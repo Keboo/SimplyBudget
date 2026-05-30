@@ -73,9 +73,10 @@ dotnet test
 
 ### Timeouts
 
-Default timeouts are configured in `TestConfiguration.cs`:
-- `DefaultTimeout`: 10000ms (10 seconds) for page navigation and element visibility
+Default timeouts are configured in `PlaywrightConfiguration.cs` and `UITestBase.cs`:
+- `DefaultTimeout`: 60000ms (60 seconds) for page navigation and element visibility
 - `SignalRTimeout`: 5000ms (5 seconds) for SignalR real-time updates
+- `TestTimeoutMs`: 120000ms (120 seconds) for test and setup hooks
 
 ### Browser Display Mode
 

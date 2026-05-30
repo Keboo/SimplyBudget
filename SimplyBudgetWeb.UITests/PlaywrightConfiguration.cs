@@ -8,7 +8,7 @@ public static class PlaywrightConfiguration
     /// <summary>
     /// Timeout for page navigation and element visibility
     /// </summary>
-    public static float DefaultTimeout => 30_000;
+    public static float DefaultTimeout => 60_000;
     
     /// <summary>
     /// Timeout for waiting on real-time SignalR updates

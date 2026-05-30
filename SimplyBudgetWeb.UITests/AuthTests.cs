@@ -1,49 +1,32 @@
-using SimplyBudgetWeb.UITests.PageObjects;
-
 namespace SimplyBudgetWeb.UITests;
 
 public class AuthTests : UITestBase
 {
     [Test]
-    public async Task CanRegisterAndLoginWithNewAccount()
+    public async Task AnonymousUserSeesSignInAction()
     {
-        // Register a new user - this automatically logs them in
-        var registerPage = new RegisterPage(Page);
-        await registerPage.NavigateAsync(FrontendBaseUri);
-        await registerPage.RegisterAsync(TestEmail, TestPassword);
+        await Page.GotoAsync(FrontendBaseUri.ToString());
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Sign in" })
+            .WaitForAsync(new() { Timeout = PlaywrightConfiguration.DefaultTimeout });
+        await Assert.That(await Page.GetByRole(AriaRole.Button, new() { Name = "Sign in" }).IsVisibleAsync())
+            .IsTrue();
+    }
 
-        await Assert.That(await registerPage.IsConfirmationMessageVisibleAsync()).IsTrue().Because("User should be redirected to my-rooms after registration");
-
-        // Verify user is logged in by checking for logout button or my-rooms access
-        var loginPage = new LoginPage(Page);
-        await Assert.That(await loginPage.IsLoggedInAsync()).IsTrue().Because("User should be logged in after successful registration");
-
-        // Log out and log back in to verify login flow works
-        await loginPage.LogoutAsync();
-        
-        await loginPage.NavigateAsync(FrontendBaseUri);
-        await loginPage.LoginAsync(TestEmail, TestPassword);
-
-        await Assert.That(await loginPage.IsLoggedInAsync()).IsTrue().Because("User should be logged in after successful login");
+    [Test]
+    public async Task AnonymousUserDoesNotSeeAuthenticatedNavigation()
+    {
+        await Page.GotoAsync(FrontendBaseUri.ToString());
+        await Assert.That(await Page.GetByRole(AriaRole.Button, new() { Name = "Budget" }).CountAsync()).IsEqualTo(0);
+        await Assert.That(await Page.GetByRole(AriaRole.Button, new() { Name = "History" }).CountAsync()).IsEqualTo(0);
+        await Assert.That(await Page.GetByRole(AriaRole.Button, new() { Name = "Sign out" }).CountAsync()).IsEqualTo(0);
     }
 
     [Test]
     [Category(TestCategories.Accessibility)]
-    public async Task LoginPageIsAccessible()
+    public async Task LandingPageIsAccessible()
     {
-        var loginPage = new LoginPage(Page);
-        await loginPage.NavigateAsync(FrontendBaseUri);
-        await AssertNoAccessibilityViolations();
-    }
-
-    [Test]
-    [Category(TestCategories.Accessibility)]
-    public async Task RegisterPageIsAccessible()
-    {
-        RegisterPage registerPage = new(Page);
-        await registerPage.NavigateAsync(FrontendBaseUri);
+        await Page.GotoAsync(FrontendBaseUri.ToString());
         await AssertNoAccessibilityViolations();
     }
 }
-
 

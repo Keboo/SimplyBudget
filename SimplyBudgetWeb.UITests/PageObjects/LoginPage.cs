@@ -19,7 +19,10 @@ public class LoginPage(IPage page): TestPageBase(page)
         await PasswordInput.FillAsync(password);
         
         await LoginButton.ClickAsync();
-        await Page.WaitForURLAsync("**/my-rooms", new PageWaitForURLOptions { Timeout = 30000 });
+        await Page.WaitForURLAsync("**/my-rooms", new PageWaitForURLOptions
+        {
+            Timeout = PlaywrightConfiguration.DefaultTimeout
+        });
     }
     
     public async Task<bool> IsLoggedInAsync()

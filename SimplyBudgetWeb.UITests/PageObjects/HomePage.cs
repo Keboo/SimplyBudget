@@ -8,6 +8,10 @@ public class HomePage(IPage page) : TestPageBase(page)
 
     public async Task AssertIsLoadedAsync()
     {
-        await RoomNameInput.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible });
+        await RoomNameInput.WaitForAsync(new LocatorWaitForOptions
+        {
+            State = WaitForSelectorState.Visible,
+            Timeout = PlaywrightConfiguration.DefaultTimeout
+        });
     }
 }

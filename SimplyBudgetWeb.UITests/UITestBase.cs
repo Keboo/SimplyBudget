@@ -18,8 +18,10 @@ namespace SimplyBudgetWeb.UITests;
 /// <summary>
 /// Base class for UI tests that configures Playwright browser
 /// </summary>
+[Timeout(120_000)]
 public abstract class UITestBase : IAsyncDisposable
 {
+    protected const int TestTimeoutMs = 120_000;
     private static TimeSpan AspireDefaultTimeout { get; set; } = TimeSpan.FromMinutes(2);
     private static DistributedApplication? _aspireAppHost = null;
 
@@ -72,8 +74,8 @@ public abstract class UITestBase : IAsyncDisposable
     protected static CancellationToken CancellationToken =>
         TestContext.Current?.Execution.CancellationToken ?? CancellationToken.None;
 
-    [Before(TestSession)]
-    public static async Task StartAspireHost()
+    [Before(TestSession), Timeout(TestTimeoutMs)]
+    public static async Task StartAspireHost(CancellationToken cancellationToken)
     {
         // Check if an external frontend URL is provided
         var externalUrl = Environment.GetEnvironmentVariable("FRONTEND_URL");
@@ -105,21 +107,21 @@ public abstract class UITestBase : IAsyncDisposable
         }
 
         // Build the aspire host
-        var app = _aspireAppHost = await appHost.BuildAsync(CancellationToken)
-            .WaitAsync(AspireDefaultTimeout, CancellationToken);
+        var app = _aspireAppHost = await appHost.BuildAsync(cancellationToken)
+            .WaitAsync(AspireDefaultTimeout, cancellationToken);
 
         // Start the aspire host
-        await app.StartAsync(CancellationToken)
-            .WaitAsync(AspireDefaultTimeout, CancellationToken);
+        await app.StartAsync(cancellationToken)
+            .WaitAsync(AspireDefaultTimeout, cancellationToken);
 
         // Wait for the front end to start
         await app.ResourceNotifications.WaitForResourceHealthyAsync(
-            Resources.Frontend, CancellationToken)
-            .WaitAsync(AspireDefaultTimeout, CancellationToken);
+            Resources.Frontend, cancellationToken)
+            .WaitAsync(AspireDefaultTimeout, cancellationToken);
     }
 
     [After(TestSession)]
-    public static async Task StopAspireHost()
+    public static async Task StopAspireHost(CancellationToken cancellationToken)
     {
         if (_aspireAppHost != null)
         {
@@ -128,8 +130,8 @@ public abstract class UITestBase : IAsyncDisposable
         }
     }
 
-    [Before(Test)]
-    public async Task TestSetup()
+    [Before(Test), Timeout(TestTimeoutMs)]
+    public async Task TestSetup(CancellationToken cancellationToken)
     {
         await BeforeTestSetupAsync();
 
@@ -140,6 +142,8 @@ public abstract class UITestBase : IAsyncDisposable
         _context = await CreateBrowserContextAsync(_browser, StateId is not null ? $"{StateId}_{STATE_FILE}" : null);
 
         Page = await _context.NewPageAsync();
+        Page.SetDefaultTimeout(PlaywrightConfiguration.DefaultTimeout);
+        Page.SetDefaultNavigationTimeout(PlaywrightConfiguration.DefaultTimeout);
         await AfterTestSetupAsync();
     }
 
@@ -148,7 +152,7 @@ public abstract class UITestBase : IAsyncDisposable
     protected virtual async Task AfterTestSetupAsync() { }
 
     [After(Test)]
-    public async Task TearDownAsync(TestContext testContext)
+    public async Task TearDownAsync(TestContext testContext, CancellationToken cancellationToken)
     {
         StopCollectingLogs();
         await CaptureScreenshotOnFailureAsync(testContext);

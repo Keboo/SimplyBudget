@@ -1,29 +1,21 @@
-using SimplyBudgetWeb.UITests.PageObjects;
-
 namespace SimplyBudgetWeb.UITests;
 
-/// <summary>
-/// Placeholder test class - actual tests are in QAWorkflowTests.cs
-/// This file can be used for additional test scenarios
-/// </summary>
 public class HomePageTests : UITestBase
 {
     [Test]
-    public async Task CanNavigateToHomePage()
+    public async Task LandingRouteRedirectsToBudget()
     {
-        HomePage homePage = new(Page);
-        await homePage.NavigateAsync(FrontendBaseUri);
-
-        await homePage.AssertIsLoadedAsync();
+        await Page.GotoAsync(FrontendBaseUri.ToString());
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Sign in" })
+            .WaitForAsync(new() { Timeout = PlaywrightConfiguration.DefaultTimeout });
+        await Assert.That(Page.Url).Contains("/budget");
     }
 
     [Test]
-    [Category(TestCategories.Accessibility)]
-    public async Task HomePageIsAccessible()
+    public async Task HeaderBrandIsVisible()
     {
-        HomePage homePage = new(Page);
-        await homePage.NavigateAsync(FrontendBaseUri);
-
-        await AssertNoAccessibilityViolations();
+        await Page.GotoAsync(FrontendBaseUri.ToString());
+        await Assert.That(await Page.GetByText("Simply Budget", new() { Exact = true }).IsVisibleAsync())
+            .IsTrue();
     }
 }

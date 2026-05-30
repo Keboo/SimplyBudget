@@ -21,7 +21,10 @@ public class RegisterPage(IPage page) : TestPageBase(page)
         await ConfirmPasswordInput.FillAsync(password);
         
         await RegisterButton.ClickAsync();
-        await Page.WaitForURLAsync("**/my-rooms", new PageWaitForURLOptions { Timeout = 30000 });
+        await Page.WaitForURLAsync("**/my-rooms", new PageWaitForURLOptions
+        {
+            Timeout = PlaywrightConfiguration.DefaultTimeout
+        });
     }
     
     public async Task<bool> IsConfirmationMessageVisibleAsync()
