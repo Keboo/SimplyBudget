@@ -2,30 +2,20 @@ locals {
   default_tags = {
     "app" = "SimplyBudget"
   }
-
-  location    = "westus2"
-  environment = "prod"
-}
-
-module "shared" {
-  source = "./shared"
-
-  environment = local.environment
-
-  location = local.location
-  tags     = local.default_tags
-
-  app_identities = {
-    "prod" = module.prod.app_identity.principal_id
-  }
 }
 
 module "prod" {
   source = "./prod"
 
-  environment = local.environment
+  environment = var.environment
+  location    = var.location
+  tags        = local.default_tags
 
-  acr_login_server = module.shared.acr_login_server
-  location         = local.location
-  tags             = local.default_tags
+  existing_resource_group_name            = var.existing_resource_group_name
+  existing_container_registry_name        = var.existing_container_registry_name
+  existing_container_app_environment_name = var.existing_container_app_environment_name
+  existing_sql_server_name                = var.existing_sql_server_name
+  existing_sql_database_name              = var.existing_sql_database_name
+  database_schema_name                    = var.database_schema_name
+  provisioning_client_id                  = var.CLIENT_ID
 }

@@ -2,6 +2,11 @@ output "app_identity" {
   value = azurerm_user_assigned_identity.app_identity
 }
 
+output "acr_login_server" {
+  description = "The login server for the Azure Container Registry"
+  value       = data.azurerm_container_registry.existing.login_server
+}
+
 output "backend_container_app_name" {
   description = "The name of the backend container app"
   value       = module.backend_container_app.name
@@ -13,8 +18,25 @@ output "resource_group_name" {
 }
 
 output "database_connection_string" {
-  description = "The connection string for the SQL database (uses managed identity auth)"
-  value       = "Server=tcp:${data.azurerm_mssql_server.sql_server.fully_qualified_domain_name},1433;Database=${data.azurerm_mssql_database.db.name};Authentication=Active Directory Managed Identity;Encrypt=True;"
+  description = "The connection string for the SQL database"
+  value       = local.database_connection_string
+  sensitive   = true
+}
+
+output "static_web_app_name" {
+  description = "The name of the static web app"
+  value       = module.static_web_app.name
+}
+
+output "static_web_app_api_key" {
+  description = "The API key for the static web app deployment"
+  value       = module.static_web_app.api_key
+  sensitive   = true
+}
+
+output "static_web_app_url" {
+  description = "The URL of the deployed static web app"
+  value       = "https://${module.static_web_app.default_host_name}"
 }
 
 output "backend_url" {
