@@ -244,6 +244,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) {
               $deployReady = $false
               $reasons += "Container App '$backendContainerAppName' was not found in resource group '$resourceGroupName'"
+              $LASTEXITCODE = 0
             }
           }
 
