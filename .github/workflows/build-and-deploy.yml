@@ -88,6 +88,8 @@ jobs:
 
       - name: Test
         run: dotnet test ${{ env.WEB_SOLUTION_PATH }} --no-build --configuration Release --verbosity normal
+        env:
+          DOTNET_BUILD_CONFIGURATION: Release
 
       - name: Upload test failure screenshots
         if: failure()
