@@ -140,7 +140,7 @@ export default function Settings() {
       </Box>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress aria-label="Loading import rules" /></Box>
       ) : (
         <List>
           {rules.length === 0 && <ListItem><ListItemText primary="No rules defined." /></ListItem>}
