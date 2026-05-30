@@ -169,6 +169,8 @@ jobs:
       static_web_app_api_key: ${{ steps.terraform-outputs.outputs.static_web_app_api_key }}
       database_connection_string: ${{ steps.terraform-outputs.outputs.database_connection_string }}
       applicationinsights_connection_string: ${{ steps.terraform-outputs.outputs.applicationinsights_connection_string }}
+      deploy_ready: ${{ steps.deployment-readiness.outputs.deploy_ready }}
+      deploy_readiness_reason: ${{ steps.deployment-readiness.outputs.deploy_readiness_reason }}
     steps:
       - uses: actions/checkout@v6
 
@@ -213,10 +215,61 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
           ARM_USE_OIDC: true
 
+      - name: Check Deployment Readiness
+        id: deployment-readiness
+        run: |
+          $deployReady = $true
+          $reasons = @()
+
+          $resourceGroupName = '${{ steps.terraform-outputs.outputs.resource_group_name }}'
+          $backendContainerAppName = '${{ steps.terraform-outputs.outputs.backend_container_app_name }}'
+          $staticWebAppApiKey = '${{ steps.terraform-outputs.outputs.static_web_app_api_key }}'
+
+          if ([string]::IsNullOrWhiteSpace($resourceGroupName)) {
+            $deployReady = $false
+            $reasons += 'Terraform output resource_group_name is empty'
+          }
+
+          if ([string]::IsNullOrWhiteSpace($backendContainerAppName)) {
+            $deployReady = $false
+            $reasons += 'Terraform output backend_container_app_name is empty'
+          } else {
+            az containerapp show `
+              --name $backendContainerAppName `
+              --resource-group $resourceGroupName `
+              --query name `
+              -o tsv `
+              --only-show-errors 2>$null | Out-Null
+
+            if ($LASTEXITCODE -ne 0) {
+              $deployReady = $false
+              $reasons += "Container App '$backendContainerAppName' was not found in resource group '$resourceGroupName'"
+            }
+          }
+
+          if ([string]::IsNullOrWhiteSpace($staticWebAppApiKey)) {
+            $deployReady = $false
+            $reasons += 'Terraform output static_web_app_api_key is empty'
+          }
+
+          $deployReadinessReason = if ($reasons.Count -eq 0) { 'All deployment prerequisites are available' } else { $reasons -join '; ' }
+
+          "deploy_ready=$($deployReady.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "deploy_readiness_reason=$deployReadinessReason" >> $env:GITHUB_OUTPUT
+
+          if (-not $deployReady) {
+            Write-Warning "Skipping deploy jobs because prerequisites are not ready: $deployReadinessReason"
+          }
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+          ARM_USE_OIDC: true
+
   deploy-database:
     runs-on: ubuntu-latest
     needs: [build, get-infrastructure-outputs]
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && needs.get-infrastructure-outputs.outputs.deploy_ready == 'true'
     environment: production
 
     steps:
@@ -246,7 +299,7 @@ jobs:
   deploy-backend:
     runs-on: ubuntu-latest
     needs: [build, get-infrastructure-outputs]
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && needs.get-infrastructure-outputs.outputs.deploy_ready == 'true'
     environment: production
     steps:
       - uses: actions/checkout@v6
@@ -276,7 +329,7 @@ jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
     needs: [build, get-infrastructure-outputs]
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && needs.get-infrastructure-outputs.outputs.deploy_ready == 'true'
     environment: production
     steps:
       - uses: actions/checkout@v6
