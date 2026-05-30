@@ -66,7 +66,7 @@ public class ExpenseCategoryItemTests
     {
         var item = new ExpenseCategoryItem();
 
-        var ex = Assert.ThrowsException<ArgumentNullException>(() => item.IgnoreBudget = null);
+        var ex = Assert.ThrowsExactly<ArgumentNullException>(() => item.IgnoreBudget = null);
         Assert.AreEqual("value", ex.ParamName);
     }
 
@@ -75,7 +75,7 @@ public class ExpenseCategoryItemTests
     {
         var item = new ExpenseCategoryItem();
 
-        var ex = Assert.ThrowsException<ArgumentNullException>(() => item.IgnoreBudget = null);
+        var ex = Assert.ThrowsExactly<ArgumentNullException>(() => item.IgnoreBudget = null);
         Assert.AreEqual("value", ex.ParamName);
     }
 
