@@ -187,7 +187,7 @@ jobs:
 
       - name: Terraform Init
         working-directory: Infra
-        run: terraform init
+        run: terraform init -lock-timeout=5m
         env:
           ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
