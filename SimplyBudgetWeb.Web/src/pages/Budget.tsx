@@ -76,7 +76,7 @@ export default function Budget() {
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
+          <CircularProgress aria-label="Loading budget" />
         </Box>
       ) : (
         <Box>

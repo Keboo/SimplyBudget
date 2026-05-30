@@ -103,7 +103,7 @@ export default function History() {
       </Paper>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress aria-label="Loading history" /></Box>
       ) : (
         <List>
           {items.length === 0 && (

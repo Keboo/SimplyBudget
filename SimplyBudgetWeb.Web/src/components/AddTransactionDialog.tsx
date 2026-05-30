@@ -207,7 +207,7 @@ export default function AddTransactionDialog({ open, onClose, categories, onSucc
       <DialogActions>
         <Button onClick={handleClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? <CircularProgress size={20} /> : 'Save'}
+          {submitting ? <CircularProgress size={20} aria-label="Saving transaction" /> : 'Save'}
         </Button>
       </DialogActions>
     </Dialog>

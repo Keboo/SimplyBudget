@@ -74,7 +74,7 @@ export default function Import() {
           sx={{ mb: 2 }}
         />
         <Button variant="contained" onClick={handleParse} disabled={loading || !csvText.trim()}>
-          {loading ? <CircularProgress size={20} /> : 'Parse'}
+          {loading ? <CircularProgress size={20} aria-label="Parsing import data" /> : 'Parse'}
         </Button>
       </Paper>
 
@@ -133,7 +133,7 @@ export default function Import() {
             </Table>
           </Paper>
           <Button variant="contained" onClick={handleImport} disabled={submitting}>
-            {submitting ? <CircularProgress size={20} /> : 'Save Import'}
+            {submitting ? <CircularProgress size={20} aria-label="Saving import" /> : 'Save Import'}
           </Button>
         </>
       )}

@@ -75,7 +75,7 @@ export default function Accounts() {
       </Box>
 
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress aria-label="Loading accounts" /></Box>
       ) : (
         <List>
           {accounts.map(account => (
