@@ -22,7 +22,7 @@ defaults:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  NODE_VERSION: '20.x'
+  NODE_VERSION: '22.x'
   FRONTEND_PROJECT_PATH: 'SimplyBudgetWeb.Web'
   TERRAFORM_VERSION: '1.14.6'
 
