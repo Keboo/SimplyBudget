@@ -23,11 +23,12 @@ public class ReasonableDateAttribute : ValidationAttribute
     {
         if (value is DateTime dateTime)
         {
-            if (Start > dateTime)
+            var date = dateTime.Date;
+            if (Start > date)
             {
                 return false;
             }
-            if (End < dateTime)
+            if (End < date)
             {
                 return false;
             }
