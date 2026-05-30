@@ -24,6 +24,8 @@ env:
   DOTNET_VERSION: '10.0.x'
   NODE_VERSION: '22.x'
   FRONTEND_PROJECT_PATH: 'SimplyBudgetWeb.Web'
+  WEB_SOLUTION_PATH: 'SimplyBudgetWeb.slnx'
+  BACKEND_PROJECT_PATH: 'SimplyBudgetWeb/SimplyBudgetWeb.csproj'
   TERRAFORM_VERSION: '1.14.6'
 
 jobs:
@@ -66,10 +68,10 @@ jobs:
           BACKEND_URL: ''
 
       - name: Restore .NET dependencies
-        run: dotnet restore
+        run: dotnet restore ${{ env.WEB_SOLUTION_PATH }}
 
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build ${{ env.WEB_SOLUTION_PATH }} --no-restore --configuration Release
 
       - name: Restore dotnet tool
         run: dotnet tool restore
@@ -85,7 +87,7 @@ jobs:
         run: pwsh SimplyBudgetWeb.UITests/bin/Release/net10.0/playwright.ps1 install --with-deps
 
       - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal
+        run: dotnet test ${{ env.WEB_SOLUTION_PATH }} --no-build --configuration Release --verbosity normal
 
       - name: Upload test failure screenshots
         if: failure()
@@ -106,7 +108,7 @@ jobs:
           retention-days: 7
 
       - name: Publish
-        run: dotnet publish --configuration Release --no-build
+        run: dotnet publish ${{ env.BACKEND_PROJECT_PATH }} --configuration Release --no-build
 
       - name: Build Database Bundle
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
@@ -259,7 +261,7 @@ jobs:
           az acr login --name ${{ needs.get-infrastructure-outputs.outputs.acr_login_server }}
 
       - name: dotnet publish
-        run: dotnet publish -r linux-x64 --self-contained -t:PublishContainer -p:ContainerRegistry=${{ needs.get-infrastructure-outputs.outputs.acr_login_server }} -p:ContainerImageTags="${{ github.sha }}"
+        run: dotnet publish ${{ env.BACKEND_PROJECT_PATH }} -r linux-x64 --self-contained -t:PublishContainer -p:ContainerRegistry=${{ needs.get-infrastructure-outputs.outputs.acr_login_server }} -p:ContainerImageTags="${{ github.sha }}"
 
       - name: Update Container App
         run: |
