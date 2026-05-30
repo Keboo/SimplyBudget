@@ -6,19 +6,19 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Aspire -->
-    <PackageVersion Include="Aspire.Hosting.Azure" Version="13.3.1" />
-    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.3.1" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Sql" Version="13.3.1" />
-    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.3.1" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.3.1" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.3.1" />
+    <PackageVersion Include="Aspire.Hosting.Azure" Version="13.3.5" />
+    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.3.5" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Sql" Version="13.3.5" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.3.5" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.3.5" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.3.5" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.5.0" />
 
     <!-- WPF / MVVM (existing desktop app) -->
-    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageVersion Include="MaterialDesignThemes" Version="5.2.1" />
-    <PackageVersion Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
-    <PackageVersion Include="Velopack" Version="0.0.1350-g3ba32af" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageVersion Include="MaterialDesignThemes" Version="5.3.2" />
+    <PackageVersion Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.142" />
+    <PackageVersion Include="Velopack" Version="1.0.1" />
 
     <!-- CSV -->
     <PackageVersion Include="CsvHelper" Version="33.1.0" />
@@ -45,7 +45,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.SpaProxy" Version="10.0.8" />
 
     <!-- Auth - Entra ID -->
-    <PackageVersion Include="Microsoft.Identity.Web" Version="3.8.2" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.10.0" />
 
     <!-- Extensions -->
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.8" />
@@ -64,7 +64,7 @@
 
     <!-- Playwright / UI Tests -->
     <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.11.3" />
-    <PackageVersion Include="Microsoft.Playwright" Version="1.59.0" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.60.0" />
 
     <!-- TypeScript -->
     <PackageVersion Include="Microsoft.TypeScript.MSBuild" Version="6.0.3">
@@ -73,16 +73,16 @@
     </PackageVersion>
 
     <!-- Testing -->
-    <PackageVersion Include="coverlet.collector" Version="6.0.4">
+    <PackageVersion Include="coverlet.collector" Version="10.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageVersion>
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="Moq.AutoMock" Version="4.0.2" />
-    <PackageVersion Include="MSTest.TestAdapter" Version="3.9.3" />
-    <PackageVersion Include="MSTest.TestFramework" Version="3.9.3" />
-    <PackageVersion Include="TUnit" Version="1.44.0" />
+    <PackageVersion Include="MSTest.TestAdapter" Version="4.2.3" />
+    <PackageVersion Include="MSTest.TestFramework" Version="4.2.3" />
+    <PackageVersion Include="TUnit" Version="1.47.0" />
     <PackageVersion Include="xunit" Version="2.4.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -91,7 +91,7 @@
 
     <!-- Other -->
     <PackageVersion Include="Polly.Core" Version="8.6.6" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.1.7" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.0" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.18.0" />
     <PackageVersion Include="System.Linq.Async" Version="6.0.3" />
     <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.7.2" />
