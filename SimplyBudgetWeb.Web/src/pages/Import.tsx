@@ -24,7 +24,7 @@ export default function Import() {
     } catch { /* ignore */ }
   }, [])
 
-  useEffect(() => { fetchCategories() }, [fetchCategories])
+  useEffect(() => { void Promise.resolve().then(fetchCategories) }, [fetchCategories])
 
   const handleParse = async () => {
     if (!csvText.trim()) return

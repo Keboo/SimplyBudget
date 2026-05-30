@@ -107,7 +107,7 @@ The script will:
 2. Detect your GitHub remote and Azure subscription
 3. Create Azure AD App Registrations with federated credentials for CI/CD
 4. Create the Terraform backend storage account
-5. Generate `Infra/prod/service_principals.tf` with the correct service principal references
+5. Generate `Infra/azure.auto.tfvars` for subscription-scoped Terraform variables
 6. Configure GitHub repository secrets
 
 **Prerequisites:** [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli), [GitHub CLI](https://cli.github.com/), and [Terraform](https://www.terraform.io/downloads).
@@ -119,7 +119,6 @@ cd Infra
 terraform init
 terraform plan
 ```
-
 
 
 

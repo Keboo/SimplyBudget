@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, type Dispatch, type SetStateAction } from 'react'
 import {
   Box, Typography, Button, TextField, MenuItem, Select, InputLabel,
   FormControl, Paper, CircularProgress, List, ListItem, ListItemText,
@@ -10,6 +10,38 @@ import { useSnackbar } from 'notistack'
 import { apiClient } from '@/services/apiClient'
 import { RuleDto, ExpenseCategoryDto } from '@/types'
 
+type RuleFormState = {
+  name: string
+  ruleRegex: string
+  expenseCategoryId: string
+}
+
+type RuleFormProps = {
+  form: RuleFormState
+  categories: ExpenseCategoryDto[]
+  setForm: Dispatch<SetStateAction<RuleFormState>>
+}
+
+function RuleForm({ form, categories, setForm }: RuleFormProps) {
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+      <TextField label="Name" fullWidth value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+      <TextField label="Regex Pattern" fullWidth value={form.ruleRegex} onChange={e => setForm(f => ({ ...f, ruleRegex: e.target.value }))} />
+      <FormControl fullWidth>
+        <InputLabel>Category</InputLabel>
+        <Select
+          label="Category"
+          value={form.expenseCategoryId}
+          onChange={e => setForm(f => ({ ...f, expenseCategoryId: e.target.value as string }))}
+        >
+          <MenuItem value="">None</MenuItem>
+          {categories.map(c => <MenuItem key={c.id} value={String(c.id)}>{c.name}</MenuItem>)}
+        </Select>
+      </FormControl>
+    </Box>
+  )
+}
+
 export default function Settings() {
   const [rules, setRules] = useState<RuleDto[]>([])
   const [categories, setCategories] = useState<ExpenseCategoryDto[]>([])
@@ -17,7 +49,7 @@ export default function Settings() {
   const [addOpen, setAddOpen] = useState(false)
   const [deleteRule, setDeleteRule] = useState<RuleDto | null>(null)
   const [editRule, setEditRule] = useState<RuleDto | null>(null)
-  const [form, setForm] = useState({ name: '', ruleRegex: '', expenseCategoryId: '' })
+  const [form, setForm] = useState<RuleFormState>({ name: '', ruleRegex: '', expenseCategoryId: '' })
   const { enqueueSnackbar } = useSnackbar()
 
   const fetchRules = useCallback(async () => {
@@ -39,7 +71,10 @@ export default function Settings() {
     } catch { /* ignore */ }
   }, [])
 
-  useEffect(() => { fetchRules(); fetchCategories() }, [fetchRules, fetchCategories])
+  useEffect(() => {
+    void Promise.resolve().then(fetchRules)
+    void Promise.resolve().then(fetchCategories)
+  }, [fetchRules, fetchCategories])
 
   const resetForm = () => setForm({ name: '', ruleRegex: '', expenseCategoryId: '' })
 
@@ -97,24 +132,6 @@ export default function Settings() {
     })
   }
 
-  const RuleForm = () => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-      <TextField label="Name" fullWidth value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-      <TextField label="Regex Pattern" fullWidth value={form.ruleRegex} onChange={e => setForm(f => ({ ...f, ruleRegex: e.target.value }))} />
-      <FormControl fullWidth>
-        <InputLabel>Category</InputLabel>
-        <Select
-          label="Category"
-          value={form.expenseCategoryId}
-          onChange={e => setForm(f => ({ ...f, expenseCategoryId: e.target.value as string }))}
-        >
-          <MenuItem value="">None</MenuItem>
-          {categories.map(c => <MenuItem key={c.id} value={String(c.id)}>{c.name}</MenuItem>)}
-        </Select>
-      </FormControl>
-    </Box>
-  )
-
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -150,7 +167,7 @@ export default function Settings() {
       {/* Add Dialog */}
       <Dialog open={addOpen} onClose={() => setAddOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add Rule</DialogTitle>
-        <DialogContent><RuleForm /></DialogContent>
+        <DialogContent><RuleForm form={form} categories={categories} setForm={setForm} /></DialogContent>
         <DialogActions>
           <Button onClick={() => setAddOpen(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleAdd}>Add</Button>
@@ -160,7 +177,7 @@ export default function Settings() {
       {/* Edit Dialog */}
       <Dialog open={!!editRule} onClose={() => setEditRule(null)} maxWidth="sm" fullWidth>
         <DialogTitle>Edit Rule</DialogTitle>
-        <DialogContent><RuleForm /></DialogContent>
+        <DialogContent><RuleForm form={form} categories={categories} setForm={setForm} /></DialogContent>
         <DialogActions>
           <Button onClick={() => setEditRule(null)}>Cancel</Button>
           <Button variant="contained" onClick={handleEdit}>Save</Button>

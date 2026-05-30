@@ -5,6 +5,7 @@
 
     <IsPackable>false</IsPackable>
     <IsPublishable>false</IsPublishable>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
   </PropertyGroup>
 
   <ItemGroup>

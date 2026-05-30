@@ -1,4 +1,4 @@
-terraform {
+﻿terraform {
   required_providers {
     azuread = {
       source  = "hashicorp/azuread"
@@ -15,8 +15,8 @@ terraform {
   }
 
   backend "azurerm" {
-    resource_group_name  = "simplybudgetweb-terraform-rg"
-    storage_account_name = "simplybudgetwebinfra" # This name must be made globally unique
+    resource_group_name  = "simplybudget-terraform-rg"
+    storage_account_name = "simplybudgetinfra" # This name must be made globally unique
     container_name       = "terraform"
     key                  = "state"
     use_oidc             = true

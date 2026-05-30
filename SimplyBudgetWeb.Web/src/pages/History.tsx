@@ -49,8 +49,8 @@ export default function History() {
     }
   }, [currentMonth, search, categoryId, enqueueSnackbar])
 
-  useEffect(() => { fetchCategories() }, [fetchCategories])
-  useEffect(() => { fetchHistory() }, [fetchHistory])
+  useEffect(() => { void Promise.resolve().then(fetchCategories) }, [fetchCategories])
+  useEffect(() => { void Promise.resolve().then(fetchHistory) }, [fetchHistory])
 
   const handleDelete = async () => {
     if (!deleteItem) return

@@ -1,5 +1,8 @@
 name: .NET
 
+env:
+  DOTNET_VERSION: '10.0.x'
+
 on:
   push:
     branches: 
@@ -23,9 +26,10 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 9.x
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        global-json-file: global.json
       
     - name: Build
       run: dotnet build --configuration Release
@@ -46,6 +50,5 @@ jobs:
     - name: Push Release
       if: github.event_name == 'workflow_dispatch'
       run: dotnet vpk publish -o .\Releases --waitForLive --api-key ${{ secrets.VPK_API_KEY }}
-
 
 

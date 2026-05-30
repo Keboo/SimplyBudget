@@ -39,17 +39,17 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           global-json-file: global.json
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
           cache-dependency-path: ${{ env.FRONTEND_PROJECT_PATH }}/pnpm-lock.yaml
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 11
 
       - name: Install frontend dependencies
         working-directory: ${{ env.FRONTEND_PROJECT_PATH }}
@@ -84,13 +84,8 @@ jobs:
       - name: Install Playwright browsers
         run: pwsh SimplyBudgetWeb.UITests/bin/Release/net10.0/playwright.ps1 install --with-deps
 
-      # Microsoft Testing Platform can stop the run once 10 tests fail in CI:
-      # https://learn.microsoft.com/dotnet/core/testing/microsoft-testing-platform-cli-options
-      # To enable retries, add Microsoft.Testing.Extensions.Retry to the test project, then pass
-      # --retry-failed-tests plus --retry-failed-tests-max-percentage <value> to skip reruns when too many tests fail:
-      # https://learn.microsoft.com/dotnet/core/testing/microsoft-testing-platform-retry#retry-1
       - name: Test
-        run: dotnet test --no-build --configuration Release --verbosity normal --maximum-failed-tests 10
+        run: dotnet test --no-build --configuration Release --verbosity normal
 
       - name: Upload test failure screenshots
         if: failure()
@@ -282,17 +277,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
           cache-dependency-path: ${{ env.FRONTEND_PROJECT_PATH }}/pnpm-lock.yaml
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 11
 
       - name: Install frontend dependencies
         working-directory: ${{ env.FRONTEND_PROJECT_PATH }}

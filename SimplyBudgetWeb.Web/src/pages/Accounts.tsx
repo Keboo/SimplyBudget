@@ -31,7 +31,7 @@ export default function Accounts() {
     }
   }, [enqueueSnackbar])
 
-  useEffect(() => { fetchAccounts() }, [fetchAccounts])
+  useEffect(() => { void Promise.resolve().then(fetchAccounts) }, [fetchAccounts])
 
   const handleAdd = async () => {
     if (!newName.trim()) return

@@ -28,7 +28,7 @@ export default function Budget() {
       const month = formatMonth(currentMonth)
       const data = await apiClient.get<BudgetResponse>(`/api/budget?month=${month}-01`)
       setBudget(data)
-    } catch (e) {
+    } catch {
       enqueueSnackbar('Failed to load budget', { variant: 'error' })
     } finally {
       setLoading(false)
@@ -42,8 +42,8 @@ export default function Budget() {
     } catch { /* ignore */ }
   }, [])
 
-  useEffect(() => { fetchBudget() }, [fetchBudget])
-  useEffect(() => { fetchCategories() }, [fetchCategories])
+  useEffect(() => { void Promise.resolve().then(fetchBudget) }, [fetchBudget])
+  useEffect(() => { void Promise.resolve().then(fetchCategories) }, [fetchCategories])
 
   const prevMonth = () => {
     setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))
