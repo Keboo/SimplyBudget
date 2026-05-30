@@ -57,7 +57,7 @@ var backend = builder.AddProject<Projects.SimplyBudgetWeb>("SimplyBudgetWeb-back
     .PublishAsAzureContainerApp((infra, app) => app.Template.Scale.MaxReplicas = 1);
 
 var frontendApp = builder.AddJavaScriptApp(Resources.Frontend, "../SimplyBudgetWeb.Web", "dev")
-    .WithNpm(install: true)
+    .WithPnpm(install: true)
     .WithHttpEndpoint(env: "PORT")
     .WithExternalHttpEndpoints()
     .WithDependency(backend)
