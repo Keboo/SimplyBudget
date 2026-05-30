@@ -13,10 +13,10 @@ jobs:
     runs-on: windows-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 7.x
       
@@ -30,13 +30,13 @@ jobs:
       run: dotnet publish --no-build --configuration Release -p:Version=${{ github.ref_name }} -p:SciuridaeApiKey=${{ secrets.SCIURIDAEAPIKEY }}
 
     - name: Upload artifact for deployment job
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v7
       with:
         name: Installer
         path: ./SciuridaeReleases
     
     - name: Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3
       with:
         fail_on_unmatched_files: true
         generate_release_notes: true
