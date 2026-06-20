@@ -6,12 +6,12 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Aspire -->
-    <PackageVersion Include="Aspire.Hosting.Azure" Version="13.4.3" />
-    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.4.3" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Sql" Version="13.4.3" />
-    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.4.3" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.4.3" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.4.3" />
+    <PackageVersion Include="Aspire.Hosting.Azure" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Sql" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.4.6" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.4.6" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.5.0" />
 
     <!-- WPF / MVVM (existing desktop app) -->
@@ -25,16 +25,16 @@
 
     <!-- Database -->
     <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="10.0.9" />
-    <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.9" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8">
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.8">
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.9" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.9">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
@@ -50,7 +50,7 @@
     <!-- Extensions -->
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.7.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.7.0" />
@@ -82,7 +82,7 @@
     <PackageVersion Include="Moq.AutoMock" Version="4.0.2" />
     <PackageVersion Include="MSTest.TestAdapter" Version="4.2.3" />
     <PackageVersion Include="MSTest.TestFramework" Version="4.2.3" />
-    <PackageVersion Include="TUnit" Version="1.54.0" />
+    <PackageVersion Include="TUnit" Version="1.56.18" />
     <PackageVersion Include="xunit" Version="2.4.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -91,7 +91,7 @@
 
     <!-- Other -->
     <PackageVersion Include="Polly.Core" Version="8.7.0" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.1" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.2" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
     <PackageVersion Include="System.Linq.Async" Version="6.0.3" />
     <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.7.2" />
