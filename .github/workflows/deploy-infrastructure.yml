@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
@@ -75,7 +75,7 @@ jobs:
       static_web_app_name: ${{ steps.terraform-outputs.outputs.static_web_app_name }}
       static_web_app_api_key: ${{ steps.terraform-outputs.outputs.static_web_app_api_key }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
