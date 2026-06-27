@@ -45,7 +45,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.SpaProxy" Version="10.0.9" />
 
     <!-- Auth - Entra ID -->
-    <PackageVersion Include="Microsoft.Identity.Web" Version="4.10.0" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.11.0" />
 
     <!-- Extensions -->
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.9" />
@@ -58,13 +58,13 @@
     <!-- OpenTelemetry -->
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.16.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
 
     <!-- Playwright / UI Tests -->
-    <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.11.3" />
-    <PackageVersion Include="Microsoft.Playwright" Version="1.60.0" />
+    <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.12.0" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.61.0" />
 
     <!-- TypeScript -->
     <PackageVersion Include="Microsoft.TypeScript.MSBuild" Version="6.0.3">
@@ -77,12 +77,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageVersion>
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
     <PackageVersion Include="Moq" Version="4.20.72" />
     <PackageVersion Include="Moq.AutoMock" Version="4.0.2" />
     <PackageVersion Include="MSTest.TestAdapter" Version="4.2.3" />
     <PackageVersion Include="MSTest.TestFramework" Version="4.2.3" />
-    <PackageVersion Include="TUnit" Version="1.56.18" />
+    <PackageVersion Include="TUnit" Version="1.56.35" />
     <PackageVersion Include="xunit" Version="2.4.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -91,7 +91,7 @@
 
     <!-- Other -->
     <PackageVersion Include="Polly.Core" Version="8.7.0" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.2" />
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
     <PackageVersion Include="System.Linq.Async" Version="6.0.3" />
     <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.7.2" />
