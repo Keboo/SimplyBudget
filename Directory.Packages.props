@@ -45,7 +45,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.SpaProxy" Version="10.0.9" />
 
     <!-- Auth - Entra ID -->
-    <PackageVersion Include="Microsoft.Identity.Web" Version="4.11.0" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.12.2" />
 
     <!-- Extensions -->
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.9" />
@@ -82,7 +82,7 @@
     <PackageVersion Include="Moq.AutoMock" Version="4.0.2" />
     <PackageVersion Include="MSTest.TestAdapter" Version="4.2.3" />
     <PackageVersion Include="MSTest.TestFramework" Version="4.2.3" />
-    <PackageVersion Include="TUnit" Version="1.56.35" />
+    <PackageVersion Include="TUnit" Version="1.58.0" />
     <PackageVersion Include="xunit" Version="2.4.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
