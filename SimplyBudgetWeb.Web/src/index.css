@@ -15,3 +15,11 @@ code {
 * {
   box-sizing: border-box;
 }
+
+.v-theme--dark a {
+  color: #90caf9;
+}
+
+.v-theme--dark a:visited {
+  color: #ce93d8;
+}

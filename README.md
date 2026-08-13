@@ -1,12 +1,12 @@
-# Aspire React App template
-This template creates a [React Web App](https://react.dev/) solution with .NET Aspire orchestration, Identity authentication, and unit tests.
+# Aspire Vue App template
+This template creates a [Vue Web App](https://vuejs.org/) solution with .NET Aspire orchestration, Identity authentication, and unit tests.
 
 
 ## Template
 Create a new app in your current directory by running.
 
 ```cli
-> dotnet new keboo.react
+> dotnet new keboo.aspire -f vue
 ```
 
 ### Parameters
@@ -14,24 +14,16 @@ Create a new app in your current directory by running.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `--pipeline` | CI/CD provider to use. Options: `github`, `azuredevops`, `none` | `github` |
-| `--sln` | Use legacy .sln format instead of .slnx format | `false` |
+| `-f`, `--frontend` | The frontend framework to use. Options: `react`, `vue` | `react` |
 
-This template includes TUnit-based test projects by default.
-
-**Example with Azure DevOps:**
+**Example with the Vue frontend (used by this repository):**
 ```cli
-> dotnet new keboo.react --pipeline azuredevops
+> dotnet new keboo.aspire -f vue
 ```
 
-**Example with no CI/CD pipeline:**
+**Example with the React frontend:**
 ```cli
-> dotnet new keboo.react --pipeline none
-```
-
-**Example with legacy .sln format:**
-```cli
-> dotnet new keboo.react --sln true
+> dotnet new keboo.aspire -f react
 ```
 
 
@@ -51,8 +43,8 @@ Both the SimplyBudgetWeb.Web includes full PWA support with:
 - Caching strategies for improved performance
 - App icons (192x192 and 512x512)
 
-**React/Vite PWA:**
-The React frontend uses `vite-plugin-pwa` with Workbox for advanced caching strategies. 
+**Vue/Vite PWA:**
+The Vue frontend uses `vite-plugin-pwa` with Workbox for advanced caching strategies. 
 
 Features include:
 - Automatic service worker registration and updates

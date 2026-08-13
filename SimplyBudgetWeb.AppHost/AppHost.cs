@@ -13,7 +13,7 @@ builder.AddAzureContainerAppEnvironment("keboodev-env")
 
 var docsGroup = builder.AddLogicalGroup("docs");
 builder.AddAspireDocs().WithParentRelationship(docsGroup);
-builder.AddMUIDocs().WithParentRelationship(docsGroup);
+builder.AddVuetifyDocs().WithParentRelationship(docsGroup);
 
 IResourceBuilder<IResourceWithConnectionString> db;
 

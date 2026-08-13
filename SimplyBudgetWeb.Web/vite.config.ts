@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import vue from '@vitejs/plugin-vue'
+import vuetify from 'vite-plugin-vuetify'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
@@ -21,14 +22,15 @@ const backendUrl = process.env.BACKEND_URL
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react(),
+    vue(),
+    vuetify({ autoImport: true }),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         name: 'SimplyBudgetWeb',
         short_name: 'SimplyBudgetWeb',
-        description: 'A Progressive Web App built with React and Vite',
+        description: 'A Progressive Web App built with Vue and Vite',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
@@ -94,7 +96,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   define: {
