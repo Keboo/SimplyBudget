@@ -75,6 +75,33 @@ By default, this template uses the new `.slnx` (XML-based solution) format intro
 
 If you need to use the legacy `.sln` format, use the `--sln true` parameter when creating the template.
 
+## Infrastructure
+
+Terraform (`Infra/`) is configured to use existing shared Azure resources rather than provisioning new
+ones:
+
+- Resource Group: `KebooDev`
+- ACR: `keboodevacr.azurecr.io`
+- Container App Environment: `keboodev-env`
+- SQL Server: `keboodev-sql`, Database: `keboodevdb` (discovered via Terraform data sources)
+- Frontend hosting is provisioned as an Azure Static Web App, and backend CORS allows that origin
+- Frontend production builds use Terraform's `backend_url` output
+
+Because `keboodevdb` is shared across multiple apps, SimplyBudget's tables live in their own SQL
+schema (`database_schema_name` in `Infra/variables.tf`, default `SimplyBudget`) instead of `dbo`. During
+`terraform apply`, the app's managed identity is provisioned as a database user, the schema is created
+if it doesn't already exist, and the identity's default schema is set to it. EF Core mirrors this via
+`modelBuilder.HasDefaultSchema("SimplyBudget")` in `SimplyBudgetWeb.Data/BudgetWebContext.cs`, so all
+tables and migrations are created under that schema, keeping this app's data isolated from other apps
+in the same database.
+
+Apply infrastructure changes:
+
+```bash
+terraform -chdir=Infra plan
+terraform -chdir=Infra apply -auto-approve
+```
+
 ## Deployment
 Deployment is handled with the [Azure Development CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/?WT.mc_id=DT-MVP-5003472).
 
