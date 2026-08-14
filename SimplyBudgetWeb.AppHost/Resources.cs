@@ -142,9 +142,9 @@ public static class Resources
             }
         }
 
-        public IResourceBuilder<ExternalServiceResource> AddMUIDocs()
+        public IResourceBuilder<ExternalServiceResource> AddVuetifyDocs()
         {
-            return builder.AddExternalService("MUI-docs", "https://mui.com/material-ui/getting-started/")
+            return builder.AddExternalService("Vuetify-docs", "https://vuetifyjs.com/en/getting-started/installation/")
                 .ExcludeFromManifest()
                 .ExcludeFromMcp();
         }
