@@ -202,8 +202,11 @@ module "static_web_app" {
 
   name = local.static_web_app_name
   resource_group = {
-    name     = data.azurerm_resource_group.resource_group.name
-    location = data.azurerm_resource_group.resource_group.location
+    name = data.azurerm_resource_group.resource_group.name
+    # Azure Static Web Apps are only available in a limited set of regions
+    # (the resource group's region, westus3, is not one of them), so pin
+    # this to a supported region regardless of the resource group's location.
+    location = "westus2"
   }
   sku = {
     tier = "Free"
