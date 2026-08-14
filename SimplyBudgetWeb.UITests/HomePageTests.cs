@@ -15,7 +15,8 @@ public class HomePageTests : UITestBase
     public async Task HeaderBrandIsVisible()
     {
         await Page.GotoAsync(FrontendBaseUri.ToString());
-        await Assert.That(await Page.GetByText("Simply Budget", new() { Exact = true }).IsVisibleAsync())
-            .IsTrue();
+        var brand = Page.GetByText("Simply Budget", new() { Exact = true });
+        await brand.WaitForAsync(new() { Timeout = PlaywrightConfiguration.DefaultTimeout });
+        await Assert.That(await brand.IsVisibleAsync()).IsTrue();
     }
 }
