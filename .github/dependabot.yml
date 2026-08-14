@@ -31,3 +31,10 @@ updates:
       pnpm:
         patterns:
           - "*"
+    ignore:
+      # TypeScript 7.x uses a new native compiler whose programmatic AST/type-checker
+      # APIs aren't yet supported by typescript-eslint (see
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940). Stay on
+      # the 6.x line until typescript-eslint adds support, then remove this ignore.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
