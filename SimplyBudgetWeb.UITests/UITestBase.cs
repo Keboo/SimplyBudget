@@ -306,10 +306,38 @@ public abstract class UITestBase : IAsyncDisposable
 
     protected async Task<AxeResult> AssertNoAccessibilityViolations()
     {
+        // Some UI elements (e.g. error snackbars triggered by a failed API call) enter with
+        // a CSS opacity/transform transition. Scanning mid-transition can make axe-core see a
+        // transient, blended color that fails a color-contrast check even though the final
+        // rendered state is compliant. Wait for network activity and any in-flight
+        // animations/transitions to settle first so we assert against the final state.
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        await WaitForAnimationsToSettleAsync();
+
         AxeResult result = await Page.RunAxe(AxeOptions);
 
         await Assert.That(result.Violations).IsEmpty();
         return result;
+    }
+
+    private async Task WaitForAnimationsToSettleAsync()
+    {
+        // Poll until we've observed a short stable window with no running animations. This
+        // avoids a race where we happen to check in between an animation being scheduled and
+        // actually starting to run.
+        const int RequiredStableChecks = 3;
+        const int PollDelayMs = 100;
+
+        var stableChecks = 0;
+        while (stableChecks < RequiredStableChecks)
+        {
+            bool hasRunningAnimations = await Page.EvaluateAsync<bool>(
+                "() => document.getAnimations().some(a => a.playState === 'running')");
+
+            stableChecks = hasRunningAnimations ? 0 : stableChecks + 1;
+
+            await Task.Delay(PollDelayMs, CancellationToken);
+        }
     }
 
     public async ValueTask DisposeAsync()
