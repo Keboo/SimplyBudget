@@ -11,6 +11,11 @@
       <IncludeAssets>runtime; build; native; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <!-- Required for "Authentication=Active Directory Default" / Entra ID connection strings.
+         Microsoft.Data.SqlClient 6+ moved Azure AD authentication providers into this
+         separate package; without it, ActiveDirectoryDefault connections fail with
+         "Cannot find an authentication provider for 'ActiveDirectoryDefault'". -->
+    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" />
   </ItemGroup>
 
   <ItemGroup>
