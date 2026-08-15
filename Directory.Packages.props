@@ -25,6 +25,12 @@
 
     <!-- Database -->
     <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="10.0.11" />
+    <!-- Microsoft.EntityFrameworkCore.SqlServer 10.0.9 only requires Microsoft.Data.SqlClient
+         >= 6.1.1, which predates the Azure AD provider split and is binary-incompatible with
+         Microsoft.Data.SqlClient.Extensions.Azure 7.0.2 (mixing them causes an
+         AmbiguousMatchException in SqlAuthenticationProviderManager). Pin SqlClient itself to
+         7.0.2 so both packages are from the same release line. -->
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.2" />
     <PackageVersion Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="7.0.2" />
     <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.9" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.8" />
