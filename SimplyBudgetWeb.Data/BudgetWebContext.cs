@@ -12,9 +12,16 @@ namespace SimplyBudgetWeb.Data;
 public class BudgetWebContext(DbContextOptions<BudgetWebContext> options)
     : BudgetContext(WeakReferenceMessenger.Default, options)
 {
+    /// <summary>
+    /// The database schema used for all tables in this context, including
+    /// the EF Core migrations history table (see <see cref="BudgetWebContextDesignTimeFactory"/>
+    /// and <c>DependencyInjection.AddDatabase</c>).
+    /// </summary>
+    public const string Schema = "SimplyBudget";
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasDefaultSchema("SimplyBudget");
+        modelBuilder.HasDefaultSchema(Schema);
         base.OnModelCreating(modelBuilder);
     }
 }
