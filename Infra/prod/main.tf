@@ -20,8 +20,19 @@ locals {
   ]
 }
 
+# Shared infrastructure (Container App Environment, Container Registry, SQL Server/Database)
+# lives in the existing KebooDev resource group and is referenced, not managed, here.
 data "azurerm_resource_group" "resource_group" {
   name = var.existing_resource_group_name
+}
+
+# Dedicated resource group for SimplyBudget's non-shared infrastructure
+# (managed identity, container app, static web app, application insights).
+resource "azurerm_resource_group" "app" {
+  name     = var.app_resource_group_name
+  location = var.location
+
+  tags = local.tags
 }
 
 data "azurerm_client_config" "current" {}
@@ -32,8 +43,8 @@ data "azuread_service_principal" "provisioning_principal" {
 
 resource "azurerm_user_assigned_identity" "app_identity" {
   name                = "simplybudget-${lower(local.environment)}-mi"
-  location            = data.azurerm_resource_group.resource_group.location
-  resource_group_name = data.azurerm_resource_group.resource_group.name
+  location            = azurerm_resource_group.app.location
+  resource_group_name = azurerm_resource_group.app.name
 
   tags = local.tags
 }
@@ -179,7 +190,7 @@ module "backend_container_app" {
 
   name                            = local.backend_container_app_name
   container_app_environment_id    = data.azurerm_container_app_environment.existing.id
-  resource_group_name             = data.azurerm_resource_group.resource_group.name
+  resource_group_name             = azurerm_resource_group.app.name
   identity_id                     = azurerm_user_assigned_identity.app_identity.id
   container_registry_login_server = data.azurerm_container_registry.existing.login_server
 
@@ -202,11 +213,8 @@ module "static_web_app" {
 
   name = local.static_web_app_name
   resource_group = {
-    name = data.azurerm_resource_group.resource_group.name
-    # Azure Static Web Apps are only available in a limited set of regions
-    # (the resource group's region, westus3, is not one of them), so pin
-    # this to a supported region regardless of the resource group's location.
-    location = "westus2"
+    name     = azurerm_resource_group.app.name
+    location = azurerm_resource_group.app.location
   }
   sku = {
     tier = "Free"
@@ -219,9 +227,12 @@ module "static_web_app" {
 module "application_insights" {
   source = "../modules/app_insights"
 
-  environment    = local.environment
-  resource_group = data.azurerm_resource_group.resource_group
-  tags           = local.tags
+  environment = local.environment
+  resource_group = {
+    name     = azurerm_resource_group.app.name
+    location = azurerm_resource_group.app.location
+  }
+  tags = local.tags
 
   reader_ids = {}
 }

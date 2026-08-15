@@ -12,6 +12,7 @@ module "prod" {
   tags        = local.default_tags
 
   existing_resource_group_name            = var.existing_resource_group_name
+  app_resource_group_name                 = var.app_resource_group_name
   existing_container_registry_name        = var.existing_container_registry_name
   existing_container_app_environment_name = var.existing_container_app_environment_name
   existing_sql_server_name                = var.existing_sql_server_name

@@ -78,12 +78,19 @@ If you need to use the legacy `.sln` format, use the `--sln true` parameter when
 ## Infrastructure
 
 Terraform (`Infra/`) is configured to use existing shared Azure resources rather than provisioning new
-ones:
+ones, while SimplyBudget's own (non-shared) resources live in their own dedicated resource group:
 
+Shared, existing infrastructure (referenced via Terraform data sources, not managed here):
 - Resource Group: `KebooDev`
 - ACR: `keboodevacr.azurecr.io`
 - Container App Environment: `keboodev-env`
-- SQL Server: `keboodev-sql`, Database: `keboodevdb` (discovered via Terraform data sources)
+- SQL Server: `keboodev-sql`, Database: `keboodevdb`
+
+SimplyBudget-specific infrastructure (managed by this Terraform config):
+- Resource Group: `SimplyBudget` (`westus2`, configurable via `app_resource_group_name`/`location` in
+  `Infra/variables.tf`)
+- Managed identity, backend Container App, Application Insights, and the Azure Static Web App all live
+  in this resource group
 - Frontend hosting is provisioned as an Azure Static Web App, and backend CORS allows that origin
 - Frontend production builds use Terraform's `backend_url` output
 
