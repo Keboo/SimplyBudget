@@ -9,8 +9,13 @@ output "backend_container_app_name" {
 }
 
 output "resource_group_name" {
-  description = "The name of the resource group"
+  description = "The name of the dedicated SimplyBudget resource group containing the app's non-shared resources"
   value       = module.prod.resource_group_name
+}
+
+output "shared_resource_group_name" {
+  description = "The name of the existing shared resource group (KebooDev) referenced for shared infrastructure"
+  value       = module.prod.shared_resource_group_name
 }
 
 output "static_web_app_name" {

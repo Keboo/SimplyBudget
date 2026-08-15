@@ -34,6 +34,12 @@ variable "existing_resource_group_name" {
   default     = "KebooDev"
 }
 
+variable "app_resource_group_name" {
+  description = "Name of the dedicated resource group created for SimplyBudget's non-shared infrastructure."
+  type        = string
+  default     = "SimplyBudget"
+}
+
 variable "existing_container_registry_name" {
   description = "Existing Azure Container Registry name."
   type        = string

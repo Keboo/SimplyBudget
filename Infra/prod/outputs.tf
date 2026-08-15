@@ -13,7 +13,12 @@ output "backend_container_app_name" {
 }
 
 output "resource_group_name" {
-  description = "The name of the resource group"
+  description = "The name of the dedicated SimplyBudget resource group containing the app's non-shared resources"
+  value       = azurerm_resource_group.app.name
+}
+
+output "shared_resource_group_name" {
+  description = "The name of the existing shared resource group (KebooDev) referenced for shared infrastructure"
   value       = data.azurerm_resource_group.resource_group.name
 }
 

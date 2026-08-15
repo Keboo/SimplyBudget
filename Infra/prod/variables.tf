@@ -15,7 +15,12 @@ variable "tags" {
 }
 
 variable "existing_resource_group_name" {
-  description = "Existing resource group where infrastructure already exists."
+  description = "Existing resource group where shared infrastructure already exists."
+  type        = string
+}
+
+variable "app_resource_group_name" {
+  description = "Name of the dedicated resource group created for SimplyBudget's non-shared infrastructure."
   type        = string
 }
 
