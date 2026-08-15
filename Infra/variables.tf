@@ -4,6 +4,12 @@ variable "CLIENT_ID" {
   default     = ""
 }
 
+variable "MIGRATION_CLIENT_ID" {
+  description = "Client ID of the service principal used by the application build/deploy pipeline to run EF Core migrations against the database via Azure AD authentication."
+  type        = string
+  default     = ""
+}
+
 variable "TENANT_ID" {
   type        = string
   description = "Value of the tenant id of the service principal"
@@ -68,4 +74,10 @@ variable "database_schema_name" {
   description = "Default SQL schema used by the app and managed identity."
   type        = string
   default     = "SimplyBudget"
+}
+
+variable "sql_admin_group_name" {
+  description = "Display name of the existing Entra ID (Azure AD) group configured as the SQL Server's Azure AD administrator."
+  type        = string
+  default     = "KebooDevDBAdmins"
 }

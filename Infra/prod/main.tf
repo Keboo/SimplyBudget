@@ -41,6 +41,29 @@ data "azuread_service_principal" "provisioning_principal" {
   client_id = var.provisioning_client_id
 }
 
+data "azuread_service_principal" "migration_principal" {
+  client_id = var.migration_client_id
+}
+
+# The Entra ID group that is configured as the SQL Server's Azure AD administrator.
+# This group is managed outside of Terraform; membership below ensures the
+# service principals that need to administer the database (running Terraform
+# and applying EF Core migrations) inherit that access.
+data "azuread_group" "sql_admins" {
+  display_name     = var.sql_admin_group_name
+  security_enabled = true
+}
+
+resource "azuread_group_member" "provisioning_principal_sql_admin" {
+  group_object_id  = data.azuread_group.sql_admins.object_id
+  member_object_id = data.azuread_service_principal.provisioning_principal.object_id
+}
+
+resource "azuread_group_member" "migration_principal_sql_admin" {
+  group_object_id  = data.azuread_group.sql_admins.object_id
+  member_object_id = data.azuread_service_principal.migration_principal.object_id
+}
+
 resource "azurerm_user_assigned_identity" "app_identity" {
   name                = "simplybudget-${lower(local.environment)}-mi"
   location            = azurerm_resource_group.app.location
@@ -76,6 +99,11 @@ data "azurerm_mssql_database" "existing" {
 }
 
 resource "terraform_data" "setup_database_principal" {
+  depends_on = [
+    azuread_group_member.provisioning_principal_sql_admin,
+    azuread_group_member.migration_principal_sql_admin
+  ]
+
   triggers_replace = [
     data.azurerm_mssql_database.existing.id,
     azurerm_user_assigned_identity.app_identity.principal_id,
@@ -83,7 +111,8 @@ resource "terraform_data" "setup_database_principal" {
     local.database_schema_name,
     join(",", local.db_permissions),
     var.provisioning_client_id,
-    "v1"
+    data.azuread_group.sql_admins.object_id,
+    "v2" # Bumped from v1: SQL Entra admin is now the sql_admins group, not the provisioning principal
   ]
 
   provisioner "local-exec" {
@@ -113,8 +142,8 @@ resource "terraform_data" "setup_database_principal" {
 
         Start-Sleep -Seconds 5
 
-        $provisioningPrincipalName = '${data.azuread_service_principal.provisioning_principal.display_name}'
-        $provisioningPrincipalObjectId = '${data.azuread_service_principal.provisioning_principal.object_id}'
+        $sqlAdminGroupName = '${data.azuread_group.sql_admins.display_name}'
+        $sqlAdminGroupObjectId = '${data.azuread_group.sql_admins.object_id}'
 
         $currentAdminObjectId = az sql server ad-admin list `
           --resource-group '${data.azurerm_resource_group.resource_group.name}' `
@@ -124,12 +153,12 @@ resource "terraform_data" "setup_database_principal" {
           --only-show-errors 2>$null
 
         $currentAdminObjectId = "$currentAdminObjectId".Trim()
-        if (-not $currentAdminObjectId -or $currentAdminObjectId -ne $provisioningPrincipalObjectId) {
+        if (-not $currentAdminObjectId -or $currentAdminObjectId -ne $sqlAdminGroupObjectId) {
           $adminOutput = az sql server ad-admin create `
             --resource-group '${data.azurerm_resource_group.resource_group.name}' `
             --server '${local.sql_server_name}' `
-            --display-name $provisioningPrincipalName `
-            --object-id $provisioningPrincipalObjectId `
+            --display-name $sqlAdminGroupName `
+            --object-id $sqlAdminGroupObjectId `
             --only-show-errors 2>&1
 
           if ($LASTEXITCODE -ne 0) {
