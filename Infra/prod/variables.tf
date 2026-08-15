@@ -63,3 +63,9 @@ variable "sql_admin_group_name" {
   description = "Display name of the existing Entra ID (Azure AD) group configured as the SQL Server's Azure AD administrator. Members of this group (including the Terraform and migration service principals) receive administrative access to the database."
   type        = string
 }
+
+variable "database_admin_user_names" {
+  description = "UPNs/email addresses of individual Entra ID (Azure AD) users who should be explicitly created as database users with db_owner rights. Even though members of the sql_admin_group already have administrative access via the server's Azure AD admin, the Azure Portal's Query Editor does not reliably resolve group-based admin membership, so an explicit contained user is created for each of these individuals."
+  type        = list(string)
+  default     = []
+}

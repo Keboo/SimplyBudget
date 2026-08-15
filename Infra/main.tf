@@ -21,4 +21,5 @@ module "prod" {
   provisioning_client_id                  = var.CLIENT_ID
   migration_client_id                     = var.MIGRATION_CLIENT_ID
   sql_admin_group_name                    = var.sql_admin_group_name
+  database_admin_user_names               = var.database_admin_user_names
 }

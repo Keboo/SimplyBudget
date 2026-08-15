@@ -81,3 +81,9 @@ variable "sql_admin_group_name" {
   type        = string
   default     = "KebooDevDBAdmins"
 }
+
+variable "database_admin_user_names" {
+  description = "UPNs/email addresses of individual Entra ID (Azure AD) users who should be explicitly created as database users with db_owner rights. Even though members of the sql_admin_group already have administrative access via the server's Azure AD admin, the Azure Portal's Query Editor does not reliably resolve group-based admin membership, so an explicit contained user is created for each of these individuals."
+  type        = list(string)
+  default     = ["kitokeboo@gmail.com"]
+}

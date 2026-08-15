@@ -18,6 +18,7 @@ locals {
     "db_datawriter",
     "db_ddladmin"
   ]
+  database_admin_user_names = var.database_admin_user_names
 }
 
 # Shared infrastructure (Container App Environment, Container Registry, SQL Server/Database)
@@ -112,7 +113,10 @@ resource "terraform_data" "setup_database_principal" {
     join(",", local.db_permissions),
     var.provisioning_client_id,
     data.azuread_group.sql_admins.object_id,
-    "v2" # Bumped from v1: SQL Entra admin is now the sql_admins group, not the provisioning principal
+    join(",", local.database_admin_user_names),
+    "v3" # Bumped from v2: explicitly create contained database users (db_owner) for
+    # individual admins, since the Azure Portal Query Editor does not reliably
+    # resolve access granted only via the sql_admins group membership.
   ]
 
   provisioner "local-exec" {
@@ -190,6 +194,18 @@ resource "terraform_data" "setup_database_principal" {
         }
 
         $queryParts += "GRANT EXECUTE TO [$identityName];"
+
+        # Explicitly create a contained database user (with db_owner rights) for each
+        # individual admin. Members of the sql_admins group already have administrative
+        # access via the server's Azure AD admin, but the Azure Portal's Query Editor does
+        # not reliably resolve access granted only through group membership, so an explicit
+        # user mapping is required for that experience to work.
+        $adminUsers = ConvertFrom-Json '${jsonencode(local.database_admin_user_names)}'
+        foreach ($adminUser in $adminUsers) {
+          $queryParts += "IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '$adminUser') BEGIN CREATE USER [$adminUser] FROM EXTERNAL PROVIDER; END;"
+          $queryParts += "IF NOT EXISTS (SELECT 1 FROM sys.database_role_members drm JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id WHERE r.name = 'db_owner' AND m.name = '$adminUser') BEGIN ALTER ROLE db_owner ADD MEMBER [$adminUser]; END;"
+        }
+
         $sql = $queryParts -join " "
 
         Invoke-Sqlcmd -ConnectionString '${local.base_database_connection_string}' -AccessToken $token -Query $sql
