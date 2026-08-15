@@ -18,6 +18,7 @@ locals {
     "db_datawriter",
     "db_ddladmin"
   ]
+  database_admin_user_names = var.database_admin_user_names
 }
 
 # Shared infrastructure (Container App Environment, Container Registry, SQL Server/Database)
@@ -39,6 +40,29 @@ data "azurerm_client_config" "current" {}
 
 data "azuread_service_principal" "provisioning_principal" {
   client_id = var.provisioning_client_id
+}
+
+data "azuread_service_principal" "migration_principal" {
+  client_id = var.migration_client_id
+}
+
+# The Entra ID group that is configured as the SQL Server's Azure AD administrator.
+# This group is managed outside of Terraform; membership below ensures the
+# service principals that need to administer the database (running Terraform
+# and applying EF Core migrations) inherit that access.
+data "azuread_group" "sql_admins" {
+  display_name     = var.sql_admin_group_name
+  security_enabled = true
+}
+
+resource "azuread_group_member" "provisioning_principal_sql_admin" {
+  group_object_id  = data.azuread_group.sql_admins.object_id
+  member_object_id = data.azuread_service_principal.provisioning_principal.object_id
+}
+
+resource "azuread_group_member" "migration_principal_sql_admin" {
+  group_object_id  = data.azuread_group.sql_admins.object_id
+  member_object_id = data.azuread_service_principal.migration_principal.object_id
 }
 
 resource "azurerm_user_assigned_identity" "app_identity" {
@@ -76,6 +100,11 @@ data "azurerm_mssql_database" "existing" {
 }
 
 resource "terraform_data" "setup_database_principal" {
+  depends_on = [
+    azuread_group_member.provisioning_principal_sql_admin,
+    azuread_group_member.migration_principal_sql_admin
+  ]
+
   triggers_replace = [
     data.azurerm_mssql_database.existing.id,
     azurerm_user_assigned_identity.app_identity.principal_id,
@@ -83,7 +112,11 @@ resource "terraform_data" "setup_database_principal" {
     local.database_schema_name,
     join(",", local.db_permissions),
     var.provisioning_client_id,
-    "v1"
+    data.azuread_group.sql_admins.object_id,
+    join(",", local.database_admin_user_names),
+    "v3" # Bumped from v2: explicitly create contained database users (db_owner) for
+    # individual admins, since the Azure Portal Query Editor does not reliably
+    # resolve access granted only via the sql_admins group membership.
   ]
 
   provisioner "local-exec" {
@@ -113,8 +146,8 @@ resource "terraform_data" "setup_database_principal" {
 
         Start-Sleep -Seconds 5
 
-        $provisioningPrincipalName = '${data.azuread_service_principal.provisioning_principal.display_name}'
-        $provisioningPrincipalObjectId = '${data.azuread_service_principal.provisioning_principal.object_id}'
+        $sqlAdminGroupName = '${data.azuread_group.sql_admins.display_name}'
+        $sqlAdminGroupObjectId = '${data.azuread_group.sql_admins.object_id}'
 
         $currentAdminObjectId = az sql server ad-admin list `
           --resource-group '${data.azurerm_resource_group.resource_group.name}' `
@@ -124,12 +157,12 @@ resource "terraform_data" "setup_database_principal" {
           --only-show-errors 2>$null
 
         $currentAdminObjectId = "$currentAdminObjectId".Trim()
-        if (-not $currentAdminObjectId -or $currentAdminObjectId -ne $provisioningPrincipalObjectId) {
+        if (-not $currentAdminObjectId -or $currentAdminObjectId -ne $sqlAdminGroupObjectId) {
           $adminOutput = az sql server ad-admin create `
             --resource-group '${data.azurerm_resource_group.resource_group.name}' `
             --server '${local.sql_server_name}' `
-            --display-name $provisioningPrincipalName `
-            --object-id $provisioningPrincipalObjectId `
+            --display-name $sqlAdminGroupName `
+            --object-id $sqlAdminGroupObjectId `
             --only-show-errors 2>&1
 
           if ($LASTEXITCODE -ne 0) {
@@ -161,6 +194,18 @@ resource "terraform_data" "setup_database_principal" {
         }
 
         $queryParts += "GRANT EXECUTE TO [$identityName];"
+
+        # Explicitly create a contained database user (with db_owner rights) for each
+        # individual admin. Members of the sql_admins group already have administrative
+        # access via the server's Azure AD admin, but the Azure Portal's Query Editor does
+        # not reliably resolve access granted only through group membership, so an explicit
+        # user mapping is required for that experience to work.
+        $adminUsers = ConvertFrom-Json '${jsonencode(local.database_admin_user_names)}'
+        foreach ($adminUser in $adminUsers) {
+          $queryParts += "IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '$adminUser') BEGIN CREATE USER [$adminUser] FROM EXTERNAL PROVIDER; END;"
+          $queryParts += "IF NOT EXISTS (SELECT 1 FROM sys.database_role_members drm JOIN sys.database_principals r ON drm.role_principal_id = r.principal_id JOIN sys.database_principals m ON drm.member_principal_id = m.principal_id WHERE r.name = 'db_owner' AND m.name = '$adminUser') BEGIN ALTER ROLE db_owner ADD MEMBER [$adminUser]; END;"
+        }
+
         $sql = $queryParts -join " "
 
         Invoke-Sqlcmd -ConnectionString '${local.base_database_connection_string}' -AccessToken $token -Query $sql

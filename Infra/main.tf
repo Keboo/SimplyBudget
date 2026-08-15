@@ -19,4 +19,7 @@ module "prod" {
   existing_sql_database_name              = var.existing_sql_database_name
   database_schema_name                    = var.database_schema_name
   provisioning_client_id                  = var.CLIENT_ID
+  migration_client_id                     = var.MIGRATION_CLIENT_ID
+  sql_admin_group_name                    = var.sql_admin_group_name
+  database_admin_user_names               = var.database_admin_user_names
 }
