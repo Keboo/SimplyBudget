@@ -113,14 +113,18 @@ public static class Extensions
         // Adding health checks endpoints to applications in non-development environments has security implications.
         // See https://aka.ms/dotnet/aspire/healthchecks for details.
 
+        // These endpoints are probed directly by the hosting platform (e.g. Container Apps
+        // liveness/readiness/startup probes) without any auth token, so they must remain
+        // anonymous even though a global fallback authorization policy is configured.
+
         // All health checks must pass for app to be considered ready to accept traffic after starting
-        app.MapHealthChecks(HealthEndpointPath);
+        app.MapHealthChecks(HealthEndpointPath).AllowAnonymous();
 
         // Only health checks tagged with the "live" tag must pass for app to be considered alive
         app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
         {
             Predicate = r => r.Tags.Contains("live")
-        });
+        }).AllowAnonymous();
 
         return app;
     }

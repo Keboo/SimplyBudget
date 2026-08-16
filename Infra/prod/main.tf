@@ -55,6 +55,13 @@ data "azuread_group" "sql_admins" {
   security_enabled = true
 }
 
+# The Entra ID group whose members are authorized to use the application.
+# Its object ID is passed to the backend so it can validate the caller's 'groups' claim.
+data "azuread_group" "app_users" {
+  display_name     = var.app_users_group_name
+  security_enabled = true
+}
+
 resource "azuread_group_member" "provisioning_principal_sql_admin" {
   group_object_id  = data.azuread_group.sql_admins.object_id
   member_object_id = data.azuread_service_principal.provisioning_principal.object_id
@@ -240,10 +247,11 @@ module "backend_container_app" {
   container_registry_login_server = data.azurerm_container_registry.existing.login_server
 
   env_vars = {
-    AZURE_CLIENT_ID                       = azurerm_user_assigned_identity.app_identity.client_id
-    ConnectionStrings__Database           = local.database_connection_string
-    APPLICATIONINSIGHTS_CONNECTION_STRING = module.application_insights.application_insights.connection_string
-    AllowedOrigins__0                     = "https://${module.static_web_app.default_host_name}"
+    AZURE_CLIENT_ID                         = azurerm_user_assigned_identity.app_identity.client_id
+    ConnectionStrings__Database             = local.database_connection_string
+    APPLICATIONINSIGHTS_CONNECTION_STRING   = module.application_insights.application_insights.connection_string
+    AllowedOrigins__0                       = "https://${module.static_web_app.default_host_name}"
+    Authorization__SimplyBudgetUsersGroupId = data.azuread_group.app_users.object_id
   }
 
   depends_on = [
