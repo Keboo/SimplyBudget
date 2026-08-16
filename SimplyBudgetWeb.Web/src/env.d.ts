@@ -9,3 +9,5 @@ declare module '*.vue' {
 
 declare const __API_BASE_URL__: string
 declare const __APPLICATIONINSIGHTS_CONNECTION_STRING__: string
+declare const __ENTRA_CLIENT_ID__: string
+declare const __ENTRA_TENANT_ID__: string

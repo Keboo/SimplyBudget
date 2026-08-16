@@ -54,3 +54,13 @@ output "applicationinsights_connection_string" {
   value       = module.application_insights.application_insights.connection_string
   sensitive   = true
 }
+
+output "entra_client_id" {
+  description = "Client (application) ID of the Entra ID App Registration used for MSAL sign-in and API authorization"
+  value       = data.azuread_application.webapp.client_id
+}
+
+output "entra_tenant_id" {
+  description = "Entra ID (Azure AD) tenant ID that the application is registered in"
+  value       = data.azurerm_client_config.current.tenant_id
+}

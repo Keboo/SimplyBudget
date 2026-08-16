@@ -23,4 +23,5 @@ module "prod" {
   sql_admin_group_name                    = var.sql_admin_group_name
   app_users_group_name                    = var.app_users_group_name
   database_admin_user_names               = var.database_admin_user_names
+  entra_web_app_client_id                 = var.entra_web_app_client_id
 }
