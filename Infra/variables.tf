@@ -103,5 +103,5 @@ variable "entra_web_app_client_id" {
 variable "backend_custom_domain" {
   description = "Custom domain URL for the backend API (e.g. https://api.budget.keboo.dev). When set, overrides the auto-generated Container App FQDN as the backend_url output and as the allowed CORS origin on the backend."
   type        = string
-  default     = "https://api.budget.keboo.dev"
+  default     = ""
 }
