@@ -80,3 +80,9 @@ variable "entra_web_app_client_id" {
   description = "Client (application) ID of the existing Entra ID App Registration used for end-user sign-in (MSAL SPA) and API authorization (exposes the 'access_as_user' scope). Managed outside of Terraform."
   type        = string
 }
+
+variable "backend_custom_domain" {
+  description = "Custom domain URL for the backend API (e.g. https://api.budget.keboo.dev). When set, overrides the auto-generated Container App FQDN as the backend_url output and as the allowed CORS origin on the backend."
+  type        = string
+  default     = ""
+}

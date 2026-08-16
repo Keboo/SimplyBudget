@@ -24,4 +24,5 @@ module "prod" {
   app_users_group_name                    = var.app_users_group_name
   database_admin_user_names               = var.database_admin_user_names
   entra_web_app_client_id                 = var.entra_web_app_client_id
+  backend_custom_domain                   = var.backend_custom_domain
 }
