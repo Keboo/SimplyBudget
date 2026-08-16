@@ -15,10 +15,13 @@ builder.AddAzureContainerAppEnvironment("keboodev-env")
 // authorization (backend). Not configured in appsettings so that the AppHost can be
 // the single source of truth shared by both the backend (AzureAd:ClientId/TenantId)
 // and the frontend (ENTRA_CLIENT_ID/ENTRA_TENANT_ID) - without these, MSAL sends an
-// empty client_id and Entra responds with AADSTS900144.
-var entraClientId = builder.AddParameter("entra-client-id")
+// empty client_id and Entra responds with AADSTS900144. Default to an empty string
+// (rather than leaving them required) so the AppHost - including the UI test suite,
+// which builds it via DistributedApplicationTestingBuilder with no interactive
+// prompting support - still starts when they haven't been configured locally.
+var entraClientId = builder.AddParameter("entra-client-id", "")
     .WithDescription("Client (application) ID of the Entra ID App Registration used for end-user sign-in (MSAL SPA) and API authorization.");
-var entraTenantId = builder.AddParameter("entra-tenant-id")
+var entraTenantId = builder.AddParameter("entra-tenant-id", "")
     .WithDescription("Tenant ID of the Entra ID directory hosting the App Registration used for sign-in.");
 
 var docsGroup = builder.AddLogicalGroup("docs");

@@ -163,8 +163,8 @@ dotnet user-secrets set "Parameters:entra-client-id" "<app-registration-client-i
 dotnet user-secrets set "Parameters:entra-tenant-id" "<tenant-id>"
 ```
 
-If left unset, the Aspire dashboard will prompt for the values interactively
-the next time you run `aspire run`. Without a value, MSAL sends an empty
-`client_id` to Entra ID, which results in an `AADSTS900144` sign-in error.
+If left unset, they default to an empty string and the app will still start,
+but MSAL sends an empty `client_id` to Entra ID, resulting in an
+`AADSTS900144` sign-in error when you try to sign in.
 
 
