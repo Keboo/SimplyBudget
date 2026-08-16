@@ -170,7 +170,6 @@ jobs:
       database_connection_string: ${{ steps.terraform-outputs.outputs.database_connection_string }}
       applicationinsights_connection_string: ${{ steps.terraform-outputs.outputs.applicationinsights_connection_string }}
       entra_client_id: ${{ steps.terraform-outputs.outputs.entra_client_id }}
-      entra_tenant_id_b64: ${{ steps.terraform-outputs.outputs.entra_tenant_id_b64 }}
       deploy_ready: ${{ steps.deployment-readiness.outputs.deploy_ready }}
       deploy_readiness_reason: ${{ steps.deployment-readiness.outputs.deploy_readiness_reason }}
     steps:
@@ -212,9 +211,13 @@ jobs:
           echo "database_connection_string=$(terraform output -raw database_connection_string)" >> $GITHUB_OUTPUT
           echo "applicationinsights_connection_string=$(terraform output -raw applicationinsights_connection_string)" >> $GITHUB_OUTPUT
           echo "entra_client_id=$(terraform output -raw entra_client_id)" >> $GITHUB_OUTPUT
-          # Base64-encode entra_tenant_id to prevent GitHub Actions from silently
-          # dropping the value when it matches the ARM_TENANT_ID secret mask.
-          echo "entra_tenant_id_b64=$(terraform output -raw entra_tenant_id | base64 -w0)" >> $GITHUB_OUTPUT
+          # entra_tenant_id is intentionally not surfaced as a job output: it is
+          # always identical to secrets.ARM_TENANT_ID (this is a single Entra
+          # tenant, and azurerm_client_config.current reflects whichever tenant
+          # Terraform authenticated with above), so GitHub Actions unconditionally
+          # drops it - along with any transformation of it, including base64 -
+          # as a "job output" because it matches a registered secret value.
+          # Downstream jobs use secrets.ARM_TENANT_ID directly instead.
         env:
           ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
@@ -353,11 +356,6 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: ${{ env.FRONTEND_PROJECT_PATH }}/pnpm-lock.yaml
 
-      - name: Decode infrastructure outputs
-        shell: bash
-        run: |
-          echo "ENTRA_TENANT_ID=$(echo '${{ needs.get-infrastructure-outputs.outputs.entra_tenant_id_b64 }}' | base64 -d)" >> $GITHUB_ENV
-
       - name: Install frontend dependencies
         working-directory: ${{ env.FRONTEND_PROJECT_PATH }}
         run: pnpm install --frozen-lockfile
@@ -370,7 +368,12 @@ jobs:
           # BACKEND_URL: 'TODO' # This should be set to the backend_url, if you use the generated ACA endpoint you may run into issues with cross origin issues.
           APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ needs.get-infrastructure-outputs.outputs.applicationinsights_connection_string }}
           ENTRA_CLIENT_ID: ${{ needs.get-infrastructure-outputs.outputs.entra_client_id }}
-          ENTRA_TENANT_ID: ${{ env.ENTRA_TENANT_ID }}
+          # entra_tenant_id is always the same Entra tenant that Terraform authenticates
+          # with in this workflow (secrets.ARM_TENANT_ID), so it's used directly here
+          # rather than round-tripped through a Terraform output: GitHub Actions
+          # unconditionally drops any job output - including base64-encoded ones -
+          # that matches a registered secret value (see #102).
+          ENTRA_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
