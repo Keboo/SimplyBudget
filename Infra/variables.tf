@@ -105,3 +105,9 @@ variable "backend_custom_domain" {
   type        = string
   default     = ""
 }
+
+variable "frontend_custom_domain" {
+  description = "Custom domain URL for the frontend Static Web App (e.g. https://budget.keboo.dev). When set, it is added to the Entra ID App Registration's SPA redirect URIs so MSAL sign-in redirects succeed on the custom domain."
+  type        = string
+  default     = ""
+}

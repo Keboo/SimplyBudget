@@ -54,6 +54,23 @@ data "azuread_application" "webapp" {
   client_id = var.entra_web_app_client_id
 }
 
+# Manages the SPA redirect URIs on the webapp App Registration. This is
+# authoritative for the SPA redirect URI list (any URI not listed here will be
+# removed from the app), so every environment the frontend can be reached from
+# (local dev, the SWA's auto-generated default hostname, and the production
+# custom domain) must be included. Without the custom domain here, sign-in
+# from https://budget.keboo.dev fails with AADSTS50011 (redirect URI mismatch).
+resource "azuread_application_redirect_uris" "webapp_spa" {
+  application_id = data.azuread_application.webapp.id
+  type           = "SPA"
+
+  redirect_uris = compact([
+    "http://localhost:5173",
+    "https://${module.static_web_app.default_host_name}",
+    var.frontend_custom_domain,
+  ])
+}
+
 # The Entra ID group that is configured as the SQL Server's Azure AD administrator.
 # This group is managed outside of Terraform; membership below ensures the
 # service principals that need to administer the database (running Terraform
