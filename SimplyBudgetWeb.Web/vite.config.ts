@@ -102,6 +102,8 @@ export default defineConfig({
   define: {
     '__API_BASE_URL__': JSON.stringify(backendUrl),
     '__APPLICATIONINSIGHTS_CONNECTION_STRING__': JSON.stringify(process.env.APPLICATIONINSIGHTS_CONNECTION_STRING || ''),
+    '__ENTRA_CLIENT_ID__': JSON.stringify(process.env.ENTRA_CLIENT_ID || ''),
+    '__ENTRA_TENANT_ID__': JSON.stringify(process.env.ENTRA_TENANT_ID || ''),
   },
   server: {
     host: process.env.VITE_HOST_URL || 'localhost',

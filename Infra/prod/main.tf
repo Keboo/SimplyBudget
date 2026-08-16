@@ -46,6 +46,14 @@ data "azuread_service_principal" "migration_principal" {
   client_id = var.migration_client_id
 }
 
+# The Entra ID App Registration used for end-user sign-in (MSAL SPA) and API
+# authorization. This app is provisioned and managed outside of Terraform
+# (see repository docs), so it is referenced here as a data source rather than
+# a managed resource.
+data "azuread_application" "webapp" {
+  client_id = var.entra_web_app_client_id
+}
+
 # The Entra ID group that is configured as the SQL Server's Azure AD administrator.
 # This group is managed outside of Terraform; membership below ensures the
 # service principals that need to administer the database (running Terraform
@@ -251,6 +259,8 @@ module "backend_container_app" {
     ConnectionStrings__Database             = local.database_connection_string
     APPLICATIONINSIGHTS_CONNECTION_STRING   = module.application_insights.application_insights.connection_string
     AllowedOrigins__0                       = "https://${module.static_web_app.default_host_name}"
+    AzureAd__TenantId                       = data.azurerm_client_config.current.tenant_id
+    AzureAd__ClientId                       = data.azuread_application.webapp.client_id
     Authorization__SimplyBudgetUsersGroupId = data.azuread_group.app_users.object_id
   }
 

@@ -93,3 +93,9 @@ variable "database_admin_user_names" {
   type        = list(string)
   default     = ["kitokeboo@gmail.com"]
 }
+
+variable "entra_web_app_client_id" {
+  description = "Client (application) ID of the existing Entra ID App Registration used for end-user sign-in (MSAL SPA) and API authorization. Managed outside of Terraform."
+  type        = string
+  default     = "c0f5bb7e-cf2d-436f-b0a6-934dcec490b4"
+}
