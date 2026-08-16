@@ -3,12 +3,12 @@ namespace SimplyBudgetWeb.UITests;
 public class HomePageTests : UITestBase
 {
     [Test]
-    public async Task LandingRouteRedirectsToBudget()
+    public async Task LandingRouteRedirectsToLoginForAnonymousUsers()
     {
         await Page.GotoAsync(FrontendBaseUri.ToString());
         await Page.GetByRole(AriaRole.Button, new() { Name = "Sign in" })
             .WaitForAsync(new() { Timeout = PlaywrightConfiguration.DefaultTimeout });
-        await Assert.That(Page.Url).Contains("/budget");
+        await Assert.That(Page.Url).Contains("/login");
     }
 
     [Test]
