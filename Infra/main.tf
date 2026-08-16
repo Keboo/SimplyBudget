@@ -27,3 +27,15 @@ module "prod" {
   backend_custom_domain                   = var.backend_custom_domain
   frontend_custom_domain                  = var.frontend_custom_domain
 }
+
+# The app's SPA redirect URI collection already exists in Entra ID as soon as
+# the app itself exists (it was previously set outside Terraform, and was
+# also hotfixed directly via the Graph API to restore production sign-in),
+# so it must be imported into state rather than created, otherwise apply
+# fails with "A resource with the ID ... already exists". Import blocks are
+# only allowed in the root module, hence this lives here rather than in
+# prod/main.tf alongside the resource itself.
+import {
+  to = module.prod.azuread_application_redirect_uris.webapp_spa
+  id = "${module.prod.entra_application_id}/redirectUris/SPA"
+}
