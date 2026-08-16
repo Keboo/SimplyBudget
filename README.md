@@ -167,4 +167,12 @@ If left unset, they default to an empty string and the app will still start,
 but MSAL sends an empty `client_id` to Entra ID, resulting in an
 `AADSTS900144` sign-in error when you try to sign in.
 
+The App Registration must also have a SPA redirect URI matching wherever
+you're running the frontend from (e.g. `http://localhost:5173` for
+`aspire run`). Production's SPA redirect URIs (localhost, the Static Web
+App's default hostname, and the `frontend_custom_domain` custom domain)
+are managed via Terraform (`Infra/prod/main.tf`'s
+`azuread_application_redirect_uris.webapp_spa` resource) — a mismatched
+redirect URI here results in an `AADSTS50011` sign-in error.
+
 
