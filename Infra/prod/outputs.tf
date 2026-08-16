@@ -64,3 +64,8 @@ output "entra_tenant_id" {
   description = "Entra ID (Azure AD) tenant ID that the application is registered in"
   value       = data.azurerm_client_config.current.tenant_id
 }
+
+output "entra_application_id" {
+  description = "Terraform resource ID (\"/applications/{object-id}\") of the Entra ID App Registration, for use in root-module import blocks that target resources inside this module (import blocks are only allowed in the root module)."
+  value       = data.azuread_application.webapp.id
+}

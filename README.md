@@ -172,7 +172,9 @@ you're running the frontend from (e.g. `http://localhost:5173` for
 `aspire run`). Production's SPA redirect URIs (localhost, the Static Web
 App's default hostname, and the `frontend_custom_domain` custom domain)
 are managed via Terraform (`Infra/prod/main.tf`'s
-`azuread_application_redirect_uris.webapp_spa` resource) — a mismatched
-redirect URI here results in an `AADSTS50011` sign-in error.
+`azuread_application_redirect_uris.webapp_spa` resource, imported into
+state via a root-module `import` block in `Infra/main.tf` since it
+already existed in Entra ID) — a mismatched redirect URI here results in
+an `AADSTS50011` sign-in error.
 
 

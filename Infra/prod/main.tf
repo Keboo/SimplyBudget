@@ -71,15 +71,6 @@ resource "azuread_application_redirect_uris" "webapp_spa" {
   ])
 }
 
-# The app's SPA redirect URI collection already exists in Entra ID as soon as
-# the app itself exists (it was previously set outside Terraform), so it must
-# be imported into state rather than created, otherwise apply fails with
-# "A resource with the ID ... already exists".
-import {
-  to = azuread_application_redirect_uris.webapp_spa
-  id = "${data.azuread_application.webapp.id}/redirectUris/SPA"
-}
-
 # The Entra ID group that is configured as the SQL Server's Azure AD administrator.
 # This group is managed outside of Terraform; membership below ensures the
 # service principals that need to administer the database (running Terraform
