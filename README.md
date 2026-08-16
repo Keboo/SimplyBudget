@@ -143,8 +143,28 @@ After running the setup script, initialize Terraform:
 ```bash
 cd Infra
 terraform init
+
 terraform plan
 ```
 
+### Local Development Sign-In (Entra ID)
+
+Running the app locally with `aspire run` requires an Entra ID (Azure AD) App
+Registration for MSAL sign-in. The AppHost exposes two parameters,
+`entra-client-id` and `entra-tenant-id`, that are shared by both the backend
+(`AzureAd:ClientId` / `AzureAd:TenantId`) and the frontend (MSAL's
+`clientId` / `authority`) so a value only needs to be configured once.
+
+Set them via user secrets on the AppHost project:
+
+```bash
+cd SimplyBudgetWeb.AppHost
+dotnet user-secrets set "Parameters:entra-client-id" "<app-registration-client-id>"
+dotnet user-secrets set "Parameters:entra-tenant-id" "<tenant-id>"
+```
+
+If left unset, they default to an empty string and the app will still start,
+but MSAL sends an empty `client_id` to Entra ID, resulting in an
+`AADSTS900144` sign-in error when you try to sign in.
 
 

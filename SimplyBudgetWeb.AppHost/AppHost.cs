@@ -11,6 +11,19 @@ var resourceGroup = builder.AddParameter("keboodev-rg-name", "KebooDev");
 builder.AddAzureContainerAppEnvironment("keboodev-env")
     .AsExisting(envName, resourceGroup);
 
+// Entra ID (Azure AD) App Registration used for MSAL sign-in (frontend) and API
+// authorization (backend). Not configured in appsettings so that the AppHost can be
+// the single source of truth shared by both the backend (AzureAd:ClientId/TenantId)
+// and the frontend (ENTRA_CLIENT_ID/ENTRA_TENANT_ID) - without these, MSAL sends an
+// empty client_id and Entra responds with AADSTS900144. Default to an empty string
+// (rather than leaving them required) so the AppHost - including the UI test suite,
+// which builds it via DistributedApplicationTestingBuilder with no interactive
+// prompting support - still starts when they haven't been configured locally.
+var entraClientId = builder.AddParameter("entra-client-id", "")
+    .WithDescription("Client (application) ID of the Entra ID App Registration used for end-user sign-in (MSAL SPA) and API authorization.");
+var entraTenantId = builder.AddParameter("entra-tenant-id", "")
+    .WithDescription("Tenant ID of the Entra ID directory hosting the App Registration used for sign-in.");
+
 var docsGroup = builder.AddLogicalGroup("docs");
 builder.AddAspireDocs().WithParentRelationship(docsGroup);
 builder.AddVuetifyDocs().WithParentRelationship(docsGroup);
@@ -52,6 +65,8 @@ else
 
 var backend = builder.AddProject<Projects.SimplyBudgetWeb>("SimplyBudgetWeb-backend")
     .WithDependency(db, ConnectionStrings.DatabaseKey)
+    .WithEnvironment("AzureAd__ClientId", entraClientId)
+    .WithEnvironment("AzureAd__TenantId", entraTenantId)
     .WithUITests()
     .WithExternalHttpEndpoints()
     .PublishAsAzureContainerApp((infra, app) => app.Template.Scale.MaxReplicas = 1);
@@ -62,7 +77,9 @@ var frontendApp = builder.AddJavaScriptApp(Resources.Frontend, "../SimplyBudgetW
     .WithExternalHttpEndpoints()
     .WithDependency(backend)
     .WithEnvironment("REACTAPP_BACKEND_HTTP", backend.GetEndpoint("http"))
-    .WithEnvironment("REACTAPP_BACKEND_HTTPS", backend.GetEndpoint("https"));
+    .WithEnvironment("REACTAPP_BACKEND_HTTPS", backend.GetEndpoint("https"))
+    .WithEnvironment("ENTRA_CLIENT_ID", entraClientId)
+    .WithEnvironment("ENTRA_TENANT_ID", entraTenantId);
 
 if (builder.ExecutionContext.IsPublishMode)
 {

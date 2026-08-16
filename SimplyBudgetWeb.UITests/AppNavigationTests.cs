@@ -3,7 +3,7 @@ namespace SimplyBudgetWeb.UITests;
 public class AppNavigationTests : UITestBase
 {
     [Test]
-    public async Task AnonymousUserCanLoadCoreRoutes()
+    public async Task AnonymousUserIsRedirectedToLoginFromCoreRoutes()
     {
         var routes = new[] { "budget", "history", "accounts", "settings", "import" };
 
@@ -12,7 +12,7 @@ public class AppNavigationTests : UITestBase
             await Page.GotoAsync(new Uri(FrontendBaseUri, route).ToString());
             await Page.GetByRole(AriaRole.Button, new() { Name = "Sign in" })
                 .WaitForAsync(new() { Timeout = PlaywrightConfiguration.DefaultTimeout });
-            await Assert.That(Page.Url).Contains($"/{route}");
+            await Assert.That(Page.Url).Contains("/login");
         }
     }
 }
