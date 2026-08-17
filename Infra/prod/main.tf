@@ -140,13 +140,22 @@ resource "terraform_data" "setup_database_principal" {
   triggers_replace = [
     data.azurerm_mssql_database.existing.id,
     azurerm_user_assigned_identity.app_identity.principal_id,
+    azurerm_user_assigned_identity.app_identity.client_id,
     azurerm_user_assigned_identity.app_identity.name,
     local.database_schema_name,
     join(",", local.db_permissions),
     var.provisioning_client_id,
     data.azuread_group.sql_admins.object_id,
     join(",", local.database_admin_user_names),
-    "v3" # Bumped from v2: explicitly create contained database users (db_owner) for
+    "v4" # Bumped from v3: repair a stale contained database user left behind
+    # when azurerm_user_assigned_identity.app_identity is destroyed and
+    # recreated (e.g. by a prior `terraform apply`). Recreating the identity
+    # changes its Client ID/Object ID but keeps its name, so the old
+    # "IF NOT EXISTS ... WHERE name = ..." guard silently skipped recreating
+    # the user, leaving it bound to the deleted identity's SID and causing
+    # every DB-backed request to fail with "Login failed for user
+    # '<token-identified principal>'" (500s).
+    # Bumped from v2: explicitly create contained database users (db_owner) for
     # individual admins, since the Azure Portal Query Editor does not reliably
     # resolve access granted only via the sql_admins group membership.
   ]
@@ -212,10 +221,20 @@ resource "terraform_data" "setup_database_principal" {
 
         $identityName = '${azurerm_user_assigned_identity.app_identity.name}'
         $identityObjectId = '${azurerm_user_assigned_identity.app_identity.principal_id}'
+        $identityClientId = '${azurerm_user_assigned_identity.app_identity.client_id}'
         $schemaName = '${local.database_schema_name}'
 
         $queryParts = @(
           "IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = '$schemaName') BEGIN EXEC('CREATE SCHEMA [$schemaName]'); END;",
+          # Azure SQL derives a managed identity's login SID from its Client ID
+          # (AppId), not its Object ID/Principal ID. If the identity was
+          # destroyed and recreated (e.g. by a prior `terraform apply`), the
+          # existing user row still has the old identity's SID even though the
+          # name matches, so tokens from the current identity are rejected
+          # with "Login failed for user '<token-identified principal>'". Drop
+          # the stale user before recreating it so it's rebound to the
+          # current Client ID.
+          "IF EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '$identityName' AND sid <> CAST(CAST('$identityClientId' AS uniqueidentifier) AS varbinary(16))) BEGIN DROP USER [$identityName]; END;",
           "IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '$identityName') BEGIN CREATE USER [$identityName] FROM EXTERNAL PROVIDER WITH OBJECT_ID = '$identityObjectId'; END;",
           "ALTER USER [$identityName] WITH DEFAULT_SCHEMA = [$schemaName];"
         )
