@@ -177,4 +177,10 @@ state via a root-module `import` block in `Infra/main.tf` since it
 already existed in Entra ID) — a mismatched redirect URI here results in
 an `AADSTS50011` sign-in error.
 
+The backend's CORS `AllowedOrigins` must be kept in sync with the same set
+of hostnames (Terraform sets `AllowedOrigins__0`/`AllowedOrigins__1` env
+vars on the backend Container App in `Infra/prod/main.tf`) — an origin
+missing from this list results in a CORS "missing allowed origin" error
+in the browser instead.
+
 
