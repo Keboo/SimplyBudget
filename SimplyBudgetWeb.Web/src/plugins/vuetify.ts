@@ -25,7 +25,8 @@ export const vuetify = createVuetify({
       light: {
         dark: false,
         colors: {
-          background: '#ffffff',
+          // Off-white so surfaces (cards, app bar, etc.) stand out against the page.
+          background: '#f5f5f5',
           surface: '#ffffff',
         },
         variables: {
@@ -37,8 +38,10 @@ export const vuetify = createVuetify({
       dark: {
         dark: true,
         colors: {
-          background: '#121212',
-          surface: '#121212',
+          // Off-black background with a lighter surface color so cards, the
+          // app bar, and other surfaces are visually distinct from the page.
+          background: '#161616',
+          surface: '#242424',
         },
       },
     },
