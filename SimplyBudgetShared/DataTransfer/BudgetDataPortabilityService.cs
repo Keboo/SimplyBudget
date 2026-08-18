@@ -78,122 +78,131 @@ public static class BudgetDataPortabilityService
                 $"Unsupported export format version '{exportPackage.FormatVersion}'.");
         }
 
-        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-
-        await context.ExpenseCategoryItemDetails.ExecuteDeleteAsync(cancellationToken);
-        await context.ExpenseCategoryItems.ExecuteDeleteAsync(cancellationToken);
-        await context.ExpenseCategoryRules.ExecuteDeleteAsync(cancellationToken);
-        await context.ExpenseCategories.ExecuteDeleteAsync(cancellationToken);
-        await context.Accounts.ExecuteDeleteAsync(cancellationToken);
-        await context.Metadatas.ExecuteDeleteAsync(cancellationToken);
-        context.ChangeTracker.Clear();
-
-        var accountSeed = (exportPackage.Accounts ?? []).OrderBy(x => x.Id).ToList();
-        var importedAccounts = accountSeed.Select(x => new Account
+        // SQL Server's retrying execution strategy doesn't allow manually-created
+        // transactions (they aren't safe to retry as-is). The whole operation must
+        // instead be wrapped in a delegate passed to the execution strategy so that,
+        // on a transient failure, the entire transaction (including the deletes and
+        // inserts below) is retried as a single unit.
+        var strategy = context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            Name = x.Name,
-            ValidatedDate = x.ValidatedDate,
-        }).ToList();
-        context.Accounts.AddRange(importedAccounts);
-        await context.SaveChangesAsync(cancellationToken);
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-        var accountIdMap = accountSeed
-            .Zip(importedAccounts)
-            .ToDictionary(x => x.First.Id, x => x.Second.ID);
+            await context.ExpenseCategoryItemDetails.ExecuteDeleteAsync(cancellationToken);
+            await context.ExpenseCategoryItems.ExecuteDeleteAsync(cancellationToken);
+            await context.ExpenseCategoryRules.ExecuteDeleteAsync(cancellationToken);
+            await context.ExpenseCategories.ExecuteDeleteAsync(cancellationToken);
+            await context.Accounts.ExecuteDeleteAsync(cancellationToken);
+            await context.Metadatas.ExecuteDeleteAsync(cancellationToken);
+            context.ChangeTracker.Clear();
 
-        if (importedAccounts.Count > 0)
-        {
-            var preferredDefault = accountSeed.FirstOrDefault(x => x.IsDefault)?.Id ?? accountSeed[0].Id;
-            if (!accountIdMap.TryGetValue(preferredDefault, out var mappedDefaultId))
-            {
-                mappedDefaultId = importedAccounts[0].ID;
-            }
-            
-            await context.Accounts
-                .ExecuteUpdateAsync(
-                    updates => updates.SetProperty(account => account.IsDefault, false),
-                    cancellationToken);
-
-            var updatedRows = await context.Accounts
-                .Where(account => account.ID == mappedDefaultId)
-                .ExecuteUpdateAsync(
-                    updates => updates.SetProperty(account => account.IsDefault, true),
-                    cancellationToken);
-
-            if (updatedRows != 1)
-            {
-                throw new InvalidOperationException("Failed to locate imported default account.");
-            }
-        }
-
-        var categorySeed = (exportPackage.Categories ?? []).OrderBy(x => x.Id).ToList();
-        var importedCategories = categorySeed.Select(x => new ExpenseCategory
-        {
-            Name = x.Name,
-            CategoryName = x.CategoryName,
-            AccountID = ResolveOptionalReference(accountIdMap, x.AccountId, "account"),
-            BudgetedAmount = x.BudgetedAmount,
-            BudgetedPercentage = x.BudgetedPercentage,
-            CurrentBalance = 0,
-            Cap = x.Cap,
-            IsHidden = x.IsHidden
-        }).ToList();
-        context.ExpenseCategories.AddRange(importedCategories);
-        await context.SaveChangesAsync(cancellationToken);
-
-        var categoryIdMap = categorySeed
-            .Zip(importedCategories)
-            .ToDictionary(x => x.First.Id, x => x.Second.ID);
-
-        var itemSeed = (exportPackage.Items ?? []).OrderBy(x => x.Id).ToList();
-        var importedItems = itemSeed.Select(x => new ExpenseCategoryItem
-        {
-            Date = x.Date,
-            Description = x.Description
-        }).ToList();
-        context.ExpenseCategoryItems.AddRange(importedItems);
-        await context.SaveChangesAsync(cancellationToken);
-
-        var itemIdMap = itemSeed
-            .Zip(importedItems)
-            .ToDictionary(x => x.First.Id, x => x.Second.ID);
-
-        var importedDetails = (exportPackage.ItemDetails ?? [])
-            .OrderBy(x => x.Id)
-            .Select(x => new ExpenseCategoryItemDetail
-            {
-                ExpenseCategoryItemId = ResolveRequiredReference(itemIdMap, x.ExpenseCategoryItemId, "item"),
-                ExpenseCategoryId = ResolveRequiredReference(categoryIdMap, x.ExpenseCategoryId, "category"),
-                Amount = x.Amount,
-                IgnoreBudget = x.IgnoreBudget
-            })
-            .ToList();
-        context.ExpenseCategoryItemDetails.AddRange(importedDetails);
-        await context.SaveChangesAsync(cancellationToken);
-
-        var importedRules = (exportPackage.Rules ?? [])
-            .OrderBy(x => x.Id)
-            .Select(x => new ExpenseCategoryRule
+            var accountSeed = (exportPackage.Accounts ?? []).OrderBy(x => x.Id).ToList();
+            var importedAccounts = accountSeed.Select(x => new Account
             {
                 Name = x.Name,
-                RuleRegex = x.RuleRegex,
-                ExpenseCategoryID = ResolveOptionalReference(categoryIdMap, x.ExpenseCategoryId, "category")
-            })
-            .ToList();
-        context.ExpenseCategoryRules.AddRange(importedRules);
+                ValidatedDate = x.ValidatedDate,
+            }).ToList();
+            context.Accounts.AddRange(importedAccounts);
+            await context.SaveChangesAsync(cancellationToken);
 
-        var importedMetadata = (exportPackage.Metadata ?? [])
-            .OrderBy(x => x.Id)
-            .Select(x => new Metadata
+            var accountIdMap = accountSeed
+                .Zip(importedAccounts)
+                .ToDictionary(x => x.First.Id, x => x.Second.ID);
+
+            if (importedAccounts.Count > 0)
             {
-                Key = x.Key,
-                Value = x.Value
-            })
-            .ToList();
-        context.Metadatas.AddRange(importedMetadata);
-        await context.SaveChangesAsync(cancellationToken);
+                var preferredDefault = accountSeed.FirstOrDefault(x => x.IsDefault)?.Id ?? accountSeed[0].Id;
+                if (!accountIdMap.TryGetValue(preferredDefault, out var mappedDefaultId))
+                {
+                    mappedDefaultId = importedAccounts[0].ID;
+                }
 
-        await transaction.CommitAsync(cancellationToken);
+                await context.Accounts
+                    .ExecuteUpdateAsync(
+                        updates => updates.SetProperty(account => account.IsDefault, false),
+                        cancellationToken);
+
+                var updatedRows = await context.Accounts
+                    .Where(account => account.ID == mappedDefaultId)
+                    .ExecuteUpdateAsync(
+                        updates => updates.SetProperty(account => account.IsDefault, true),
+                        cancellationToken);
+
+                if (updatedRows != 1)
+                {
+                    throw new InvalidOperationException("Failed to locate imported default account.");
+                }
+            }
+
+            var categorySeed = (exportPackage.Categories ?? []).OrderBy(x => x.Id).ToList();
+            var importedCategories = categorySeed.Select(x => new ExpenseCategory
+            {
+                Name = x.Name,
+                CategoryName = x.CategoryName,
+                AccountID = ResolveOptionalReference(accountIdMap, x.AccountId, "account"),
+                BudgetedAmount = x.BudgetedAmount,
+                BudgetedPercentage = x.BudgetedPercentage,
+                CurrentBalance = 0,
+                Cap = x.Cap,
+                IsHidden = x.IsHidden
+            }).ToList();
+            context.ExpenseCategories.AddRange(importedCategories);
+            await context.SaveChangesAsync(cancellationToken);
+
+            var categoryIdMap = categorySeed
+                .Zip(importedCategories)
+                .ToDictionary(x => x.First.Id, x => x.Second.ID);
+
+            var itemSeed = (exportPackage.Items ?? []).OrderBy(x => x.Id).ToList();
+            var importedItems = itemSeed.Select(x => new ExpenseCategoryItem
+            {
+                Date = x.Date,
+                Description = x.Description
+            }).ToList();
+            context.ExpenseCategoryItems.AddRange(importedItems);
+            await context.SaveChangesAsync(cancellationToken);
+
+            var itemIdMap = itemSeed
+                .Zip(importedItems)
+                .ToDictionary(x => x.First.Id, x => x.Second.ID);
+
+            var importedDetails = (exportPackage.ItemDetails ?? [])
+                .OrderBy(x => x.Id)
+                .Select(x => new ExpenseCategoryItemDetail
+                {
+                    ExpenseCategoryItemId = ResolveRequiredReference(itemIdMap, x.ExpenseCategoryItemId, "item"),
+                    ExpenseCategoryId = ResolveRequiredReference(categoryIdMap, x.ExpenseCategoryId, "category"),
+                    Amount = x.Amount,
+                    IgnoreBudget = x.IgnoreBudget
+                })
+                .ToList();
+            context.ExpenseCategoryItemDetails.AddRange(importedDetails);
+            await context.SaveChangesAsync(cancellationToken);
+
+            var importedRules = (exportPackage.Rules ?? [])
+                .OrderBy(x => x.Id)
+                .Select(x => new ExpenseCategoryRule
+                {
+                    Name = x.Name,
+                    RuleRegex = x.RuleRegex,
+                    ExpenseCategoryID = ResolveOptionalReference(categoryIdMap, x.ExpenseCategoryId, "category")
+                })
+                .ToList();
+            context.ExpenseCategoryRules.AddRange(importedRules);
+
+            var importedMetadata = (exportPackage.Metadata ?? [])
+                .OrderBy(x => x.Id)
+                .Select(x => new Metadata
+                {
+                    Key = x.Key,
+                    Value = x.Value
+                })
+                .ToList();
+            context.Metadatas.AddRange(importedMetadata);
+            await context.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+        });
     }
 
     private static int ResolveRequiredReference(
