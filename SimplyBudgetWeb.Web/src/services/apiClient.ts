@@ -7,11 +7,23 @@ export function setTokenProvider(fn: () => Promise<string>) {
 class ApiClient {
   private baseUrl = __API_BASE_URL__ || ''
 
+  private parseFileName(contentDisposition: string | null): string | null {
+    if (!contentDisposition) return null
+
+    const encodedMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i)
+    if (encodedMatch?.[1]) {
+      return decodeURIComponent(encodedMatch[1].trim())
+    }
+
+    const basicMatch = contentDisposition.match(/filename="?([^"]+)"?/i)
+    return basicMatch?.[1]?.trim() ?? null
+  }
+
   private async getHeaders(): Promise<HeadersInit> {
     if (getTokenFn) {
       try {
         const token = await getTokenFn()
-        return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+        return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       } catch { /* fall through */ }
     }
     return { 'Content-Type': 'application/json' }
@@ -38,6 +50,20 @@ class ApiClient {
     if (response.status === 204) return undefined as T
     const text = await response.text()
     return text ? JSON.parse(text) : undefined as T
+  }
+
+  async download(url: string): Promise<{ blob: Blob; fileName: string | null }> {
+    const headers = await this.getHeaders()
+    const response = await fetch(this.baseUrl + url, { headers })
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(error || `HTTP error! status: ${response.status}`)
+    }
+
+    return {
+      blob: await response.blob(),
+      fileName: this.parseFileName(response.headers.get('content-disposition')),
+    }
   }
 
   async put<T = void>(url: string, data?: unknown): Promise<T> {

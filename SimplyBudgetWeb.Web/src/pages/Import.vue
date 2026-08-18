@@ -2,7 +2,11 @@
 import { ref, onMounted } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
-import type { ImportItemDto, ExpenseCategoryDto } from '@/types'
+import type {
+  ImportItemDto,
+  ExpenseCategoryDto,
+  BudgetDataExportPackageDto,
+} from '@/types'
 import { formatCents } from '@/utils/currency'
 
 const snackbar = useSnackbarStore()
@@ -12,6 +16,10 @@ const items = ref<ImportItemDto[]>([])
 const categories = ref<ExpenseCategoryDto[]>([])
 const loading = ref(false)
 const submitting = ref(false)
+const exportingData = ref(false)
+const importingData = ref(false)
+const importFile = ref<File | null>(null)
+const importFileInput = ref<HTMLInputElement | null>(null)
 
 async function fetchCategories() {
   try {
@@ -55,12 +63,86 @@ async function handleImport() {
   }
 }
 
+function onImportFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  importFile.value = input.files?.item(0) ?? null
+}
+
+async function handleExportAllData() {
+  exportingData.value = true
+  try {
+    const result = await apiClient.download('/api/data-portability/export')
+    const fileName = result.fileName ?? `simplybudget-export-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
+    const url = URL.createObjectURL(result.blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    snackbar.enqueueSnackbar('Data export downloaded', { variant: 'success' })
+  } catch {
+    snackbar.enqueueSnackbar('Failed to export data', { variant: 'error' })
+  } finally {
+    exportingData.value = false
+  }
+}
+
+async function handleImportAllData() {
+  if (!importFile.value) return
+
+  importingData.value = true
+  try {
+    const fileContent = await importFile.value.text()
+    const payload = JSON.parse(fileContent) as BudgetDataExportPackageDto
+    await apiClient.post('/api/data-portability/import', payload)
+    importFile.value = null
+    if (importFileInput.value) {
+      importFileInput.value.value = ''
+    }
+    snackbar.enqueueSnackbar('Data import completed', { variant: 'success' })
+  } catch {
+    snackbar.enqueueSnackbar('Failed to import data export', { variant: 'error' })
+  } finally {
+    importingData.value = false
+  }
+}
+
 onMounted(() => { void fetchCategories() })
 </script>
 
 <template>
   <div>
     <h5 class="text-h5 mb-4">Import Transactions</h5>
+
+    <v-card class="pa-4 mb-4">
+      <h6 class="text-h6 mb-2">Full Data Transfer</h6>
+      <p class="text-body-2 mb-4">
+        Export all accounts, categories, transactions, rules, and metadata into a JSON file, or import a previous export.
+      </p>
+      <div class="d-flex flex-wrap align-center" style="gap: 12px;">
+        <v-btn color="primary" :loading="exportingData" :disabled="exportingData || importingData" @click="handleExportAllData">
+          Export All Data
+        </v-btn>
+        <input
+          ref="importFileInput"
+          type="file"
+          accept=".json,application/json"
+          :disabled="importingData || exportingData"
+          @change="onImportFileSelected"
+        />
+        <v-btn
+          color="secondary"
+          :loading="importingData"
+          :disabled="importingData || exportingData || !importFile"
+          @click="handleImportAllData"
+        >
+          Import Export File
+        </v-btn>
+      </div>
+      <p v-if="importFile" class="text-body-2 mt-3 mb-0">Selected file: {{ importFile.name }}</p>
+    </v-card>
 
     <v-card class="pa-4 mb-4">
       <v-textarea
