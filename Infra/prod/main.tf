@@ -148,7 +148,9 @@ resource "terraform_data" "setup_database_principal" {
     var.provisioning_client_id,
     data.azuread_group.sql_admins.object_id,
     join(",", local.database_admin_user_names),
-    "v5" # Bumped from v4: add resilient SQL warm-up/retry logic for free-tier cold starts
+    "v6" # Bumped from v5: treat Azure SQL "database is not currently available"
+    # cold-start message as transient so retry/backoff is applied.
+    # Bumped from v4: add resilient SQL warm-up/retry logic for free-tier cold starts
     # and use a longer connection timeout for Terraform-driven principal setup.
     # Bumped from v3: repair a stale contained database user left behind
     # when azurerm_user_assigned_identity.app_identity is destroyed and
@@ -267,7 +269,7 @@ resource "terraform_data" "setup_database_principal" {
             return $false
           }
 
-          return $ErrorMessage -match '(?i)timeout|timed out|transport-level error|service is currently busy|temporarily unavailable|error 40197|error 40501|error 40613|error 49918|error 49919|error 49920|client with ip address|login failed for user ''<token-identified principal>'''
+          return $ErrorMessage -match '(?i)timeout|timed out|transport-level error|service is currently busy|temporarily unavailable|not currently available|retry the connection later|please retry|please try again|error 40197|error 40501|error 40613|error 49918|error 49919|error 49920|client with ip address|login failed for user ''<token-identified principal>'''
         }
 
         for ($attempt = 1; $attempt -le $maxSqlAttempts; $attempt++) {
