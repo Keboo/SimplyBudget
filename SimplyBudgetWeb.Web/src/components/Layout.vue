@@ -12,6 +12,14 @@ const theme = useTheme()
 
 const isDark = computed(() => theme.global.name.value === 'dark')
 
+const navItems = [
+  { title: 'Budget', to: '/budget', icon: 'mdi-cash-multiple' },
+  { title: 'History', to: '/history', icon: 'mdi-history' },
+  { title: 'Accounts', to: '/accounts', icon: 'mdi-bank' },
+  { title: 'Settings', to: '/settings', icon: 'mdi-cog' },
+  { title: 'Import', to: '/import', icon: 'mdi-file-import' },
+]
+
 function toggleTheme() {
   const newMode = isDark.value ? 'light' : 'dark'
   theme.global.name.value = newMode
@@ -22,20 +30,13 @@ function toggleTheme() {
 <template>
   <v-app-bar>
     <v-toolbar-title
-      style="flex: 0 0 auto; margin-right: 24px; cursor: pointer;"
+      style="cursor: pointer;"
       @click="router.push('/budget')"
     >
       Simply Budget
     </v-toolbar-title>
 
-    <div v-if="authStore.isAuthenticated" class="d-flex" style="gap: 4px; flex-grow: 1;">
-      <v-btn @click="router.push('/budget')">Budget</v-btn>
-      <v-btn @click="router.push('/history')">History</v-btn>
-      <v-btn @click="router.push('/accounts')">Accounts</v-btn>
-      <v-btn @click="router.push('/settings')">Settings</v-btn>
-      <v-btn @click="router.push('/import')">Import</v-btn>
-    </div>
-    <v-spacer v-else />
+    <v-spacer />
 
     <v-btn
       icon
@@ -51,6 +52,23 @@ function toggleTheme() {
     </template>
     <v-btn v-else @click="authStore.login()">Sign in</v-btn>
   </v-app-bar>
+
+  <v-navigation-drawer
+    v-if="authStore.isAuthenticated"
+    expand-on-hover
+    rail
+    permanent
+  >
+    <v-list density="compact" nav>
+      <v-list-item
+        v-for="item in navItems"
+        :key="item.to"
+        :to="item.to"
+        :prepend-icon="item.icon"
+        :title="item.title"
+      />
+    </v-list>
+  </v-navigation-drawer>
 
   <v-main>
     <v-container class="py-6">
