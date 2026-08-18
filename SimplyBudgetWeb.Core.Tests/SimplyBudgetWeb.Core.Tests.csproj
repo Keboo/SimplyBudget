@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SimplyBudgetWeb.Core\SimplyBudgetWeb.Core.csproj" />
+    <ProjectReference Include="..\SimplyBudgetWeb\SimplyBudgetWeb.csproj" />
   </ItemGroup>
 
   <ItemGroup>

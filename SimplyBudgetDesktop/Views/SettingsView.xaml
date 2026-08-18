@@ -55,13 +55,20 @@
 
     </Grid>
 
-    <Button Content="_Save" 
-            Command="{Binding SaveCommand}" 
-            HorizontalAlignment="Left" 
-            VerticalAlignment="Center"
-            Grid.Row="1"
-            Grid.Column="1"
-            Width="100"/>
+    <StackPanel Grid.Row="1"
+                Grid.Column="1"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center">
+      <Button Content="_Save"
+              Command="{Binding SaveCommand}"
+              HorizontalAlignment="Left"
+              Width="100"
+              Margin="0,0,0,8" />
+      <Button Content="Export Data"
+              Command="{Binding ExportDataCommand}"
+              HorizontalAlignment="Left"
+              Width="100" />
+    </StackPanel>
 
     <DataGrid Grid.Row="2" Grid.ColumnSpan="2"
               ItemsSource="{Binding Items}"

@@ -97,3 +97,61 @@ export interface TransferRequest {
   fromCategoryId: number
   toCategoryId: number
 }
+
+export interface BudgetDataExportPackageDto {
+  formatVersion: number
+  exportedAtUtc: string
+  source: string | null
+  accounts: BudgetDataExportAccountDto[]
+  categories: BudgetDataExportCategoryDto[]
+  items: BudgetDataExportItemDto[]
+  itemDetails: BudgetDataExportItemDetailDto[]
+  rules: BudgetDataExportRuleDto[]
+  metadata: BudgetDataExportMetadataDto[]
+}
+
+export interface BudgetDataExportAccountDto {
+  id: number
+  name: string | null
+  validatedDate: string
+  isDefault: boolean
+}
+
+export interface BudgetDataExportCategoryDto {
+  id: number
+  name: string | null
+  categoryName: string | null
+  accountId: number | null
+  budgetedAmount: number
+  budgetedPercentage: number
+  currentBalance: number
+  cap: number | null
+  isHidden: boolean
+}
+
+export interface BudgetDataExportItemDto {
+  id: number
+  date: string
+  description: string | null
+}
+
+export interface BudgetDataExportItemDetailDto {
+  id: number
+  expenseCategoryItemId: number
+  expenseCategoryId: number
+  amount: number
+  ignoreBudget: boolean
+}
+
+export interface BudgetDataExportRuleDto {
+  id: number
+  name: string | null
+  ruleRegex: string | null
+  expenseCategoryId: number | null
+}
+
+export interface BudgetDataExportMetadataDto {
+  id: number
+  key: string | null
+  value: string | null
+}

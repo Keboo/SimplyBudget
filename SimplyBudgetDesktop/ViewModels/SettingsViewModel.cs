@@ -2,13 +2,16 @@
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using MaterialDesignThemes.Wpf;
+using Microsoft.Win32;
 using Microsoft.EntityFrameworkCore;
 using SimplyBudget.Messaging;
 using SimplyBudget.Properties;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.DataTransfer;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
 using System.Windows.Data;
 using System.Windows.Input;
 
@@ -16,6 +19,11 @@ namespace SimplyBudget.ViewModels;
 
 public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategoryRuleViewModel>
 {
+    private static readonly JsonSerializerOptions DataExportJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        WriteIndented = true
+    };
+
     private List<int> RemovedRuleIds { get; } = new();
     private Func<BudgetContext> ContextFactory { get; }
     private IMessenger Messenger { get; }
@@ -89,6 +97,31 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
         Messenger.Send(new StorageLocationChanged());
         MessageQueue.Enqueue("Saved");
         await ReloadItemsAsync();
+    }
+
+    [RelayCommand]
+    private async Task OnExportData()
+    {
+        var dialog = new SaveFileDialog
+        {
+            AddExtension = true,
+            OverwritePrompt = true,
+            DefaultExt = ".json",
+            Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            FileName = $"simplybudget-desktop-export-{DateTime.Now:yyyyMMdd-HHmmss}.json"
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        using var context = ContextFactory();
+        var exportPackage = await BudgetDataPortabilityService.ExportAsync(context, source: "desktop");
+        await File.WriteAllBytesAsync(
+            dialog.FileName,
+            JsonSerializer.SerializeToUtf8Bytes(exportPackage, DataExportJsonOptions));
+        MessageQueue.Enqueue("Data export saved.");
     }
 
     [ObservableProperty]
