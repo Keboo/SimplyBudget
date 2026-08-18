@@ -108,11 +108,22 @@ public static class BudgetDataPortabilityService
             {
                 mappedDefaultId = importedAccounts[0].ID;
             }
+            
+            await context.Accounts
+                .ExecuteUpdateAsync(
+                    updates => updates.SetProperty(account => account.IsDefault, false),
+                    cancellationToken);
 
-            var defaultAccount = await context.Accounts.FindAsync([mappedDefaultId], cancellationToken)
-                ?? throw new InvalidOperationException("Failed to locate imported default account.");
-            await context.SetAsDefaultAsync(defaultAccount);
-            await context.SaveChangesAsync(cancellationToken);
+            var updatedRows = await context.Accounts
+                .Where(account => account.ID == mappedDefaultId)
+                .ExecuteUpdateAsync(
+                    updates => updates.SetProperty(account => account.IsDefault, true),
+                    cancellationToken);
+
+            if (updatedRows != 1)
+            {
+                throw new InvalidOperationException("Failed to locate imported default account.");
+            }
         }
 
         var categorySeed = (exportPackage.Categories ?? []).OrderBy(x => x.Id).ToList();
