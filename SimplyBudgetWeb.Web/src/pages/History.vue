@@ -143,7 +143,7 @@ function onDialogSuccess() {
       icon="mdi-plus"
       color="primary"
       aria-label="Add Transaction"
-      style="position: fixed; bottom: 32px; right: 32px;"
+      style="position: fixed; bottom: 32px; right: 32px; z-index: 100;"
       @click="dialogOpen = true"
     />
 
