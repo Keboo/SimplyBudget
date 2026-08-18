@@ -135,22 +135,30 @@ public class BudgetContext : DbContext
         }
 
         var seen = new HashSet<T>(comparer);
+        var pending = new List<T>();
 
-        bool loop;
+        // Each round collects every not-yet-seen item in a single pass over `items()`.
+        // Processing an item (e.g. via IBeforeCreate/IBeforeRemove) may cause additional
+        // entities to become tracked/changed, which subsequent rounds will pick up.
+        // Doing this in batches (rather than restarting the full scan after every single
+        // new item) keeps this roughly O(n * rounds) instead of O(n^2) for large batches.
         do
         {
-            loop = false;
+            pending.Clear();
             foreach (var item in items())
             {
                 if (seen.Add(item))
                 {
-                    yield return item;
-                    loop = true;
-                    break;
+                    pending.Add(item);
                 }
             }
+
+            foreach (var item in pending)
+            {
+                yield return item;
+            }
         }
-        while (loop);
+        while (pending.Count > 0);
     }
 
     private class EntityComparer : IEqualityComparer<EntityEntry>
