@@ -57,8 +57,4 @@ function toggleTheme() {
       <router-view />
     </v-container>
   </v-main>
-
-  <v-footer app class="justify-center">
-    <span class="text-body-2 text-medium-emphasis">&copy; {{ new Date().getFullYear() }} Simply Budget</span>
-  </v-footer>
 </template>
