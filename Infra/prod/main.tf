@@ -11,8 +11,9 @@ locals {
   backend_container_app_name = "simplybudget-${lower(local.environment)}-backend"
   static_web_app_name        = "simplybudget-${lower(local.environment)}-swa"
 
-  base_database_connection_string = "Server=tcp:${data.azurerm_mssql_server.existing.fully_qualified_domain_name},1433;Initial Catalog=${data.azurerm_mssql_database.existing.name};Encrypt=True;TrustServerCertificate=False;Connection Timeout=120;"
-  database_connection_string      = "${local.base_database_connection_string}Authentication=\"Active Directory Default\";"
+  base_database_connection_string         = "Server=tcp:${data.azurerm_mssql_server.existing.fully_qualified_domain_name},1433;Initial Catalog=${data.azurerm_mssql_database.existing.name};Encrypt=True;TrustServerCertificate=False;Connection Timeout=120;"
+  provisioning_database_connection_string = "Server=tcp:${data.azurerm_mssql_server.existing.fully_qualified_domain_name},1433;Initial Catalog=${data.azurerm_mssql_database.existing.name};Encrypt=True;TrustServerCertificate=False;Connection Timeout=300;"
+  database_connection_string              = "${local.base_database_connection_string}Authentication=\"Active Directory Default\";"
   db_permissions = [
     "db_datareader",
     "db_datawriter",
@@ -147,7 +148,9 @@ resource "terraform_data" "setup_database_principal" {
     var.provisioning_client_id,
     data.azuread_group.sql_admins.object_id,
     join(",", local.database_admin_user_names),
-    "v4" # Bumped from v3: repair a stale contained database user left behind
+    "v5" # Bumped from v4: add resilient SQL warm-up/retry logic for free-tier cold starts
+    # and use a longer connection timeout for Terraform-driven principal setup.
+    # Bumped from v3: repair a stale contained database user left behind
     # when azurerm_user_assigned_identity.app_identity is destroyed and
     # recreated (e.g. by a prior `terraform apply`). Recreating the identity
     # changes its Client ID/Object ID but keeps its name, so the old
@@ -185,7 +188,8 @@ resource "terraform_data" "setup_database_principal" {
           throw "Failed to create firewall rule. Azure CLI output: $firewallOutput"
         }
 
-        Start-Sleep -Seconds 5
+        # Free-tier SQL can wake up slowly from a cold state; give firewall rules extra time to propagate.
+        Start-Sleep -Seconds 15
 
         $sqlAdminGroupName = '${data.azuread_group.sql_admins.display_name}'
         $sqlAdminGroupObjectId = '${data.azuread_group.sql_admins.object_id}'
@@ -211,12 +215,6 @@ resource "terraform_data" "setup_database_principal" {
           }
 
           Start-Sleep -Seconds 20
-        }
-
-        $tokenOutput = az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv 2>&1
-        $token = "$tokenOutput".Trim()
-        if ($LASTEXITCODE -ne 0 -or -not $token) {
-          throw "Failed to acquire access token for SQL database. Azure CLI output: $tokenOutput"
         }
 
         $identityName = '${azurerm_user_assigned_identity.app_identity.name}'
@@ -259,7 +257,52 @@ resource "terraform_data" "setup_database_principal" {
 
         $sql = $queryParts -join " "
 
-        Invoke-Sqlcmd -ConnectionString '${local.base_database_connection_string}' -AccessToken $token -Query $sql
+        $maxSqlAttempts = 12
+        $retryDelaySeconds = 10
+        $maxRetryDelaySeconds = 90
+        $sqlConfigured = $false
+
+        function Test-IsTransientSqlStartupError([string]$ErrorMessage) {
+          if (-not $ErrorMessage) {
+            return $false
+          }
+
+          return $ErrorMessage -match '(?i)timeout|timed out|transport-level error|service is currently busy|temporarily unavailable|error 40197|error 40501|error 40613|error 49918|error 49919|error 49920|client with ip address|login failed for user ''<token-identified principal>'''
+        }
+
+        for ($attempt = 1; $attempt -le $maxSqlAttempts; $attempt++) {
+          try {
+            $tokenOutput = az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv 2>&1
+            $token = "$tokenOutput".Trim()
+            if ($LASTEXITCODE -ne 0 -or -not $token) {
+              throw "Failed to acquire access token for SQL database. Azure CLI output: $tokenOutput"
+            }
+
+            # Warm-up probe to handle free-tier cold starts before running principal setup.
+            Invoke-Sqlcmd -ConnectionString '${local.provisioning_database_connection_string}' -AccessToken $token -Query "SELECT 1" -QueryTimeout 120
+
+            Invoke-Sqlcmd -ConnectionString '${local.provisioning_database_connection_string}' -AccessToken $token -Query $sql -QueryTimeout 300
+            $sqlConfigured = $true
+            break
+          }
+          catch {
+            $errorMessage = $_.Exception.Message
+            if ($attempt -eq $maxSqlAttempts -or -not (Test-IsTransientSqlStartupError $errorMessage)) {
+              throw
+            }
+
+            $jitterSeconds = Get-Random -Minimum 0 -Maximum 6
+            $sleepSeconds = [Math]::Min(($retryDelaySeconds + $jitterSeconds), $maxRetryDelaySeconds)
+            Write-Host "SQL not ready yet (attempt $attempt/$maxSqlAttempts): $errorMessage"
+            Write-Host "Retrying in $sleepSeconds seconds..."
+            Start-Sleep -Seconds $sleepSeconds
+            $retryDelaySeconds = [Math]::Min(($retryDelaySeconds * 2), $maxRetryDelaySeconds)
+          }
+        }
+
+        if (-not $sqlConfigured) {
+          throw "Failed to configure SQL principal after $maxSqlAttempts attempts."
+        }
       }
       finally {
         $ErrorActionPreference = 'SilentlyContinue'
