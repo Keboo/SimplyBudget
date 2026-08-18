@@ -5,7 +5,7 @@ public class AppNavigationTests : UITestBase
     [Test]
     public async Task AnonymousUserIsRedirectedToLoginFromCoreRoutes()
     {
-        var routes = new[] { "budget", "history", "accounts", "settings", "import" };
+        var routes = new[] { "budget", "history", "pending-expenses", "accounts", "settings", "import" };
 
         foreach (var route in routes)
         {
