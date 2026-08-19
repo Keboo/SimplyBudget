@@ -130,13 +130,23 @@ jobs:
             --startup-project .\SimplyBudgetWeb.AppHost\SimplyBudgetWeb.AppHost.csproj `
             --output efbundle
 
+      - name: Azure Login
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+
       - name: Upload DB Migration
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v7
+        uses: Keboo/sa-upload@v1
         with:
           name: DatabaseMigration
           path: 'efbundle'
-          retention-days: 1
+          storage-account: keboogithub
+          container-name: simplybudget
+          create-container: true
 
       - name: Upload frontend artifact
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
@@ -290,17 +300,19 @@ jobs:
     environment: production
 
     steps:
-      - name: Download DB Migration Bundle
-        uses: actions/download-artifact@v8
-        with:
-          name: DatabaseMigration
-
       - name: Azure Login
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
           tenant-id: ${{ secrets.ARM_TENANT_ID }}
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+
+      - name: Download DB Migration Bundle
+        uses: Keboo/sa-download@v1
+        with:
+          name: DatabaseMigration
+          storage-account: keboogithub
+          container-name: simplybudget
 
       - name: Apply Migration
         run: |
