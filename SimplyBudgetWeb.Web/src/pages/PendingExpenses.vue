@@ -77,11 +77,12 @@ async function updateNotes(item: PendingExpenseDto) {
 
 async function handleDiscard() {
   if (!discardItem.value) return
+  const idToRemove = discardItem.value.id
   try {
-    await apiClient.delete(`/api/pending-expenses/${discardItem.value.id}`)
+    await apiClient.delete(`/api/pending-expenses/${idToRemove}`)
     snackbar.enqueueSnackbar('Pending expense discarded', { variant: 'success' })
+    items.value = items.value.filter((item) => item.id !== idToRemove)
     discardItem.value = null
-    void fetchPendingExpenses()
   } catch {
     snackbar.enqueueSnackbar('Failed to discard pending expense', { variant: 'error' })
   }
