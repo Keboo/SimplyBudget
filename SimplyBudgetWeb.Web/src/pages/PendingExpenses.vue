@@ -17,8 +17,6 @@ const loading = ref(false)
 const discardItem = ref<PendingExpenseDto | null>(null)
 const convertItem = ref<PendingExpenseDto | null>(null)
 const convertDialogOpen = ref(false)
-const newAssigneeName = ref('')
-const addAssigneeOpen = ref(false)
 const deleteAllOpen = ref(false)
 const deletingAll = ref(false)
 
@@ -108,18 +106,6 @@ async function handleDeleteAll() {
   }
 }
 
-async function handleAddAssignee() {
-  if (!newAssigneeName.value.trim()) return
-  try {
-    await apiClient.post('/api/assignees', { name: newAssigneeName.value })
-    snackbar.enqueueSnackbar('Assignee added', { variant: 'success' })
-    newAssigneeName.value = ''
-    addAssigneeOpen.value = false
-    void fetchAssignees()
-  } catch {
-    snackbar.enqueueSnackbar('Failed to add assignee', { variant: 'error' })
-  }
-}
 function openConvert(item: PendingExpenseDto) {
   convertItem.value = item
   convertDialogOpen.value = true
@@ -156,10 +142,6 @@ onMounted(() => {
         style="max-width: 200px;"
         hide-details
       />
-
-      <v-btn variant="outlined" size="small" prepend-icon="mdi-account-plus" @click="addAssigneeOpen = true">
-        Add Assignee
-      </v-btn>
 
       <v-spacer />
 
