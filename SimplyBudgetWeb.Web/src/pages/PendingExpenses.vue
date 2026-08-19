@@ -19,6 +19,8 @@ const convertItem = ref<PendingExpenseDto | null>(null)
 const convertDialogOpen = ref(false)
 const newAssigneeName = ref('')
 const addAssigneeOpen = ref(false)
+const deleteAllOpen = ref(false)
+const deletingAll = ref(false)
 
 // "All" plus the real filter options; used for both the toolbar filter and the
 // per-item assignee picker (which additionally needs an "Unassigned" option).
@@ -88,6 +90,24 @@ async function handleDiscard() {
   }
 }
 
+async function handleDeleteAll() {
+  deletingAll.value = true
+  try {
+    const params = new URLSearchParams()
+    if (search.value) params.set('search', search.value)
+    if (assigneeId.value !== null) params.set('assigneeId', String(assigneeId.value))
+    const query = params.toString()
+    await apiClient.delete(`/api/pending-expenses${query ? `?${query}` : ''}`)
+    snackbar.enqueueSnackbar('Pending expenses discarded', { variant: 'success' })
+    deleteAllOpen.value = false
+    void fetchPendingExpenses()
+  } catch {
+    snackbar.enqueueSnackbar('Failed to discard pending expenses', { variant: 'error' })
+  } finally {
+    deletingAll.value = false
+  }
+}
+
 async function handleAddAssignee() {
   if (!newAssigneeName.value.trim()) return
   try {
@@ -140,6 +160,19 @@ onMounted(() => {
 
       <v-btn variant="outlined" size="small" prepend-icon="mdi-account-plus" @click="addAssigneeOpen = true">
         Add Assignee
+      </v-btn>
+
+      <v-spacer />
+
+      <v-btn
+        variant="outlined"
+        size="small"
+        color="error"
+        prepend-icon="mdi-delete-sweep"
+        :disabled="items.length === 0"
+        @click="deleteAllOpen = true"
+      >
+        Delete All
       </v-btn>
     </v-card>
 
@@ -227,6 +260,21 @@ onMounted(() => {
           <v-spacer />
           <v-btn @click="discardItem = null">Cancel</v-btn>
           <v-btn color="error" @click="handleDiscard">Discard</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    <v-dialog v-model="deleteAllOpen" max-width="480">
+      <v-card>
+        <v-card-title>Confirm Delete All</v-card-title>
+        <v-card-text>
+          Discard all {{ items.length }} pending expense{{ items.length === 1 ? '' : 's' }}
+          <template v-if="search || assigneeId !== null">matching the current filters</template>?
+          This cannot be undone.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="deleteAllOpen = false" :disabled="deletingAll">Cancel</v-btn>
+          <v-btn color="error" @click="handleDeleteAll" :loading="deletingAll">Delete All</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
