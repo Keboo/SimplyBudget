@@ -199,6 +199,49 @@ public static class BudgetContextExtensions
         return await query.ToListAsync();
     }
 
+    /// <summary>
+    /// Whether the given expense category has ever had any transaction/income/transfer
+    /// line items posted against it.
+    /// </summary>
+    public static async Task<bool> HasItemsAsync(this BudgetContext context, ExpenseCategory expenseCategory)
+    {
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        if (expenseCategory is null)
+        {
+            throw new ArgumentNullException(nameof(expenseCategory));
+        }
+
+        return await context.ExpenseCategoryItemDetails.AnyAsync(x => x.ExpenseCategoryId == expenseCategory.ID);
+    }
+
+    /// <summary>
+    /// Whether the given expense category is safe to permanently delete: it must not have any
+    /// items posted against it, and must not still be referenced by an import rule.
+    /// </summary>
+    public static async Task<bool> CanDeleteAsync(this BudgetContext context, ExpenseCategory expenseCategory)
+    {
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        if (expenseCategory is null)
+        {
+            throw new ArgumentNullException(nameof(expenseCategory));
+        }
+
+        if (await context.HasItemsAsync(expenseCategory))
+        {
+            return false;
+        }
+
+        return !await context.ExpenseCategoryRules.AnyAsync(x => x.ExpenseCategoryID == expenseCategory.ID);
+    }
+
     public static async Task<int> GetRemainingBudgetAmount(this BudgetContext context, ExpenseCategory expenseCategory, DateTime month)
     {
         if (context is null)

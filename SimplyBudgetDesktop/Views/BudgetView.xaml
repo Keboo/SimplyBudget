@@ -7,6 +7,7 @@
              xmlns:vm="clr-namespace:SimplyBudget.ViewModels"
              xmlns:valueConverter="clr-namespace:SimplyBudget.ValueConverter"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes" xmlns:i="http://schemas.microsoft.com/xaml/behaviors" xmlns:behaviors="clr-namespace:SimplyBudget.Behaviors"
+             xmlns:views="clr-namespace:SimplyBudget.Views"
              d:DataContext="{d:DesignInstance Type=vm:BudgetViewModel}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
@@ -106,6 +107,7 @@
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
           </Grid.ColumnDefinitions>
           <TextBox materialDesign:HintAssist.Hint="Name" 
                              materialDesign:HintAssist.IsFloating="True" 
@@ -177,8 +179,15 @@
                   Command="{x:Static ApplicationCommands.Delete}"
                   CommandParameter="{Binding}"/>
 
-          <Button Content="{materialDesign:PackIcon Kind=ContentSave}" 
+          <Button Content="{materialDesign:PackIcon Kind=DeleteForever}" 
                   Grid.Column="6" 
+                  ToolTip="Delete Permanently (only available when the category has no items)"
+                  Style="{StaticResource MaterialDesignFlatButton}"
+                  Command="{x:Static views:BudgetView.DeletePermanentlyCommand}"
+                  CommandParameter="{Binding}"/>
+
+          <Button Content="{materialDesign:PackIcon Kind=ContentSave}" 
+                  Grid.Column="7" 
                   Style="{StaticResource MaterialDesignFlatButton}"
                   Command="{x:Static ApplicationCommands.Save}"
                   CommandParameter="{Binding}"/>
@@ -201,6 +210,7 @@
       <CommandBinding Command="{x:Static ApplicationCommands.Delete}" Executed="Delete_Executed" CanExecute="Delete_CanExecute" />
       <CommandBinding Command="{x:Static ApplicationCommands.Replace}" Executed="Restore_Executed" CanExecute="Restore_CanExecute" />
       <CommandBinding Command="{x:Static ApplicationCommands.Copy}" Executed="Copy_Executed" />
+      <CommandBinding Command="{x:Static views:BudgetView.DeletePermanentlyCommand}" Executed="DeletePermanently_Executed" CanExecute="DeletePermanently_CanExecute" />
     </Grid.CommandBindings>
     <Grid.InputBindings>
       <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
@@ -282,6 +292,9 @@
                           CommandParameter="{Binding}" />
                 <MenuItem Header="_Restore"
                           Command="{x:Static ApplicationCommands.Replace}"
+                          CommandParameter="{Binding}" />
+                <MenuItem Header="Delete _Permanently"
+                          Command="{x:Static views:BudgetView.DeletePermanentlyCommand}"
                           CommandParameter="{Binding}" />
                 <Separator />
                 <MenuItem Header="_Edit"

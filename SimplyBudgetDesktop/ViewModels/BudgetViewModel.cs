@@ -163,6 +163,30 @@ public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelE
         }
     }
 
+    /// <summary>
+    /// Permanently removes an expense category. Only succeeds when the category has no items
+    /// posted against it (and isn't referenced by an import rule); otherwise it must be hidden
+    /// instead via <see cref="Delete"/>. Returns false without throwing when it can't be deleted
+    /// so the caller can show a friendly message.
+    /// </summary>
+    public async Task<bool> DeletePermanently(ExpenseCategoryViewModelEx category)
+    {
+        using var context = ContextFactory();
+        if (context.ExpenseCategories.Find(category.ExpenseCategoryID) is not ExpenseCategory dbCategory)
+        {
+            return false;
+        }
+
+        if (!await context.CanDeleteAsync(dbCategory))
+        {
+            return false;
+        }
+
+        context.ExpenseCategories.Remove(dbCategory);
+        await context.SaveChangesAsync();
+        return true;
+    }
+
     public async void Receive(CurrentMonthChanged message)
         => await LoadItemsAsync();
 

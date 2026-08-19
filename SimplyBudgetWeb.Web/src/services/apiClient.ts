@@ -80,9 +80,13 @@ class ApiClient {
   async delete<T = void>(url: string): Promise<T> {
     const headers = await this.getHeaders()
     const response = await fetch(this.baseUrl + url, { method: 'DELETE', headers })
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(error || `HTTP error! status: ${response.status}`)
+    }
     if (response.status === 204) return undefined as T
-    return response.json()
+    const text = await response.text()
+    return text ? JSON.parse(text) : undefined as T
   }
 }
 
