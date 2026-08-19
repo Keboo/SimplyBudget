@@ -6,6 +6,7 @@ import History from '@/pages/History.vue'
 import Accounts from '@/pages/Accounts.vue'
 import Settings from '@/pages/Settings.vue'
 import Import from '@/pages/Import.vue'
+import PendingExpenses from '@/pages/PendingExpenses.vue'
 import { useAuthStore } from '@/stores/auth'
 
 // Pages are imported eagerly (not lazy) so the initial navigation resolves
@@ -25,6 +26,7 @@ const router = createRouter({
         { path: 'accounts', name: 'accounts', component: Accounts },
         { path: 'settings', name: 'settings', component: Settings },
         { path: 'import', name: 'import', component: Import },
+        { path: 'pending-expenses', name: 'pending-expenses', component: PendingExpenses },
         { path: ':pathMatch(.*)*', redirect: '/budget' },
       ],
     },

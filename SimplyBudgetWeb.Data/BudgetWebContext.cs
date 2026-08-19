@@ -19,9 +19,35 @@ public class BudgetWebContext(DbContextOptions<BudgetWebContext> options)
     /// </summary>
     public const string Schema = "SimplyBudget";
 
+    /// <summary>
+    /// Web-only tables: pending expenses (and their assignees) are not part of the shared
+    /// <see cref="BudgetContext"/> because they do not apply to the desktop client.
+    /// </summary>
+    public DbSet<PendingExpense> PendingExpenses => Set<PendingExpense>();
+    public DbSet<PendingExpenseAssignee> PendingExpenseAssignees => Set<PendingExpenseAssignee>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<PendingExpense>()
+            .HasIndex(x => x.Date);
+
+        modelBuilder.Entity<PendingExpense>()
+            .HasOne(x => x.Assignee)
+            .WithMany(x => x.PendingExpenses)
+            .HasForeignKey(x => x.AssigneeId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<PendingExpense>()
+            .HasOne(x => x.SuggestedCategory)
+            .WithMany()
+            .HasForeignKey(x => x.SuggestedCategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<PendingExpenseAssignee>()
+            .HasIndex(x => x.Name)
+            .IsUnique();
     }
 }

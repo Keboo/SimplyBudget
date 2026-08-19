@@ -42,6 +42,32 @@ public class ImportController(BudgetWebContext context) : ControllerBase
 
         return Ok(result.ToArray());
     }
+
+    /// <summary>
+    /// Saves parsed import items as pending expenses so they can be reviewed, assigned, and
+    /// categorized/split into real expense items later from the Pending Expenses page. Items the
+    /// user has checked off as already handled (<see cref="ImportItemDto.IsDone"/>) are skipped.
+    /// </summary>
+    [HttpPost("save")]
+    public async Task<IActionResult> Save([FromBody] ImportItemDto[] items)
+    {
+        var pendingExpenses = items
+            .Where(i => !i.IsDone)
+            .Select(i => new PendingExpense
+            {
+                Date = i.Date,
+                Description = i.Description,
+                Amount = i.Amount,
+                IsDebit = i.IsDebit,
+                SuggestedCategoryId = i.SuggestedCategoryId,
+            })
+            .ToList();
+
+        context.PendingExpenses.AddRange(pendingExpenses);
+        await context.SaveChangesAsync();
+
+        return StatusCode(201);
+    }
 }
 
 public record ImportRequest(string CsvContent);

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type {
@@ -10,6 +11,7 @@ import type {
 import { formatCents } from '@/utils/currency'
 
 const snackbar = useSnackbarStore()
+const router = useRouter()
 
 const csvText = ref('')
 const items = ref<ImportItemDto[]>([])
@@ -31,7 +33,7 @@ async function handleParse() {
   if (!csvText.value.trim()) return
   loading.value = true
   try {
-    const data = await apiClient.post<ImportItemDto[]>('/api/import/parse', { csv: csvText.value })
+    const data = await apiClient.post<ImportItemDto[]>('/api/import/parse', { csvContent: csvText.value })
     items.value = data ?? []
     snackbar.enqueueSnackbar(`Parsed ${data?.length ?? 0} items`, { variant: 'success' })
   } catch {
@@ -53,9 +55,10 @@ async function handleImport() {
   submitting.value = true
   try {
     await apiClient.post('/api/import/save', items.value)
-    snackbar.enqueueSnackbar('Import saved', { variant: 'success' })
+    snackbar.enqueueSnackbar('Import saved as pending expenses', { variant: 'success' })
     items.value = []
     csvText.value = ''
+    await router.push('/pending-expenses')
   } catch {
     snackbar.enqueueSnackbar('Failed to save import', { variant: 'error' })
   } finally {

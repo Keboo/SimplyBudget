@@ -79,6 +79,40 @@ export interface ImportItemDto {
   isDone: boolean
 }
 
+export interface AssigneeDto {
+  id: number
+  name: string | null
+}
+
+export interface PendingExpenseDto {
+  id: number
+  date: string
+  description: string | null
+  amount: number
+  isDebit: boolean
+  notes: string | null
+  assigneeId: number | null
+  assigneeName: string | null
+  suggestedCategoryId: number | null
+  suggestedCategoryName: string | null
+}
+
+export interface PendingExpenseUpdateRequest {
+  assigneeId: number | null
+  notes: string | null
+}
+
+export interface ConvertPendingExpenseItemRequest {
+  expenseCategoryId: number
+  amount: number
+}
+
+export interface ConvertPendingExpenseRequest {
+  description: string
+  date: string
+  items: ConvertPendingExpenseItemRequest[]
+}
+
 export interface TransactionItemRequest {
   expenseCategoryId: number
   amount: number
