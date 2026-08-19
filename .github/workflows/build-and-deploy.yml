@@ -168,11 +168,19 @@ jobs:
 
       - name: Start Playwright container
         run: |
+          # DOTNET_BUILD_CONFIGURATION must match the --configuration used below to
+          # build/test the UITests project: the AppHost's migration helper (see
+          # ApplyDatabaseMigrationsAsync in SimplyBudgetWeb.AppHost/Resources.cs) shells
+          # out to `dotnet ef database update --no-build`, and without this env var it
+          # defaults to "Debug" - which doesn't exist here since only Release is built,
+          # so the migration fails and the backend (and then the frontend, which depends
+          # on it) never becomes healthy.
           docker run -d --name "$UI_TESTS_CONTAINER" \
             --network host \
             --ipc host \
             --init \
             -e DEBIAN_FRONTEND=noninteractive \
+            -e DOTNET_BUILD_CONFIGURATION=Release \
             -v /var/run/docker.sock:/var/run/docker.sock \
             -v "${{ github.workspace }}:/workspace" \
             -w /workspace \
