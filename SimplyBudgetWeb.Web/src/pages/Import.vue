@@ -13,7 +13,8 @@ import { formatCents } from '@/utils/currency'
 const snackbar = useSnackbarStore()
 const router = useRouter()
 
-const csvText = ref('')
+const csvFile = ref<File | null>(null)
+const csvFileInput = ref<HTMLInputElement | null>(null)
 const items = ref<ImportItemDto[]>([])
 const categories = ref<ExpenseCategoryDto[]>([])
 const loading = ref(false)
@@ -29,11 +30,17 @@ async function fetchCategories() {
   } catch { /* ignore */ }
 }
 
+function onCsvFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  csvFile.value = input.files?.item(0) ?? null
+}
+
 async function handleParse() {
-  if (!csvText.value.trim()) return
+  if (!csvFile.value) return
   loading.value = true
   try {
-    const data = await apiClient.post<ImportItemDto[]>('/api/import/parse', { csvContent: csvText.value })
+    const csvContent = await csvFile.value.text()
+    const data = await apiClient.post<ImportItemDto[]>('/api/import/parse', { csvContent })
     items.value = data ?? []
     snackbar.enqueueSnackbar(`Parsed ${data?.length ?? 0} items`, { variant: 'success' })
   } catch {
@@ -57,7 +64,10 @@ async function handleImport() {
     await apiClient.post('/api/import/save', items.value)
     snackbar.enqueueSnackbar('Import saved as pending expenses', { variant: 'success' })
     items.value = []
-    csvText.value = ''
+    csvFile.value = null
+    if (csvFileInput.value) {
+      csvFileInput.value.value = ''
+    }
     await router.push('/pending-expenses')
   } catch {
     snackbar.enqueueSnackbar('Failed to save import', { variant: 'error' })
@@ -148,14 +158,18 @@ onMounted(() => { void fetchCategories() })
     </v-card>
 
     <v-card class="pa-4 mb-4">
-      <v-textarea
-        label="Paste CSV data here"
-        v-model="csvText"
-        rows="8"
-        placeholder="date,description,amount..."
-        class="mb-4"
-      />
-      <v-btn color="primary" :loading="loading" :disabled="loading || !csvText.trim()" @click="handleParse">
+      <h6 class="text-h6 mb-2">Import CSV Transactions</h6>
+      <div class="d-flex flex-wrap align-center mb-4" style="gap: 12px;">
+        <input
+          ref="csvFileInput"
+          type="file"
+          accept=".csv,text/csv"
+          :disabled="loading"
+          @change="onCsvFileSelected"
+        />
+      </div>
+      <p v-if="csvFile" class="text-body-2 mb-4">Selected file: {{ csvFile.name }}</p>
+      <v-btn color="primary" :loading="loading" :disabled="loading || !csvFile" @click="handleParse">
         Parse
       </v-btn>
     </v-card>
