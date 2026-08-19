@@ -83,6 +83,42 @@ jobs:
             --project SimplyBudgetWeb.Data/SimplyBudgetWeb.Data.csproj `
            --startup-project SimplyBudgetWeb.AppHost/SimplyBudgetWeb.AppHost.csproj
 
+      - name: Install apt-fast
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          shell: pwsh
+          command: |
+            sudo add-apt-repository -y ppa:apt-fast/stable
+            sudo apt-get update
+            echo debconf apt-fast/maxdownloads string 16 | sudo debconf-set-selections
+            echo debconf apt-fast/dlflag boolean true | sudo debconf-set-selections
+            echo debconf apt-fast/aptmanager string apt-get | sudo debconf-set-selections
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-fast
+
+      # Playwright's own `install --with-deps` shells out to plain `apt-get`, which
+      # downloads packages sequentially. Pre-fetch the same package list with
+      # apt-fast (parallel/aria2c-backed downloads) so the step below has little
+      # to no work left to do. Best-effort: failures here don't fail the build
+      # since the next step falls back to plain `apt-get` via --with-deps.
+      - name: Install Playwright OS dependencies via apt-fast
+        continue-on-error: true
+        run: |
+          $dryRunOutput = & pwsh SimplyBudgetWeb.UITests/bin/Release/net10.0/playwright.ps1 install-deps --dry-run 2>&1 | Out-String
+          Write-Host $dryRunOutput
+          $packages = [regex]::Matches($dryRunOutput, '(?m)^  (\S+)$') | ForEach-Object { $_.Groups[1].Value }
+          if ($packages.Count -gt 0) {
+            Write-Host "Installing $($packages.Count) missing system dependencies with apt-fast..."
+            sudo apt-fast update
+            sudo apt-fast install -y --no-install-recommends $packages
+            if ($LASTEXITCODE -ne 0) {
+              Write-Warning "apt-fast install failed with exit code $LASTEXITCODE; falling back to 'playwright install --with-deps' below."
+            }
+          } else {
+            Write-Host "All Playwright system dependencies are already installed."
+          }
+
       - name: Install Playwright browsers
         uses: nick-fields/retry@v4
         with:
