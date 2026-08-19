@@ -8,8 +8,6 @@ on:
       - '.github/workflows/deploy-infrastructure.yml'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - 'Infra/**'
   workflow_dispatch:
 
 permissions:
@@ -30,24 +28,53 @@ env:
   TERRAFORM_VERSION: '1.14.6'
 
 jobs:
+  # Determine whether this run touches anything besides Infra-as-code files.
+  # The branch ruleset requires the `build` and `ui-tests` checks on every PR,
+  # but GitHub only clears a required check if some job actually reports it -
+  # a check that no job ever runs stays "Expected" forever. So both jobs below
+  # always run; for Infra-only PRs they just skip their real work (via this
+  # job's `app` output) and report success trivially.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Detect non-Infra changes
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          predicate-quantifier: 'some-with-excludes'
+          filters: |
+            app:
+              - '**'
+              - '!Infra/**'
+
   # Build and test backend and frontend
   build:
     runs-on: ubuntu-latest
+    needs: changes
     steps:
       - uses: actions/checkout@v7
 
       - name: Setup .NET
+        if: needs.changes.outputs.app == 'true'
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
           global-json-file: global.json
 
       - name: Setup pnpm
+        if: needs.changes.outputs.app == 'true'
         uses: pnpm/action-setup@v6
         with:
           version: 10
 
       - name: Setup Node.js
+        if: needs.changes.outputs.app == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -55,29 +82,36 @@ jobs:
           cache-dependency-path: ${{ env.FRONTEND_PROJECT_PATH }}/pnpm-lock.yaml
 
       - name: Install frontend dependencies
+        if: needs.changes.outputs.app == 'true'
         working-directory: ${{ env.FRONTEND_PROJECT_PATH }}
         run: pnpm install --frozen-lockfile
 
       - name: Lint frontend
+        if: needs.changes.outputs.app == 'true'
         working-directory: ${{ env.FRONTEND_PROJECT_PATH }}
         run: pnpm run lint
 
       - name: Build frontend
+        if: needs.changes.outputs.app == 'true'
         working-directory: ${{ env.FRONTEND_PROJECT_PATH }}
         run: pnpm run build
         env:
           BACKEND_URL: ''
 
       - name: Restore .NET dependencies
+        if: needs.changes.outputs.app == 'true'
         run: dotnet restore ${{ env.WEB_SOLUTION_PATH }}
 
       - name: Build
+        if: needs.changes.outputs.app == 'true'
         run: dotnet build ${{ env.WEB_SOLUTION_PATH }} --no-restore --configuration Release
 
       - name: Restore dotnet tool
+        if: needs.changes.outputs.app == 'true'
         run: dotnet tool restore
 
       - name: Check for Pending Database Changes
+        if: needs.changes.outputs.app == 'true'
         run: |
           dotnet ef migrations has-pending-model-changes `
             --configuration Release `
@@ -87,15 +121,17 @@ jobs:
       # UI tests (SimplyBudgetWeb.UITests) run in their own "ui-tests" job using the
       # Playwright docker image, so this only runs the non-UI test project.
       - name: Test
+        if: needs.changes.outputs.app == 'true'
         run: dotnet test SimplyBudgetWeb.Core.Tests/SimplyBudgetWeb.Core.Tests.csproj --no-build --configuration Release --verbosity normal
         env:
           DOTNET_BUILD_CONFIGURATION: Release
 
       - name: Publish
+        if: needs.changes.outputs.app == 'true'
         run: dotnet publish ${{ env.BACKEND_PROJECT_PATH }} --configuration Release --no-build
 
       - name: Build Database Bundle
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        if: needs.changes.outputs.app == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         run: |
           dotnet ef migrations bundle `
             --self-contained `
@@ -106,7 +142,7 @@ jobs:
             --output efbundle
 
       - name: Azure Login
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        if: needs.changes.outputs.app == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.ARM_CLIENT_ID }}
@@ -114,7 +150,7 @@ jobs:
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
 
       - name: Upload DB Migration
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        if: needs.changes.outputs.app == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         uses: Keboo/sa-upload@v1
         with:
           name: DatabaseMigration
@@ -124,7 +160,7 @@ jobs:
           create-container: true
 
       - name: Upload frontend artifact
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        if: needs.changes.outputs.app == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7
         with:
           name: frontend
@@ -154,6 +190,7 @@ jobs:
   # alongside it on the runner's Docker daemon.
   ui-tests:
     runs-on: ubuntu-latest
+    needs: changes
     env:
       # Keep this tag in sync with the Microsoft.Playwright version pinned in
       # Directory.Packages.props - the image bakes in matching browsers, so a
@@ -167,6 +204,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Start Playwright container
+        if: needs.changes.outputs.app == 'true'
         run: |
           # DOTNET_BUILD_CONFIGURATION must match the --configuration used below to
           # build/test the UITests project: the AppHost's migration helper (see
@@ -194,6 +232,7 @@ jobs:
       # Ubuntu-archive `docker.io` package, since the base image doesn't enable
       # the `universe` component that `docker.io` lives in.
       - name: Install Docker CLI
+        if: needs.changes.outputs.app == 'true'
         run: |
           docker exec "$UI_TESTS_CONTAINER" bash -c '
             set -e
@@ -212,6 +251,7 @@ jobs:
       # process (not a container), so Node.js/pnpm need to be available inside
       # the test container too.
       - name: Install Node.js and pnpm
+        if: needs.changes.outputs.app == 'true'
         run: |
           docker exec "$UI_TESTS_CONTAINER" bash -c '
             set -e
@@ -222,16 +262,19 @@ jobs:
           '
 
       - name: Restore .NET dependencies
+        if: needs.changes.outputs.app == 'true'
         run: docker exec "$UI_TESTS_CONTAINER" dotnet restore "$UITESTS_PROJECT_PATH"
 
       - name: Build
+        if: needs.changes.outputs.app == 'true'
         run: docker exec "$UI_TESTS_CONTAINER" dotnet build "$UITESTS_PROJECT_PATH" --no-restore --configuration Release
 
       - name: Run UI tests
+        if: needs.changes.outputs.app == 'true'
         run: docker exec "$UI_TESTS_CONTAINER" dotnet test "$UITESTS_PROJECT_PATH" --no-build --configuration Release --verbosity normal
 
       - name: Stop Playwright container
-        if: always()
+        if: always() && needs.changes.outputs.app == 'true'
         run: docker rm -f "$UI_TESTS_CONTAINER" || true
 
       - name: Upload test failure screenshots
