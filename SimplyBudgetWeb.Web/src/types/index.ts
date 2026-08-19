@@ -76,7 +76,7 @@ export interface ImportItemDto {
   isDebit: boolean
   suggestedCategoryId: number | null
   suggestedCategoryName: string | null
-  isDone: boolean
+  isChecked: boolean
   isDuplicate: boolean
 }
 

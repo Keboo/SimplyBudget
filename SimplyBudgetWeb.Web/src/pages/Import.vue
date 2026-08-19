@@ -23,12 +23,13 @@ const showDuplicates = ref(false)
 
 // Rows that look like they've already been imported (matched against existing pending
 // expenses/expense items by date + amount) are hidden by default so the review list stays
-// focused on new transactions. They default to "done" (excluded from Save) as well, so the
-// user must explicitly reveal and re-include the ones they actually want to import.
+// focused on new transactions. They default to unchecked (excluded from import) as well, so
+// the user must explicitly reveal and check the ones they actually want to import.
 const duplicateCount = computed(() => items.value.filter(i => i.isDuplicate).length)
 const visibleItems = computed(() =>
   showDuplicates.value ? items.value : items.value.filter(i => !i.isDuplicate)
 )
+const checkedCount = computed(() => items.value.filter(i => i.isChecked).length)
 const exportingData = ref(false)
 const importingData = ref(false)
 const importFile = ref<File | null>(null)
@@ -196,7 +197,7 @@ onMounted(() => { void fetchCategories() })
         <v-table density="compact">
           <thead>
             <tr>
-              <th>Done</th>
+              <th>Import</th>
               <th>Date</th>
               <th>Description</th>
               <th style="text-align: right;">Amount</th>
@@ -205,8 +206,8 @@ onMounted(() => { void fetchCategories() })
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, index) in visibleItems" :key="index" :style="{ opacity: item.isDone ? 0.5 : 1 }">
-              <td><v-checkbox v-model="item.isDone" hide-details density="compact" /></td>
+            <tr v-for="(item, index) in visibleItems" :key="index" :style="{ opacity: item.isChecked ? 1 : 0.5 }">
+              <td><v-checkbox v-model="item.isChecked" hide-details density="compact" /></td>
               <td>{{ new Date(item.date).toLocaleDateString() }}</td>
               <td>
                 {{ item.description }}
@@ -232,7 +233,7 @@ onMounted(() => { void fetchCategories() })
           </tbody>
         </v-table>
       </v-card>
-      <v-btn color="primary" :loading="submitting" :disabled="submitting" @click="handleImport">Save Import</v-btn>
+      <v-btn color="primary" :loading="submitting" :disabled="submitting" @click="handleImport">Import {{ checkedCount }} Items</v-btn>
     </template>
   </div>
 </template>
