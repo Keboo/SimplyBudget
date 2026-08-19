@@ -87,7 +87,7 @@ public class PendingExpensesControllerTests
 
         int assigneeId = await mocker.InDbScopeAsync(async context =>
         {
-            var assignee = new PendingExpenseAssignee { Name = "Jordan" };
+            var assignee = new PendingExpenseAssignee { Name = "Jordan", ObjectId = "jordan-oid" };
             context.PendingExpenseAssignees.Add(assignee);
             await context.SaveChangesAsync();
 
@@ -130,7 +130,7 @@ public class PendingExpensesControllerTests
 
         var (pendingId, assigneeId) = await mocker.InDbScopeAsync(async context =>
         {
-            var assignee = new PendingExpenseAssignee { Name = "Jordan" };
+            var assignee = new PendingExpenseAssignee { Name = "Jordan", ObjectId = "jordan-oid" };
             var pending = new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Costco", Amount = 100 };
             context.PendingExpenseAssignees.Add(assignee);
             context.PendingExpenses.Add(pending);
@@ -166,7 +166,7 @@ public class PendingExpensesControllerTests
 
         int pendingId = await mocker.InDbScopeAsync(async context =>
         {
-            var assignee = new PendingExpenseAssignee { Name = "Jordan" };
+            var assignee = new PendingExpenseAssignee { Name = "Jordan", ObjectId = "jordan-oid" };
             context.PendingExpenseAssignees.Add(assignee);
             var pending = new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Costco", Amount = 100 };
             context.PendingExpenses.Add(pending);

@@ -120,7 +120,6 @@ async function handleAddAssignee() {
     snackbar.enqueueSnackbar('Failed to add assignee', { variant: 'error' })
   }
 }
-
 function openConvert(item: PendingExpenseDto) {
   convertItem.value = item
   convertDialogOpen.value = true
@@ -237,20 +236,6 @@ onMounted(() => {
       :categories="categories"
       @success="onConvertSuccess"
     />
-
-    <v-dialog v-model="addAssigneeOpen" max-width="480">
-      <v-card>
-        <v-card-title>Add Assignee</v-card-title>
-        <v-card-text>
-          <v-text-field label="Name" v-model="newAssigneeName" @keyup.enter="handleAddAssignee" />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn @click="addAssigneeOpen = false">Cancel</v-btn>
-          <v-btn color="primary" @click="handleAddAssignee">Add</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
 
     <v-dialog :model-value="!!discardItem" max-width="480" @update:model-value="(val: boolean) => !val && (discardItem = null)">
       <v-card>

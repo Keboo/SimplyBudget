@@ -47,7 +47,7 @@ public class BudgetWebContext(DbContextOptions<BudgetWebContext> options)
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<PendingExpenseAssignee>()
-            .HasIndex(x => x.Name)
+            .HasIndex(x => x.ObjectId)
             .IsUnique();
     }
 }
