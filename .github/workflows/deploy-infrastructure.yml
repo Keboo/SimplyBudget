@@ -6,6 +6,8 @@ on:
     paths:
       - 'Infra/**'
       - '.github/workflows/deploy-infrastructure.yml'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,19 +19,50 @@ env:
   AZURE_LOCATION: 'westus2'
 
 jobs:
+  # Determine whether this run touches Infra-as-code (or this workflow) at
+  # all. The `main` branch ruleset requires the `plan` check on every PR, but
+  # GitHub only clears a required check once some job reports it - a check
+  # that no job ever runs stays "Expected" forever. So `plan` always runs;
+  # for PRs that don't touch Infra it just skips the real Terraform work and
+  # reports success trivially.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      infra: ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Detect Infra changes
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            infra:
+              - 'Infra/**'
+              - '.github/workflows/deploy-infrastructure.yml'
+
+  # Terraform plan. Runs (and is required) on every PR so infra changes get
+  # reviewed/validated before merge, but only does real work when Infra
+  # actually changed. Never applies anything - see the push/workflow_dispatch
+  # only `apply` job below for that.
   plan:
     runs-on: ubuntu-latest
     environment: production
+    needs: changes
     steps:
       - uses: actions/checkout@v7
 
       - name: Setup Terraform
+        if: needs.changes.outputs.infra == 'true'
         uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
           terraform_wrapper: false
 
       - name: Azure Login
+        if: needs.changes.outputs.infra == 'true'
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.ARM_CLIENT_ID_INFRA }}
@@ -37,6 +70,7 @@ jobs:
           subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID_INFRA }}
 
       - name: Terraform Init
+        if: needs.changes.outputs.infra == 'true'
         working-directory: Infra
         run: terraform init -lock-timeout=5m
         env:
@@ -46,6 +80,7 @@ jobs:
           ARM_USE_OIDC: true
 
       - name: Terraform Plan
+        if: needs.changes.outputs.infra == 'true'
         working-directory: Infra
         run: terraform plan -out=tfplan
         env:
@@ -60,7 +95,10 @@ jobs:
           TF_VAR_backend_custom_domain: 'https://api.budget.keboo.dev'
           TF_VAR_frontend_custom_domain: 'https://budget.keboo.dev'
 
+      # Only push events (a merge to main) go on to `apply`, so only upload
+      # the plan artifact then - a PR's plan is for review purposes only.
       - name: Upload Terraform Plan
+        if: needs.changes.outputs.infra == 'true' && github.event_name != 'pull_request'
         uses: Keboo/sa-upload@v1
         with:
           name: tfplan
@@ -69,10 +107,14 @@ jobs:
           container-name: simplybudget
           create-container: true
 
+  # Applies the plan. Only runs for pushes to main (or manual dispatch) -
+  # never for pull_request events, so opening/updating a PR can never modify
+  # real infrastructure, only validate it via `terraform plan` above.
   apply:
     runs-on: ubuntu-latest
     environment: production
     needs: plan
+    if: github.event_name != 'pull_request'
     outputs:
       acr_login_server: ${{ steps.terraform-outputs.outputs.acr_login_server }}
       backend_container_app_name: ${{ steps.terraform-outputs.outputs.backend_container_app_name }}
