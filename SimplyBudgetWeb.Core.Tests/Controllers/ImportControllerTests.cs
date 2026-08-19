@@ -65,7 +65,7 @@ public class ImportControllerTests
     }
 
     [Test]
-    public async Task Save_CreatesPendingExpensesForItemsNotMarkedDone()
+    public async Task Save_CreatesPendingExpensesForCheckedItems()
     {
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
@@ -83,8 +83,8 @@ public class ImportControllerTests
 
         var items = new[]
         {
-            new ImportItemDto(new DateTime(2026, 1, 1), "Costco", 45_00, true, categoryId, "Groceries", IsDone: false),
-            new ImportItemDto(new DateTime(2026, 1, 2), "Already handled", 10_00, true, null, null, IsDone: true),
+            new ImportItemDto(new DateTime(2026, 1, 1), "Costco", 45_00, true, categoryId, "Groceries", IsChecked: true),
+            new ImportItemDto(new DateTime(2026, 1, 2), "Already handled", 10_00, true, null, null, IsChecked: false),
         };
 
         var result = await controller.Save(items);
@@ -98,7 +98,7 @@ public class ImportControllerTests
     }
 
     [Test]
-    public async Task Save_WithAllItemsMarkedDone_CreatesNoPendingExpenses()
+    public async Task Save_WithNoItemsChecked_CreatesNoPendingExpenses()
     {
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
@@ -108,7 +108,7 @@ public class ImportControllerTests
 
         var items = new[]
         {
-            new ImportItemDto(new DateTime(2026, 1, 2), "Already handled", 10_00, true, null, null, IsDone: true),
+            new ImportItemDto(new DateTime(2026, 1, 2), "Already handled", 10_00, true, null, null, IsChecked: false),
         };
 
         await controller.Save(items);
@@ -144,7 +144,7 @@ public class ImportControllerTests
         var items = ((OkObjectResult)result.Result!).Value as ImportItemDto[];
         await Assert.That(items!.Length).IsEqualTo(1);
         await Assert.That(items[0].IsDuplicate).IsTrue();
-        await Assert.That(items[0].IsDone).IsTrue();
+        await Assert.That(items[0].IsChecked).IsFalse();
     }
 
     [Test]
@@ -171,7 +171,7 @@ public class ImportControllerTests
         var items = ((OkObjectResult)result.Result!).Value as ImportItemDto[];
         await Assert.That(items!.Length).IsEqualTo(1);
         await Assert.That(items[0].IsDuplicate).IsTrue();
-        await Assert.That(items[0].IsDone).IsTrue();
+        await Assert.That(items[0].IsChecked).IsFalse();
     }
 
     [Test]
@@ -189,6 +189,6 @@ public class ImportControllerTests
         var items = ((OkObjectResult)result.Result!).Value as ImportItemDto[];
         await Assert.That(items!.Length).IsEqualTo(1);
         await Assert.That(items[0].IsDuplicate).IsFalse();
-        await Assert.That(items[0].IsDone).IsFalse();
+        await Assert.That(items[0].IsChecked).IsTrue();
     }
 }

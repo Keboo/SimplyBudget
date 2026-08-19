@@ -41,9 +41,9 @@ public class ImportController(BudgetWebContext context) : ControllerBase
                 IsDebit: rawAmount < 0,
                 SuggestedCategoryId: rule?.ExpenseCategoryID,
                 SuggestedCategoryName: rule?.ExpenseCategory?.Name,
-                // Likely duplicates default to "done" (excluded from Save) until the user
-                // explicitly opts back in from the UI.
-                IsDone: isDuplicate,
+                // Non-duplicate items are checked by default so they're imported; likely
+                // duplicates default to unchecked until the user explicitly opts back in.
+                IsChecked: !isDuplicate,
                 IsDuplicate: isDuplicate
             ));
         }
@@ -98,14 +98,14 @@ public class ImportController(BudgetWebContext context) : ControllerBase
 
     /// <summary>
     /// Saves parsed import items as pending expenses so they can be reviewed, assigned, and
-    /// categorized/split into real expense items later from the Pending Expenses page. Items the
-    /// user has checked off as already handled (<see cref="ImportItemDto.IsDone"/>) are skipped.
+    /// categorized/split into real expense items later from the Pending Expenses page. Only
+    /// items the user has checked (<see cref="ImportItemDto.IsChecked"/>) are imported.
     /// </summary>
     [HttpPost("save")]
     public async Task<IActionResult> Save([FromBody] ImportItemDto[] items)
     {
         var pendingExpenses = items
-            .Where(i => !i.IsDone)
+            .Where(i => i.IsChecked)
             .Select(i => new PendingExpense
             {
                 Date = i.Date,
@@ -132,6 +132,6 @@ public record ImportItemDto(
     bool IsDebit,
     int? SuggestedCategoryId,
     string? SuggestedCategoryName,
-    bool IsDone,
+    bool IsChecked,
     bool IsDuplicate = false
 );
