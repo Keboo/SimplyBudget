@@ -94,6 +94,29 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
     }
 
     /// <summary>
+    /// Deletes every pending expense matching the given filters (the same filters used by
+    /// <see cref="GetAll"/>), so "delete all" only discards what is currently visible to the user.
+    /// Omitting both filters deletes every pending expense.
+    /// </summary>
+    [HttpDelete]
+    public async Task<IActionResult> DeleteAll(
+        [FromQuery] string? search,
+        [FromQuery] int? assigneeId)
+    {
+        var query = context.PendingExpenses.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+            query = query.Where(x => x.Description != null && x.Description.Contains(search));
+
+        if (assigneeId.HasValue)
+            query = query.Where(x => x.AssigneeId == assigneeId.Value);
+
+        context.PendingExpenses.RemoveRange(query);
+        await context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    /// <summary>
     /// Converts a pending expense into a real expense item (or income item, if it represents a
     /// credit), optionally split across multiple categories, and removes it from the pending list.
     /// </summary>
