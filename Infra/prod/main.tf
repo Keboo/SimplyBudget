@@ -335,6 +335,11 @@ module "backend_container_app" {
   identity_id                     = azurerm_user_assigned_identity.app_identity.id
   container_registry_login_server = data.azurerm_container_registry.existing.login_server
 
+  # Keep the backend warm for 60 minutes of inactivity before KEDA scales it
+  # down to 0 replicas (min_replicas defaults to 0), avoiding cold starts for
+  # infrequent traffic.
+  cooldown_period_seconds = 3600
+
   # AllowedOrigins must cover every hostname the frontend can be served from
   # (the SWA's auto-generated default hostname and the production custom
   # domain), mirroring the azuread_application_redirect_uris.webapp_spa list
