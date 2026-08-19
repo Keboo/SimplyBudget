@@ -89,7 +89,9 @@ jobs:
           timeout_minutes: 20
           max_attempts: 3
           shell: pwsh
-          command: pwsh SimplyBudgetWeb.UITests/bin/Release/net10.0/playwright.ps1 install --with-deps
+          # Only chromium is ever launched (see UITestBase.CreateBrowserAsync), so
+          # installing firefox/webkit here is wasted download + apt-get time.
+          command: pwsh SimplyBudgetWeb.UITests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
       - name: Test
         run: dotnet test ${{ env.WEB_SOLUTION_PATH }} --no-build --configuration Release --verbosity normal
