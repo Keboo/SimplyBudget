@@ -137,33 +137,47 @@ jobs:
   # the multi-minute "playwright install --with-deps" download/apt-get step that
   # used to run as part of `build`.
   #
-  # The job container needs Docker access because the AppHost spins up a SQL Server
-  # container via Aspire (which shells out to the `docker` CLI, so it must be
-  # installed - the base image doesn't include it). The container mounts the
-  # runner's Docker socket (docker-outside-of-docker) and joins the runner's host
-  # network so ports published by sibling containers (e.g. SQL Server) are reachable
-  # at "localhost" from inside the job container, the same way they'd be reachable
-  # if the job ran directly on the runner instead of in a container.
+  # This intentionally does NOT use the job-level `container:` feature. GitHub
+  # Actions always attaches a `container:`-based job to its own auto-generated
+  # bridge network, which conflicts with running that same container in
+  # `--network=host` mode ("cannot attach both user-defined and non-user-defined
+  # network-modes") - and host networking is required so ports published by
+  # sibling containers (e.g. Aspire's SQL Server container) are reachable at
+  # "localhost" from inside the test container. Instead, the job runs directly on
+  # the runner and manually starts/execs into a detached Playwright container,
+  # which gives full control over the `docker run` flags.
+  #
+  # The test container needs Docker access because the AppHost spins up a SQL
+  # Server container via Aspire (which shells out to the `docker` CLI, so it must
+  # be installed - the base image doesn't include it). It mounts the runner's
+  # Docker socket (docker-outside-of-docker) so sibling containers are created
+  # alongside it on the runner's Docker daemon.
   ui-tests:
     runs-on: ubuntu-latest
-    # Keep this tag in sync with the Microsoft.Playwright version pinned in
-    # Directory.Packages.props - the image bakes in matching browsers, so a
-    # version mismatch breaks Playwright. Note: the `env` context isn't
-    # available under `jobs.<job_id>.container`, so this has to be a literal.
-    container:
-      image: mcr.microsoft.com/playwright/dotnet:v1.62.0-noble
-      options: --init --ipc=host --network=host -v /var/run/docker.sock:/var/run/docker.sock
+    env:
+      # Keep this tag in sync with the Microsoft.Playwright version pinned in
+      # Directory.Packages.props - the image bakes in matching browsers, so a
+      # version mismatch breaks Playwright.
+      PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright/dotnet:v1.62.0-noble
+      UI_TESTS_CONTAINER: ui-tests-runner
     defaults:
       run:
         shell: bash
     steps:
       - uses: actions/checkout@v7
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-          global-json-file: global.json
+      - name: Start Playwright container
+        run: |
+          docker run -d --name "$UI_TESTS_CONTAINER" \
+            --network host \
+            --ipc host \
+            --init \
+            -e DEBIAN_FRONTEND=noninteractive \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            "$PLAYWRIGHT_IMAGE" \
+            tail -f /dev/null
 
       # The Playwright image doesn't include the Docker CLI; Aspire's orchestrator
       # shells out to `docker` (talking to the socket mounted above) to start the
@@ -173,36 +187,44 @@ jobs:
       # the `universe` component that `docker.io` lives in.
       - name: Install Docker CLI
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends ca-certificates curl gnupg
-          install -m 0755 -d /etc/apt/keyrings
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-          chmod a+r /etc/apt/keyrings/docker.asc
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list
-          apt-get update
-          apt-get install -y --no-install-recommends docker-ce-cli
-          rm -rf /var/lib/apt/lists/*
+          docker exec "$UI_TESTS_CONTAINER" bash -c '
+            set -e
+            apt-get update
+            apt-get install -y --no-install-recommends ca-certificates curl gnupg
+            install -m 0755 -d /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+            chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
+            apt-get update
+            apt-get install -y --no-install-recommends docker-ce-cli
+            rm -rf /var/lib/apt/lists/*
+          '
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-          cache-dependency-path: ${{ env.FRONTEND_PROJECT_PATH }}/pnpm-lock.yaml
+      # The frontend dev server is started by the AppHost as a plain `pnpm dev`
+      # process (not a container), so Node.js/pnpm need to be available inside
+      # the test container too.
+      - name: Install Node.js and pnpm
+        run: |
+          docker exec "$UI_TESTS_CONTAINER" bash -c '
+            set -e
+            curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+            apt-get install -y --no-install-recommends nodejs
+            npm install -g pnpm@10
+            rm -rf /var/lib/apt/lists/*
+          '
 
       - name: Restore .NET dependencies
-        run: dotnet restore ${{ env.UITESTS_PROJECT_PATH }}
+        run: docker exec "$UI_TESTS_CONTAINER" dotnet restore "$UITESTS_PROJECT_PATH"
 
       - name: Build
-        run: dotnet build ${{ env.UITESTS_PROJECT_PATH }} --no-restore --configuration Release
+        run: docker exec "$UI_TESTS_CONTAINER" dotnet build "$UITESTS_PROJECT_PATH" --no-restore --configuration Release
 
       - name: Run UI tests
-        run: dotnet test ${{ env.UITESTS_PROJECT_PATH }} --no-build --configuration Release --verbosity normal
+        run: docker exec "$UI_TESTS_CONTAINER" dotnet test "$UITESTS_PROJECT_PATH" --no-build --configuration Release --verbosity normal
+
+      - name: Stop Playwright container
+        if: always()
+        run: docker rm -f "$UI_TESTS_CONTAINER" || true
 
       - name: Upload test failure screenshots
         if: failure()
