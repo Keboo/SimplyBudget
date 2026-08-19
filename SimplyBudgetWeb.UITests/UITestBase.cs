@@ -23,13 +23,28 @@ public abstract class UITestBase : IAsyncDisposable
 {
     protected const int TestTimeoutMs = 120_000;
 
-    // StartAspireHost below performs up to three sequential steps (build, start, wait-for-
-    // frontend-healthy), each individually allowed up to AspireDefaultTimeout. The hook-level
-    // timeout must therefore comfortably exceed the sum of those steps, not match a single one
-    // of them, or a slow-but-otherwise-healthy container pull (e.g. a cold Docker image cache
-    // on a CI runner) can trip the outer timeout even though no individual step actually hung.
-    private const int AspireHostStartupTimeoutMs = 480_000;
+    // StartAspireHost below performs up to four sequential steps (build, start, wait-for-
+    // frontend-healthy, warm-up-frontend), each individually allowed up to AspireDefaultTimeout
+    // (or WarmupTimeoutMs for the last one). The hook-level timeout must therefore comfortably
+    // exceed the sum of those steps, not match a single one of them, or a slow-but-otherwise-
+    // healthy container pull (e.g. a cold Docker image cache on a CI runner) can trip the outer
+    // timeout even though no individual step actually hung.
+    private const int AspireHostStartupTimeoutMs = 600_000;
     private static TimeSpan AspireDefaultTimeout { get; set; } = TimeSpan.FromMinutes(2);
+
+    // The frontend is a plain `pnpm dev` (Vite) process rather than a pre-built static
+    // bundle. Aspire's "healthy" resource notification only confirms the dev server's HTTP
+    // endpoint has started accepting connections - it does NOT wait for Vite to finish
+    // transforming the SPA entry point on its first request, which can take well over a
+    // minute on a cold CI cache (the "ui-tests" workflow job installs Node.js/pnpm and all
+    // frontend dependencies from scratch on every run). Without warming the frontend up
+    // before any real test runs, whichever test happens to navigate first can hit a still-
+    // blank page and time out waiting on a Playwright selector - this was observed causing
+    // AppNavigationTests.AnonymousUserIsRedirectedToLoginFromCoreRoutes and
+    // HomePageTests.HeaderBrandIsVisible to intermittently fail with a blank-page screenshot
+    // even though the app rendered fine moments later.
+    private const int WarmupTimeoutMs = 120_000;
+    private const int MaxWarmupAttempts = 3;
     private static DistributedApplication? _aspireAppHost = null;
 
     protected static AxeRunOptions AxeOptions => new()
@@ -125,6 +140,59 @@ public abstract class UITestBase : IAsyncDisposable
         await app.ResourceNotifications.WaitForResourceHealthyAsync(
             Resources.Frontend, cancellationToken)
             .WaitAsync(AspireDefaultTimeout, cancellationToken);
+
+        // See the WarmupTimeoutMs comment above for why this is necessary: "healthy" only
+        // means the dev server accepted a TCP connection, not that it finished compiling.
+        await WarmUpFrontendAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Forces the Vite dev server to finish transforming the SPA entry point before any real
+    /// test navigates, so tests don't race a cold first-request compile. Retries a few times
+    /// since the dev server can also transiently refuse/reset connections while it is still
+    /// booting, independent of the compile-time issue this exists to guard against.
+    /// </summary>
+    private static async Task WarmUpFrontendAsync(CancellationToken cancellationToken)
+    {
+        using var playwright = await Playwright.CreateAsync();
+        await using var browser = await CreateBrowserAsync(playwright);
+
+        Exception? lastError = null;
+        for (var attempt = 1; attempt <= MaxWarmupAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var page = await browser.NewPageAsync();
+            try
+            {
+                await page.GotoAsync(FrontendBaseUri.ToString(), new() { Timeout = WarmupTimeoutMs });
+
+                // The login page is what every anonymous route redirects to, so waiting for
+                // its "Sign in" button confirms the SPA bundle actually rendered rather than
+                // just that the HTTP connection succeeded.
+                await page.GetByRole(AriaRole.Button, new() { Name = "Sign in" })
+                    .WaitForAsync(new() { Timeout = WarmupTimeoutMs });
+
+                Console.WriteLine($"Frontend warm-up succeeded on attempt {attempt}.");
+                return;
+            }
+            catch (Exception ex)
+            {
+                lastError = ex;
+                Console.WriteLine($"Frontend warm-up attempt {attempt}/{MaxWarmupAttempts} failed: {ex.Message}");
+            }
+            finally
+            {
+                await page.CloseAsync();
+            }
+        }
+
+        // Fail fast here with a clear, dedicated diagnostic instead of letting every real test
+        // that happens to run first fail with an identical, seemingly-unrelated selector
+        // timeout against what is still a blank page.
+        throw new InvalidOperationException(
+            $"Frontend did not become ready to serve requests after {MaxWarmupAttempts} warm-up attempts.",
+            lastError);
     }
 
     [After(TestSession)]
