@@ -23,7 +23,8 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
             query = query.Where(c => c.Name != null && c.Name.Contains(search));
 
         var categories = await query.ToListAsync();
-        return categories.Select(ToDto).ToArray();
+        var idsWithItems = await GetIdsWithItemsAsync(categories.Select(c => c.ID));
+        return categories.Select(c => ToDto(c, idsWithItems.Contains(c.ID))).ToArray();
     }
 
     [HttpGet("{id}")]
@@ -31,7 +32,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
     {
         var category = await context.ExpenseCategories.FindAsync(id);
         if (category is null) return NotFound();
-        return ToDto(category);
+        return ToDto(category, await context.HasItemsAsync(category));
     }
 
     [HttpPost]
@@ -48,7 +49,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
         };
         context.ExpenseCategories.Add(category);
         await context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetById), new { id = category.ID }, ToDto(category));
+        return CreatedAtAction(nameof(GetById), new { id = category.ID }, ToDto(category, hasItems: false));
     }
 
     [HttpPut("{id}")]
@@ -65,18 +66,22 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
         category.AccountID = request.AccountId;
 
         await context.SaveChangesAsync();
-        return ToDto(category);
+        return ToDto(category, await context.HasItemsAsync(category));
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    /// <summary>
+    /// Hides a category from normal views (e.g. the budget list) without deleting it or losing
+    /// its transaction history. Use <see cref="Restore"/> to unhide it again.
+    /// </summary>
+    [HttpPost("{id}/hide")]
+    public async Task<ActionResult<ExpenseCategoryDto>> Hide(int id)
     {
         var category = await context.ExpenseCategories.FindAsync(id);
         if (category is null) return NotFound();
 
         category.IsHidden = true;
         await context.SaveChangesAsync();
-        return NoContent();
+        return ToDto(category, await context.HasItemsAsync(category));
     }
 
     [HttpPost("{id}/restore")]
@@ -87,10 +92,41 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
 
         category.IsHidden = false;
         await context.SaveChangesAsync();
-        return Ok(ToDto(category));
+        return ToDto(category, await context.HasItemsAsync(category));
     }
 
-    private static ExpenseCategoryDto ToDto(ExpenseCategory c) => new(
+    /// <summary>
+    /// Permanently deletes a category. Only allowed when the category has no items posted
+    /// against it and isn't referenced by an import rule; otherwise use <see cref="Hide"/>.
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var category = await context.ExpenseCategories.FindAsync(id);
+        if (category is null) return NotFound();
+
+        if (!await context.CanDeleteAsync(category))
+            return Conflict("This category has items (or is used by an import rule) and cannot be deleted. Hide it instead.");
+
+        context.ExpenseCategories.Remove(category);
+        await context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    private async Task<HashSet<int>> GetIdsWithItemsAsync(IEnumerable<int> categoryIds)
+    {
+        var ids = categoryIds.ToList();
+        if (ids.Count == 0) return [];
+
+        var idsWithItems = await context.ExpenseCategoryItemDetails
+            .Where(d => ids.Contains(d.ExpenseCategoryId))
+            .Select(d => d.ExpenseCategoryId)
+            .Distinct()
+            .ToListAsync();
+        return [.. idsWithItems];
+    }
+
+    private static ExpenseCategoryDto ToDto(ExpenseCategory c, bool hasItems) => new(
         Id: c.ID,
         Name: c.Name,
         CategoryName: c.CategoryName,
@@ -100,7 +136,8 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
         CurrentBalance: c.CurrentBalance,
         Cap: c.Cap,
         IsHidden: c.IsHidden,
-        UsePercentage: c.UsePercentage
+        UsePercentage: c.UsePercentage,
+        HasItems: hasItems
     );
 }
 
@@ -114,7 +151,8 @@ public record ExpenseCategoryDto(
     int CurrentBalance,
     int? Cap,
     bool IsHidden,
-    bool UsePercentage
+    bool UsePercentage,
+    bool HasItems
 );
 
 public record ExpenseCategoryRequest(

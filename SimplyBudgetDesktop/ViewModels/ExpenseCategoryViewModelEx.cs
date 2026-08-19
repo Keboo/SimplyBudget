@@ -43,6 +43,7 @@ public class ExpenseCategoryViewModelEx : ExpenseCategoryViewModel
         rv.ThreeMonthAverage = await GetAverage(context, expenseCategory, month.AddMonths(-3).StartOfMonth(), month.EndOfMonth());
         rv.SixMonthAverage = await GetAverage(context, expenseCategory, month.AddMonths(-6).StartOfMonth(), month.EndOfMonth());
         rv.TwelveMonthAverage = await GetAverage(context, expenseCategory, month.AddMonths(-12).StartOfMonth(), month.EndOfMonth());
+        rv.HasItems = await context.HasItemsAsync(expenseCategory);
         return rv;
 
         static async Task<int> GetAverage(BudgetContext context, ExpenseCategory expenseCategory, DateTime start, DateTime end)
@@ -110,6 +111,17 @@ public class ExpenseCategoryViewModelEx : ExpenseCategoryViewModel
     {
         get => _twelveMonthAverage;
         set => SetProperty(ref _twelveMonthAverage, value);
+    }
+
+    /// <summary>
+    /// Whether this category has ever had any items posted against it. Categories with items
+    /// cannot be permanently deleted (only hidden), to preserve transaction history.
+    /// </summary>
+    private bool _hasItems;
+    public bool HasItems
+    {
+        get => _hasItems;
+        set => SetProperty(ref _hasItems, value);
     }
 
     private bool _isEditing;

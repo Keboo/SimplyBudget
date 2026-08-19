@@ -35,6 +35,7 @@ export interface ExpenseCategoryDto {
   cap: number | null
   isHidden: boolean
   usePercentage: boolean
+  hasItems: boolean
 }
 
 export interface AccountDto {
