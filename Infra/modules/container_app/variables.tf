@@ -46,6 +46,12 @@ variable "max_replicas" {
   default     = 1
 }
 
+variable "cooldown_period_seconds" {
+  description = "Seconds to wait after the last active trigger before scaling replicas back down (e.g. to 0). Azure Container Apps defaults to 300 (5 minutes) if unset; max allowed is 3600."
+  type        = number
+  default     = 300
+}
+
 variable "env_vars" {
   description = "Map of environment variables for the container."
   type        = map(string)

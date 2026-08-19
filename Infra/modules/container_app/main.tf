@@ -23,8 +23,9 @@ resource "azurerm_container_app" "app" {
   }
 
   template {
-    min_replicas = var.min_replicas
-    max_replicas = var.max_replicas
+    min_replicas               = var.min_replicas
+    max_replicas               = var.max_replicas
+    cooldown_period_in_seconds = var.cooldown_period_seconds
 
     container {
       name   = var.name
