@@ -26,6 +26,10 @@ env:
   FRONTEND_PROJECT_PATH: 'SimplyBudgetWeb.Web'
   WEB_SOLUTION_PATH: 'SimplyBudgetWeb.slnx'
   BACKEND_PROJECT_PATH: 'SimplyBudgetWeb/SimplyBudgetWeb.csproj'
+  UITESTS_PROJECT_PATH: 'SimplyBudgetWeb.UITests/SimplyBudgetWeb.UITests.csproj'
+  # Keep in sync with the Microsoft.Playwright version pinned in Directory.Packages.props -
+  # the docker image bakes in matching browsers, so a version mismatch breaks Playwright.
+  PLAYWRIGHT_DOTNET_IMAGE: 'mcr.microsoft.com/playwright/dotnet:v1.62.0-noble'
   TERRAFORM_VERSION: '1.14.6'
 
 jobs:
@@ -83,74 +87,12 @@ jobs:
             --project SimplyBudgetWeb.Data/SimplyBudgetWeb.Data.csproj `
            --startup-project SimplyBudgetWeb.AppHost/SimplyBudgetWeb.AppHost.csproj
 
-      - name: Install apt-fast
-        uses: nick-fields/retry@v4
-        with:
-          timeout_minutes: 5
-          max_attempts: 3
-          shell: pwsh
-          command: |
-            sudo add-apt-repository -y ppa:apt-fast/stable
-            sudo apt-get update
-            echo debconf apt-fast/maxdownloads string 16 | sudo debconf-set-selections
-            echo debconf apt-fast/dlflag boolean true | sudo debconf-set-selections
-            echo debconf apt-fast/aptmanager string apt-get | sudo debconf-set-selections
-            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y apt-fast
-
-      # Playwright's own `install --with-deps` shells out to plain `apt-get`, which
-      # downloads packages sequentially. Pre-fetch the same package list with
-      # apt-fast (parallel/aria2c-backed downloads) so the step below has little
-      # to no work left to do. Best-effort: failures here don't fail the build
-      # since the next step falls back to plain `apt-get` via --with-deps.
-      - name: Install Playwright OS dependencies via apt-fast
-        continue-on-error: true
-        run: |
-          $dryRunOutput = & pwsh SimplyBudgetWeb.UITests/bin/Release/net10.0/playwright.ps1 install-deps --dry-run 2>&1 | Out-String
-          Write-Host $dryRunOutput
-          $packages = [regex]::Matches($dryRunOutput, '(?m)^  (\S+)$') | ForEach-Object { $_.Groups[1].Value }
-          if ($packages.Count -gt 0) {
-            Write-Host "Installing $($packages.Count) missing system dependencies with apt-fast..."
-            sudo apt-fast update
-            sudo apt-fast install -y --no-install-recommends $packages
-            if ($LASTEXITCODE -ne 0) {
-              Write-Warning "apt-fast install failed with exit code $LASTEXITCODE; falling back to 'playwright install --with-deps' below."
-            }
-          } else {
-            Write-Host "All Playwright system dependencies are already installed."
-          }
-
-      - name: Install Playwright browsers
-        uses: nick-fields/retry@v4
-        with:
-          timeout_minutes: 20
-          max_attempts: 3
-          shell: pwsh
-          # Only chromium is ever launched (see UITestBase.CreateBrowserAsync), so
-          # installing firefox/webkit here is wasted download + apt-get time.
-          command: pwsh SimplyBudgetWeb.UITests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
-
+      # UI tests (SimplyBudgetWeb.UITests) run in their own "ui-tests" job using the
+      # Playwright docker image, so this only runs the non-UI test project.
       - name: Test
-        run: dotnet test ${{ env.WEB_SOLUTION_PATH }} --no-build --configuration Release --verbosity normal
+        run: dotnet test SimplyBudgetWeb.Core.Tests/SimplyBudgetWeb.Core.Tests.csproj --no-build --configuration Release --verbosity normal
         env:
           DOTNET_BUILD_CONFIGURATION: Release
-
-      - name: Upload test failure screenshots
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-failure-screenshots
-          path: '**/TestResults/screenshots/*.png'
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload test failure logs
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-failure-logs
-          path: '**/TestResults/logs/*.log'
-          if-no-files-found: ignore
-          retention-days: 7
 
       - name: Publish
         run: dotnet publish ${{ env.BACKEND_PROJECT_PATH }} --configuration Release --no-build
@@ -192,9 +134,96 @@ jobs:
           path: ${{ env.FRONTEND_PROJECT_PATH }}/dist
           retention-days: 1
 
+  # UI/E2E tests (SimplyBudgetWeb.UITests, Playwright + Aspire). Split into its own
+  # job so it runs in parallel with `build` and so it can use the Playwright docker
+  # image, which has browsers and their OS dependencies already baked in - avoiding
+  # the multi-minute "playwright install --with-deps" download/apt-get step that
+  # used to run as part of `build`.
+  #
+  # The job container needs Docker access because the AppHost spins up a SQL Server
+  # container via Aspire (which shells out to the `docker` CLI, so it must be
+  # installed - the base image doesn't include it). The container mounts the
+  # runner's Docker socket (docker-outside-of-docker) and joins the runner's host
+  # network so ports published by sibling containers (e.g. SQL Server) are reachable
+  # at "localhost" from inside the job container, the same way they'd be reachable
+  # if the job ran directly on the runner instead of in a container.
+  ui-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ env.PLAYWRIGHT_DOTNET_IMAGE }}
+      options: --init --ipc=host --network=host -v /var/run/docker.sock:/var/run/docker.sock
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
+
+      # The Playwright image doesn't include the Docker CLI; Aspire's orchestrator
+      # shells out to `docker` (talking to the socket mounted above) to start the
+      # SQL Server container used by the UI tests. Install docker-ce-cli (client
+      # only, no daemon needed) from Docker's own apt repo rather than the
+      # Ubuntu-archive `docker.io` package, since the base image doesn't enable
+      # the `universe` component that `docker.io` lives in.
+      - name: Install Docker CLI
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl gnupg
+          install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+          chmod a+r /etc/apt/keyrings/docker.asc
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list
+          apt-get update
+          apt-get install -y --no-install-recommends docker-ce-cli
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: ${{ env.FRONTEND_PROJECT_PATH }}/pnpm-lock.yaml
+
+      - name: Restore .NET dependencies
+        run: dotnet restore ${{ env.UITESTS_PROJECT_PATH }}
+
+      - name: Build
+        run: dotnet build ${{ env.UITESTS_PROJECT_PATH }} --no-restore --configuration Release
+
+      - name: Run UI tests
+        run: dotnet test ${{ env.UITESTS_PROJECT_PATH }} --no-build --configuration Release --verbosity normal
+
+      - name: Upload test failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-test-failure-screenshots
+          path: '**/TestResults/screenshots/*.png'
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload test failure logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-test-failure-logs
+          path: '**/TestResults/logs/*.log'
+          if-no-files-found: ignore
+          retention-days: 7
+
   automerge:
     if: ${{ github.event_name == 'pull_request' && github.actor == 'dependabot[bot]' }}
-    needs: [build]
+    needs: [build, ui-tests]
     runs-on: ubuntu-latest
 
     permissions:
@@ -331,7 +360,7 @@ jobs:
 
   deploy-database:
     runs-on: ubuntu-latest
-    needs: [build, get-infrastructure-outputs]
+    needs: [build, ui-tests, get-infrastructure-outputs]
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && needs.get-infrastructure-outputs.outputs.deploy_ready == 'true'
     environment: production
 
@@ -363,7 +392,7 @@ jobs:
   # Build and push Docker image for backend
   deploy-backend:
     runs-on: ubuntu-latest
-    needs: [build, get-infrastructure-outputs]
+    needs: [build, ui-tests, get-infrastructure-outputs]
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && needs.get-infrastructure-outputs.outputs.deploy_ready == 'true'
     environment: production
     steps:
@@ -393,7 +422,7 @@ jobs:
   # Deploy frontend to Azure Static Web Apps
   deploy-frontend:
     runs-on: ubuntu-latest
-    needs: [build, get-infrastructure-outputs]
+    needs: [build, ui-tests, get-infrastructure-outputs]
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && needs.get-infrastructure-outputs.outputs.deploy_ready == 'true'
     environment: production
     steps:
