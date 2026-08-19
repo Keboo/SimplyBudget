@@ -77,6 +77,7 @@ export interface ImportItemDto {
   suggestedCategoryId: number | null
   suggestedCategoryName: string | null
   isDone: boolean
+  isDuplicate: boolean
 }
 
 export interface AssigneeDto {

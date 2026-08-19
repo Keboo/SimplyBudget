@@ -115,4 +115,80 @@ public class ImportControllerTests
 
         await Assert.That(await context.PendingExpenses.CountAsync()).IsEqualTo(0);
     }
+
+    [Test]
+    public async Task Parse_WithMatchingExistingPendingExpense_FlagsAsDuplicate()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        var date = new DateTime(2020, 11, 23);
+        await mocker.InDbScopeAsync(async context =>
+        {
+            context.PendingExpenses.Add(new PendingExpense
+            {
+                Date = date,
+                Description = "Purchase GOOGLE Play",
+                Amount = 21_77,
+                IsDebit = true,
+            });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ImportController(context);
+
+        var csv = BuildCsv(@"""1"",""11/23/2020"",""11/23/2020"",""Debit"",""-21.77000"","""",""1"",""Purchase GOOGLE Play"",""Entertainment"",""Debit Card"",""1"","""",""Purchase GOOGLE Play""");
+        var result = await controller.Parse(new ImportRequest(csv));
+
+        var items = ((OkObjectResult)result.Result!).Value as ImportItemDto[];
+        await Assert.That(items!.Length).IsEqualTo(1);
+        await Assert.That(items[0].IsDuplicate).IsTrue();
+        await Assert.That(items[0].IsDone).IsTrue();
+    }
+
+    [Test]
+    public async Task Parse_WithMatchingExistingExpenseCategoryItem_FlagsAsDuplicate()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        var date = new DateTime(2020, 11, 23);
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Entertainment" };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+            await context.AddTransaction("Purchase GOOGLE Play", date, (21_77, category.ID));
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ImportController(context);
+
+        var csv = BuildCsv(@"""1"",""11/23/2020"",""11/23/2020"",""Debit"",""-21.77000"","""",""1"",""Purchase GOOGLE Play"",""Entertainment"",""Debit Card"",""1"","""",""Purchase GOOGLE Play""");
+        var result = await controller.Parse(new ImportRequest(csv));
+
+        var items = ((OkObjectResult)result.Result!).Value as ImportItemDto[];
+        await Assert.That(items!.Length).IsEqualTo(1);
+        await Assert.That(items[0].IsDuplicate).IsTrue();
+        await Assert.That(items[0].IsDone).IsTrue();
+    }
+
+    [Test]
+    public async Task Parse_WithNoMatchingExistingData_DoesNotFlagAsDuplicate()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ImportController(context);
+
+        var csv = BuildCsv(@"""1"",""11/23/2020"",""11/23/2020"",""Debit"",""-21.77000"","""",""1"",""Purchase GOOGLE Play"",""Entertainment"",""Debit Card"",""1"","""",""Purchase GOOGLE Play""");
+        var result = await controller.Parse(new ImportRequest(csv));
+
+        var items = ((OkObjectResult)result.Result!).Value as ImportItemDto[];
+        await Assert.That(items!.Length).IsEqualTo(1);
+        await Assert.That(items[0].IsDuplicate).IsFalse();
+        await Assert.That(items[0].IsDone).IsFalse();
+    }
 }

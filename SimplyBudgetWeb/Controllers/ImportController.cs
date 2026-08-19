@@ -22,12 +22,17 @@ public class ImportController(BudgetWebContext context) : ControllerBase
             .Include(x => x.ExpenseCategory)
             .ToListAsync();
 
+        var existingSignedAmountsByDate = await GetExistingSignedAmountsByDateAsync(parsedItems.Select(x => x.Date));
+
         var result = new List<ImportItemDto>();
         foreach (var item in parsedItems)
         {
             var rawAmount = item.Details?.FirstOrDefault()?.Amount ?? 0;
             var rule = rules.FirstOrDefault(r => r.RuleRegex != null &&
                 Regex.IsMatch(item.Description ?? "", r.RuleRegex, RegexOptions.IgnoreCase));
+
+            bool isDuplicate = existingSignedAmountsByDate.TryGetValue(item.Date, out var amounts) &&
+                amounts.Contains(rawAmount);
 
             result.Add(new ImportItemDto(
                 Date: item.Date,
@@ -36,11 +41,59 @@ public class ImportController(BudgetWebContext context) : ControllerBase
                 IsDebit: rawAmount < 0,
                 SuggestedCategoryId: rule?.ExpenseCategoryID,
                 SuggestedCategoryName: rule?.ExpenseCategory?.Name,
-                IsDone: false
+                // Likely duplicates default to "done" (excluded from Save) until the user
+                // explicitly opts back in from the UI.
+                IsDone: isDuplicate,
+                IsDuplicate: isDuplicate
             ));
         }
 
         return Ok(result.ToArray());
+    }
+
+    /// <summary>
+    /// Builds a lookup of signed amounts (positive for credits, negative for debits) already
+    /// recorded on each date, from both pending expenses and already-categorized expense items.
+    /// Used to flag freshly-parsed CSV rows that look like they were already imported.
+    /// </summary>
+    private async Task<Dictionary<DateTime, HashSet<int>>> GetExistingSignedAmountsByDateAsync(IEnumerable<DateTime> dates)
+    {
+        var distinctDates = dates.Distinct().ToList();
+        var result = new Dictionary<DateTime, HashSet<int>>();
+        if (distinctDates.Count == 0) return result;
+
+        var minDate = distinctDates.Min();
+        var maxDate = distinctDates.Max();
+
+        void Add(DateTime date, int signedAmount)
+        {
+            if (!result.TryGetValue(date, out var amounts))
+            {
+                amounts = new HashSet<int>();
+                result[date] = amounts;
+            }
+            amounts.Add(signedAmount);
+        }
+
+        var existingPending = await context.PendingExpenses
+            .Where(x => x.Date >= minDate && x.Date <= maxDate)
+            .Select(x => new { x.Date, x.Amount, x.IsDebit })
+            .ToListAsync();
+        foreach (var pe in existingPending)
+        {
+            Add(pe.Date, pe.IsDebit ? -pe.Amount : pe.Amount);
+        }
+
+        var existingExpenseItems = await context.ExpenseCategoryItems
+            .Include(x => x.Details)
+            .Where(x => x.Date >= minDate && x.Date <= maxDate)
+            .ToListAsync();
+        foreach (var eci in existingExpenseItems)
+        {
+            Add(eci.Date, eci.Details?.Sum(d => d.Amount) ?? 0);
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -79,5 +132,6 @@ public record ImportItemDto(
     bool IsDebit,
     int? SuggestedCategoryId,
     string? SuggestedCategoryName,
-    bool IsDone
+    bool IsDone,
+    bool IsDuplicate = false
 );

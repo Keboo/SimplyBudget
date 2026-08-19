@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
@@ -19,6 +19,16 @@ const items = ref<ImportItemDto[]>([])
 const categories = ref<ExpenseCategoryDto[]>([])
 const loading = ref(false)
 const submitting = ref(false)
+const showDuplicates = ref(false)
+
+// Rows that look like they've already been imported (matched against existing pending
+// expenses/expense items by date + amount) are hidden by default so the review list stays
+// focused on new transactions. They default to "done" (excluded from Save) as well, so the
+// user must explicitly reveal and re-include the ones they actually want to import.
+const duplicateCount = computed(() => items.value.filter(i => i.isDuplicate).length)
+const visibleItems = computed(() =>
+  showDuplicates.value ? items.value : items.value.filter(i => !i.isDuplicate)
+)
 const exportingData = ref(false)
 const importingData = ref(false)
 const importFile = ref<File | null>(null)
@@ -50,9 +60,7 @@ async function handleParse() {
   }
 }
 
-function updateCategory(index: number, categoryId: number | null) {
-  const item = items.value[index]
-  if (!item) return
+function updateCategory(item: ImportItemDto, categoryId: number | null) {
   const cat = categoryId !== null ? categories.value.find(c => c.id === categoryId) : undefined
   item.suggestedCategoryId = categoryId
   item.suggestedCategoryName = cat?.name ?? null
@@ -175,6 +183,15 @@ onMounted(() => { void fetchCategories() })
     </v-card>
 
     <template v-if="items.length > 0">
+      <div class="d-flex align-center mb-2" style="gap: 12px;">
+        <v-switch
+          v-model="showDuplicates"
+          color="primary"
+          density="compact"
+          hide-details
+          :label="duplicateCount > 0 ? `Show possible duplicates (${duplicateCount})` : 'Show possible duplicates'"
+        />
+      </div>
       <v-card class="mb-4" style="overflow: auto;">
         <v-table density="compact">
           <thead>
@@ -188,10 +205,15 @@ onMounted(() => { void fetchCategories() })
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, index) in items" :key="index" :style="{ opacity: item.isDone ? 0.5 : 1 }">
+            <tr v-for="(item, index) in visibleItems" :key="index" :style="{ opacity: item.isDone ? 0.5 : 1 }">
               <td><v-checkbox v-model="item.isDone" hide-details density="compact" /></td>
               <td>{{ new Date(item.date).toLocaleDateString() }}</td>
-              <td>{{ item.description }}</td>
+              <td>
+                {{ item.description }}
+                <v-chip v-if="item.isDuplicate" size="small" color="warning" variant="outlined" class="ml-1">
+                  Possible duplicate
+                </v-chip>
+              </td>
               <td style="text-align: right;">{{ formatCents(item.amount) }}</td>
               <td>{{ item.isDebit ? 'Debit' : 'Credit' }}</td>
               <td>
@@ -203,7 +225,7 @@ onMounted(() => { void fetchCategories() })
                   density="compact"
                   hide-details
                   style="min-width: 150px;"
-                  @update:model-value="(val: number | null) => updateCategory(index, val)"
+                  @update:model-value="(val: number | null) => updateCategory(item, val)"
                 />
               </td>
             </tr>
