@@ -27,9 +27,6 @@ env:
   WEB_SOLUTION_PATH: 'SimplyBudgetWeb.slnx'
   BACKEND_PROJECT_PATH: 'SimplyBudgetWeb/SimplyBudgetWeb.csproj'
   UITESTS_PROJECT_PATH: 'SimplyBudgetWeb.UITests/SimplyBudgetWeb.UITests.csproj'
-  # Keep in sync with the Microsoft.Playwright version pinned in Directory.Packages.props -
-  # the docker image bakes in matching browsers, so a version mismatch breaks Playwright.
-  PLAYWRIGHT_DOTNET_IMAGE: 'mcr.microsoft.com/playwright/dotnet:v1.62.0-noble'
   TERRAFORM_VERSION: '1.14.6'
 
 jobs:
@@ -149,8 +146,12 @@ jobs:
   # if the job ran directly on the runner instead of in a container.
   ui-tests:
     runs-on: ubuntu-latest
+    # Keep this tag in sync with the Microsoft.Playwright version pinned in
+    # Directory.Packages.props - the image bakes in matching browsers, so a
+    # version mismatch breaks Playwright. Note: the `env` context isn't
+    # available under `jobs.<job_id>.container`, so this has to be a literal.
     container:
-      image: ${{ env.PLAYWRIGHT_DOTNET_IMAGE }}
+      image: mcr.microsoft.com/playwright/dotnet:v1.62.0-noble
       options: --init --ipc=host --network=host -v /var/run/docker.sock:/var/run/docker.sock
     defaults:
       run:
