@@ -22,6 +22,13 @@ namespace SimplyBudgetWeb.UITests;
 public abstract class UITestBase : IAsyncDisposable
 {
     protected const int TestTimeoutMs = 120_000;
+
+    // StartAspireHost below performs up to three sequential steps (build, start, wait-for-
+    // frontend-healthy), each individually allowed up to AspireDefaultTimeout. The hook-level
+    // timeout must therefore comfortably exceed the sum of those steps, not match a single one
+    // of them, or a slow-but-otherwise-healthy container pull (e.g. a cold Docker image cache
+    // on a CI runner) can trip the outer timeout even though no individual step actually hung.
+    private const int AspireHostStartupTimeoutMs = 480_000;
     private static TimeSpan AspireDefaultTimeout { get; set; } = TimeSpan.FromMinutes(2);
     private static DistributedApplication? _aspireAppHost = null;
 
@@ -74,7 +81,7 @@ public abstract class UITestBase : IAsyncDisposable
     protected static CancellationToken CancellationToken =>
         TestContext.Current?.Execution.CancellationToken ?? CancellationToken.None;
 
-    [Before(TestSession), Timeout(TestTimeoutMs)]
+    [Before(TestSession), Timeout(AspireHostStartupTimeoutMs)]
     public static async Task StartAspireHost(CancellationToken cancellationToken)
     {
         // Check if an external frontend URL is provided
