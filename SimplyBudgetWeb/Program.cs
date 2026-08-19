@@ -1,5 +1,6 @@
 using SimplyBudgetWeb.Core;
 using SimplyBudgetWeb.Middleware;
+using SimplyBudgetWeb.Services;
 
 using Microsoft.Identity.Web;
 
@@ -57,6 +58,8 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = options.GetPolicy("SimplyBudgetUsers")!;
 });
 
+builder.Services.AddScoped<CurrentUserSyncService>();
+
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
@@ -88,6 +91,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Record/refresh the signed-in user as a pending-expense assignee so the "assign to" list on
+// the Pending Expenses page is always the set of people who have logged in.
+app.UseMiddleware<CurrentUserSyncMiddleware>();
 
 app.MapControllers();
 

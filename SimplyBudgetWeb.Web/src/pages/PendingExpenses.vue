@@ -17,8 +17,6 @@ const loading = ref(false)
 const discardItem = ref<PendingExpenseDto | null>(null)
 const convertItem = ref<PendingExpenseDto | null>(null)
 const convertDialogOpen = ref(false)
-const newAssigneeName = ref('')
-const addAssigneeOpen = ref(false)
 const deleteAllOpen = ref(false)
 const deletingAll = ref(false)
 
@@ -108,19 +106,6 @@ async function handleDeleteAll() {
   }
 }
 
-async function handleAddAssignee() {
-  if (!newAssigneeName.value.trim()) return
-  try {
-    await apiClient.post('/api/assignees', { name: newAssigneeName.value })
-    snackbar.enqueueSnackbar('Assignee added', { variant: 'success' })
-    newAssigneeName.value = ''
-    addAssigneeOpen.value = false
-    void fetchAssignees()
-  } catch {
-    snackbar.enqueueSnackbar('Failed to add assignee', { variant: 'error' })
-  }
-}
-
 function openConvert(item: PendingExpenseDto) {
   convertItem.value = item
   convertDialogOpen.value = true
@@ -157,10 +142,6 @@ onMounted(() => {
         style="max-width: 200px;"
         hide-details
       />
-
-      <v-btn variant="outlined" size="small" prepend-icon="mdi-account-plus" @click="addAssigneeOpen = true">
-        Add Assignee
-      </v-btn>
 
       <v-spacer />
 
@@ -237,20 +218,6 @@ onMounted(() => {
       :categories="categories"
       @success="onConvertSuccess"
     />
-
-    <v-dialog v-model="addAssigneeOpen" max-width="480">
-      <v-card>
-        <v-card-title>Add Assignee</v-card-title>
-        <v-card-text>
-          <v-text-field label="Name" v-model="newAssigneeName" @keyup.enter="handleAddAssignee" />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn @click="addAssigneeOpen = false">Cancel</v-btn>
-          <v-btn color="primary" @click="handleAddAssignee">Add</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
 
     <v-dialog :model-value="!!discardItem" max-width="480" @update:model-value="(val: boolean) => !val && (discardItem = null)">
       <v-card>

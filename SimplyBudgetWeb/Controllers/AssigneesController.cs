@@ -5,8 +5,11 @@ using SimplyBudgetWeb.Data;
 namespace SimplyBudgetWeb.Controllers;
 
 /// <summary>
-/// Manages the people that a <see cref="PendingExpense"/> can optionally be assigned to.
-/// This is a web-only concept and does not exist in the desktop client.
+/// Exposes the people that a <see cref="PendingExpense"/> can optionally be assigned to.
+/// This is a web-only concept and does not exist in the desktop client. There is no manual
+/// "add assignee" flow - rows are created and kept up to date automatically whenever a user
+/// signs in (see <see cref="Services.CurrentUserSyncService"/>), so this list is simply
+/// everyone who has logged in.
 /// </summary>
 [ApiController]
 [Route("api/assignees")]
@@ -19,28 +22,6 @@ public class AssigneesController(BudgetWebContext context) : ControllerBase
             .OrderBy(x => x.Name)
             .ToListAsync();
         return assignees.Select(ToDto).ToArray();
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<AssigneeDto>> Create([FromBody] AssigneeRequest request)
-    {
-        var name = request.Name?.Trim();
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            return BadRequest("Name is required.");
-        }
-
-        var existing = await context.PendingExpenseAssignees
-            .FirstOrDefaultAsync(x => x.Name == name);
-        if (existing is not null)
-        {
-            return Conflict(ToDto(existing));
-        }
-
-        var assignee = new PendingExpenseAssignee { Name = name };
-        context.PendingExpenseAssignees.Add(assignee);
-        await context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetAll), new { }, ToDto(assignee));
     }
 
     [HttpDelete("{id}")]
@@ -61,5 +42,3 @@ public class AssigneesController(BudgetWebContext context) : ControllerBase
 }
 
 public record AssigneeDto(int Id, string Name);
-
-public record AssigneeRequest(string? Name);
