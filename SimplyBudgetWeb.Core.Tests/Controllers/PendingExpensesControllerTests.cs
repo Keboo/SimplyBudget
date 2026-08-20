@@ -57,6 +57,31 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
+    public async Task GetAll_WithMonthFilter_OnlyReturnsItemsFromThatMonth()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            context.PendingExpenses.AddRange(
+                new PendingExpense { Date = new DateTime(2026, 6, 1), Description = "June 1", Amount = 100 },
+                new PendingExpense { Date = new DateTime(2026, 6, 15), Description = "June 15", Amount = 200 },
+                new PendingExpense { Date = new DateTime(2026, 7, 1), Description = "July 1", Amount = 300 });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new PendingExpensesController(context);
+
+        var result = await controller.GetAll(month: new DateTime(2026, 6, 10), search: null, assigneeId: null);
+
+        await Assert.That(result.Length).IsEqualTo(2);
+        await Assert.That(result[0].Description).IsEqualTo("June 1");
+        await Assert.That(result[1].Description).IsEqualTo("June 15");
+    }
+
+    [Test]
     public async Task GetAll_FiltersBySearch()
     {
         AutoMocker mocker = new();
@@ -341,6 +366,34 @@ public class PendingExpensesControllerTests
             var remaining = await context.PendingExpenses.ToListAsync();
             await Assert.That(remaining.Count).IsEqualTo(1);
             await Assert.That(remaining[0].Description).IsEqualTo("Unassigned");
+        });
+    }
+
+    [Test]
+    public async Task DeleteAll_WithMonthFilter_OnlyRemovesMatchingPendingExpenses()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            context.PendingExpenses.AddRange(
+                new PendingExpense { Date = new DateTime(2026, 1, 10), Description = "January", Amount = 100 },
+                new PendingExpense { Date = new DateTime(2026, 2, 10), Description = "February", Amount = 200 });
+            await context.SaveChangesAsync();
+        });
+
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            var controller = new PendingExpensesController(context);
+            await controller.DeleteAll(month: new DateTime(2026, 1, 1), search: null, assigneeId: null);
+        }
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var remaining = await context.PendingExpenses.ToListAsync();
+            await Assert.That(remaining.Count).IsEqualTo(1);
+            await Assert.That(remaining[0].Description).IsEqualTo("February");
         });
     }
 
