@@ -14,7 +14,7 @@ const isDark = computed(() => theme.global.name.value === 'dark')
 
 const navItems = [
   { title: 'Budget', to: '/budget', icon: 'mdi-cash-multiple' },
-  { title: 'History', to: '/history', icon: 'mdi-history' },
+  { title: 'Expenses', to: '/history', icon: 'mdi-history' },
   { title: 'Pending Expenses', to: '/pending-expenses', icon: 'mdi-receipt-text-clock' },
   { title: 'Accounts', to: '/accounts', icon: 'mdi-bank' },
   { title: 'Settings', to: '/settings', icon: 'mdi-cog' },
