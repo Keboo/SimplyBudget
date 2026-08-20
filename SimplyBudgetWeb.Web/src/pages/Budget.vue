@@ -4,12 +4,12 @@ import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto } from '@/types'
 import { formatCents, formatMonth } from '@/utils/currency'
+import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 
 const snackbar = useSnackbarStore()
 
-const now = new Date()
-const currentMonth = ref(new Date(now.getFullYear(), now.getMonth(), 1))
+const { currentMonth } = useMonthQueryParam()
 const budget = ref<BudgetResponse | null>(null)
 const loading = ref(false)
 const dialogOpen = ref(false)

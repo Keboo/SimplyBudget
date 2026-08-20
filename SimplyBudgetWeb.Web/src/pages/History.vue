@@ -4,12 +4,12 @@ import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { HistoryItemDto, ExpenseCategoryDto } from '@/types'
 import { formatCents, formatMonth } from '@/utils/currency'
+import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 
 const snackbar = useSnackbarStore()
 
-const now = new Date()
-const currentMonth = ref(new Date(now.getFullYear(), now.getMonth(), 1))
+const { currentMonth } = useMonthQueryParam()
 const search = ref('')
 const categoryId = ref<number | null>(null)
 const items = ref<HistoryItemDto[]>([])
