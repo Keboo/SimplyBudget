@@ -28,6 +28,10 @@ export const vuetify = createVuetify({
           // Off-white so surfaces (cards, app bar, etc.) stand out against the page.
           background: '#f5f5f5',
           surface: '#ffffff',
+          // Used to tint amounts: credit (money in) vs debit (money out).
+          // Chosen for >=4.5:1 contrast against the white surface color.
+          credit: '#2E7D32',
+          debit: '#C62828',
         },
         variables: {
           // Bumped from the Vuetify default of 0.60 to meet WCAG AA contrast
@@ -42,6 +46,10 @@ export const vuetify = createVuetify({
           // app bar, and other surfaces are visually distinct from the page.
           background: '#161616',
           surface: '#242424',
+          // Lighter tints so credit/debit amounts keep >=4.5:1 contrast
+          // against the dark surface color.
+          credit: '#81C784',
+          debit: '#E57373',
         },
       },
     },

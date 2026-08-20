@@ -189,12 +189,14 @@ onMounted(() => {
               <div class="d-flex justify-space-between align-center">
                 <span>
                   {{ new Date(item.date).toLocaleDateString() }} — {{ item.description }}
-                  <v-chip size="small" class="ml-2">{{ item.isDebit ? 'Debit' : 'Credit' }}</v-chip>
                   <v-chip v-if="item.suggestedCategoryName" size="small" variant="outlined" class="ml-1">
                     Suggested: {{ item.suggestedCategoryName }}
                   </v-chip>
                 </span>
-                <span class="font-weight-bold">{{ formatCents(item.amount) }}</span>
+                <span
+                  class="font-weight-bold"
+                  :style="{ color: `rgb(var(--v-theme-${item.isDebit ? 'debit' : 'credit'}))` }"
+                >{{ item.isDebit ? '' : '+' }}{{ formatCents(item.amount) }}</span>
               </div>
             </v-list-item-title>
             <template #append>
