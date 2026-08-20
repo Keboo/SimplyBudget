@@ -55,6 +55,10 @@ watch(
   { immediate: true },
 )
 
+const sortedCategories = computed(() =>
+  [...props.categories].sort((a, b) => a.name.localeCompare(b.name)),
+)
+
 const remainingCents = computed(() => {
   if (!props.pendingExpense) return 0
   const allocated = lines.value.reduce((sum, l) => sum + dollarsToCents(l.amount || '0'), 0)
@@ -115,7 +119,7 @@ async function submit() {
           <div v-for="(item, index) in lines" :key="index" class="d-flex align-center mb-2" style="gap: 8px;">
             <v-select
               label="Category"
-              :items="props.categories"
+              :items="sortedCategories"
               item-title="name"
               item-value="id"
               v-model="item.expenseCategoryId"
