@@ -25,6 +25,17 @@ const deletingAll = ref(false)
 const assigneeFilterOptions = computed(() => [{ id: null, name: 'All' }, ...assignees.value])
 const assigneeAssignOptions = computed(() => [{ id: null, name: 'Unassigned' }, ...assignees.value])
 
+// Items are returned sorted oldest-first, so consecutive entries belong to the same
+// month unless this changes; used to show a divider between months in the list.
+function monthLabel(dateString: string) {
+  return new Date(dateString).toLocaleDateString('default', { month: 'long', year: 'numeric' })
+}
+
+function isNewMonth(index: number) {
+  if (index === 0) return true
+  return monthLabel(items.value[index].date) !== monthLabel(items.value[index - 1].date)
+}
+
 async function fetchAssignees() {
   try {
     assignees.value = await apiClient.get<AssigneeDto[]>('/api/assignees') ?? []
@@ -113,7 +124,11 @@ function openConvert(item: PendingExpenseDto) {
 
 function onConvertSuccess() {
   convertDialogOpen.value = false
-  void fetchPendingExpenses()
+  if (convertItem.value) {
+    const idToRemove = convertItem.value.id
+    items.value = items.value.filter((item) => item.id !== idToRemove)
+  }
+  convertItem.value = null
 }
 
 watch([search, assigneeId], fetchPendingExpenses)
@@ -164,54 +179,59 @@ onMounted(() => {
       <v-list-item v-if="items.length === 0">
         <v-list-item-title>No pending expenses found.</v-list-item-title>
       </v-list-item>
-      <v-card v-for="item in items" :key="item.id" class="mb-2">
-        <v-list-item style="cursor: pointer;" @click="openConvert(item)">
-          <v-list-item-title>
-            <div class="d-flex justify-space-between align-center">
-              <span>
-                {{ new Date(item.date).toLocaleDateString() }} — {{ item.description }}
-                <v-chip v-if="item.suggestedCategoryName" size="small" variant="outlined" class="ml-1">
-                  Suggested: {{ item.suggestedCategoryName }}
-                </v-chip>
-              </span>
-              <span
-                class="font-weight-bold"
-                :style="{ color: `rgb(var(--v-theme-${item.isDebit ? 'debit' : 'credit'}))` }"
-              >{{ item.isDebit ? '' : '+' }}{{ formatCents(item.amount) }}</span>
-            </div>
-          </v-list-item-title>
-          <template #append>
-            <v-btn
-              icon="mdi-delete"
-              variant="text"
-              color="error"
-              aria-label="Discard pending expense"
-              @click.stop="discardItem = item"
+      <template v-for="(item, index) in items" :key="item.id">
+        <v-list-subheader v-if="isNewMonth(index)" class="font-weight-bold">
+          {{ monthLabel(item.date) }}
+        </v-list-subheader>
+        <v-card class="mb-2">
+          <v-list-item style="cursor: pointer;" @click="openConvert(item)">
+            <v-list-item-title>
+              <div class="d-flex justify-space-between align-center">
+                <span>
+                  {{ new Date(item.date).toLocaleDateString() }} — {{ item.description }}
+                  <v-chip v-if="item.suggestedCategoryName" size="small" variant="outlined" class="ml-1">
+                    Suggested: {{ item.suggestedCategoryName }}
+                  </v-chip>
+                </span>
+                <span
+                  class="font-weight-bold"
+                  :style="{ color: `rgb(var(--v-theme-${item.isDebit ? 'debit' : 'credit'}))` }"
+                >{{ item.isDebit ? '' : '+' }}{{ formatCents(item.amount) }}</span>
+              </div>
+            </v-list-item-title>
+            <template #append>
+              <v-btn
+                icon="mdi-delete"
+                variant="text"
+                color="error"
+                aria-label="Discard pending expense"
+                @click.stop="discardItem = item"
+              />
+            </template>
+          </v-list-item>
+          <v-card-text class="d-flex flex-wrap align-center" style="gap: 16px;" @click.stop>
+            <v-select
+              label="Assignee"
+              :items="assigneeAssignOptions"
+              item-title="name"
+              item-value="id"
+              :model-value="item.assigneeId"
+              density="compact"
+              style="max-width: 220px;"
+              hide-details
+              @update:model-value="(val: number | null) => updateAssignee(item, val)"
             />
-          </template>
-        </v-list-item>
-        <v-card-text class="d-flex flex-wrap align-center" style="gap: 16px;" @click.stop>
-          <v-select
-            label="Assignee"
-            :items="assigneeAssignOptions"
-            item-title="name"
-            item-value="id"
-            :model-value="item.assigneeId"
-            density="compact"
-            style="max-width: 220px;"
-            hide-details
-            @update:model-value="(val: number | null) => updateAssignee(item, val)"
-          />
-          <v-text-field
-            label="Notes"
-            v-model="item.notes"
-            density="compact"
-            style="flex: 1; min-width: 200px;"
-            hide-details
-            @blur="updateNotes(item)"
-          />
-        </v-card-text>
-      </v-card>
+            <v-text-field
+              label="Notes"
+              v-model="item.notes"
+              density="compact"
+              style="flex: 1; min-width: 200px;"
+              hide-details
+              @blur="updateNotes(item)"
+            />
+          </v-card-text>
+        </v-card>
+      </template>
     </v-list>
 
     <ConvertPendingExpenseDialog
