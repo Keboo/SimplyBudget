@@ -179,6 +179,15 @@ public static class BudgetDataPortabilityService
             context.ExpenseCategoryItemDetails.AddRange(importedDetails);
             await context.SaveChangesAsync(cancellationToken);
 
+            // Preserve exported category balances exactly. Some historical data sets
+            // cannot be reconstructed solely from item details, so rebuilding from
+            // details during import can drift from the source snapshot.
+            for (var i = 0; i < importedCategories.Count; i++)
+            {
+                importedCategories[i].CurrentBalance = categorySeed[i].CurrentBalance;
+            }
+            await context.SaveChangesAsync(cancellationToken);
+
             var importedRules = (exportPackage.Rules ?? [])
                 .OrderBy(x => x.Id)
                 .Select(x => new ExpenseCategoryRule

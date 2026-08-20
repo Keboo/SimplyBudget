@@ -125,8 +125,8 @@ public class DataPortabilityControllerTests
             ],
             Categories =
             [
-                new BudgetDataExportCategory(10, "Groceries", "Food", 1, 500_00, 0, 0, null, false),
-                new BudgetDataExportCategory(20, "Emergency Fund", "Savings", 2, 0, 10, 0, null, false)
+                new BudgetDataExportCategory(10, "Groceries", "Food", 1, 500_00, 0, 125_00, null, false),
+                new BudgetDataExportCategory(20, "Emergency Fund", "Savings", 2, 0, 10, 875_00, null, false)
             ],
             Items =
             [
@@ -183,9 +183,9 @@ public class DataPortabilityControllerTests
 
             var groceries = categories.Single(x => x.Name == "Groceries");
             var emergency = categories.Single(x => x.Name == "Emergency Fund");
-            if (groceries.CurrentBalance != 1_000_00 || emergency.CurrentBalance != 500_00)
+            if (groceries.CurrentBalance != 125_00 || emergency.CurrentBalance != 875_00)
             {
-                throw new Exception("Expected category balances to be rebuilt from imported item details.");
+                throw new Exception("Expected category balances to match imported export values.");
             }
 
             if (await context.ExpenseCategoryRules.CountAsync() != 1 ||
