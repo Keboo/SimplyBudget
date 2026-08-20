@@ -281,6 +281,7 @@ onMounted(async () => {
                         v-bind="props"
                         size="small"
                         variant="outlined"
+                        :model-value="true"
                         :closable="item.assigneeId !== null"
                         :prepend-icon="item.assigneeId === null ? 'mdi-account-plus-outline' : undefined"
                         @click.stop
