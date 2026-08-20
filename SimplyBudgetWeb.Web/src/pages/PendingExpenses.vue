@@ -113,7 +113,11 @@ function openConvert(item: PendingExpenseDto) {
 
 function onConvertSuccess() {
   convertDialogOpen.value = false
-  void fetchPendingExpenses()
+  if (convertItem.value) {
+    const idToRemove = convertItem.value.id
+    items.value = items.value.filter((item) => item.id !== idToRemove)
+  }
+  convertItem.value = null
 }
 
 watch([search, assigneeId], fetchPendingExpenses)
