@@ -86,7 +86,7 @@ function onDialogSuccess() {
 
 <template>
   <div>
-    <h5 class="text-h5 mb-4">History</h5>
+    <h5 class="text-h5 mb-4">Expenses</h5>
 
     <v-card class="pa-4 mb-4 d-flex flex-wrap align-center" style="gap: 16px;">
       <v-btn variant="outlined" size="small" prepend-icon="mdi-chevron-left" @click="prevMonth">Prev</v-btn>

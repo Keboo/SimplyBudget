@@ -17,7 +17,7 @@ public class AuthTests : UITestBase
     {
         await Page.GotoAsync(FrontendBaseUri.ToString());
         await Assert.That(await Page.GetByRole(AriaRole.Button, new() { Name = "Budget" }).CountAsync()).IsEqualTo(0);
-        await Assert.That(await Page.GetByRole(AriaRole.Button, new() { Name = "History" }).CountAsync()).IsEqualTo(0);
+        await Assert.That(await Page.GetByRole(AriaRole.Button, new() { Name = "Expenses" }).CountAsync()).IsEqualTo(0);
         await Assert.That(await Page.GetByRole(AriaRole.Button, new() { Name = "Sign out" }).CountAsync()).IsEqualTo(0);
     }
 
@@ -29,4 +29,3 @@ public class AuthTests : UITestBase
         await AssertNoAccessibilityViolations();
     }
 }
-
