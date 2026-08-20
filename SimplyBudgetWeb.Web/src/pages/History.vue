@@ -1,24 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { HistoryItemDto, ExpenseCategoryDto } from '@/types'
-import { formatCents, formatMonth, parseMonth } from '@/utils/currency'
+import { formatCents, formatMonth } from '@/utils/currency'
+import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 
 const snackbar = useSnackbarStore()
-const route = useRoute()
-const router = useRouter()
 
-function initialMonth(): Date {
-  const q = route.query.month
-  if (typeof q === 'string' && /^\d{4}-\d{2}$/.test(q)) return parseMonth(q)
-  const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth(), 1)
-}
-
-const currentMonth = ref(initialMonth())
+const { currentMonth } = useMonthQueryParam()
 const search = ref('')
 const categoryId = ref<number | null>(null)
 const items = ref<HistoryItemDto[]>([])
@@ -80,10 +71,7 @@ function totalForItem(item: HistoryItemDto) {
   return item.details.reduce((sum, d) => sum + d.amount, 0)
 }
 
-watch([currentMonth, search, categoryId], ([month]) => {
-  void router.replace({ query: { ...route.query, month: formatMonth(month) } })
-  void fetchHistory()
-})
+watch([currentMonth, search, categoryId], fetchHistory)
 
 onMounted(() => {
   void fetchCategories()
