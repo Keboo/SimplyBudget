@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
 
 namespace SimplyBudgetWeb.Controllers;
@@ -16,13 +17,21 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
 {
     [HttpGet]
     public async Task<PendingExpenseDto[]> GetAll(
-        [FromQuery] string? search,
-        [FromQuery] int? assigneeId)
+        [FromQuery] DateTime? month = null,
+        [FromQuery] string? search = null,
+        [FromQuery] int? assigneeId = null)
     {
         var query = context.PendingExpenses
             .Include(x => x.Assignee)
             .Include(x => x.SuggestedCategory)
             .AsQueryable();
+
+        if (month.HasValue)
+        {
+            var start = month.Value.StartOfMonth();
+            var end = start.EndOfMonth();
+            query = query.Where(x => x.Date >= start && x.Date <= end);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(x => x.Description != null && x.Description.Contains(search));
@@ -30,7 +39,7 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
         if (assigneeId.HasValue)
             query = query.Where(x => x.AssigneeId == assigneeId.Value);
 
-        // Oldest first: pending expenses are worked off like a queue, not limited to a month.
+        // Oldest first: pending expenses are worked off like a queue.
         var items = await query
             .OrderBy(x => x.Date)
             .ThenBy(x => x.ID)
@@ -100,10 +109,18 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
     /// </summary>
     [HttpDelete]
     public async Task<IActionResult> DeleteAll(
-        [FromQuery] string? search,
-        [FromQuery] int? assigneeId)
+        [FromQuery] DateTime? month = null,
+        [FromQuery] string? search = null,
+        [FromQuery] int? assigneeId = null)
     {
         var query = context.PendingExpenses.AsQueryable();
+
+        if (month.HasValue)
+        {
+            var start = month.Value.StartOfMonth();
+            var end = start.EndOfMonth();
+            query = query.Where(x => x.Date >= start && x.Date <= end);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(x => x.Description != null && x.Description.Contains(search));

@@ -3,11 +3,13 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { PendingExpenseDto, AssigneeDto, ExpenseCategoryDto } from '@/types'
-import { formatCents } from '@/utils/currency'
+import { formatCents, formatMonth } from '@/utils/currency'
 import ConvertPendingExpenseDialog from '@/components/ConvertPendingExpenseDialog.vue'
 
 const snackbar = useSnackbarStore()
 
+const now = new Date()
+const currentMonth = ref(new Date(now.getFullYear(), now.getMonth(), 1))
 const search = ref('')
 const assigneeId = ref<number | null>(null)
 const items = ref<PendingExpenseDto[]>([])
@@ -25,16 +27,37 @@ const noteDrafts = ref<Record<number, string>>({})
 // "All" plus the real filter options; used for both the toolbar filter and the
 // page-level assignee filter.
 const assigneeFilterOptions = computed(() => [{ id: null, name: 'All' }, ...assignees.value])
+const monthLabel = computed(() =>
+  currentMonth.value.toLocaleString('default', { month: 'long', year: 'numeric' }),
+)
 
 // Items are returned sorted oldest-first, so consecutive entries belong to the same
 // month unless this changes; used to show a divider between months in the list.
-function monthLabel(dateString: string) {
+function monthGroupLabel(dateString: string) {
   return new Date(dateString).toLocaleDateString('default', { month: 'long', year: 'numeric' })
 }
 
 function isNewMonth(index: number) {
   if (index === 0) return true
-  return monthLabel(items.value[index].date) !== monthLabel(items.value[index - 1].date)
+  return monthGroupLabel(items.value[index].date) !== monthGroupLabel(items.value[index - 1].date)
+}
+
+function prevMonth() {
+  const d = currentMonth.value
+  currentMonth.value = new Date(d.getFullYear(), d.getMonth() - 1, 1)
+}
+
+function nextMonth() {
+  const d = currentMonth.value
+  currentMonth.value = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+}
+
+function buildFilters() {
+  const month = `${formatMonth(currentMonth.value)}-01`
+  const params = new URLSearchParams({ month })
+  if (search.value) params.set('search', search.value)
+  if (assigneeId.value !== null) params.set('assigneeId', String(assigneeId.value))
+  return params
 }
 
 async function fetchAssignees() {
@@ -52,10 +75,7 @@ async function fetchCategories() {
 async function fetchPendingExpenses() {
   loading.value = true
   try {
-    const params = new URLSearchParams()
-    if (search.value) params.set('search', search.value)
-    if (assigneeId.value !== null) params.set('assigneeId', String(assigneeId.value))
-    const query = params.toString()
+    const query = buildFilters().toString()
     items.value = await apiClient.get<PendingExpenseDto[]>(`/api/pending-expenses${query ? `?${query}` : ''}`) ?? []
   } catch {
     snackbar.enqueueSnackbar('Failed to load pending expenses', { variant: 'error' })
@@ -137,10 +157,7 @@ async function handleDiscard() {
 async function handleDeleteAll() {
   deletingAll.value = true
   try {
-    const params = new URLSearchParams()
-    if (search.value) params.set('search', search.value)
-    if (assigneeId.value !== null) params.set('assigneeId', String(assigneeId.value))
-    const query = params.toString()
+    const query = buildFilters().toString()
     await apiClient.delete(`/api/pending-expenses${query ? `?${query}` : ''}`)
     snackbar.enqueueSnackbar('Pending expenses discarded', { variant: 'success' })
     deleteAllOpen.value = false
@@ -166,7 +183,7 @@ function onConvertSuccess() {
   convertItem.value = null
 }
 
-watch([search, assigneeId], fetchPendingExpenses)
+watch([currentMonth, search, assigneeId], fetchPendingExpenses)
 
 onMounted(() => {
   void fetchAssignees()
@@ -180,6 +197,10 @@ onMounted(() => {
     <h5 class="text-h5 mb-4">Pending Expenses</h5>
 
     <v-card class="pa-4 mb-4 d-flex flex-wrap align-center" style="gap: 16px;">
+      <v-btn variant="outlined" size="small" prepend-icon="mdi-chevron-left" @click="prevMonth">Prev</v-btn>
+      <span style="min-width: 140px; text-align: center;">{{ monthLabel }}</span>
+      <v-btn variant="outlined" size="small" append-icon="mdi-chevron-right" @click="nextMonth">Next</v-btn>
+
       <v-text-field label="Search" v-model="search" density="compact" style="max-width: 200px;" hide-details />
 
       <v-select
@@ -216,7 +237,7 @@ onMounted(() => {
       </v-list-item>
       <template v-for="(item, index) in items" :key="item.id">
         <v-list-subheader v-if="isNewMonth(index)" class="font-weight-bold">
-          {{ monthLabel(item.date) }}
+          {{ monthGroupLabel(item.date) }}
         </v-list-subheader>
         <v-card class="mb-2">
           <v-list-item density="compact" style="cursor: pointer;" @click="openConvert(item)">
