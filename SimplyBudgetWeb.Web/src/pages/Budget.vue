@@ -27,6 +27,10 @@ interface Group {
   items: BudgetCategoryDto[]
 }
 
+function compareCategoryName(a: BudgetCategoryDto, b: BudgetCategoryDto): number {
+  return (a.name ?? '').localeCompare(b.name ?? '', undefined, { sensitivity: 'base' })
+}
+
 const grouped = computed<Group[]>(() => {
   const map = new Map<string, BudgetCategoryDto[]>()
   for (const cat of budget.value?.categories ?? []) {
@@ -34,7 +38,10 @@ const grouped = computed<Group[]>(() => {
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(cat)
   }
-  return Array.from(map.entries()).map(([groupName, items]) => ({ groupName, items }))
+  return Array.from(map.entries()).map(([groupName, items]) => ({
+    groupName,
+    items: [...items].sort(compareCategoryName),
+  }))
 })
 
 const categoryChartMaxAmount = computed(() => {
