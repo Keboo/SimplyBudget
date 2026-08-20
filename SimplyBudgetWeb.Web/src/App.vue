@@ -11,8 +11,10 @@ onMounted(() => {
   void authStore.initialize()
 })
 
-function refreshToLatestVersion() {
-  void updateServiceWorker(true)
+async function refreshToLatestVersion() {
+  needRefresh.value = false
+  await updateServiceWorker()
+  window.location.reload()
 }
 </script>
 
