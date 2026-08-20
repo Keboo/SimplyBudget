@@ -99,6 +99,10 @@ export interface PendingExpenseDto {
   suggestedCategoryName: string | null
 }
 
+export interface OldestPendingExpenseMonthDto {
+  month: string | null
+}
+
 export interface PendingExpenseUpdateRequest {
   assigneeId: number | null
   notes: string | null

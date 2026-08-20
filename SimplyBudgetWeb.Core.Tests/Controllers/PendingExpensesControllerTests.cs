@@ -82,6 +82,42 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
+    public async Task GetOldestMonth_ReturnsOldestPendingExpenseMonthStart()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            context.PendingExpenses.AddRange(
+                new PendingExpense { Date = new DateTime(2026, 6, 15), Description = "Recent", Amount = 100 },
+                new PendingExpense { Date = new DateTime(2024, 1, 31), Description = "Oldest", Amount = 200 });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new PendingExpensesController(context);
+
+        var result = await controller.GetOldestMonth();
+
+        await Assert.That(result.Month).IsEqualTo(new DateTime(2024, 1, 1));
+    }
+
+    [Test]
+    public async Task GetOldestMonth_WithNoPendingExpenses_ReturnsNull()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new PendingExpensesController(context);
+
+        var result = await controller.GetOldestMonth();
+
+        await Assert.That(result.Month).IsNull();
+    }
+
+    [Test]
     public async Task GetAll_FiltersBySearch()
     {
         AutoMocker mocker = new();
