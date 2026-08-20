@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
 
 namespace SimplyBudgetWeb.Controllers;
@@ -10,13 +11,16 @@ namespace SimplyBudgetWeb.Controllers;
 public class AccountsController(BudgetWebContext context) : ControllerBase
 {
     [HttpGet]
-    public async Task<AccountDto[]> GetAll()
+    public async Task<AccountDto[]> GetAll([FromQuery] DateTime? month)
     {
         var accounts = await context.Accounts.ToListAsync();
+        var monthEnd = month?.StartOfMonth().EndOfMonth();
         var dtos = new List<AccountDto>();
         foreach (var account in accounts)
         {
-            int currentAmount = await context.GetCurrentAmount(account.ID);
+            int currentAmount = monthEnd.HasValue
+                ? await GetCurrentAmountThroughMonthEnd(account.ID, monthEnd.Value)
+                : await context.GetCurrentAmount(account.ID);
             dtos.Add(ToDto(account, currentAmount));
         }
         return dtos.ToArray();
@@ -61,6 +65,22 @@ public class AccountsController(BudgetWebContext context) : ControllerBase
 
         int currentAmount = await context.GetCurrentAmount(account.ID);
         return Ok(ToDto(account, currentAmount));
+    }
+
+    private async Task<int> GetCurrentAmountThroughMonthEnd(int accountId, DateTime monthEnd)
+    {
+        var currentAmount = await context.ExpenseCategories
+            .Where(x => x.AccountID == accountId)
+            .Select(x => (int?)x.CurrentBalance)
+            .SumAsync() ?? 0;
+
+        var futureAmountAdjustments = await context.ExpenseCategoryItemDetails
+            .Where(x => x.ExpenseCategory!.AccountID == accountId)
+            .Where(x => x.ExpenseCategoryItem!.Date > monthEnd)
+            .Select(x => (int?)x.Amount)
+            .SumAsync() ?? 0;
+
+        return currentAmount - futureAmountAdjustments;
     }
 
     private static AccountDto ToDto(Account a, int currentAmount) => new(

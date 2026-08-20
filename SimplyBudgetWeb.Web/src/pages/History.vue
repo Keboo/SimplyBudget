@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
-import type { HistoryItemDto, ExpenseCategoryDto } from '@/types'
+import type { HistoryItemDto, ExpenseCategoryDto, AccountDto } from '@/types'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
@@ -14,7 +14,9 @@ const search = ref('')
 const categoryId = ref<number | null>(null)
 const items = ref<HistoryItemDto[]>([])
 const categories = ref<ExpenseCategoryDto[]>([])
+const accounts = ref<AccountDto[]>([])
 const loading = ref(false)
+const accountLoading = ref(false)
 const deleteItem = ref<HistoryItemDto | null>(null)
 const dialogOpen = ref(false)
 
@@ -45,6 +47,19 @@ async function fetchHistory() {
   }
 }
 
+async function fetchAccountBalances() {
+  accountLoading.value = true
+  try {
+    const month = `${formatMonth(currentMonth.value)}-01`
+    const params = new URLSearchParams({ month })
+    accounts.value = await apiClient.get<AccountDto[]>(`/api/accounts?${params}`) ?? []
+  } catch {
+    snackbar.enqueueSnackbar('Failed to load account balances', { variant: 'error' })
+  } finally {
+    accountLoading.value = false
+  }
+}
+
 function prevMonth() {
   const d = currentMonth.value
   currentMonth.value = new Date(d.getFullYear(), d.getMonth() - 1, 1)
@@ -61,7 +76,7 @@ async function handleDelete() {
     await apiClient.delete(`/api/history/${deleteItem.value.id}`)
     snackbar.enqueueSnackbar('Transaction deleted', { variant: 'success' })
     deleteItem.value = null
-    void fetchHistory()
+    void Promise.all([fetchHistory(), fetchAccountBalances()])
   } catch {
     snackbar.enqueueSnackbar('Failed to delete transaction', { variant: 'error' })
   }
@@ -72,14 +87,16 @@ function totalForItem(item: HistoryItemDto) {
 }
 
 watch([currentMonth, search, categoryId], fetchHistory)
+watch(currentMonth, fetchAccountBalances)
 
 onMounted(() => {
   void fetchCategories()
   void fetchHistory()
+  void fetchAccountBalances()
 })
 
 function onDialogSuccess() {
-  void fetchHistory()
+  void Promise.all([fetchHistory(), fetchAccountBalances()])
   dialogOpen.value = false
 }
 </script>
@@ -105,6 +122,19 @@ function onDialogSuccess() {
         style="max-width: 200px;"
         hide-details
       />
+    </v-card>
+
+    <v-card class="pa-4 mb-4">
+      <div class="text-subtitle-2 mb-2">Account balances through {{ monthLabel }}</div>
+      <div v-if="accountLoading" class="d-flex justify-center py-2">
+        <v-progress-circular size="20" indeterminate aria-label="Loading account balances" />
+      </div>
+      <div v-else-if="accounts.length === 0" class="text-medium-emphasis">No accounts found.</div>
+      <div v-else class="d-flex flex-wrap" style="gap: 8px;">
+        <v-chip v-for="account in accounts" :key="account.id" size="small" variant="outlined">
+          {{ account.name ?? 'Unnamed account' }}: {{ formatCents(account.currentAmount) }}
+        </v-chip>
+      </div>
     </v-card>
 
     <div v-if="loading" class="d-flex justify-center pa-8">
