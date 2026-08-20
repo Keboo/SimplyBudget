@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto } from '@/types'
-import { formatCents, formatMonth } from '@/utils/currency'
+import { formatCents, formatMonth, parseMonth } from '@/utils/currency'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 
 const snackbar = useSnackbarStore()
+const route = useRoute()
+const router = useRouter()
 
-const now = new Date()
-const currentMonth = ref(new Date(now.getFullYear(), now.getMonth(), 1))
+function initialMonth(): Date {
+  const q = route.query.month
+  if (typeof q === 'string' && /^\d{4}-\d{2}$/.test(q)) return parseMonth(q)
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), 1)
+}
+
+const currentMonth = ref(initialMonth())
 const budget = ref<BudgetResponse | null>(null)
 const loading = ref(false)
 const dialogOpen = ref(false)
@@ -62,7 +71,10 @@ function nextMonth() {
   currentMonth.value = new Date(d.getFullYear(), d.getMonth() + 1, 1)
 }
 
-watch(currentMonth, fetchBudget)
+watch(currentMonth, (month) => {
+  void router.replace({ query: { ...route.query, month: formatMonth(month) } })
+  void fetchBudget()
+})
 
 onMounted(() => {
   void fetchBudget()
