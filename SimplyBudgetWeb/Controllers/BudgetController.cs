@@ -16,6 +16,18 @@ public class BudgetController(BudgetWebContext context) : ControllerBase
         var monthDate = (month ?? DateTime.Today).StartOfMonth();
         var start = monthDate.StartOfMonth();
         var end = monthDate.EndOfMonth();
+        var totalAccountAmount = await context.ExpenseCategories
+            .Where(x => x.AccountID != null)
+            .Select(x => (int?)x.CurrentBalance)
+            .SumAsync() ?? 0;
+
+        var futureAccountAmountAdjustments = await context.ExpenseCategoryItemDetails
+            .Where(x => x.ExpenseCategory!.AccountID != null)
+            .Where(x => x.ExpenseCategoryItem!.Date > end)
+            .Select(x => (int?)x.Amount)
+            .SumAsync() ?? 0;
+
+        totalAccountAmount -= futureAccountAmountAdjustments;
 
         var categories = await context.ExpenseCategories
             .Where(c => !c.IsHidden)
@@ -64,6 +76,7 @@ public class BudgetController(BudgetWebContext context) : ControllerBase
 
         return new BudgetResponse(
             TotalBudget: totalBudget,
+            TotalAccountAmount: totalAccountAmount,
             Month: monthDate.ToString("yyyy-MM"),
             Categories: categoryDtos
         );
@@ -83,7 +96,7 @@ public class BudgetController(BudgetWebContext context) : ControllerBase
     }
 }
 
-public record BudgetResponse(int TotalBudget, string Month, List<BudgetCategoryDto> Categories);
+public record BudgetResponse(int TotalBudget, int TotalAccountAmount, string Month, List<BudgetCategoryDto> Categories);
 
 public record BudgetCategoryDto(
     int Id,

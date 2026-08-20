@@ -84,7 +84,10 @@ function onDialogSuccess() {
     </div>
 
     <v-card v-if="budget" class="pa-4 mb-4">
-      <span class="text-h5">Total Budget: <strong>{{ formatCents(budget.totalBudget) }}</strong></span>
+      <div class="d-flex flex-wrap" style="gap: 16px;">
+        <span class="text-h5">Total Budget: <strong>{{ formatCents(budget.totalBudget) }}</strong></span>
+        <span class="text-h5">Total In Accounts: <strong>{{ formatCents(budget.totalAccountAmount) }}</strong></span>
+      </div>
     </v-card>
 
     <div v-if="loading" class="d-flex justify-center pa-8">
