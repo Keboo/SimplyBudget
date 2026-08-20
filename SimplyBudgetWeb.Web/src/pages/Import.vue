@@ -227,7 +227,6 @@ onMounted(() => { void fetchCategories() })
               <th>Description</th>
               <th style="text-align: right;">Amount</th>
               <th>Type</th>
-              <th>Category</th>
             </tr>
           </thead>
           <tbody>
@@ -242,18 +241,6 @@ onMounted(() => { void fetchCategories() })
               </td>
               <td style="text-align: right;">{{ formatCents(item.amount) }}</td>
               <td>{{ item.isDebit ? 'Debit' : 'Credit' }}</td>
-              <td>
-                <v-select
-                  :items="[{ id: null, name: 'None' }, ...categories]"
-                  item-title="name"
-                  item-value="id"
-                  :model-value="item.suggestedCategoryId"
-                  density="compact"
-                  hide-details
-                  style="min-width: 150px;"
-                  @update:model-value="(val: number | null) => updateCategory(item, val)"
-                />
-              </td>
             </tr>
           </tbody>
         </v-table>

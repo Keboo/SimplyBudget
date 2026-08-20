@@ -18,18 +18,13 @@ public class ImportController(BudgetWebContext context) : ControllerBase
         var import = new StcuCsvImport(stream);
         var parsedItems = await import.GetItems().ToListAsync();
 
-        var rules = await context.ExpenseCategoryRules
-            .Include(x => x.ExpenseCategory)
-            .ToListAsync();
-
         var existingSignedAmountsByDate = await GetExistingSignedAmountsByDateAsync(parsedItems.Select(x => x.Date));
 
         var result = new List<ImportItemDto>();
         foreach (var item in parsedItems)
         {
             var rawAmount = item.Details?.FirstOrDefault()?.Amount ?? 0;
-            var rule = rules.FirstOrDefault(r => r.RuleRegex != null &&
-                Regex.IsMatch(item.Description ?? "", r.RuleRegex, RegexOptions.IgnoreCase));
+            
 
             bool isDuplicate = existingSignedAmountsByDate.TryGetValue(item.Date, out var amounts) &&
                 amounts.Contains(rawAmount);
@@ -39,8 +34,6 @@ public class ImportController(BudgetWebContext context) : ControllerBase
                 Description: item.Description,
                 Amount: Math.Abs(rawAmount),
                 IsDebit: rawAmount < 0,
-                SuggestedCategoryId: rule?.ExpenseCategoryID,
-                SuggestedCategoryName: rule?.ExpenseCategory?.Name,
                 // Non-duplicate items are checked by default so they're imported; likely
                 // duplicates default to unchecked until the user explicitly opts back in.
                 IsChecked: !isDuplicate,
@@ -104,6 +97,10 @@ public class ImportController(BudgetWebContext context) : ControllerBase
     [HttpPost("save")]
     public async Task<IActionResult> Save([FromBody] ImportItemDto[] items)
     {
+        var rules = await context.ExpenseCategoryRules
+            .Include(x => x.ExpenseCategory)
+            .ToListAsync();
+
         var pendingExpenses = items
             .Where(i => i.IsChecked)
             .Select(i => new PendingExpense
@@ -112,7 +109,9 @@ public class ImportController(BudgetWebContext context) : ControllerBase
                 Description = i.Description,
                 Amount = i.Amount,
                 IsDebit = i.IsDebit,
-                SuggestedCategoryId = i.SuggestedCategoryId,
+                SuggestedCategoryId = rules.FirstOrDefault(
+                    r => r.RuleRegex != null &&
+                        Regex.IsMatch(i.Description ?? "", r.RuleRegex, RegexOptions.IgnoreCase))?.ExpenseCategoryID,
             })
             .ToList();
 
@@ -130,8 +129,6 @@ public record ImportItemDto(
     string? Description,
     int Amount,
     bool IsDebit,
-    int? SuggestedCategoryId,
-    string? SuggestedCategoryName,
     bool IsChecked,
     bool IsDuplicate = false
 );
