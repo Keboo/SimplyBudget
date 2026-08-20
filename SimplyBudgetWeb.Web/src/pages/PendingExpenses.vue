@@ -21,11 +21,12 @@ const convertItem = ref<PendingExpenseDto | null>(null)
 const convertDialogOpen = ref(false)
 const deleteAllOpen = ref(false)
 const deletingAll = ref(false)
+const editingNoteItemId = ref<number | null>(null)
+const noteDrafts = ref<Record<number, string>>({})
 
 // "All" plus the real filter options; used for both the toolbar filter and the
-// per-item assignee picker (which additionally needs an "Unassigned" option).
+// page-level assignee filter.
 const assigneeFilterOptions = computed(() => [{ id: null, name: 'All' }, ...assignees.value])
-const assigneeAssignOptions = computed(() => [{ id: null, name: 'Unassigned' }, ...assignees.value])
 const monthLabel = computed(() =>
   currentMonth.value.toLocaleString('default', { month: 'long', year: 'numeric' }),
 )
@@ -84,24 +85,58 @@ async function fetchPendingExpenses() {
 }
 
 async function updateAssignee(item: PendingExpenseDto, newAssigneeId: number | null) {
+  const previousAssigneeId = item.assigneeId
+  const previousAssigneeName = item.assigneeName
+  const matchingAssignee = assignees.value.find((assignee) => assignee.id === newAssigneeId)
+  item.assigneeId = newAssigneeId
+  item.assigneeName = matchingAssignee?.name ?? null
+
   try {
     await apiClient.put(`/api/pending-expenses/${item.id}`, {
       assigneeId: newAssigneeId,
       notes: item.notes,
     })
-    void fetchPendingExpenses()
   } catch {
+    item.assigneeId = previousAssigneeId
+    item.assigneeName = previousAssigneeName
     snackbar.enqueueSnackbar('Failed to update assignee', { variant: 'error' })
   }
 }
 
-async function updateNotes(item: PendingExpenseDto) {
+function startEditingNote(item: PendingExpenseDto) {
+  editingNoteItemId.value = item.id
+  noteDrafts.value[item.id] = item.notes ?? ''
+}
+
+function discardEditingNote(itemId: number) {
+  if (editingNoteItemId.value === itemId) {
+    editingNoteItemId.value = null
+  }
+  delete noteDrafts.value[itemId]
+}
+
+function hasNote(item: PendingExpenseDto) {
+  return !!item.notes && item.notes.trim().length > 0
+}
+
+function isEditingNote(itemId: number) {
+  return editingNoteItemId.value === itemId
+}
+
+async function saveNote(item: PendingExpenseDto) {
+  const previousNote = item.notes
+  const nextNoteRaw = noteDrafts.value[item.id] ?? ''
+  const nextNote = nextNoteRaw.trim().length > 0 ? nextNoteRaw.trim() : null
+  item.notes = nextNote
+
   try {
     await apiClient.put(`/api/pending-expenses/${item.id}`, {
       assigneeId: item.assigneeId,
-      notes: item.notes,
+      notes: nextNote,
     })
+    discardEditingNote(item.id)
   } catch {
+    item.notes = previousNote
     snackbar.enqueueSnackbar('Failed to update notes', { variant: 'error' })
   }
 }
@@ -205,19 +240,53 @@ onMounted(() => {
           {{ monthGroupLabel(item.date) }}
         </v-list-subheader>
         <v-card class="mb-2">
-          <v-list-item style="cursor: pointer;" @click="openConvert(item)">
+          <v-list-item density="compact" style="cursor: pointer;" @click="openConvert(item)">
             <v-list-item-title>
-              <div class="d-flex justify-space-between align-center">
-                <span>
+              <div class="d-flex justify-space-between align-center" style="gap: 12px;">
+                <span class="d-flex align-center flex-wrap" style="gap: 6px;">
                   {{ new Date(item.date).toLocaleDateString() }} — {{ item.description }}
                   <v-chip v-if="item.suggestedCategoryName" size="small" variant="outlined" class="ml-1">
                     Suggested: {{ item.suggestedCategoryName }}
                   </v-chip>
                 </span>
-                <span
-                  class="font-weight-bold"
-                  :style="{ color: `rgb(var(--v-theme-${item.isDebit ? 'debit' : 'credit'}))` }"
-                >{{ item.isDebit ? '' : '+' }}{{ formatCents(item.amount) }}</span>
+                <div class="d-flex align-center" style="gap: 6px;" @click.stop>
+                  <v-menu location="bottom end">
+                    <template #activator="{ props }">
+                      <v-chip
+                        v-bind="props"
+                        size="small"
+                        variant="outlined"
+                        :closable="item.assigneeId !== null"
+                        :prepend-icon="item.assigneeId === null ? 'mdi-account-plus-outline' : undefined"
+                        @click.stop
+                        @click:close.stop="updateAssignee(item, null)"
+                      >
+                        {{ item.assigneeName ?? 'Assign' }}
+                      </v-chip>
+                    </template>
+                    <v-list density="compact">
+                      <v-list-item v-if="assignees.length === 0" title="No assignees available" disabled />
+                      <v-list-item
+                        v-for="assignee in assignees"
+                        :key="assignee.id"
+                        :title="assignee.name ?? 'Unnamed'"
+                        @click="updateAssignee(item, assignee.id)"
+                      />
+                    </v-list>
+                  </v-menu>
+                  <v-btn
+                    icon="mdi-note-edit-outline"
+                    variant="text"
+                    size="x-small"
+                    aria-label="Edit pending expense note"
+                    :disabled="isEditingNote(item.id)"
+                    @click.stop="startEditingNote(item)"
+                  />
+                  <span
+                    class="font-weight-bold"
+                    :style="{ color: `rgb(var(--v-theme-${item.isDebit ? 'debit' : 'credit'}))` }"
+                  >{{ item.isDebit ? '' : '+' }}{{ formatCents(item.amount) }}</span>
+                </div>
               </div>
             </v-list-item-title>
             <template #append>
@@ -230,27 +299,23 @@ onMounted(() => {
               />
             </template>
           </v-list-item>
-          <v-card-text class="d-flex flex-wrap align-center" style="gap: 16px;" @click.stop>
-            <v-select
-              label="Assignee"
-              :items="assigneeAssignOptions"
-              item-title="name"
-              item-value="id"
-              :model-value="item.assigneeId"
-              density="compact"
-              style="max-width: 220px;"
-              hide-details
-              @update:model-value="(val: number | null) => updateAssignee(item, val)"
-            />
-            <v-text-field
-              label="Notes"
-              v-model="item.notes"
-              density="compact"
-              style="flex: 1; min-width: 200px;"
-              hide-details
-              @blur="updateNotes(item)"
-            />
-          </v-card-text>
+          <v-expand-transition>
+            <div v-if="isEditingNote(item.id) || hasNote(item)" class="px-4 pb-3 pt-1" @click.stop>
+              <div v-if="isEditingNote(item.id)" class="d-flex flex-wrap align-center" style="gap: 8px;">
+                <v-text-field
+                  :model-value="noteDrafts[item.id]"
+                  label="Notes"
+                  density="compact"
+                  style="flex: 1; min-width: 220px;"
+                  hide-details
+                  @update:model-value="(val: string) => (noteDrafts[item.id] = val)"
+                />
+                <v-btn size="small" color="primary" @click="saveNote(item)">Save</v-btn>
+                <v-btn size="small" variant="text" @click="discardEditingNote(item.id)">Discard</v-btn>
+              </div>
+              <div v-else class="text-body-2 text-medium-emphasis">{{ item.notes }}</div>
+            </div>
+          </v-expand-transition>
         </v-card>
       </template>
     </v-list>
