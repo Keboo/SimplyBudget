@@ -133,11 +133,11 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
 
         if (pending.IsDebit)
         {
-            await context.AddTransaction(request.Description, request.Date, items);
+            await context.AddTransaction(request.Description, request.Date, request.IgnoreBudget, items);
         }
         else
         {
-            await context.AddIncome(request.Description, request.Date, items);
+            await context.AddIncome(request.Description, request.Date, request.IgnoreBudget, items);
         }
 
         context.PendingExpenses.Remove(pending);
@@ -177,4 +177,8 @@ public record PendingExpenseUpdateRequest(int? AssigneeId, string? Notes);
 
 public record ConvertPendingExpenseItemRequest(int ExpenseCategoryId, int Amount);
 
-public record ConvertPendingExpenseRequest(string Description, DateTime Date, ConvertPendingExpenseItemRequest[] Items);
+public record ConvertPendingExpenseRequest(
+    string Description,
+    DateTime Date,
+    ConvertPendingExpenseItemRequest[] Items,
+    bool IgnoreBudget = false);
