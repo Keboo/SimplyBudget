@@ -48,6 +48,21 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
         return items.Select(ToDto).ToArray();
     }
 
+    [HttpGet("oldest-month")]
+    public async Task<OldestPendingExpenseMonthDto> GetOldestMonth()
+    {
+        var oldestDate = await context.PendingExpenses
+            .OrderBy(x => x.Date)
+            .Select(x => (DateTime?)x.Date)
+            .FirstOrDefaultAsync();
+
+        DateTime? oldestMonth = oldestDate.HasValue
+            ? oldestDate.Value.StartOfMonth()
+            : null;
+
+        return new OldestPendingExpenseMonthDto(oldestMonth);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<PendingExpenseDto>> GetById(int id)
     {
@@ -189,6 +204,8 @@ public record PendingExpenseDto(
     int? SuggestedCategoryId,
     string? SuggestedCategoryName
 );
+
+public record OldestPendingExpenseMonthDto(DateTime? Month);
 
 public record PendingExpenseUpdateRequest(int? AssigneeId, string? Notes);
 
