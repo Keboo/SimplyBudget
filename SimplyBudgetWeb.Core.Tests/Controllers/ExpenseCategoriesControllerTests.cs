@@ -204,4 +204,67 @@ public class ExpenseCategoriesControllerTests
         await Assert.That(result.Single(c => c.Id == withItemsId).HasItems).IsTrue();
         await Assert.That(result.Single(c => c.Id == withoutItemsId).HasItems).IsFalse();
     }
+
+    [Test]
+    public async Task GetMonthlyExpenses_ReturnsMonthlySpendingAndBudgetedAmount()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        int categoryId = await mocker.InDbScopeAsync(async context =>
+        {
+            var groceries = new ExpenseCategory { Name = "Groceries", BudgetedAmount = 30000 };
+            var savings = new ExpenseCategory { Name = "Savings" };
+            context.ExpenseCategories.AddRange(groceries, savings);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryItems.AddRange(
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 1, 10),
+                    Description = "Store run",
+                    Details = [new ExpenseCategoryItemDetail { Amount = -8000, ExpenseCategoryId = groceries.ID }],
+                },
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 1, 15),
+                    Description = "Ignored purchase",
+                    Details = [new ExpenseCategoryItemDetail { Amount = -2000, ExpenseCategoryId = groceries.ID, IgnoreBudget = true }],
+                },
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 2, 12),
+                    Description = "Transfer to savings",
+                    Details =
+                    [
+                        new ExpenseCategoryItemDetail { Amount = -1000, ExpenseCategoryId = groceries.ID },
+                        new ExpenseCategoryItemDetail { Amount = 1000, ExpenseCategoryId = savings.ID },
+                    ],
+                },
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 3, 5),
+                    Description = "Another store run",
+                    Details = [new ExpenseCategoryItemDetail { Amount = -5000, ExpenseCategoryId = groceries.ID }],
+                });
+            await context.SaveChangesAsync();
+
+            return groceries.ID;
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.GetMonthlyExpenses(categoryId, new DateTime(2026, 3, 1), months: 3);
+
+        await Assert.That(result.Value).IsNotNull();
+        await Assert.That(result.Value!.BudgetedAmount).IsEqualTo(30000);
+        await Assert.That(result.Value.Months.Length).IsEqualTo(3);
+        await Assert.That(result.Value.Months[0].Month).IsEqualTo("2026-01");
+        await Assert.That(result.Value.Months[0].Amount).IsEqualTo(8000);
+        await Assert.That(result.Value.Months[1].Month).IsEqualTo("2026-02");
+        await Assert.That(result.Value.Months[1].Amount).IsEqualTo(0);
+        await Assert.That(result.Value.Months[2].Month).IsEqualTo("2026-03");
+        await Assert.That(result.Value.Months[2].Amount).IsEqualTo(5000);
+    }
 }
