@@ -25,7 +25,7 @@ export default defineConfig({
     vue(),
     vuetify({ autoImport: true }),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         name: 'SimplyBudgetWeb',
