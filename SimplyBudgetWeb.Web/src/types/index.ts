@@ -113,6 +113,7 @@ export interface ConvertPendingExpenseRequest {
   description: string
   date: string
   items: ConvertPendingExpenseItemRequest[]
+  ignoreBudget: boolean
 }
 
 export interface TransactionItemRequest {

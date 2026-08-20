@@ -558,4 +558,44 @@ public class PendingExpensesControllerTests
             await Assert.That(category.CurrentBalance).IsEqualTo(20_00);
         });
     }
+
+    [Test]
+    public async Task Convert_WithIgnoreBudget_StoresConvertedItemAsIgnoredByBudget()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            var category = new ExpenseCategory { Name = "Groceries", CurrentBalance = 200_00 };
+            context.ExpenseCategories.Add(category);
+            var pending = new PendingExpense
+            {
+                Date = new DateTime(2026, 1, 6),
+                Description = "Costco",
+                Amount = 50_00,
+                IsDebit = true
+            };
+            context.PendingExpenses.Add(pending);
+            await context.SaveChangesAsync();
+
+            var controller = new PendingExpensesController(context);
+            await controller.Convert(
+                pending.ID,
+                new ConvertPendingExpenseRequest(
+                    "Costco",
+                    new DateTime(2026, 1, 6),
+                    [new ConvertPendingExpenseItemRequest(category.ID, 50_00)],
+                    IgnoreBudget: true));
+        }
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var item = await context.ExpenseCategoryItems
+                .Include(x => x.Details)
+                .SingleAsync();
+            await Assert.That(item.IgnoreBudget).IsTrue();
+            await Assert.That(item.Details!.All(x => x.IgnoreBudget)).IsTrue();
+        });
+    }
 }
