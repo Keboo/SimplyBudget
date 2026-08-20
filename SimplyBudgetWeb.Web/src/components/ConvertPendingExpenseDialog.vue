@@ -56,7 +56,7 @@ watch(
 )
 
 const sortedCategories = computed(() =>
-  [...props.categories].sort((a, b) => a.name.localeCompare(b.name)),
+  [...props.categories].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')),
 )
 
 const remainingCents = computed(() => {
