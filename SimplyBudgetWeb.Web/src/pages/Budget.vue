@@ -9,7 +9,7 @@ import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 
 const snackbar = useSnackbarStore()
 
-const { currentMonth } = useMonthQueryParam()
+const { currentMonth } = useMonthQueryParam({ storageKey: 'budget' })
 const budget = ref<BudgetResponse | null>(null)
 const loading = ref(false)
 const dialogOpen = ref(false)

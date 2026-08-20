@@ -9,7 +9,7 @@ import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 
 const snackbar = useSnackbarStore()
 
-const { currentMonth } = useMonthQueryParam()
+const { currentMonth } = useMonthQueryParam({ storageKey: 'history' })
 const search = ref('')
 const categoryId = ref<number | null>(null)
 const items = ref<HistoryItemDto[]>([])

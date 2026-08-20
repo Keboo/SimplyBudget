@@ -7,8 +7,9 @@ import type {
   ImportItemDto,
   ExpenseCategoryDto,
   BudgetDataExportPackageDto,
+  OldestPendingExpenseMonthDto,
 } from '@/types'
-import { formatCents } from '@/utils/currency'
+import { formatCents, formatMonth } from '@/utils/currency'
 
 const snackbar = useSnackbarStore()
 const router = useRouter()
@@ -67,6 +68,30 @@ function updateCategory(item: ImportItemDto, categoryId: number | null) {
   item.suggestedCategoryName = cat?.name ?? null
 }
 
+async function navigateToPendingExpenses() {
+  try {
+    const oldestPendingMonth = await apiClient.get<OldestPendingExpenseMonthDto>('/api/pending-expenses/oldest-month')
+    if (oldestPendingMonth?.month) {
+      const yearMonthMatch = oldestPendingMonth.month.match(/^(\d{4}-\d{2})/)
+      const oldestMonth = yearMonthMatch
+        ? yearMonthMatch[1]
+        : (() => {
+            const oldestDate = new Date(oldestPendingMonth.month)
+            return Number.isNaN(oldestDate.getTime()) ? null : formatMonth(oldestDate)
+          })()
+
+      if (oldestMonth) {
+        await router.push({ path: '/pending-expenses', query: { month: oldestMonth } })
+        return
+      }
+    }
+  } catch {
+    // If oldest month lookup fails, still navigate to pending expenses.
+  }
+
+  await router.push('/pending-expenses')
+}
+
 async function handleImport() {
   submitting.value = true
   try {
@@ -77,7 +102,7 @@ async function handleImport() {
     if (csvFileInput.value) {
       csvFileInput.value.value = ''
     }
-    await router.push('/pending-expenses')
+    await navigateToPendingExpenses()
   } catch {
     snackbar.enqueueSnackbar('Failed to save import', { variant: 'error' })
   } finally {
