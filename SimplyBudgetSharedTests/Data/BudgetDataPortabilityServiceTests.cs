@@ -85,8 +85,8 @@ public class BudgetDataPortabilityServiceTests
             ],
             Categories =
             [
-                new BudgetDataExportCategory(100, "Groceries", "Food", 10, 500_00, 0, 0, null, false),
-                new BudgetDataExportCategory(200, "Emergency Fund", "Savings", 20, 0, 10, 0, null, false)
+                new BudgetDataExportCategory(100, "Groceries", "Food", 10, 500_00, 0, 200_00, null, false),
+                new BudgetDataExportCategory(200, "Emergency Fund", "Savings", 20, 0, 10, 300_00, null, false)
             ],
             Items =
             [
@@ -129,8 +129,8 @@ public class BudgetDataPortabilityServiceTests
         var groceries = categories.Single(x => x.Name == "Groceries");
         var emergency = categories.Single(x => x.Name == "Emergency Fund");
 
-        Assert.AreEqual(1500_00, groceries.CurrentBalance);
-        Assert.AreEqual(1000_00, emergency.CurrentBalance);
+        Assert.AreEqual(200_00, groceries.CurrentBalance);
+        Assert.AreEqual(300_00, emergency.CurrentBalance);
 
         var rules = await assertContext.ExpenseCategoryRules
             .Include(x => x.ExpenseCategory)
