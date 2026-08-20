@@ -28,6 +28,7 @@ const emptyLine = (): LineItem => ({ expenseCategoryId: null, amount: '' })
 const description = ref('')
 const date = ref('')
 const lines = ref<LineItem[]>([emptyLine()])
+const ignoreBudget = ref(false)
 const submitting = ref(false)
 
 function centsToDollars(cents: number) {
@@ -47,6 +48,7 @@ watch(
     if (!pe) return
     description.value = pe.description ?? ''
     date.value = pe.date.split('T')[0]
+    ignoreBudget.value = false
     lines.value = [{
       expenseCategoryId: pe.suggestedCategoryId ?? null,
       amount: centsToDollars(pe.amount),
@@ -84,6 +86,7 @@ async function submit() {
     const payload: ConvertPendingExpenseRequest = {
       description: description.value,
       date: date.value,
+      ignoreBudget: ignoreBudget.value,
       items: lines.value
         .filter(l => l.expenseCategoryId !== null && l.amount !== '')
         .map(l => ({
@@ -111,6 +114,12 @@ async function submit() {
         <div class="d-flex flex-column" style="gap: 16px;">
           <v-text-field label="Description" v-model="description" />
           <v-text-field label="Date" type="date" v-model="date" />
+          <v-checkbox
+            v-model="ignoreBudget"
+            label="Do not contribute toward budget"
+            density="compact"
+            hide-details
+          />
 
           <span class="text-subtitle-2">
             {{ pendingExpense.isDebit ? 'Split expense across categories' : 'Split income across categories' }}

@@ -478,6 +478,43 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
+    public async Task Convert_WithIgnoreBudget_SetsConvertedItemDetailsToIgnoreBudget()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            var category = new ExpenseCategory { Name = "Groceries", CurrentBalance = 1_000_00 };
+            context.ExpenseCategories.Add(category);
+            var pending = new PendingExpense
+            {
+                Date = new DateTime(2026, 1, 5),
+                Description = "Costco",
+                Amount = 45_00,
+                IsDebit = true
+            };
+            context.PendingExpenses.Add(pending);
+            await context.SaveChangesAsync();
+
+            var controller = new PendingExpensesController(context);
+            await controller.Convert(pending.ID, new ConvertPendingExpenseRequest(
+                "Costco",
+                new DateTime(2026, 1, 5),
+                [new ConvertPendingExpenseItemRequest(category.ID, 45_00)],
+                IgnoreBudget: true));
+        }
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var item = await context.ExpenseCategoryItems
+                .Include(x => x.Details)
+                .SingleAsync();
+            await Assert.That(item.Details!.Single().IgnoreBudget).IsTrue();
+        });
+    }
+
+    [Test]
     public async Task Convert_Debit_CanSplitAcrossMultipleCategories()
     {
         AutoMocker mocker = new();
