@@ -2,8 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
-import type { BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto } from '@/types'
-import { formatCents, formatMonth } from '@/utils/currency'
+import type { BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto, ExpenseCategoryMonthlyExpensesDto } from '@/types'
+import { formatCents, formatMonth, parseMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 
@@ -14,6 +14,9 @@ const budget = ref<BudgetResponse | null>(null)
 const loading = ref(false)
 const dialogOpen = ref(false)
 const categories = ref<ExpenseCategoryDto[]>([])
+const categoryChartDialogOpen = ref(false)
+const categoryChartLoading = ref(false)
+const categoryChart = ref<ExpenseCategoryMonthlyExpensesDto | null>(null)
 
 const monthLabel = computed(() =>
   currentMonth.value.toLocaleString('default', { month: 'long', year: 'numeric' }),
@@ -32,6 +35,28 @@ const grouped = computed<Group[]>(() => {
     map.get(key)!.push(cat)
   }
   return Array.from(map.entries()).map(([groupName, items]) => ({ groupName, items }))
+})
+
+const categoryChartMaxAmount = computed(() => {
+  const chart = categoryChart.value
+  if (!chart) return 1
+
+  const maxMonthlyExpense = chart.months.reduce((max, month) => Math.max(max, month.amount), 0)
+  return Math.max(maxMonthlyExpense, chart.budgetedAmount, 1)
+})
+
+const budgetLinePercent = computed(() => {
+  const chart = categoryChart.value
+  if (!chart) return 0
+  return Math.min(100, (chart.budgetedAmount / categoryChartMaxAmount.value) * 100)
+})
+
+const budgetLineLabel = computed(() => {
+  const chart = categoryChart.value
+  if (!chart) return ''
+  return chart.usePercentage
+    ? `${chart.budgetedPercentage}% budget`
+    : `${formatCents(chart.budgetedAmount)} budget`
 })
 
 async function fetchBudget() {
@@ -73,6 +98,38 @@ function onDialogSuccess() {
   void fetchBudget()
   dialogOpen.value = false
 }
+
+function getBarHeightPercent(amount: number): number {
+  if (amount <= 0) return 0
+  return Math.max((amount / categoryChartMaxAmount.value) * 100, 2)
+}
+
+function formatChartMonth(month: string): string {
+  return parseMonth(month).toLocaleString('default', { month: 'short' })
+}
+
+function formatChartTooltip(month: string, amount: number): string {
+  const date = parseMonth(month)
+  const label = date.toLocaleString('default', { month: 'long', year: 'numeric' })
+  return `${label}: ${formatCents(amount)}`
+}
+
+async function openCategoryChart(category: BudgetCategoryDto) {
+  categoryChartDialogOpen.value = true
+  categoryChartLoading.value = true
+  categoryChart.value = null
+
+  try {
+    const month = formatMonth(currentMonth.value)
+    categoryChart.value = await apiClient.get<ExpenseCategoryMonthlyExpensesDto>(
+      `/api/expense-categories/${category.id}/monthly-expenses?month=${month}-01&months=12`,
+    )
+  } catch {
+    snackbar.enqueueSnackbar('Failed to load category chart', { variant: 'error' })
+  } finally {
+    categoryChartLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -101,7 +158,12 @@ function onDialogSuccess() {
           </v-expansion-panel-title>
           <v-expansion-panel-text class="pa-0">
             <v-list density="compact">
-              <v-list-item v-for="cat in group.items" :key="cat.id" class="border-b">
+              <v-list-item
+                v-for="cat in group.items"
+                :key="cat.id"
+                class="border-b category-clickable-row"
+                @click="openCategoryChart(cat)"
+              >
                 <v-list-item-title>{{ cat.name ?? '(unnamed)' }}</v-list-item-title>
                 <v-list-item-subtitle>
                   <div class="d-flex flex-wrap mt-1" style="gap: 4px;">
@@ -113,6 +175,9 @@ function onDialogSuccess() {
                     <v-chip size="small" variant="outlined">12mo avg: {{ formatCents(cat.twelveMonthAverage) }}</v-chip>
                   </div>
                 </v-list-item-subtitle>
+                <template #append>
+                  <v-icon icon="mdi-chart-bar" />
+                </template>
               </v-list-item>
             </v-list>
           </v-expansion-panel-text>
@@ -133,5 +198,110 @@ function onDialogSuccess() {
       :categories="categories"
       @success="onDialogSuccess"
     />
+
+    <v-dialog v-model="categoryChartDialogOpen" max-width="980">
+      <v-card>
+        <v-card-title>{{ categoryChart?.name ?? 'Category' }} spending (last 12 months)</v-card-title>
+        <v-card-text>
+          <div v-if="categoryChartLoading" class="d-flex justify-center pa-8">
+            <v-progress-circular indeterminate aria-label="Loading category chart" />
+          </div>
+          <div v-else-if="categoryChart">
+            <v-chip size="small" color="primary" variant="outlined" class="mb-3">
+              Budget line: {{ budgetLineLabel }}
+            </v-chip>
+            <div class="expense-chart">
+              <div class="expense-chart-budget-line" :style="{ bottom: `${budgetLinePercent}%` }">
+                <span class="expense-chart-budget-label">{{ budgetLineLabel }}</span>
+              </div>
+              <div class="expense-chart-bars">
+                <div
+                  v-for="point in categoryChart.months"
+                  :key="point.month"
+                  class="expense-chart-month"
+                  :title="formatChartTooltip(point.month, point.amount)"
+                >
+                  <div class="expense-chart-bar-wrapper">
+                    <div class="expense-chart-bar" :style="{ height: `${getBarHeightPercent(point.amount)}%` }" />
+                  </div>
+                  <span class="expense-chart-month-label">{{ formatChartMonth(point.month) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="categoryChartDialogOpen = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.category-clickable-row {
+  cursor: pointer;
+}
+
+.expense-chart {
+  position: relative;
+  height: 320px;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 8px;
+  padding: 16px 12px 8px;
+  overflow: hidden;
+}
+
+.expense-chart-budget-line {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  border-top: 2px dashed rgb(var(--v-theme-error));
+  pointer-events: none;
+}
+
+.expense-chart-budget-label {
+  position: absolute;
+  right: 0;
+  transform: translateY(-100%);
+  color: rgb(var(--v-theme-error));
+  font-size: 0.75rem;
+  padding: 0 4px;
+  background-color: rgba(var(--v-theme-surface), 0.9);
+}
+
+.expense-chart-bars {
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 8px;
+  align-items: end;
+}
+
+.expense-chart-month {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.expense-chart-bar-wrapper {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: end;
+}
+
+.expense-chart-bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background-color: rgb(var(--v-theme-primary));
+}
+
+.expense-chart-month-label {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.75);
+}
+</style>

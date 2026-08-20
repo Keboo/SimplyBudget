@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
 
 namespace SimplyBudgetWeb.Controllers;
@@ -33,6 +34,69 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
         var category = await context.ExpenseCategories.FindAsync(id);
         if (category is null) return NotFound();
         return ToDto(category, await context.HasItemsAsync(category));
+    }
+
+    [HttpGet("{id}/monthly-expenses")]
+    public async Task<ActionResult<ExpenseCategoryMonthlyExpensesDto>> GetMonthlyExpenses(
+        int id,
+        [FromQuery] DateTime? month,
+        [FromQuery] int months = 12)
+    {
+        if (months is < 1 or > 24)
+            return BadRequest("months must be between 1 and 24.");
+
+        var category = await context.ExpenseCategories.FindAsync(id);
+        if (category is null) return NotFound();
+
+        var monthDate = (month ?? DateTime.Today).StartOfMonth();
+        var rangeStart = monthDate.AddMonths(-(months - 1)).StartOfMonth();
+        var rangeEnd = monthDate.EndOfMonth();
+
+        var transferItemIds = await context.ExpenseCategoryItems
+            .Where(x => x.Date >= rangeStart && x.Date <= rangeEnd)
+            .Where(x => x.Details!.Count == 2 && x.Details.Sum(d => d.Amount) == 0)
+            .Select(x => x.ID)
+            .ToListAsync();
+
+        var monthlyExpenses = await context.ExpenseCategoryItemDetails
+            .Where(x => x.ExpenseCategoryId == id)
+            .Where(x => !x.IgnoreBudget && x.Amount < 0)
+            .Where(x => x.ExpenseCategoryItem!.Date >= rangeStart && x.ExpenseCategoryItem.Date <= rangeEnd)
+            .Where(x => !transferItemIds.Contains(x.ExpenseCategoryItemId))
+            .GroupBy(x => new
+            {
+                x.ExpenseCategoryItem!.Date.Year,
+                x.ExpenseCategoryItem.Date.Month,
+            })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                Amount = g.Sum(x => -x.Amount),
+            })
+            .ToListAsync();
+
+        var monthlyTotals = monthlyExpenses.ToDictionary(
+            x => new DateTime(x.Year, x.Month, 1),
+            x => x.Amount);
+
+        var history = Enumerable.Range(0, months)
+            .Select(offset =>
+            {
+                var date = rangeStart.AddMonths(offset);
+                return new ExpenseCategoryMonthlyExpensePointDto(
+                    Month: date.ToString("yyyy-MM"),
+                    Amount: monthlyTotals.GetValueOrDefault(date, 0));
+            })
+            .ToArray();
+
+        return new ExpenseCategoryMonthlyExpensesDto(
+            ExpenseCategoryId: category.ID,
+            Name: category.Name,
+            BudgetedAmount: category.BudgetedAmount,
+            BudgetedPercentage: category.BudgetedPercentage,
+            UsePercentage: category.UsePercentage,
+            Months: history);
     }
 
     [HttpPost]
@@ -162,4 +226,18 @@ public record ExpenseCategoryRequest(
     int BudgetedPercentage,
     int? Cap,
     int? AccountId
+);
+
+public record ExpenseCategoryMonthlyExpensesDto(
+    int ExpenseCategoryId,
+    string? Name,
+    int BudgetedAmount,
+    int BudgetedPercentage,
+    bool UsePercentage,
+    ExpenseCategoryMonthlyExpensePointDto[] Months
+);
+
+public record ExpenseCategoryMonthlyExpensePointDto(
+    string Month,
+    int Amount
 );

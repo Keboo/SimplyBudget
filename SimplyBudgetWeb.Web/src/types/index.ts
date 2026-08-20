@@ -39,6 +39,20 @@ export interface ExpenseCategoryDto {
   hasItems: boolean
 }
 
+export interface ExpenseCategoryMonthlyExpensePointDto {
+  month: string
+  amount: number
+}
+
+export interface ExpenseCategoryMonthlyExpensesDto {
+  expenseCategoryId: number
+  name: string | null
+  budgetedAmount: number
+  budgetedPercentage: number
+  usePercentage: boolean
+  months: ExpenseCategoryMonthlyExpensePointDto[]
+}
+
 export interface AccountDto {
   id: number
   name: string | null
