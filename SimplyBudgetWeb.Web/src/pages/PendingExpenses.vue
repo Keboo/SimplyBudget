@@ -2,14 +2,14 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
-import type { PendingExpenseDto, AssigneeDto, ExpenseCategoryDto, OldestPendingExpenseMonthDto } from '@/types'
+import type { PendingExpenseDto, AssigneeDto, ExpenseCategoryDto } from '@/types'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import ConvertPendingExpenseDialog from '@/components/ConvertPendingExpenseDialog.vue'
 
 const snackbar = useSnackbarStore()
 
-const { currentMonth } = useMonthQueryParam()
+const { currentMonth } = useMonthQueryParam({ storageKey: 'pending-expenses' })
 const search = ref('')
 const assigneeId = ref<number | null>(null)
 const items = ref<PendingExpenseDto[]>([])
@@ -81,28 +81,6 @@ async function fetchPendingExpenses() {
     snackbar.enqueueSnackbar('Failed to load pending expenses', { variant: 'error' })
   } finally {
     loading.value = false
-  }
-}
-
-async function setDefaultMonthToOldestPendingTransaction() {
-  try {
-    const oldestPendingMonth = await apiClient.get<OldestPendingExpenseMonthDto>('/api/pending-expenses/oldest-month')
-    if (!oldestPendingMonth?.month) return false
-
-    const oldestDate = new Date(oldestPendingMonth.month)
-    const oldestMonth = new Date(oldestDate.getFullYear(), oldestDate.getMonth(), 1)
-    const current = currentMonth.value
-    const monthChanged =
-      oldestMonth.getFullYear() !== current.getFullYear() ||
-      oldestMonth.getMonth() !== current.getMonth()
-
-    if (monthChanged) {
-      currentMonth.value = oldestMonth
-    }
-
-    return monthChanged
-  } catch {
-    return false
   }
 }
 
@@ -207,13 +185,10 @@ function onConvertSuccess() {
 
 watch([currentMonth, search, assigneeId], fetchPendingExpenses)
 
-onMounted(async () => {
+onMounted(() => {
   void fetchAssignees()
   void fetchCategories()
-  const monthChanged = await setDefaultMonthToOldestPendingTransaction()
-  if (!monthChanged) {
-    void fetchPendingExpenses()
-  }
+  void fetchPendingExpenses()
 })
 </script>
 
