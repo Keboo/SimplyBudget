@@ -34,7 +34,7 @@ class ApiClient {
   }
 
   async get<T>(url: string): Promise<T> {
-    let headers = await this.getHeaders()
+    const headers = await this.getHeaders()
     const response = await fetch(this.baseUrl + url, { headers })
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     const text = await response.text()
@@ -82,14 +82,14 @@ class ApiClient {
   }
 
   async delete<T = void>(url: string, options?: DeleteOptions): Promise<T> {
-    let headers = await this.getHeaders()
-    if (options?.ifMatch) {
-      headers = {
-        ...headers,
-        'If-Match': options.ifMatch,
-      }
-    }
-    const response = await fetch(this.baseUrl + url, { method: 'DELETE', headers })
+    const headers = await this.getHeaders()
+    const requestHeaders = options?.ifMatch
+      ? {
+          ...headers,
+          'If-Match': options.ifMatch,
+        }
+      : headers
+    const response = await fetch(this.baseUrl + url, { method: 'DELETE', headers: requestHeaders })
     if (!response.ok) {
       const error = await response.text()
       throw new Error(error || `HTTP error! status: ${response.status}`)
