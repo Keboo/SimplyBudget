@@ -10,12 +10,65 @@ const rules = ref<RuleDto[]>([])
 const categories = ref<ExpenseCategoryDto[]>([])
 const loading = ref(false)
 const addOpen = ref(false)
+const addTargetCategoryLabel = ref('')
 const deleteRule = ref<RuleDto | null>(null)
 const editRule = ref<RuleDto | null>(null)
 
 const form = ref({ name: '', ruleRegex: '', expenseCategoryId: null as number | null })
 
 const categoryOptions = computed(() => [{ id: null, name: 'None' }, ...categories.value])
+
+interface RuleGroup {
+  key: string
+  expenseCategoryId: number | null
+  label: string
+  rules: RuleDto[]
+}
+
+const ruleGroups = computed<RuleGroup[]>(() => {
+  const groups: RuleGroup[] = []
+  const knownCategoryIds = new Set<number>()
+  const rulesByCategory = new Map<number | null, RuleDto[]>()
+
+  for (const rule of rules.value) {
+    const key = rule.expenseCategoryId
+    const groupedRules = rulesByCategory.get(key)
+    if (groupedRules) {
+      groupedRules.push(rule)
+    } else {
+      rulesByCategory.set(key, [rule])
+    }
+  }
+
+  for (const category of categories.value) {
+    knownCategoryIds.add(category.id)
+    groups.push({
+      key: `category-${category.id}`,
+      expenseCategoryId: category.id,
+      label: category.name ?? `Category ${category.id}`,
+      rules: rulesByCategory.get(category.id) ?? [],
+    })
+  }
+
+  groups.push({
+    key: 'category-none',
+    expenseCategoryId: null,
+    label: 'No category',
+    rules: rulesByCategory.get(null) ?? [],
+  })
+
+  for (const [categoryId, groupedRules] of rulesByCategory.entries()) {
+    if (categoryId === null || knownCategoryIds.has(categoryId)) continue
+    groups.push({
+      key: `category-missing-${categoryId}`,
+      expenseCategoryId: categoryId,
+      label: groupedRules[0]?.categoryName ?? `Unknown category (${categoryId})`,
+      rules: groupedRules,
+    })
+  }
+
+  return groups
+})
 
 // Expense category management (rename / hide / delete)
 const manageCategories = ref<ExpenseCategoryDto[]>([])
@@ -121,7 +174,6 @@ async function handleAdd() {
     })
     snackbar.enqueueSnackbar('Rule added', { variant: 'success' })
     addOpen.value = false
-    resetForm()
     void fetchRules()
   } catch {
     snackbar.enqueueSnackbar('Failed to add rule', { variant: 'error' })
@@ -166,10 +218,23 @@ function openEdit(rule: RuleDto) {
   }
 }
 
-function openAdd() {
+function openAddForCategory(expenseCategoryId: number | null, categoryLabel: string) {
   resetForm()
+  form.value.expenseCategoryId = expenseCategoryId
+  addTargetCategoryLabel.value = categoryLabel
   addOpen.value = true
 }
+
+function closeAdd() {
+  addOpen.value = false
+}
+
+watch(addOpen, (isOpen) => {
+  if (!isOpen) {
+    resetForm()
+    addTargetCategoryLabel.value = ''
+  }
+})
 
 onMounted(() => {
   void fetchRules()
@@ -180,43 +245,58 @@ onMounted(() => {
 
 <template>
   <div>
-    <div class="d-flex justify-space-between align-center mb-4">
-      <h5 class="text-h5">Import Rules</h5>
-      <v-btn color="primary" @click="openAdd">Add Rule</v-btn>
-    </div>
+    <h5 class="text-h5 mb-4">Import Rules</h5>
 
     <div v-if="loading" class="d-flex justify-center pa-8">
       <v-progress-circular indeterminate aria-label="Loading import rules" />
     </div>
-    <v-list v-else>
-      <v-list-item v-if="rules.length === 0">
-        <v-list-item-title>No rules defined.</v-list-item-title>
-      </v-list-item>
-      <v-card v-for="rule in rules" :key="rule.id" class="mb-2">
-        <v-list-item>
-          <v-list-item-title>{{ rule.name }}</v-list-item-title>
-          <v-list-item-subtitle>Pattern: {{ rule.ruleRegex ?? '—' }} · Category: {{ rule.categoryName ?? 'None' }}</v-list-item-subtitle>
-          <template #append>
-            <div class="d-flex" style="gap: 4px;">
-              <v-btn icon="mdi-pencil" variant="text" aria-label="Edit rule" @click="openEdit(rule)" />
-              <v-btn icon="mdi-delete" variant="text" color="error" aria-label="Delete rule" @click="deleteRule = rule" />
-            </div>
-          </template>
-        </v-list-item>
+    <div v-else>
+      <v-card
+        v-for="group in ruleGroups"
+        :key="group.key"
+        class="mb-4"
+      >
+        <v-card-title class="d-flex justify-space-between align-center">
+          <span>{{ group.label }}</span>
+          <v-btn
+            size="small"
+            color="primary"
+            @click="openAddForCategory(group.expenseCategoryId, group.label)"
+          >
+            Add Rule
+          </v-btn>
+        </v-card-title>
+        <v-divider />
+        <v-list>
+          <v-list-item v-if="group.rules.length === 0">
+            <v-list-item-title>No rules in this category.</v-list-item-title>
+          </v-list-item>
+          <v-list-item v-for="rule in group.rules" :key="rule.id">
+            <v-list-item-title>{{ rule.name }}</v-list-item-title>
+            <v-list-item-subtitle>Pattern: {{ rule.ruleRegex ?? '—' }}</v-list-item-subtitle>
+            <template #append>
+              <div class="d-flex" style="gap: 4px;">
+                <v-btn icon="mdi-pencil" variant="text" aria-label="Edit rule" @click="openEdit(rule)" />
+                <v-btn icon="mdi-delete" variant="text" color="error" aria-label="Delete rule" @click="deleteRule = rule" />
+              </div>
+            </template>
+          </v-list-item>
+        </v-list>
       </v-card>
-    </v-list>
+      <v-alert v-if="rules.length === 0" type="info" variant="tonal">No rules defined yet.</v-alert>
+    </div>
 
-    <v-dialog v-model="addOpen" max-width="500">
+    <v-dialog :model-value="addOpen" max-width="500" @update:model-value="(val: boolean) => !val && closeAdd()">
       <v-card>
         <v-card-title>Add Rule</v-card-title>
         <v-card-text class="d-flex flex-column" style="gap: 16px;">
           <v-text-field label="Name" v-model="form.name" />
           <v-text-field label="Regex Pattern" v-model="form.ruleRegex" />
-          <v-select label="Category" :items="categoryOptions" item-title="name" item-value="id" v-model="form.expenseCategoryId" />
+          <v-text-field label="Target Category" :model-value="addTargetCategoryLabel" readonly />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn @click="addOpen = false">Cancel</v-btn>
+          <v-btn @click="closeAdd">Cancel</v-btn>
           <v-btn color="primary" @click="handleAdd">Add</v-btn>
         </v-card-actions>
       </v-card>
