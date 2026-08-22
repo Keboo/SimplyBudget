@@ -4,9 +4,11 @@ import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto, ExpenseCategoryMonthlyExpensesDto } from '@/types'
 import { formatCents, formatMonth, parseMonth } from '@/utils/currency'
+import { useRouter } from 'vue-router'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 
 const snackbar = useSnackbarStore()
+const router = useRouter()
 
 const currentMonth = new Date()
 const budget = ref<BudgetResponse | null>(null)
@@ -120,6 +122,10 @@ async function openCategoryChart(category: BudgetCategoryDto) {
     categoryChartLoading.value = false
   }
 }
+
+function openCategoryHistory(category: BudgetCategoryDto) {
+  void router.push({ name: 'history', query: { categoryId: String(category.id) } })
+}
 </script>
 
 <template>
@@ -146,21 +152,27 @@ async function openCategoryChart(category: BudgetCategoryDto) {
                 v-for="cat in group.items"
                 :key="cat.id"
                 class="border-b category-clickable-row"
-                @click="openCategoryChart(cat)"
+                @click="openCategoryHistory(cat)"
               >
                 <v-list-item-title>{{ cat.name ?? '(unnamed)' }}</v-list-item-title>
                 <v-list-item-subtitle>
-                  <div class="d-flex flex-wrap mt-1" style="gap: 4px;">
+                  <div class="budget-chip-row d-flex flex-wrap mt-1" style="gap: 4px;">
                     <v-chip size="small">Budget: {{ cat.usePercentage ? `${cat.budgetedPercentage}%` : formatCents(cat.budgetedAmount) }}</v-chip>
                     <v-chip size="small" color="error" variant="outlined">Spent: {{ formatCents(cat.monthlyExpenses) }}</v-chip>
                     <v-chip size="small" :color="cat.currentBalance >= 0 ? 'success' : 'error'">Balance: {{ formatCents(cat.currentBalance) }}</v-chip>
-                    <v-chip size="small" variant="outlined">3mo avg: {{ formatCents(cat.threeMonthAverage) }}</v-chip>
-                    <v-chip size="small" variant="outlined">6mo avg: {{ formatCents(cat.sixMonthAverage) }}</v-chip>
-                    <v-chip size="small" variant="outlined">12mo avg: {{ formatCents(cat.twelveMonthAverage) }}</v-chip>
+                    <v-chip size="small" variant="outlined" class="avg-spend-chip">3mo avg: {{ formatCents(cat.threeMonthAverage) }}</v-chip>
+                    <v-chip size="small" variant="outlined" class="avg-spend-chip">6mo avg: {{ formatCents(cat.sixMonthAverage) }}</v-chip>
+                    <v-chip size="small" variant="outlined" class="avg-spend-chip">12mo avg: {{ formatCents(cat.twelveMonthAverage) }}</v-chip>
                   </div>
                 </v-list-item-subtitle>
                 <template #append>
-                  <v-icon icon="mdi-chart-bar" />
+                  <v-btn
+                    icon="mdi-chart-bar"
+                    variant="text"
+                    size="small"
+                    aria-label="Open category chart"
+                    @click.stop="openCategoryChart(cat)"
+                  />
                 </template>
               </v-list-item>
             </v-list>
@@ -194,6 +206,11 @@ async function openCategoryChart(category: BudgetCategoryDto) {
             <v-chip size="small" color="primary" variant="outlined" class="mb-3">
               Budget line: {{ budgetLineLabel }}
             </v-chip>
+            <div class="d-flex flex-wrap mb-3" style="gap: 6px;">
+              <v-chip size="small" variant="outlined">3mo avg: {{ formatCents(categoryChart.months.slice(-3).reduce((sum, point) => sum + point.amount, 0) / 3) }}</v-chip>
+              <v-chip size="small" variant="outlined">6mo avg: {{ formatCents(categoryChart.months.slice(-6).reduce((sum, point) => sum + point.amount, 0) / 6) }}</v-chip>
+              <v-chip size="small" variant="outlined">12mo avg: {{ formatCents(categoryChart.months.reduce((sum, point) => sum + point.amount, 0) / 12) }}</v-chip>
+            </div>
             <div class="expense-chart">
               <div class="expense-chart-plot">
                 <div class="expense-chart-budget-line" :style="{ bottom: `${budgetLinePercent}%` }">
@@ -314,5 +331,12 @@ async function openCategoryChart(category: BudgetCategoryDto) {
   text-align: center;
   font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.75);
+}
+</style>
+<style scoped>
+@media (max-width: 720px) {
+  .avg-spend-chip {
+    display: none;
+  }
 }
 </style>
