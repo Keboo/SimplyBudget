@@ -15,6 +15,13 @@ public class PendingExpenseAssignee : BaseItem
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
+    /// Indicates whether <see cref="Name"/> was explicitly customized by the user in Settings.
+    /// When true, login-time profile sync keeps the custom name instead of replacing it with the
+    /// identity-provider claim value.
+    /// </summary>
+    public bool IsNameCustomized { get; set; }
+
+    /// <summary>
     /// The unique object ID (Entra ID "oid" claim) of the signed-in user this row was created
     /// for. Used to match a returning user regardless of display name changes.
     /// </summary>

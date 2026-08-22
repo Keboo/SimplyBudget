@@ -101,6 +101,11 @@ export interface AssigneeDto {
   name: string | null
 }
 
+export interface CurrentUserDto {
+  displayName: string
+  email: string | null
+}
+
 export interface PendingExpenseDto {
   id: number
   date: string

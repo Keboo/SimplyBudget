@@ -65,6 +65,29 @@ public class CurrentUserSyncServiceTests
     }
 
     [Test]
+    public async Task SyncAsync_DoesNotOverrideCustomizedName()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var service = new CurrentUserSyncService(context);
+
+        await service.SyncAsync(MakeUser("user-oid-1", name: "Jordan", preferredUsername: "jordan@example.com"));
+
+        var assignee = await context.PendingExpenseAssignees.SingleAsync();
+        assignee.Name = "Custom Jordan";
+        assignee.IsNameCustomized = true;
+        await context.SaveChangesAsync();
+
+        await service.SyncAsync(MakeUser("user-oid-1", name: "Jordan Smith", preferredUsername: "jordan.smith@example.com"));
+
+        var updatedAssignee = await context.PendingExpenseAssignees.SingleAsync();
+        await Assert.That(updatedAssignee.Name).IsEqualTo("Custom Jordan");
+        await Assert.That(updatedAssignee.Email).IsEqualTo("jordan.smith@example.com");
+    }
+
+    [Test]
     public async Task SyncAsync_IgnoresUser_WithoutObjectId()
     {
         AutoMocker mocker = new();
