@@ -6,6 +6,7 @@ import type { PendingExpenseDto, AssigneeDto, ExpenseCategoryDto } from '@/types
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import ConvertPendingExpenseDialog from '@/components/ConvertPendingExpenseDialog.vue'
+import MonthPickerNav from '@/components/MonthPickerNav.vue'
 
 const snackbar = useSnackbarStore()
 
@@ -27,9 +28,6 @@ const noteDrafts = ref<Record<number, string>>({})
 // "All" plus the real filter options; used for both the toolbar filter and the
 // page-level assignee filter.
 const assigneeFilterOptions = computed(() => [{ id: null, name: 'All' }, ...assignees.value])
-const monthLabel = computed(() =>
-  currentMonth.value.toLocaleString('default', { month: 'long', year: 'numeric' }),
-)
 
 // Items are returned sorted oldest-first, so consecutive entries belong to the same
 // month unless this changes; used to show a divider between months in the list.
@@ -40,16 +38,6 @@ function monthGroupLabel(dateString: string) {
 function isNewMonth(index: number) {
   if (index === 0) return true
   return monthGroupLabel(items.value[index].date) !== monthGroupLabel(items.value[index - 1].date)
-}
-
-function prevMonth() {
-  const d = currentMonth.value
-  currentMonth.value = new Date(d.getFullYear(), d.getMonth() - 1, 1)
-}
-
-function nextMonth() {
-  const d = currentMonth.value
-  currentMonth.value = new Date(d.getFullYear(), d.getMonth() + 1, 1)
 }
 
 function buildFilters() {
@@ -197,9 +185,7 @@ onMounted(() => {
     <h5 class="text-h5 mb-4">Pending Expenses</h5>
 
     <v-card class="pa-4 mb-4 d-flex flex-wrap align-center" style="gap: 16px;">
-      <v-btn variant="outlined" size="small" prepend-icon="mdi-chevron-left" @click="prevMonth">Prev</v-btn>
-      <span style="min-width: 140px; text-align: center;">{{ monthLabel }}</span>
-      <v-btn variant="outlined" size="small" append-icon="mdi-chevron-right" @click="nextMonth">Next</v-btn>
+      <MonthPickerNav v-model="currentMonth" />
 
       <v-text-field label="Search" v-model="search" density="compact" style="max-width: 200px;" hide-details />
 

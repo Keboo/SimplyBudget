@@ -6,6 +6,7 @@ import type { HistoryItemDto, ExpenseCategoryDto, AccountDto } from '@/types'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
+import MonthPickerNav from '@/components/MonthPickerNav.vue'
 
 const snackbar = useSnackbarStore()
 
@@ -60,16 +61,6 @@ async function fetchAccountBalances() {
   }
 }
 
-function prevMonth() {
-  const d = currentMonth.value
-  currentMonth.value = new Date(d.getFullYear(), d.getMonth() - 1, 1)
-}
-
-function nextMonth() {
-  const d = currentMonth.value
-  currentMonth.value = new Date(d.getFullYear(), d.getMonth() + 1, 1)
-}
-
 async function handleDelete() {
   if (!deleteItem.value) return
   try {
@@ -106,9 +97,7 @@ function onDialogSuccess() {
     <h5 class="text-h5 mb-4">Expenses</h5>
 
     <v-card class="pa-4 mb-4 d-flex flex-wrap align-center" style="gap: 16px;">
-      <v-btn variant="outlined" size="small" prepend-icon="mdi-chevron-left" @click="prevMonth">Prev</v-btn>
-      <span style="min-width: 140px; text-align: center;">{{ monthLabel }}</span>
-      <v-btn variant="outlined" size="small" append-icon="mdi-chevron-right" @click="nextMonth">Next</v-btn>
+      <MonthPickerNav v-model="currentMonth" />
 
       <v-text-field label="Search" v-model="search" density="compact" style="max-width: 200px;" hide-details />
 
