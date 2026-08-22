@@ -108,6 +108,7 @@ export interface CurrentUserDto {
 
 export interface PendingExpenseDto {
   id: number
+  version: string
   date: string
   description: string | null
   amount: number
@@ -126,6 +127,7 @@ export interface OldestPendingExpenseMonthDto {
 export interface PendingExpenseUpdateRequest {
   assigneeId: number | null
   notes: string | null
+  version: string
 }
 
 export interface ConvertPendingExpenseItemRequest {
@@ -137,6 +139,7 @@ export interface ConvertPendingExpenseRequest {
   description: string
   date: string
   items: ConvertPendingExpenseItemRequest[]
+  version: string
   ignoreBudget: boolean
 }
 
