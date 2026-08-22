@@ -20,7 +20,16 @@ async function refreshToLatestVersion() {
 
 <template>
   <v-app>
-    <router-view />
+    <template v-if="authStore.isInitializing">
+      <v-main>
+        <v-container class="d-flex align-center justify-center" style="min-height: 100vh;">
+          <v-progress-circular indeterminate color="primary" size="64" />
+        </v-container>
+      </v-main>
+    </template>
+    <template v-else>
+      <router-view />
+    </template>
     <SnackbarHost />
     <v-snackbar :model-value="needRefresh" :timeout="-1" location="bottom">
       A new version is available.
