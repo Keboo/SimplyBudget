@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto, ExpenseCategoryMonthlyExpensesDto } from '@/types'
 import { formatCents, formatMonth, parseMonth } from '@/utils/currency'
-import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
-import MonthPickerNav from '@/components/MonthPickerNav.vue'
 
 const snackbar = useSnackbarStore()
 
-const { currentMonth } = useMonthQueryParam({ storageKey: 'budget' })
+const currentMonth = new Date()
 const budget = ref<BudgetResponse | null>(null)
 const loading = ref(false)
 const dialogOpen = ref(false)
@@ -66,7 +64,7 @@ const budgetLineLabel = computed(() => {
 async function fetchBudget() {
   loading.value = true
   try {
-    const month = formatMonth(currentMonth.value)
+    const month = formatMonth(currentMonth)
     budget.value = await apiClient.get<BudgetResponse>(`/api/budget?month=${month}-01`)
   } catch {
     snackbar.enqueueSnackbar('Failed to load budget', { variant: 'error' })
@@ -80,8 +78,6 @@ async function fetchCategories() {
     categories.value = await apiClient.get<ExpenseCategoryDto[]>('/api/expense-categories')
   } catch { /* ignore */ }
 }
-
-watch(currentMonth, fetchBudget)
 
 onMounted(() => {
   void fetchBudget()
@@ -114,7 +110,7 @@ async function openCategoryChart(category: BudgetCategoryDto) {
   categoryChart.value = null
 
   try {
-    const month = formatMonth(currentMonth.value)
+    const month = formatMonth(currentMonth)
     categoryChart.value = await apiClient.get<ExpenseCategoryMonthlyExpensesDto>(
       `/api/expense-categories/${category.id}/monthly-expenses?month=${month}-01&months=12`,
     )
@@ -128,8 +124,6 @@ async function openCategoryChart(category: BudgetCategoryDto) {
 
 <template>
   <div>
-    <MonthPickerNav v-model="currentMonth" class="mb-4" />
-
     <v-card v-if="budget" class="pa-4 mb-4">
       <div class="d-flex flex-wrap" style="gap: 16px;">
         <span class="text-h5">Total Budget: <strong>{{ formatCents(budget.totalBudget) }}</strong></span>
