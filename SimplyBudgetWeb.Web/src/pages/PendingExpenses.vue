@@ -284,13 +284,18 @@ onMounted(() => {
                         v-bind="props"
                         size="small"
                         variant="outlined"
-                        :model-value="true"
-                        :closable="item.assigneeId !== null"
                         :prepend-icon="item.assigneeId === null ? 'mdi-account-plus-outline' : undefined"
                         @click.stop
-                        @click:close.stop="updateAssignee(item, null)"
                       >
                         {{ item.assigneeName ?? 'Assign' }}
+                        <template v-if="item.assigneeId !== null" #append>
+                          <v-icon
+                            icon="mdi-close-circle"
+                            size="x-small"
+                            class="ms-1"
+                            @click.stop.prevent="updateAssignee(item, null)"
+                          />
+                        </template>
                       </v-chip>
                     </template>
 
