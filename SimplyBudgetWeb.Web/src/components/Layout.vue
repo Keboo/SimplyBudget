@@ -16,7 +16,6 @@ const navItems = [
   { title: 'Budget', to: '/budget', icon: 'mdi-cash-multiple' },
   { title: 'Expenses', to: '/history', icon: 'mdi-history' },
   { title: 'Pending Expenses', to: '/pending-expenses', icon: 'mdi-receipt-text-clock' },
-  { title: 'Accounts', to: '/accounts', icon: 'mdi-bank' },
   { title: 'Settings', to: '/settings', icon: 'mdi-cog' },
   { title: 'Import', to: '/import', icon: 'mdi-file-import' },
 ]
@@ -48,7 +47,7 @@ function toggleTheme() {
     </v-btn>
 
     <template v-if="authStore.isAuthenticated">
-      <span v-if="authStore.account?.name" class="mx-2">{{ authStore.account.name }}</span>
+      <span v-if="authStore.displayName" class="mx-2">{{ authStore.displayName }}</span>
       <v-btn @click="authStore.logout()">Sign out</v-btn>
     </template>
     <v-btn v-else @click="authStore.login()">Sign in</v-btn>

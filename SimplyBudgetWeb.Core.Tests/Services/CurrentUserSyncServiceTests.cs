@@ -27,7 +27,7 @@ public class CurrentUserSyncServiceTests
 
         await service.SyncAsync(MakeUser("user-oid-1", name: "Jordan", preferredUsername: "jordan@example.com"));
 
-        var assignee = await context.PendingExpenseAssignees.SingleAsync();
+        var assignee = await context.PendingExpenseAssignees.AsTracking().SingleAsync();
         await Assert.That(assignee.ObjectId).IsEqualTo("user-oid-1");
         await Assert.That(assignee.Name).IsEqualTo("Jordan");
         await Assert.That(assignee.Email).IsEqualTo("jordan@example.com");
@@ -60,8 +60,31 @@ public class CurrentUserSyncServiceTests
         await service.SyncAsync(MakeUser("user-oid-1", name: "Jordan"));
         await service.SyncAsync(MakeUser("user-oid-1", name: "Jordan Smith"));
 
-        var assignee = await context.PendingExpenseAssignees.SingleAsync();
+        var assignee = await context.PendingExpenseAssignees.AsTracking().SingleAsync();
         await Assert.That(assignee.Name).IsEqualTo("Jordan Smith");
+    }
+
+    [Test]
+    public async Task SyncAsync_DoesNotOverrideCustomizedName()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var service = new CurrentUserSyncService(context);
+
+        await service.SyncAsync(MakeUser("user-oid-1", name: "Jordan", preferredUsername: "jordan@example.com"));
+
+        var assignee = await context.PendingExpenseAssignees.AsTracking().SingleAsync();
+        assignee.Name = "Custom Jordan";
+        assignee.IsNameCustomized = true;
+        await context.SaveChangesAsync();
+
+        await service.SyncAsync(MakeUser("user-oid-1", name: "Jordan Smith", preferredUsername: "jordan.smith@example.com"));
+
+        var updatedAssignee = await context.PendingExpenseAssignees.SingleAsync();
+        await Assert.That(updatedAssignee.Name).IsEqualTo("Custom Jordan");
+        await Assert.That(updatedAssignee.Email).IsEqualTo("jordan.smith@example.com");
     }
 
     [Test]

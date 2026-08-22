@@ -45,13 +45,17 @@ public class CurrentUserSyncService(BudgetWebContext context)
             {
                 ObjectId = objectId,
                 Name = name,
+                IsNameCustomized = false,
                 Email = email,
                 LastLoginUtc = DateTime.UtcNow,
             });
         }
-        else if (assignee.Name != name || assignee.Email != email)
+        else if ((!assignee.IsNameCustomized && assignee.Name != name) || assignee.Email != email)
         {
-            assignee.Name = name;
+            if (!assignee.IsNameCustomized)
+            {
+                assignee.Name = name;
+            }
             assignee.Email = email;
             assignee.LastLoginUtc = DateTime.UtcNow;
         }

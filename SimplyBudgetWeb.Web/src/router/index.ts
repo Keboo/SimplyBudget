@@ -3,7 +3,6 @@ import Layout from '@/components/Layout.vue'
 import Login from '@/pages/Login.vue'
 import Budget from '@/pages/Budget.vue'
 import History from '@/pages/History.vue'
-import Accounts from '@/pages/Accounts.vue'
 import Settings from '@/pages/Settings.vue'
 import Import from '@/pages/Import.vue'
 import PendingExpenses from '@/pages/PendingExpenses.vue'
@@ -23,7 +22,7 @@ const router = createRouter({
         { path: '', redirect: '/budget' },
         { path: 'budget', name: 'budget', component: Budget },
         { path: 'history', name: 'history', component: History },
-        { path: 'accounts', name: 'accounts', component: Accounts },
+        { path: 'accounts', redirect: '/settings' },
         { path: 'settings', name: 'settings', component: Settings },
         { path: 'import', name: 'import', component: Import },
         { path: 'pending-expenses', name: 'pending-expenses', component: PendingExpenses },
