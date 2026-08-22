@@ -414,12 +414,9 @@ watch(openPanel, (panel) => {
 
       <v-expansion-panel>
         <v-expansion-panel-title>
-          <div class="w-100 d-flex justify-space-between align-center">
-            <div>
-              <div class="text-subtitle-1 font-weight-medium">Accounts</div>
-              <div class="text-body-2 text-medium-emphasis">Add accounts, rename them, and choose the default.</div>
-            </div>
-            <v-chip size="small" variant="tonal">{{ accounts.length }}</v-chip>
+          <div>
+            <div class="text-subtitle-1 font-weight-medium">Accounts</div>
+            <div class="text-body-2 text-medium-emphasis">Add accounts, rename them, and choose the default.</div>
           </div>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
@@ -473,12 +470,9 @@ watch(openPanel, (panel) => {
 
       <v-expansion-panel>
         <v-expansion-panel-title>
-          <div class="w-100 d-flex justify-space-between align-center">
-            <div>
-              <div class="text-subtitle-1 font-weight-medium">Import Rules</div>
-              <div class="text-body-2 text-medium-emphasis">Control automatic category suggestions while importing.</div>
-            </div>
-            <v-chip size="small" variant="tonal">{{ rules.length }}</v-chip>
+          <div>
+            <div class="text-subtitle-1 font-weight-medium">Import Rules</div>
+            <div class="text-body-2 text-medium-emphasis">Control automatic category suggestions while importing.</div>
           </div>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
@@ -521,12 +515,9 @@ watch(openPanel, (panel) => {
 
       <v-expansion-panel>
         <v-expansion-panel-title>
-          <div class="w-100 d-flex justify-space-between align-center">
-            <div>
-              <div class="text-subtitle-1 font-weight-medium">Expense Categories</div>
-              <div class="text-body-2 text-medium-emphasis">Rename, hide, restore, or delete categories.</div>
-            </div>
-            <v-chip size="small" variant="tonal">{{ manageCategories.length }}</v-chip>
+          <div>
+            <div class="text-subtitle-1 font-weight-medium">Expense Categories</div>
+            <div class="text-body-2 text-medium-emphasis">Rename, hide, restore, or delete categories.</div>
           </div>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
