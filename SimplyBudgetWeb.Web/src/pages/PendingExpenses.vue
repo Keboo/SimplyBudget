@@ -5,6 +5,7 @@ import { useSnackbarStore } from '@/stores/snackbar'
 import type { PendingExpenseDto, AssigneeDto, ExpenseCategoryDto } from '@/types'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
+import { AMAZON_TRANSACTIONS_URL, hasAmazonInDescription } from '@/utils/merchantLinks'
 import ConvertPendingExpenseDialog from '@/components/ConvertPendingExpenseDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
 
@@ -268,6 +269,18 @@ onMounted(() => {
                     aria-label="Edit pending expense note"
                     :disabled="isEditingNote(item.id)"
                     @click.stop="startEditingNote(item)"
+                  />
+                  <v-btn
+                    v-if="hasAmazonInDescription(item.description)"
+                    icon="mdi-open-in-new"
+                    variant="text"
+                    size="x-small"
+                    color="primary"
+                    :href="AMAZON_TRANSACTIONS_URL"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Open Amazon transactions page"
+                    @click.stop
                   />
                   <span
                     class="font-weight-bold"
