@@ -34,6 +34,15 @@ public class BudgetWebContext(DbContextOptions<BudgetWebContext> options)
         modelBuilder.Entity<PendingExpense>()
             .HasIndex(x => x.Date);
 
+        if (Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
+        {
+            // SQLite has no native rowversion type; provide a DB-generated non-null blob
+            // so tests (which use SQLite) can still insert entities with a concurrency token.
+            modelBuilder.Entity<PendingExpense>()
+                .Property(x => x.Version)
+                .HasDefaultValueSql("randomblob(8)");
+        }
+
         modelBuilder.Entity<PendingExpense>()
             .HasOne(x => x.Assignee)
             .WithMany(x => x.PendingExpenses)

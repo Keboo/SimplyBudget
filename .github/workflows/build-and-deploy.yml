@@ -122,7 +122,7 @@ jobs:
       # Playwright docker image, so this only runs the non-UI test project.
       - name: Test
         if: needs.changes.outputs.app == 'true'
-        run: dotnet test SimplyBudgetWeb.Core.Tests/SimplyBudgetWeb.Core.Tests.csproj --no-build --configuration Release --verbosity normal
+        run: dotnet test --project SimplyBudgetWeb.Core.Tests/SimplyBudgetWeb.Core.Tests.csproj --no-build --configuration Release --verbosity normal
         env:
           DOTNET_BUILD_CONFIGURATION: Release
 
@@ -271,7 +271,7 @@ jobs:
 
       - name: Run UI tests
         if: needs.changes.outputs.app == 'true'
-        run: docker exec "$UI_TESTS_CONTAINER" dotnet test "$UITESTS_PROJECT_PATH" --no-build --configuration Release --verbosity normal
+        run: docker exec "$UI_TESTS_CONTAINER" dotnet test --project "$UITESTS_PROJECT_PATH" --no-build --configuration Release --verbosity normal
 
       - name: Stop Playwright container
         if: always() && needs.changes.outputs.app == 'true'
