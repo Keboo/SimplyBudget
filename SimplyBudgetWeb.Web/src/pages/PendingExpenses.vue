@@ -25,6 +25,9 @@ const deleteAllOpen = ref(false)
 const deletingAll = ref(false)
 const editingNoteItemId = ref<number | null>(null)
 const noteDrafts = ref<Record<number, string>>({})
+const addRuleOpen = ref(false)
+const addRuleTargetCategoryLabel = ref('')
+const ruleForm = ref({ name: '', ruleRegex: '', expenseCategoryId: null as number | null })
 
 // "All" plus the real filter options; used for both the toolbar filter and the
 // page-level assignee filter.
@@ -163,6 +166,43 @@ function openConvert(item: PendingExpenseDto) {
   convertDialogOpen.value = true
 }
 
+function resetRuleForm() {
+  ruleForm.value = { name: '', ruleRegex: '', expenseCategoryId: null }
+  addRuleTargetCategoryLabel.value = ''
+}
+
+function openAddRule(item: PendingExpenseDto) {
+  resetRuleForm()
+  ruleForm.value.ruleRegex = item.description ?? ''
+  ruleForm.value.expenseCategoryId = item.suggestedCategoryId ?? null
+  addRuleTargetCategoryLabel.value = item.suggestedCategoryName ?? 'No category'
+  addRuleOpen.value = true
+}
+
+function closeAddRule() {
+  addRuleOpen.value = false
+}
+
+async function handleAddRule() {
+  try {
+    await apiClient.post('/api/rules', {
+      name: ruleForm.value.name,
+      ruleRegex: ruleForm.value.ruleRegex,
+      expenseCategoryId: ruleForm.value.expenseCategoryId,
+    })
+    snackbar.enqueueSnackbar('Rule added', { variant: 'success' })
+    addRuleOpen.value = false
+  } catch {
+    snackbar.enqueueSnackbar('Failed to add rule', { variant: 'error' })
+  }
+}
+
+watch(addRuleOpen, (isOpen) => {
+  if (!isOpen) {
+    resetRuleForm()
+  }
+})
+
 function onConvertSuccess() {
   convertDialogOpen.value = false
   if (convertItem.value) {
@@ -262,26 +302,6 @@ onMounted(() => {
                       />
                     </v-list>
                   </v-menu>
-                  <v-btn
-                    icon="mdi-note-edit-outline"
-                    variant="text"
-                    size="x-small"
-                    aria-label="Edit pending expense note"
-                    :disabled="isEditingNote(item.id)"
-                    @click.stop="startEditingNote(item)"
-                  />
-                  <v-btn
-                    v-if="hasAmazonInDescription(item.description)"
-                    icon="mdi-open-in-new"
-                    variant="text"
-                    size="x-small"
-                    color="primary"
-                    :href="AMAZON_TRANSACTIONS_URL"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Open Amazon transactions page"
-                    @click.stop
-                  />
                   <span
                     class="font-weight-bold"
                     :style="{ color: `rgb(var(--v-theme-${item.isDebit ? 'debit' : 'credit'}))` }"
@@ -290,13 +310,45 @@ onMounted(() => {
               </div>
             </v-list-item-title>
             <template #append>
-              <v-btn
-                icon="mdi-delete"
-                variant="text"
-                color="error"
-                aria-label="Discard pending expense"
-                @click.stop="discardItem = item"
-              />
+              <v-menu location="bottom end">
+                <template #activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    icon="mdi-dots-vertical"
+                    variant="text"
+                    size="small"
+                    aria-label="Pending expense actions"
+                    @click.stop
+                  />
+                </template>
+                <v-list density="compact">
+                  <v-list-item
+                    prepend-icon="mdi-note-edit-outline"
+                    title="Edit note"
+                    :disabled="isEditingNote(item.id)"
+                    @click="startEditingNote(item)"
+                  />
+                  <v-list-item
+                    prepend-icon="mdi-filter-plus-outline"
+                    title="Create rule"
+                    @click="openAddRule(item)"
+                  />
+                  <v-list-item
+                    v-if="hasAmazonInDescription(item.description)"
+                    prepend-icon="mdi-open-in-new"
+                    title="Open Amazon transactions page"
+                    :href="AMAZON_TRANSACTIONS_URL"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  />
+                  <v-list-item
+                    prepend-icon="mdi-delete"
+                    title="Discard pending expense"
+                    base-color="error"
+                    @click="discardItem = item"
+                  />
+                </v-list>
+              </v-menu>
             </template>
           </v-list-item>
           <v-expand-transition>
@@ -326,6 +378,21 @@ onMounted(() => {
       :categories="categories"
       @success="onConvertSuccess"
     />
+    <v-dialog :model-value="addRuleOpen" max-width="500" @update:model-value="(val: boolean) => !val && closeAddRule()">
+      <v-card>
+        <v-card-title>Add Rule</v-card-title>
+        <v-card-text class="d-flex flex-column" style="gap: 16px;">
+          <v-text-field label="Name" v-model="ruleForm.name" />
+          <v-text-field label="Regex Pattern" v-model="ruleForm.ruleRegex" />
+          <v-text-field label="Target Category" :model-value="addRuleTargetCategoryLabel" readonly />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="closeAddRule">Cancel</v-btn>
+          <v-btn color="primary" @click="handleAddRule">Add</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-dialog :model-value="!!discardItem" max-width="480" @update:model-value="(val: boolean) => !val && (discardItem = null)">
       <v-card>
