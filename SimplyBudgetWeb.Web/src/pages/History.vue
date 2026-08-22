@@ -5,6 +5,7 @@ import { useSnackbarStore } from '@/stores/snackbar'
 import type { HistoryItemDto, ExpenseCategoryDto, AccountDto } from '@/types'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
+import { AMAZON_TRANSACTIONS_URL, hasAmazonInDescription } from '@/utils/merchantLinks'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
 
@@ -137,9 +138,20 @@ function onDialogSuccess() {
         <v-list-item>
           <v-list-item-title>
             <div class="d-flex justify-space-between align-center">
-              <span>
-                {{ new Date(item.date).toLocaleDateString() }} — {{ item.description }}
-                <v-chip v-if="item.isTransfer" size="small" class="ml-2">Transfer</v-chip>
+              <span class="d-flex align-center flex-wrap" style="gap: 6px;">
+                <span>{{ new Date(item.date).toLocaleDateString() }} — {{ item.description }}</span>
+                <v-chip v-if="item.isTransfer" size="small">Transfer</v-chip>
+                <v-btn
+                  v-if="hasAmazonInDescription(item.description)"
+                  icon="mdi-open-in-new"
+                  variant="text"
+                  size="x-small"
+                  color="primary"
+                  :href="AMAZON_TRANSACTIONS_URL"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open Amazon transactions page"
+                />
               </span>
               <span class="font-weight-bold">{{ formatCents(totalForItem(item)) }}</span>
             </div>
