@@ -6,6 +6,7 @@ import type { BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto, ExpenseCate
 import { formatCents, formatMonth, parseMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
+import MonthPickerNav from '@/components/MonthPickerNav.vue'
 
 const snackbar = useSnackbarStore()
 
@@ -17,10 +18,6 @@ const categories = ref<ExpenseCategoryDto[]>([])
 const categoryChartDialogOpen = ref(false)
 const categoryChartLoading = ref(false)
 const categoryChart = ref<ExpenseCategoryMonthlyExpensesDto | null>(null)
-
-const monthLabel = computed(() =>
-  currentMonth.value.toLocaleString('default', { month: 'long', year: 'numeric' }),
-)
 
 interface Group {
   groupName: string
@@ -84,16 +81,6 @@ async function fetchCategories() {
   } catch { /* ignore */ }
 }
 
-function prevMonth() {
-  const d = currentMonth.value
-  currentMonth.value = new Date(d.getFullYear(), d.getMonth() - 1, 1)
-}
-
-function nextMonth() {
-  const d = currentMonth.value
-  currentMonth.value = new Date(d.getFullYear(), d.getMonth() + 1, 1)
-}
-
 watch(currentMonth, fetchBudget)
 
 onMounted(() => {
@@ -141,11 +128,7 @@ async function openCategoryChart(category: BudgetCategoryDto) {
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4" style="gap: 8px;">
-      <v-btn variant="outlined" size="small" prepend-icon="mdi-chevron-left" @click="prevMonth">Prev</v-btn>
-      <span class="text-h6" style="min-width: 160px; text-align: center;">{{ monthLabel }}</span>
-      <v-btn variant="outlined" size="small" append-icon="mdi-chevron-right" @click="nextMonth">Next</v-btn>
-    </div>
+    <MonthPickerNav v-model="currentMonth" class="mb-4" />
 
     <v-card v-if="budget" class="pa-4 mb-4">
       <div class="d-flex flex-wrap" style="gap: 16px;">

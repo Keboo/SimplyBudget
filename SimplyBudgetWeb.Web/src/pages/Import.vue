@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type {
   ImportItemDto,
-  ExpenseCategoryDto,
   BudgetDataExportPackageDto,
   OldestPendingExpenseMonthDto,
 } from '@/types'
@@ -17,7 +16,6 @@ const router = useRouter()
 const csvFile = ref<File | null>(null)
 const csvFileInput = ref<HTMLInputElement | null>(null)
 const items = ref<ImportItemDto[]>([])
-const categories = ref<ExpenseCategoryDto[]>([])
 const loading = ref(false)
 const submitting = ref(false)
 const showDuplicates = ref(false)
@@ -35,12 +33,6 @@ const exportingData = ref(false)
 const importingData = ref(false)
 const importFile = ref<File | null>(null)
 const importFileInput = ref<HTMLInputElement | null>(null)
-
-async function fetchCategories() {
-  try {
-    categories.value = await apiClient.get<ExpenseCategoryDto[]>('/api/expense-categories') ?? []
-  } catch { /* ignore */ }
-}
 
 function onCsvFileSelected(event: Event) {
   const input = event.target as HTMLInputElement
@@ -60,12 +52,6 @@ async function handleParse() {
   } finally {
     loading.value = false
   }
-}
-
-function updateCategory(item: ImportItemDto, categoryId: number | null) {
-  const cat = categoryId !== null ? categories.value.find(c => c.id === categoryId) : undefined
-  item.suggestedCategoryId = categoryId
-  item.suggestedCategoryName = cat?.name ?? null
 }
 
 async function navigateToPendingExpenses() {
@@ -156,7 +142,6 @@ async function handleImportAllData() {
   }
 }
 
-onMounted(() => { void fetchCategories() })
 </script>
 
 <template>

@@ -13,24 +13,10 @@ public class ImportControllerTests
     private static string BuildCsv(string row) => StcuHeader + Environment.NewLine + row;
 
     [Test]
-    public async Task Parse_AppliesMatchingRuleSuggestion()
+    public async Task Parse_ParsesDebitAmountAndMarksItemCheckedWhenNotDuplicate()
     {
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
-
-        await mocker.InDbScopeAsync(async context =>
-        {
-            var category = new ExpenseCategory { Name = "Entertainment" };
-            context.ExpenseCategories.Add(category);
-            await context.SaveChangesAsync();
-            context.ExpenseCategoryRules.Add(new ExpenseCategoryRule
-            {
-                Name = "Google Play",
-                RuleRegex = "GOOGLE Play",
-                ExpenseCategoryID = category.ID
-            });
-            await context.SaveChangesAsync();
-        });
 
         using var context = mocker.Get<BudgetWebContext>();
         var controller = new ImportController(context);
@@ -42,11 +28,12 @@ public class ImportControllerTests
         await Assert.That(items!.Length).IsEqualTo(1);
         await Assert.That(items[0].Amount).IsEqualTo(21_77);
         await Assert.That(items[0].IsDebit).IsTrue();
-        await Assert.That(items[0].SuggestedCategoryName).IsEqualTo("Entertainment");
+        await Assert.That(items[0].IsChecked).IsTrue();
+        await Assert.That(items[0].IsDuplicate).IsFalse();
     }
 
     [Test]
-    public async Task Parse_WithNoMatchingRule_LeavesSuggestionNull()
+    public async Task Parse_ParsesCreditAmountAsPositive()
     {
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
@@ -61,7 +48,8 @@ public class ImportControllerTests
         await Assert.That(items!.Length).IsEqualTo(1);
         await Assert.That(items[0].IsDebit).IsFalse();
         await Assert.That(items[0].Amount).IsEqualTo(123456);
-        await Assert.That(items[0].SuggestedCategoryId).IsNull();
+        await Assert.That(items[0].IsChecked).IsTrue();
+        await Assert.That(items[0].IsDuplicate).IsFalse();
     }
 
     [Test]
@@ -75,6 +63,13 @@ public class ImportControllerTests
             var category = new ExpenseCategory { Name = "Groceries" };
             context.ExpenseCategories.Add(category);
             await context.SaveChangesAsync();
+            context.ExpenseCategoryRules.Add(new ExpenseCategoryRule
+            {
+                Name = "Costco rule",
+                RuleRegex = "Costco",
+                ExpenseCategoryID = category.ID
+            });
+            await context.SaveChangesAsync();
             return category.ID;
         });
 
@@ -83,8 +78,8 @@ public class ImportControllerTests
 
         var items = new[]
         {
-            new ImportItemDto(new DateTime(2026, 1, 1), "Costco", 45_00, true, categoryId, "Groceries", IsChecked: true),
-            new ImportItemDto(new DateTime(2026, 1, 2), "Already handled", 10_00, true, null, null, IsChecked: false),
+            new ImportItemDto(new DateTime(2026, 1, 1), "Costco", 45_00, true, true),
+            new ImportItemDto(new DateTime(2026, 1, 2), "Already handled", 10_00, true, false),
         };
 
         var result = await controller.Save(items);
@@ -108,7 +103,7 @@ public class ImportControllerTests
 
         var items = new[]
         {
-            new ImportItemDto(new DateTime(2026, 1, 2), "Already handled", 10_00, true, null, null, IsChecked: false),
+            new ImportItemDto(new DateTime(2026, 1, 2), "Already handled", 10_00, true, false),
         };
 
         await controller.Save(items);
