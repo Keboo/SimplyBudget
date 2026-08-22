@@ -263,20 +263,21 @@ onMounted(() => {
         <v-list-item-title>No pending expenses found.</v-list-item-title>
       </v-list-item>
       <template v-for="(item, index) in items" :key="item.id">
-        <v-list-subheader v-if="isNewMonth(index)" class="font-weight-bold">
+        <v-list-subheader v-if="isNewMonth(index)" class="pending-month-group-header">
           {{ monthGroupLabel(item.date) }}
         </v-list-subheader>
         <v-card class="mb-2">
           <v-list-item density="compact" style="cursor: pointer;" @click="openConvert(item)">
             <v-list-item-title>
-              <div class="d-flex justify-space-between align-center" style="gap: 12px;">
-                <span class="d-flex align-center flex-wrap" style="gap: 6px;">
-                  {{ new Date(item.date).toLocaleDateString() }} — {{ item.description }}
+              <div class="pending-row">
+                <span class="pending-main">
+                  <span class="pending-date">{{ new Date(item.date).toLocaleDateString() }}</span>
+                  <span class="pending-description">{{ item.description }}</span>
                   <v-chip v-if="item.suggestedCategoryName" size="small" variant="outlined" class="ml-1">
                     Suggested: {{ item.suggestedCategoryName }}
                   </v-chip>
                 </span>
-                <div class="d-flex align-center" style="gap: 6px;" @click.stop>
+                <div class="d-flex align-center pending-right" style="gap: 6px;" @click.stop>
                   <v-menu location="bottom end">
                     <template #activator="{ props }">
                       <v-chip
@@ -292,6 +293,7 @@ onMounted(() => {
                         {{ item.assigneeName ?? 'Assign' }}
                       </v-chip>
                     </template>
+
                     <v-list density="compact">
                       <v-list-item v-if="assignees.length === 0" title="No assignees available" disabled />
                       <v-list-item

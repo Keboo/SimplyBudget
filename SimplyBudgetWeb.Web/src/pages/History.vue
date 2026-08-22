@@ -8,8 +8,10 @@ import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import { AMAZON_TRANSACTIONS_URL, hasAmazonInDescription } from '@/utils/merchantLinks'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
+import { useRoute } from 'vue-router'
 
 const snackbar = useSnackbarStore()
+const route = useRoute()
 
 const { currentMonth } = useMonthQueryParam({ storageKey: 'history' })
 const search = ref('')
@@ -27,6 +29,15 @@ const monthLabel = computed(() =>
 )
 
 const categoryOptions = computed(() => [{ id: null, name: 'All' }, ...categories.value])
+
+function monthGroupLabel(dateString: string) {
+  return new Date(dateString).toLocaleDateString('default', { month: 'long', year: 'numeric' })
+}
+
+function isNewMonth(index: number) {
+  if (index === 0) return true
+  return monthGroupLabel(items.value[index].date) !== monthGroupLabel(items.value[index - 1].date)
+}
 
 async function fetchCategories() {
   try {
@@ -85,6 +96,13 @@ onMounted(() => {
   void fetchCategories()
   void fetchHistory()
   void fetchAccountBalances()
+
+  const rawCategoryId = route.query.categoryId
+  const categoryIdQuery = Array.isArray(rawCategoryId) ? rawCategoryId[0] : rawCategoryId
+  const parsedCategoryId = Number(categoryIdQuery)
+  if (Number.isFinite(parsedCategoryId)) {
+    categoryId.value = parsedCategoryId
+  }
 })
 
 function onDialogSuccess() {
@@ -134,12 +152,17 @@ function onDialogSuccess() {
       <v-list-item v-if="items.length === 0">
         <v-list-item-title>No transactions found.</v-list-item-title>
       </v-list-item>
-      <v-card v-for="item in items" :key="item.id" class="mb-2">
+      <template v-for="(item, index) in items" :key="item.id">
+        <v-list-subheader v-if="isNewMonth(index)" class="expense-month-group-header">
+          {{ monthGroupLabel(item.date) }}
+        </v-list-subheader>
+        <v-card class="mb-2">
         <v-list-item>
           <v-list-item-title>
-            <div class="d-flex justify-space-between align-center">
-              <span class="d-flex align-center flex-wrap" style="gap: 6px;">
-                <span>{{ new Date(item.date).toLocaleDateString() }} — {{ item.description }}</span>
+            <div class="expense-row">
+              <span class="expense-main">
+                <span class="expense-date">{{ new Date(item.date).toLocaleDateString() }}</span>
+                <span class="expense-description">{{ item.description }}</span>
                 <v-chip v-if="item.isTransfer" size="small">Transfer</v-chip>
                 <v-btn
                   v-if="hasAmazonInDescription(item.description)"
@@ -153,7 +176,7 @@ function onDialogSuccess() {
                   aria-label="Open Amazon transactions page"
                 />
               </span>
-              <span class="font-weight-bold">{{ formatCents(totalForItem(item)) }}</span>
+              <span class="font-weight-bold expense-amount">{{ formatCents(totalForItem(item)) }}</span>
             </div>
           </v-list-item-title>
           <v-list-item-subtitle>
@@ -164,10 +187,29 @@ function onDialogSuccess() {
             </div>
           </v-list-item-subtitle>
           <template #append>
-            <v-btn icon="mdi-delete" variant="text" color="error" aria-label="Delete transaction" @click="deleteItem = item" />
+            <v-menu location="bottom end">
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  icon="mdi-dots-vertical"
+                  variant="text"
+                  size="small"
+                  aria-label="Transaction actions"
+                />
+              </template>
+              <v-list density="compact">
+                <v-list-item
+                  prepend-icon="mdi-delete"
+                  title="Delete transaction"
+                  base-color="error"
+                  @click="deleteItem = item"
+                />
+              </v-list>
+            </v-menu>
           </template>
         </v-list-item>
       </v-card>
+      </template>
     </v-list>
 
     <v-btn
@@ -193,3 +235,62 @@ function onDialogSuccess() {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.expense-month-group-header {
+  min-height: 22px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.65);
+  padding-inline: 8px;
+}
+
+.expense-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.expense-main {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.expense-date {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
+
+.expense-description {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.expense-amount {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .expense-row {
+    align-items: center;
+  }
+
+  .expense-main {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 4px;
+  }
+
+  .expense-description {
+    grid-column: 1;
+  }
+}
+</style>
