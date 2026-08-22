@@ -15,6 +15,7 @@ let initialized: Promise<void> | null = null
 export const useAuthStore = defineStore('auth', () => {
   const account = ref<AccountInfo | null>(null)
   const customDisplayName = ref<string | null>(null)
+  const isInitializing = ref(true)
   const isAuthenticated = computed(() => account.value !== null)
   const displayName = computed(() => customDisplayName.value ?? account.value?.name ?? null)
 
@@ -62,11 +63,15 @@ export const useAuthStore = defineStore('auth', () => {
   async function initialize() {
     if (!initialized) {
       initialized = (async () => {
-        await msalInstance.initialize()
-        await msalInstance.handleRedirectPromise()
-        refreshAccount()
-        setTokenProvider(getToken)
-        await refreshCurrentUserProfile()
+        try {
+          await msalInstance.initialize()
+          await msalInstance.handleRedirectPromise()
+          refreshAccount()
+          setTokenProvider(getToken)
+          await refreshCurrentUserProfile()
+        } finally {
+          isInitializing.value = false
+        }
       })()
     }
     await initialized
@@ -84,6 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
     account,
     displayName,
     isAuthenticated,
+    isInitializing,
     initialize,
     login,
     logout,
