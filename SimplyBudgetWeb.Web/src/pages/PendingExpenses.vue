@@ -87,7 +87,10 @@ async function updateAssignee(item: PendingExpenseDto, newAssigneeId: number | n
     await apiClient.put(`/api/pending-expenses/${item.id}`, {
       assigneeId: newAssigneeId,
       notes: item.notes,
+      version: item.version,
     })
+    const refreshed = await apiClient.get<PendingExpenseDto>(`/api/pending-expenses/${item.id}`)
+    item.version = refreshed.version
   } catch {
     item.assigneeId = previousAssigneeId
     item.assigneeName = previousAssigneeName
@@ -125,7 +128,10 @@ async function saveNote(item: PendingExpenseDto) {
     await apiClient.put(`/api/pending-expenses/${item.id}`, {
       assigneeId: item.assigneeId,
       notes: nextNote,
+      version: item.version,
     })
+    const refreshed = await apiClient.get<PendingExpenseDto>(`/api/pending-expenses/${item.id}`)
+    item.version = refreshed.version
     discardEditingNote(item.id)
   } catch {
     item.notes = previousNote
@@ -137,7 +143,9 @@ async function handleDiscard() {
   if (!discardItem.value) return
   const idToRemove = discardItem.value.id
   try {
-    await apiClient.delete(`/api/pending-expenses/${idToRemove}`)
+    await apiClient.delete(`/api/pending-expenses/${idToRemove}`, {
+      ifMatch: discardItem.value.version,
+    })
     snackbar.enqueueSnackbar('Pending expense discarded', { variant: 'success' })
     items.value = items.value.filter((item) => item.id !== idToRemove)
     discardItem.value = null

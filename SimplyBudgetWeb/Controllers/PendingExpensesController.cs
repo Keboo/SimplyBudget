@@ -15,6 +15,8 @@ namespace SimplyBudgetWeb.Controllers;
 [Route("api/pending-expenses")]
 public class PendingExpensesController(BudgetWebContext context) : ControllerBase
 {
+    private const string ConcurrencyConflictMessage = "This pending expense was changed by another user. Refresh and try again.";
+
     [HttpGet]
     public async Task<PendingExpenseDto[]> GetAll(
         [FromQuery] DateTime? month = null,
@@ -86,6 +88,8 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
             .Include(x => x.SuggestedCategory)
             .FirstOrDefaultAsync(x => x.ID == id);
         if (pending is null) return NotFound();
+        if (!TrySetOriginalVersion(pending, request.Version))
+            return BadRequest("Version is required.");
 
         if (request.AssigneeId.HasValue &&
             !await context.PendingExpenseAssignees.AnyAsync(x => x.ID == request.AssigneeId.Value))
@@ -95,7 +99,14 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
 
         pending.AssigneeId = request.AssigneeId;
         pending.Notes = request.Notes;
-        await context.SaveChangesAsync();
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(ConcurrencyConflictMessage);
+        }
 
         // AssigneeId may have changed since the initial .Include(x => x.Assignee) load, and
         // Reference(...).LoadAsync() is normally a no-op once a navigation is marked as loaded.
@@ -109,11 +120,23 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var pending = await context.PendingExpenses.FindAsync(id);
+        var pending = await context.PendingExpenses
+            .AsTracking()
+            .FirstOrDefaultAsync(x => x.ID == id);
         if (pending is null) return NotFound();
+        var requestVersion = Request.Headers.IfMatch.FirstOrDefault();
+        if (!TrySetOriginalVersion(pending, requestVersion))
+            return BadRequest("If-Match header with version is required.");
 
         context.PendingExpenses.Remove(pending);
-        await context.SaveChangesAsync();
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(ConcurrencyConflictMessage);
+        }
         return NoContent();
     }
 
@@ -155,8 +178,12 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
     [HttpPost("{id}/convert")]
     public async Task<IActionResult> Convert(int id, [FromBody] ConvertPendingExpenseRequest request)
     {
-        var pending = await context.PendingExpenses.FindAsync(id);
+        var pending = await context.PendingExpenses
+            .AsTracking()
+            .FirstOrDefaultAsync(x => x.ID == id);
         if (pending is null) return NotFound();
+        if (!TrySetOriginalVersion(pending, request.Version))
+            return BadRequest("Version is required.");
 
         if (request.Items is null || request.Items.Length == 0)
             return BadRequest("At least one category item is required.");
@@ -173,13 +200,21 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
         }
 
         context.PendingExpenses.Remove(pending);
-        await context.SaveChangesAsync();
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(ConcurrencyConflictMessage);
+        }
 
         return StatusCode(201);
     }
 
     private static PendingExpenseDto ToDto(PendingExpense p) => new(
         Id: p.ID,
+        Version: System.Convert.ToBase64String(p.Version),
         Date: p.Date,
         Description: p.Description,
         Amount: p.Amount,
@@ -190,10 +225,29 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
         SuggestedCategoryId: p.SuggestedCategoryId,
         SuggestedCategoryName: p.SuggestedCategory?.Name
     );
+
+    private bool TrySetOriginalVersion(PendingExpense pending, string? version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+            return false;
+
+        try
+        {
+            context.Entry(pending)
+                .Property(x => x.Version)
+                .OriginalValue = System.Convert.FromBase64String(version.Trim('"'));
+            return true;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
 }
 
 public record PendingExpenseDto(
     int Id,
+    string Version,
     DateTime Date,
     string? Description,
     int Amount,
@@ -207,7 +261,7 @@ public record PendingExpenseDto(
 
 public record OldestPendingExpenseMonthDto(DateTime? Month);
 
-public record PendingExpenseUpdateRequest(int? AssigneeId, string? Notes);
+public record PendingExpenseUpdateRequest(int? AssigneeId, string? Notes, string Version);
 
 public record ConvertPendingExpenseItemRequest(int ExpenseCategoryId, int Amount);
 
@@ -215,4 +269,5 @@ public record ConvertPendingExpenseRequest(
     string Description,
     DateTime Date,
     ConvertPendingExpenseItemRequest[] Items,
+    string Version,
     bool IgnoreBudget = false);

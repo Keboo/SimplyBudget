@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using SimplyBudgetWeb.Controllers;
@@ -8,6 +9,8 @@ namespace SimplyBudgetWeb.Core.Tests.Controllers;
 
 public class PendingExpensesControllerTests
 {
+    private const string AnyVersion = "AQ==";
+
     [Test]
     public async Task GetAll_ReturnsItemsOrderedByDateAscending_OldestFirst()
     {
@@ -189,20 +192,20 @@ public class PendingExpensesControllerTests
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
 
-        var (pendingId, assigneeId) = await mocker.InDbScopeAsync(async context =>
+        var (pendingId, assigneeId, version) = await mocker.InDbScopeAsync(async context =>
         {
             var assignee = new PendingExpenseAssignee { Name = "Jordan", ObjectId = "jordan-oid" };
             var pending = new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Costco", Amount = 100 };
             context.PendingExpenseAssignees.Add(assignee);
             context.PendingExpenses.Add(pending);
             await context.SaveChangesAsync();
-            return (pending.ID, assignee.ID);
+            return (pending.ID, assignee.ID, System.Convert.ToBase64String(pending.Version));
         });
 
         using (var context = mocker.Get<BudgetWebContext>())
         {
             var controller = new PendingExpensesController(context);
-            var result = await controller.Update(pendingId, new PendingExpenseUpdateRequest(assigneeId, "Needs review"));
+            var result = await controller.Update(pendingId, new PendingExpenseUpdateRequest(assigneeId, "Needs review", version));
 
             var dto = (result.Value as PendingExpenseDto) ?? ((OkObjectResult)result.Result!).Value as PendingExpenseDto;
             await Assert.That(dto!.AssigneeId).IsEqualTo(assigneeId);
@@ -225,7 +228,7 @@ public class PendingExpensesControllerTests
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
 
-        int pendingId = await mocker.InDbScopeAsync(async context =>
+        var (pendingId, version) = await mocker.InDbScopeAsync(async context =>
         {
             var assignee = new PendingExpenseAssignee { Name = "Jordan", ObjectId = "jordan-oid" };
             context.PendingExpenseAssignees.Add(assignee);
@@ -234,13 +237,13 @@ public class PendingExpensesControllerTests
             await context.SaveChangesAsync();
             pending.AssigneeId = assignee.ID;
             await context.SaveChangesAsync();
-            return pending.ID;
+            return (pending.ID, System.Convert.ToBase64String(pending.Version));
         });
 
         using (var context = mocker.Get<BudgetWebContext>())
         {
             var controller = new PendingExpensesController(context);
-            var result = await controller.Update(pendingId, new PendingExpenseUpdateRequest(null, null));
+            var result = await controller.Update(pendingId, new PendingExpenseUpdateRequest(null, null, version));
 
             var dto = (result.Value as PendingExpenseDto) ?? ((OkObjectResult)result.Result!).Value as PendingExpenseDto;
             await Assert.That(dto!.AssigneeId).IsNull();
@@ -260,18 +263,18 @@ public class PendingExpensesControllerTests
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
 
-        int pendingId = await mocker.InDbScopeAsync(async context =>
+        var (pendingId, version) = await mocker.InDbScopeAsync(async context =>
         {
             var pending = new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Costco", Amount = 100 };
             context.PendingExpenses.Add(pending);
             await context.SaveChangesAsync();
-            return pending.ID;
+            return (pending.ID, System.Convert.ToBase64String(pending.Version));
         });
 
         using var context = mocker.Get<BudgetWebContext>();
         var controller = new PendingExpensesController(context);
 
-        var result = await controller.Update(pendingId, new PendingExpenseUpdateRequest(999, null));
+        var result = await controller.Update(pendingId, new PendingExpenseUpdateRequest(999, null, version));
 
         await Assert.That(result.Result).IsTypeOf<BadRequestObjectResult>();
     }
@@ -285,7 +288,7 @@ public class PendingExpensesControllerTests
         using var context = mocker.Get<BudgetWebContext>();
         var controller = new PendingExpensesController(context);
 
-        var result = await controller.Update(999, new PendingExpenseUpdateRequest(null, "notes"));
+        var result = await controller.Update(999, new PendingExpenseUpdateRequest(null, "notes", AnyVersion));
 
         await Assert.That(result.Result).IsTypeOf<NotFoundResult>();
     }
@@ -296,17 +299,19 @@ public class PendingExpensesControllerTests
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
 
-        int pendingId = await mocker.InDbScopeAsync(async context =>
+        var (pendingId, version) = await mocker.InDbScopeAsync(async context =>
         {
             var pending = new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Costco", Amount = 100 };
             context.PendingExpenses.Add(pending);
             await context.SaveChangesAsync();
-            return pending.ID;
+            return (pending.ID, System.Convert.ToBase64String(pending.Version));
         });
 
         using (var context = mocker.Get<BudgetWebContext>())
         {
             var controller = new PendingExpensesController(context);
+            controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
+            controller.Request.Headers.IfMatch = version;
             var result = await controller.Delete(pendingId);
             await Assert.That(result).IsTypeOf<NoContentResult>();
         }
@@ -439,18 +444,18 @@ public class PendingExpensesControllerTests
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
 
-        int pendingId = await mocker.InDbScopeAsync(async context =>
+        var (pendingId, version) = await mocker.InDbScopeAsync(async context =>
         {
             var pending = new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Costco", Amount = 100 };
             context.PendingExpenses.Add(pending);
             await context.SaveChangesAsync();
-            return pending.ID;
+            return (pending.ID, System.Convert.ToBase64String(pending.Version));
         });
 
         using var context = mocker.Get<BudgetWebContext>();
         var controller = new PendingExpensesController(context);
 
-        var result = await controller.Convert(pendingId, new ConvertPendingExpenseRequest("Costco", DateTime.Today, []));
+        var result = await controller.Convert(pendingId, new ConvertPendingExpenseRequest("Costco", DateTime.Today, [], version));
 
         await Assert.That(result).IsTypeOf<BadRequestObjectResult>();
     }
@@ -465,7 +470,7 @@ public class PendingExpensesControllerTests
         var controller = new PendingExpensesController(context);
 
         var result = await controller.Convert(999, new ConvertPendingExpenseRequest("Costco", DateTime.Today,
-            [new ConvertPendingExpenseItemRequest(1, 100)]));
+            [new ConvertPendingExpenseItemRequest(1, 100)], AnyVersion));
 
         await Assert.That(result).IsTypeOf<NotFoundResult>();
     }
@@ -492,7 +497,7 @@ public class PendingExpensesControllerTests
 
             var controller = new PendingExpensesController(context);
             var result = await controller.Convert(pending.ID, new ConvertPendingExpenseRequest(
-                "Costco", new DateTime(2026, 1, 5), [new ConvertPendingExpenseItemRequest(category.ID, 45_00)]));
+                "Costco", new DateTime(2026, 1, 5), [new ConvertPendingExpenseItemRequest(category.ID, 45_00)], System.Convert.ToBase64String(pending.Version)));
 
             await Assert.That(result).IsTypeOf<StatusCodeResult>();
             await Assert.That(((StatusCodeResult)result).StatusCode).IsEqualTo(201);
@@ -538,6 +543,7 @@ public class PendingExpensesControllerTests
                 "Costco",
                 new DateTime(2026, 1, 5),
                 [new ConvertPendingExpenseItemRequest(category.ID, 45_00)],
+                System.Convert.ToBase64String(pending.Version),
                 IgnoreBudget: true));
         }
 
@@ -577,7 +583,8 @@ public class PendingExpensesControllerTests
                 [
                     new ConvertPendingExpenseItemRequest(groceries.ID, 70_00),
                     new ConvertPendingExpenseItemRequest(household.ID, 30_00),
-                ]));
+                ],
+                System.Convert.ToBase64String(pending.Version)));
         }
 
         await mocker.InDbScopeAsync(async context =>
@@ -617,7 +624,7 @@ public class PendingExpensesControllerTests
 
             var controller = new PendingExpensesController(context);
             await controller.Convert(pending.ID, new ConvertPendingExpenseRequest(
-                "Refund", new DateTime(2026, 1, 5), [new ConvertPendingExpenseItemRequest(category.ID, 20_00)]));
+                "Refund", new DateTime(2026, 1, 5), [new ConvertPendingExpenseItemRequest(category.ID, 20_00)], System.Convert.ToBase64String(pending.Version)));
         }
 
         await mocker.InDbScopeAsync(async context =>
@@ -659,6 +666,7 @@ public class PendingExpensesControllerTests
                     "Costco",
                     new DateTime(2026, 1, 6),
                     [new ConvertPendingExpenseItemRequest(category.ID, 50_00)],
+                    System.Convert.ToBase64String(pending.Version),
                     IgnoreBudget: true));
         }
 

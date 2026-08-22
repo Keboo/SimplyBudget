@@ -86,6 +86,7 @@ async function submit() {
     const payload: ConvertPendingExpenseRequest = {
       description: description.value,
       date: date.value,
+      version: props.pendingExpense.version,
       ignoreBudget: ignoreBudget.value,
       items: lines.value
         .filter(l => l.expenseCategoryId !== null && l.amount !== '')

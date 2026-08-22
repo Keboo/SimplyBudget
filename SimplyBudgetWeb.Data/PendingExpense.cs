@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using SimplyBudgetShared.Data;
 
@@ -13,6 +14,9 @@ namespace SimplyBudgetWeb.Data;
 [Table("PendingExpense")]
 public class PendingExpense : BaseItem
 {
+    [Timestamp]
+    public byte[] Version { get; set; } = [];
+
     private DateTime _date;
     public DateTime Date
     {
