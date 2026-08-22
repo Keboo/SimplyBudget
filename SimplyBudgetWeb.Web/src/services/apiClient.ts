@@ -4,6 +4,10 @@ export function setTokenProvider(fn: () => Promise<string>) {
   getTokenFn = fn
 }
 
+interface DeleteOptions {
+  ifMatch?: string
+}
+
 class ApiClient {
   private baseUrl = __API_BASE_URL__ || ''
 
@@ -30,7 +34,7 @@ class ApiClient {
   }
 
   async get<T>(url: string): Promise<T> {
-    const headers = await this.getHeaders()
+    let headers = await this.getHeaders()
     const response = await fetch(this.baseUrl + url, { headers })
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     const text = await response.text()
@@ -77,8 +81,14 @@ class ApiClient {
     return response.json()
   }
 
-  async delete<T = void>(url: string): Promise<T> {
-    const headers = await this.getHeaders()
+  async delete<T = void>(url: string, options?: DeleteOptions): Promise<T> {
+    let headers = await this.getHeaders()
+    if (options?.ifMatch) {
+      headers = {
+        ...headers,
+        'If-Match': options.ifMatch,
+      }
+    }
     const response = await fetch(this.baseUrl + url, { method: 'DELETE', headers })
     if (!response.ok) {
       const error = await response.text()
