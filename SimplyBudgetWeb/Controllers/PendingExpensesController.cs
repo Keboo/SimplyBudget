@@ -214,7 +214,7 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
 
     private static PendingExpenseDto ToDto(PendingExpense p) => new(
         Id: p.ID,
-        Version: Convert.ToBase64String(p.Version),
+        Version: System.Convert.ToBase64String(p.Version),
         Date: p.Date,
         Description: p.Description,
         Amount: p.Amount,
@@ -235,7 +235,7 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
         {
             context.Entry(pending)
                 .Property(x => x.Version)
-                .OriginalValue = Convert.FromBase64String(version.Trim('"'));
+                .OriginalValue = System.Convert.FromBase64String(version.Trim('"'));
             return true;
         }
         catch (FormatException)
