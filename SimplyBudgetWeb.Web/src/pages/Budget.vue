@@ -201,21 +201,31 @@ async function openCategoryChart(category: BudgetCategoryDto) {
               Budget line: {{ budgetLineLabel }}
             </v-chip>
             <div class="expense-chart">
-              <div class="expense-chart-budget-line" :style="{ bottom: `${budgetLinePercent}%` }">
-                <span class="expense-chart-budget-label">{{ budgetLineLabel }}</span>
-              </div>
-              <div class="expense-chart-bars">
-                <div
-                  v-for="point in categoryChart.months"
-                  :key="point.month"
-                  class="expense-chart-month"
-                  :title="formatChartTooltip(point.month, point.amount)"
-                >
-                  <div class="expense-chart-bar-wrapper">
-                    <div class="expense-chart-bar" :style="{ height: `${getBarHeightPercent(point.amount)}%` }" />
-                  </div>
-                  <span class="expense-chart-month-label">{{ formatChartMonth(point.month) }}</span>
+              <div class="expense-chart-plot">
+                <div class="expense-chart-budget-line" :style="{ bottom: `${budgetLinePercent}%` }">
+                  <span class="expense-chart-budget-label">{{ budgetLineLabel }}</span>
                 </div>
+                <div class="expense-chart-bars">
+                  <div
+                    v-for="point in categoryChart.months"
+                    :key="point.month"
+                    class="expense-chart-month"
+                    :title="formatChartTooltip(point.month, point.amount)"
+                  >
+                    <div class="expense-chart-bar-wrapper">
+                      <div class="expense-chart-bar" :style="{ height: `${getBarHeightPercent(point.amount)}%` }" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="expense-chart-axis">
+                <span
+                  v-for="point in categoryChart.months"
+                  :key="`${point.month}-label`"
+                  class="expense-chart-month-label"
+                >
+                  {{ formatChartMonth(point.month) }}
+                </span>
               </div>
             </div>
           </div>
@@ -240,15 +250,24 @@ async function openCategoryChart(category: BudgetCategoryDto) {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   border-radius: 8px;
   padding: 16px 12px 8px;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.expense-chart-plot {
+  position: relative;
+  flex: 1;
+  min-height: 0;
 }
 
 .expense-chart-budget-line {
   position: absolute;
-  left: 8px;
-  right: 8px;
+  left: 0;
+  right: 0;
   border-top: 2px dashed rgb(var(--v-theme-error));
   pointer-events: none;
+  z-index: 1;
 }
 
 .expense-chart-budget-label {
@@ -262,22 +281,23 @@ async function openCategoryChart(category: BudgetCategoryDto) {
 }
 
 .expense-chart-bars {
+  position: relative;
   height: 100%;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 8px;
   align-items: end;
+  z-index: 0;
 }
 
 .expense-chart-month {
   height: 100%;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: end;
 }
 
 .expense-chart-bar-wrapper {
-  flex: 1;
+  height: 100%;
   width: 100%;
   display: flex;
   align-items: end;
@@ -289,8 +309,15 @@ async function openCategoryChart(category: BudgetCategoryDto) {
   background-color: rgb(var(--v-theme-primary));
 }
 
+.expense-chart-axis {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .expense-chart-month-label {
-  margin-top: 8px;
+  display: block;
+  text-align: center;
   font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.75);
 }
