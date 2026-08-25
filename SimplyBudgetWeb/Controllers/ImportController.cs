@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Import;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
-using System.Text.RegularExpressions;
+using SimplyBudgetWeb.Services;
 
 namespace SimplyBudgetWeb.Controllers;
 
@@ -98,7 +98,8 @@ public class ImportController(BudgetWebContext context) : ControllerBase
     public async Task<IActionResult> Save([FromBody] ImportItemDto[] items)
     {
         var rules = await context.ExpenseCategoryRules
-            .Include(x => x.ExpenseCategory)
+            .Where(x => x.RuleRegex != null)
+            .OrderBy(x => x.ID)
             .ToListAsync();
 
         var pendingExpenses = items
@@ -109,9 +110,7 @@ public class ImportController(BudgetWebContext context) : ControllerBase
                 Description = i.Description,
                 Amount = i.Amount,
                 IsDebit = i.IsDebit,
-                SuggestedCategoryId = rules.FirstOrDefault(
-                    r => r.RuleRegex != null &&
-                        Regex.IsMatch(i.Description ?? "", r.RuleRegex, RegexOptions.IgnoreCase))?.ExpenseCategoryID,
+                SuggestedCategoryId = ExpenseCategoryRuleMatcher.GetSuggestedCategoryId(rules, i.Description),
             })
             .ToList();
 
