@@ -89,6 +89,8 @@ const ruleGroups = computed<RuleGroup[]>(() => {
     })
   }
 
+  groups.sort((a, b) => a.label.localeCompare(b.label))
+
   return groups
 })
 

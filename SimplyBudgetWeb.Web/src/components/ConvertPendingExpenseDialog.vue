@@ -160,7 +160,7 @@ async function submit() {
       <v-card-actions>
         <v-spacer />
         <v-btn @click="close">Cancel</v-btn>
-        <v-btn color="primary" :loading="submitting" @click="submit">Convert</v-btn>
+        <v-btn color="primary" :loading="submitting" @click="submit">Apply</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
