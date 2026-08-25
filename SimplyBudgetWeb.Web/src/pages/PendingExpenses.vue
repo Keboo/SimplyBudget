@@ -23,6 +23,7 @@ const convertItem = ref<PendingExpenseDto | null>(null)
 const convertDialogOpen = ref(false)
 const deleteAllOpen = ref(false)
 const deletingAll = ref(false)
+const reapplyingRules = ref(false)
 const editingNoteItemId = ref<number | null>(null)
 const noteDrafts = ref<Record<number, string>>({})
 const addRuleOpen = ref(false)
@@ -169,6 +170,19 @@ async function handleDeleteAll() {
   }
 }
 
+async function handleReapplyRules() {
+  reapplyingRules.value = true
+  try {
+    await apiClient.post('/api/pending-expenses/reapply-rules')
+    snackbar.enqueueSnackbar('Pending expense rules re-run', { variant: 'success' })
+    await fetchPendingExpenses()
+  } catch {
+    snackbar.enqueueSnackbar('Failed to re-run pending expense rules', { variant: 'error' })
+  } finally {
+    reapplyingRules.value = false
+  }
+}
+
 function openConvert(item: PendingExpenseDto) {
   convertItem.value = item
   convertDialogOpen.value = true
@@ -248,6 +262,17 @@ onMounted(() => {
       />
 
       <v-spacer />
+
+      <v-btn
+        variant="outlined"
+        size="small"
+        prepend-icon="mdi-refresh"
+        :loading="reapplyingRules"
+        :disabled="reapplyingRules"
+        @click="handleReapplyRules"
+      >
+        Re-run Rules
+      </v-btn>
 
       <v-btn
         variant="outlined"

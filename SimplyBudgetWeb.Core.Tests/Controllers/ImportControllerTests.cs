@@ -93,6 +93,49 @@ public class ImportControllerTests
     }
 
     [Test]
+    public async Task Save_WithEarlierUncategorizedMatch_UsesLaterCategorizedRule()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        int categoryId = await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Groceries" };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryRules.Add(new ExpenseCategoryRule
+            {
+                Name = "Uncategorized Costco rule",
+                RuleRegex = "Costco",
+                ExpenseCategoryID = null
+            });
+            context.ExpenseCategoryRules.Add(new ExpenseCategoryRule
+            {
+                Name = "Categorized Costco rule",
+                RuleRegex = "Costco",
+                ExpenseCategoryID = category.ID
+            });
+            await context.SaveChangesAsync();
+            return category.ID;
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ImportController(context);
+
+        var items = new[]
+        {
+            new ImportItemDto(new DateTime(2026, 1, 1), "Costco", 45_00, true, true),
+        };
+
+        var result = await controller.Save(items);
+
+        await Assert.That(((StatusCodeResult)result).StatusCode).IsEqualTo(201);
+        var saved = await context.PendingExpenses.SingleAsync();
+        await Assert.That(saved.SuggestedCategoryId).IsEqualTo(categoryId);
+    }
+
+    [Test]
     public async Task Save_WithNoItemsChecked_CreatesNoPendingExpenses()
     {
         AutoMocker mocker = new();

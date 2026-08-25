@@ -439,6 +439,56 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
+    public async Task ReapplyRules_UpdatesSuggestedCategoriesFromLatestRules()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        int groceriesCategoryId = await mocker.InDbScopeAsync(async context =>
+        {
+            var groceriesCategory = new ExpenseCategory { Name = "Groceries", CurrentBalance = 0 };
+            var utilitiesCategory = new ExpenseCategory { Name = "Utilities", CurrentBalance = 0 };
+            context.ExpenseCategories.AddRange(groceriesCategory, utilitiesCategory);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryRules.AddRange(
+                new ExpenseCategoryRule
+                {
+                    Name = "Old uncategorized Costco rule",
+                    RuleRegex = "Costco",
+                    ExpenseCategoryID = null
+                },
+                new ExpenseCategoryRule
+                {
+                    Name = "Current Costco rule",
+                    RuleRegex = "Costco",
+                    ExpenseCategoryID = groceriesCategory.ID
+                });
+            context.PendingExpenses.AddRange(
+                new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Costco haul", Amount = 45_00, SuggestedCategoryId = utilitiesCategory.ID },
+                new PendingExpense { Date = new DateTime(2026, 1, 2), Description = "Electric bill", Amount = 90_00, SuggestedCategoryId = utilitiesCategory.ID });
+            await context.SaveChangesAsync();
+
+            return groceriesCategory.ID;
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new PendingExpensesController(context);
+
+        var result = await controller.ReapplyRules();
+
+        var dto = (result.Value as ReapplyPendingExpenseRulesResponse) ?? ((OkObjectResult)result.Result!).Value as ReapplyPendingExpenseRulesResponse;
+        await Assert.That(dto!.UpdatedCount).IsEqualTo(2);
+
+        var updatedItems = await context.PendingExpenses
+            .OrderBy(x => x.Date)
+            .ToListAsync();
+
+        await Assert.That(updatedItems[0].SuggestedCategoryId).IsEqualTo(groceriesCategoryId);
+        await Assert.That(updatedItems[1].SuggestedCategoryId).IsNull();
+    }
+
+    [Test]
     public async Task Convert_WithNoItems_ReturnsBadRequest()
     {
         AutoMocker mocker = new();

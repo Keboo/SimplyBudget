@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Services;
 
 namespace SimplyBudgetWeb.Controllers;
 
@@ -171,6 +172,28 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
         return NoContent();
     }
 
+    [HttpPost("reapply-rules")]
+    public async Task<ActionResult<ReapplyPendingExpenseRulesResponse>> ReapplyRules()
+    {
+        var rules = await context.ExpenseCategoryRules
+            .Where(x => x.RuleRegex != null)
+            .OrderBy(x => x.ID)
+            .ToListAsync();
+
+        var pendingExpenses = await context.PendingExpenses
+            .AsTracking()
+            .ToListAsync();
+
+        foreach (var pendingExpense in pendingExpenses)
+        {
+            pendingExpense.SuggestedCategoryId =
+                ExpenseCategoryRuleMatcher.GetSuggestedCategoryId(rules, pendingExpense.Description);
+        }
+
+        await context.SaveChangesAsync();
+        return Ok(new ReapplyPendingExpenseRulesResponse(pendingExpenses.Count));
+    }
+
     /// <summary>
     /// Converts a pending expense into a real expense item (or income item, if it represents a
     /// credit), optionally split across multiple categories, and removes it from the pending list.
@@ -271,3 +294,5 @@ public record ConvertPendingExpenseRequest(
     ConvertPendingExpenseItemRequest[] Items,
     string Version,
     bool IgnoreBudget = false);
+
+public record ReapplyPendingExpenseRulesResponse(int UpdatedCount);
