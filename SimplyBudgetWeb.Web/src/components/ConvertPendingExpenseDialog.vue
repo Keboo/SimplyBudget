@@ -19,7 +19,7 @@ const emit = defineEmits<{
 const snackbar = useSnackbarStore()
 
 interface LineItem {
-  expenseCategoryId: number | null
+  expenseCategoryId: number | string | null
   amount: string
 }
 
@@ -30,6 +30,11 @@ const date = ref('')
 const lines = ref<LineItem[]>([emptyLine()])
 const ignoreBudget = ref(false)
 const submitting = ref(false)
+const calculatorOpen = ref(false)
+const calculatorLineIndex = ref<number | null>(null)
+const calculatorInput = ref('')
+const calculatorItems = ref<number[]>([])
+const calculatorAddTax = ref(false)
 
 function centsToDollars(cents: number) {
   return (cents / 100).toFixed(2)
@@ -37,6 +42,18 @@ function centsToDollars(cents: number) {
 
 function dollarsToCents(s: string) {
   return Math.round((parseFloat(s) || 0) * 100)
+}
+
+function isValidCategoryId(value: LineItem['expenseCategoryId']): value is number {
+  return typeof value === 'number' && props.categories.some(category => category.id === value)
+}
+
+function isEmptyLine(line: LineItem) {
+  return line.expenseCategoryId === null && dollarsToCents(line.amount) === 0
+}
+
+function isCompleteLine(line: LineItem): line is LineItem & { expenseCategoryId: number } {
+  return isValidCategoryId(line.expenseCategoryId) && dollarsToCents(line.amount) > 0
 }
 
 // Pre-fill the form whenever a new pending expense is opened for conversion:
@@ -67,20 +84,78 @@ const remainingCents = computed(() => {
   return props.pendingExpense.amount - allocated
 })
 
-function addLine() {
-  lines.value.push(emptyLine())
-}
+const hasPartialLines = computed(() =>
+  lines.value.some(line => !isEmptyLine(line) && !isCompleteLine(line)),
+)
+
+const canSubmit = computed(() =>
+  remainingCents.value === 0
+  && !hasPartialLines.value
+  && lines.value.some(isCompleteLine),
+)
+
+const calculatorTotalCents = computed(() => {
+  const subtotal = calculatorItems.value.reduce((sum, amount) => sum + amount, 0)
+  return calculatorAddTax.value ? Math.round(subtotal * 1.091) : subtotal
+})
+
+watch(
+  lines,
+  currentLines => {
+    if (
+      remainingCents.value > 0
+      && currentLines.length > 0
+      && currentLines.every(line => dollarsToCents(line.amount) > 0)
+    ) {
+      currentLines.push(emptyLine())
+    }
+  },
+  { deep: true },
+)
 
 function removeLine(index: number) {
   lines.value = lines.value.filter((_, i) => i !== index)
 }
 
+function openCalculator(index: number) {
+  calculatorLineIndex.value = index
+  calculatorInput.value = ''
+  calculatorItems.value = []
+  calculatorAddTax.value = false
+  calculatorOpen.value = true
+}
+
+function closeCalculator() {
+  calculatorOpen.value = false
+  calculatorLineIndex.value = null
+}
+
+function addCalculatorItem() {
+  const amount = dollarsToCents(calculatorInput.value)
+  if (amount <= 0) return
+  calculatorItems.value.push(amount)
+  calculatorInput.value = ''
+}
+
+function removeCalculatorItem(index: number) {
+  calculatorItems.value.splice(index, 1)
+}
+
+function applyCalculator() {
+  if (calculatorLineIndex.value === null) return
+  const line = lines.value[calculatorLineIndex.value]
+  if (!line) return
+  line.amount = centsToDollars(calculatorTotalCents.value)
+  closeCalculator()
+}
+
 function close() {
+  closeCalculator()
   emit('update:modelValue', false)
 }
 
 async function submit() {
-  if (!props.pendingExpense) return
+  if (!props.pendingExpense || !canSubmit.value) return
   submitting.value = true
   try {
     const payload: ConvertPendingExpenseRequest = {
@@ -89,9 +164,9 @@ async function submit() {
       version: props.pendingExpense.version,
       ignoreBudget: ignoreBudget.value,
       items: lines.value
-        .filter(l => l.expenseCategoryId !== null && l.amount !== '')
+        .filter(isCompleteLine)
         .map(l => ({
-          expenseCategoryId: l.expenseCategoryId as number,
+          expenseCategoryId: l.expenseCategoryId,
           amount: dollarsToCents(l.amount),
         })),
     }
@@ -112,42 +187,68 @@ async function submit() {
     <v-card v-if="pendingExpense">
       <v-card-title>Convert Pending Expense</v-card-title>
       <v-card-text>
-        <div class="d-flex flex-column" style="gap: 16px;">
-          <v-text-field label="Description" v-model="description" />
-          <v-text-field label="Date" type="date" v-model="date" />
-          <v-checkbox
-            v-model="ignoreBudget"
-            label="Do not contribute toward budget"
-            density="compact"
-            hide-details
-          />
+        <div class="d-flex flex-column ga-3">
+          <v-text-field label="Description" v-model="description" hide-details />
+          <v-text-field label="Date" type="date" v-model="date" hide-details />
+          <div class="d-flex align-center justify-space-between flex-wrap ga-2">
+            <span class="text-subtitle-1 font-weight-medium">
+              Total: {{ formatCents(pendingExpense.amount) }}
+            </span>
+            <v-checkbox
+              v-model="ignoreBudget"
+              label="Do not contribute toward budget"
+              density="compact"
+              hide-details
+            />
+          </div>
 
           <span class="text-subtitle-2">
             {{ pendingExpense.isDebit ? 'Split expense across categories' : 'Split income across categories' }}
-            (total {{ formatCents(pendingExpense.amount) }})
           </span>
-          <div v-for="(item, index) in lines" :key="index" class="d-flex align-center mb-2" style="gap: 8px;">
-            <v-select
+          <div v-for="(item, index) in lines" :key="index" class="allocation-line d-flex align-center ga-1">
+            <v-combobox
               label="Category"
               :items="sortedCategories"
               item-title="name"
               item-value="id"
               v-model="item.expenseCategoryId"
-              style="flex: 2;"
+              :return-object="false"
+              auto-select-first="exact"
+              clearable
+              hide-details
+              :error="item.expenseCategoryId !== null && !isValidCategoryId(item.expenseCategoryId)"
               density="compact"
+              class="category-field"
             />
-            <v-text-field
-              label="Amount ($)"
-              type="number"
-              step="0.01"
-              min="0"
-              v-model="item.amount"
-              style="flex: 1;"
-              density="compact"
+            <div class="amount-field d-flex align-center ga-1">
+              <v-text-field
+                label="Amount ($)"
+                type="number"
+                step="0.01"
+                min="0"
+                v-model="item.amount"
+                hide-details
+                density="compact"
+              />
+              <v-btn
+                icon="mdi-calculator"
+                size="small"
+                variant="text"
+                aria-label="Open amount calculator"
+                @click="openCalculator(index)"
+              />
+            </div>
+            <v-btn
+              v-if="lines.length > 1"
+              icon="mdi-delete"
+              size="small"
+              variant="text"
+              color="error"
+              aria-label="Remove line"
+              class="align-self-center"
+              @click="removeLine(index)"
             />
-            <v-btn v-if="lines.length > 1" icon="mdi-minus" size="small" variant="text" aria-label="Remove line" @click="removeLine(index)" />
           </div>
-          <v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addLine">Add Line</v-btn>
 
           <span
             class="text-body-2"
@@ -155,13 +256,78 @@ async function submit() {
           >
             Remaining to allocate: {{ formatCents(remainingCents) }}
           </span>
+          <span v-if="hasPartialLines" class="text-body-2 text-error">
+            Each line item must have a category and an amount greater than zero.
+          </span>
         </div>
       </v-card-text>
       <v-card-actions>
         <v-spacer />
         <v-btn @click="close">Cancel</v-btn>
-        <v-btn color="primary" :loading="submitting" @click="submit">Apply</v-btn>
+        <v-btn color="primary" :loading="submitting" :disabled="!canSubmit" @click="submit">Apply</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="calculatorOpen" max-width="400">
+    <v-card>
+      <v-card-title>Amount Calculator</v-card-title>
+      <v-card-text>
+        <v-text-field
+          v-model="calculatorInput"
+          label="Amount ($)"
+          type="number"
+          step="0.01"
+          min="0"
+          autofocus
+          hint="Press Enter to add"
+          persistent-hint
+          @keydown.enter.prevent="addCalculatorItem"
+        />
+
+        <v-list v-if="calculatorItems.length" density="compact" class="py-0">
+          <v-list-item v-for="(amount, index) in calculatorItems" :key="index">
+            <v-list-item-title>{{ formatCents(amount) }}</v-list-item-title>
+            <template #append>
+              <v-btn
+                icon="mdi-delete"
+                size="small"
+                variant="text"
+                color="error"
+                :aria-label="`Remove ${formatCents(amount)}`"
+                @click="removeCalculatorItem(index)"
+              />
+            </template>
+          </v-list-item>
+        </v-list>
+
+        <v-checkbox
+          v-model="calculatorAddTax"
+          label="Add Tax"
+          density="compact"
+          hide-details
+        />
+        <div class="text-h6">Total: {{ formatCents(calculatorTotalCents) }}</div>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn @click="closeCalculator">Cancel</v-btn>
+        <v-btn color="primary" :disabled="calculatorItems.length === 0" @click="applyCalculator">Apply</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.allocation-line {
+  min-height: 40px;
+}
+
+.category-field {
+  flex: 2 1 0;
+}
+
+.amount-field {
+  flex: 1 1 180px;
+}
+</style>
