@@ -45,6 +45,8 @@ public abstract class UITestBase : IAsyncDisposable
     // even though the app rendered fine moments later.
     private const int WarmupTimeoutMs = 120_000;
     private const int MaxWarmupAttempts = 3;
+    private const int MaxAspireStartAttempts = 3;
+    private static readonly TimeSpan AspireStartRetryDelay = TimeSpan.FromSeconds(2);
     private static DistributedApplication? _aspireAppHost = null;
 
     protected static AxeRunOptions AxeOptions => new()
@@ -109,41 +111,64 @@ public abstract class UITestBase : IAsyncDisposable
             return;
         }
 
-        var appHost = await DistributedApplicationTestingBuilder
-            .CreateAsync<Projects.SimplyBudgetWeb_AppHost>([], (x, i) =>
-            {
-                i.Configuration!.AddInMemoryCollection(
-                [
-                    new(Resources.ContainerSuffixKey, "UITests")
-                ]);
-            });
-
-        // Force the database to run in an in-memory containers
-        var sqlServer = appHost.Resources.OfType<SqlServerServerResource>()
-            .First(x => x.Name == Resources.SqlServer);
-        foreach (var annotation in sqlServer.Annotations
-            .ToList())
+        for (var attempt = 1; attempt <= MaxAspireStartAttempts; attempt++)
         {
-            if (annotation is ContainerMountAnnotation or ContainerLifetimeAnnotation)
-                sqlServer.Annotations.Remove(annotation);
+            var appHost = await DistributedApplicationTestingBuilder
+                .CreateAsync<Projects.SimplyBudgetWeb_AppHost>([], (x, i) =>
+                {
+                    i.Configuration!.AddInMemoryCollection(
+                    [
+                        new(Resources.ContainerSuffixKey, "UITests")
+                    ]);
+                });
+
+            // Force the database to run in an in-memory containers
+            var sqlServer = appHost.Resources.OfType<SqlServerServerResource>()
+                .First(x => x.Name == Resources.SqlServer);
+            foreach (var annotation in sqlServer.Annotations
+                .ToList())
+            {
+                if (annotation is ContainerMountAnnotation or ContainerLifetimeAnnotation)
+                    sqlServer.Annotations.Remove(annotation);
+            }
+
+            // Build the aspire host
+            var app = _aspireAppHost = await appHost.BuildAsync(cancellationToken)
+                .WaitAsync(AspireDefaultTimeout, cancellationToken);
+
+            try
+            {
+                // Start the aspire host
+                await app.StartAsync(cancellationToken)
+                    .WaitAsync(AspireDefaultTimeout, cancellationToken);
+
+                // Wait for the front end to start
+                await app.ResourceNotifications.WaitForResourceHealthyAsync(
+                    Resources.Frontend, cancellationToken)
+                    .WaitAsync(AspireDefaultTimeout, cancellationToken);
+
+                // See the WarmupTimeoutMs comment above for why this is necessary: "healthy" only
+                // means the dev server accepted a TCP connection, not that it finished compiling.
+                await WarmUpFrontendAsync(cancellationToken);
+                return;
+            }
+            catch (InvalidDataException ex)
+                when (attempt < MaxAspireStartAttempts && IsMissingFrontendAddressError(ex))
+            {
+                Console.WriteLine(
+                    $"Aspire start attempt {attempt}/{MaxAspireStartAttempts} failed before frontend endpoint allocation. Retrying...");
+
+                await app.DisposeAsync();
+                _aspireAppHost = null;
+                await Task.Delay(AspireStartRetryDelay, cancellationToken);
+            }
         }
+    }
 
-        // Build the aspire host
-        var app = _aspireAppHost = await appHost.BuildAsync(cancellationToken)
-            .WaitAsync(AspireDefaultTimeout, cancellationToken);
-
-        // Start the aspire host
-        await app.StartAsync(cancellationToken)
-            .WaitAsync(AspireDefaultTimeout, cancellationToken);
-
-        // Wait for the front end to start
-        await app.ResourceNotifications.WaitForResourceHealthyAsync(
-            Resources.Frontend, cancellationToken)
-            .WaitAsync(AspireDefaultTimeout, cancellationToken);
-
-        // See the WarmupTimeoutMs comment above for why this is necessary: "healthy" only
-        // means the dev server accepted a TCP connection, not that it finished compiling.
-        await WarmUpFrontendAsync(cancellationToken);
+    private static bool IsMissingFrontendAddressError(InvalidDataException exception)
+    {
+        return exception.Message.Contains(Resources.Frontend, StringComparison.Ordinal) &&
+            exception.Message.Contains("should have valid address at this point", StringComparison.Ordinal);
     }
 
     /// <summary>
