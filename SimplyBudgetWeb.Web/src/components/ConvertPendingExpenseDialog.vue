@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { ExpenseCategoryDto, PendingExpenseDto, ConvertPendingExpenseRequest } from '@/types'
-import { formatCents, dollarsToCents, centsToDollars } from '@/utils/currency'
+import { formatCents, dollarsToCents, centsToDollars, parseLocalDate } from '@/utils/currency'
 import IncomeAllocationList from '@/components/IncomeAllocationList.vue'
 
 const props = defineProps<{
@@ -74,10 +74,7 @@ const sortedCategories = computed(() =>
   [...props.categories].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')),
 )
 
-const dateAsMonth = computed(() => {
-  const parsed = new Date(date.value)
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed
-})
+const dateAsMonth = computed(() => parseLocalDate(date.value))
 
 const incomeRemainingCents = computed(() => {
   if (!props.pendingExpense) return 0
@@ -205,7 +202,7 @@ async function submit() {
   <v-dialog :model-value="props.modelValue" max-width="600" @update:model-value="(val: boolean) => !val && close()">
     <v-card v-if="pendingExpense">
       <v-card-title>Convert Pending Expense</v-card-title>
-      <v-card-text>
+      <v-card-text class="dialog-scroll-area">
         <div class="d-flex flex-column ga-3">
           <v-text-field label="Description" v-model="description" hide-details />
           <v-text-field label="Date" type="date" v-model="date" hide-details />
@@ -268,12 +265,6 @@ async function submit() {
               />
             </div>
 
-            <span
-              class="text-body-2"
-              :class="remainingCents === 0 ? 'text-success' : 'text-warning'"
-            >
-              Remaining to allocate: {{ formatCents(remainingCents) }}
-            </span>
             <span v-if="hasPartialLines" class="text-body-2 text-error">
               Each line item must have a category and an amount greater than zero.
             </span>
@@ -290,6 +281,14 @@ async function submit() {
           </template>
         </div>
       </v-card-text>
+      <div class="px-4 pt-2">
+        <span
+          class="text-body-2"
+          :class="remainingCents === 0 ? 'text-success' : 'text-warning'"
+        >
+          Remaining to allocate: {{ formatCents(remainingCents) }}
+        </span>
+      </div>
       <v-card-actions>
         <v-spacer />
         <v-btn @click="close">Cancel</v-btn>
@@ -348,6 +347,11 @@ async function submit() {
 </template>
 
 <style scoped>
+.dialog-scroll-area {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
 .allocation-line {
   min-height: 40px;
 }
