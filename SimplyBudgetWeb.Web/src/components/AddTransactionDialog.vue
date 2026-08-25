@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { ExpenseCategoryDto, TransactionRequest, TransferRequest } from '@/types'
+import { formatCents } from '@/utils/currency'
 
 const props = defineProps<{
   modelValue: boolean
@@ -17,7 +18,7 @@ const emit = defineEmits<{
 const snackbar = useSnackbarStore()
 
 interface LineItem {
-  expenseCategoryId: number | null
+  expenseCategoryId: number | string | null
   amount: string
 }
 
@@ -31,10 +32,11 @@ const transferAmount = ref('')
 const fromCategoryId = ref<number | null>(null)
 const toCategoryId = ref<number | null>(null)
 const submitting = ref(false)
-
-function addLine() {
-  lines.value.push(emptyLine())
-}
+const calculatorOpen = ref(false)
+const calculatorLineIndex = ref<number | null>(null)
+const calculatorInput = ref('')
+const calculatorItems = ref<number[]>([])
+const calculatorAddTax = ref(false)
 
 function removeLine(index: number) {
   lines.value = lines.value.filter((_, i) => i !== index)
@@ -51,26 +53,103 @@ function resetForm() {
 }
 
 function close() {
+  closeCalculator()
   resetForm()
   emit('update:modelValue', false)
 }
 
 function dollarsToCents(s: string) {
-  return Math.round(parseFloat(s) * 100)
+  return Math.round((parseFloat(s) || 0) * 100)
+}
+
+function centsToDollars(cents: number) {
+  return (cents / 100).toFixed(2)
+}
+
+function isValidCategoryId(value: LineItem['expenseCategoryId']): value is number {
+  return typeof value === 'number' && props.categories.some(category => category.id === value)
+}
+
+function isEmptyLine(line: LineItem) {
+  return line.expenseCategoryId === null && dollarsToCents(line.amount) === 0
+}
+
+function isCompleteLine(line: LineItem): line is LineItem & { expenseCategoryId: number } {
+  return isValidCategoryId(line.expenseCategoryId) && dollarsToCents(line.amount) > 0
+}
+
+const hasPartialLines = computed(() =>
+  lines.value.some(line => !isEmptyLine(line) && !isCompleteLine(line)),
+)
+
+const canSubmitLines = computed(() =>
+  !hasPartialLines.value && lines.value.some(isCompleteLine),
+)
+
+const calculatorTotalCents = computed(() => {
+  const subtotal = calculatorItems.value.reduce((sum, amount) => sum + amount, 0)
+  return calculatorAddTax.value ? Math.round(subtotal * 1.091) : subtotal
+})
+
+watch(
+  lines,
+  currentLines => {
+    if (
+      (tab.value === 'transaction' || tab.value === 'income')
+      && currentLines.length > 0
+      && currentLines.every(line => isCompleteLine(line))
+    ) {
+      lines.value.push(emptyLine())
+    }
+  },
+  { deep: true },
+)
+
+function openCalculator(index: number) {
+  calculatorLineIndex.value = index
+  calculatorInput.value = ''
+  calculatorItems.value = []
+  calculatorAddTax.value = false
+  calculatorOpen.value = true
+}
+
+function closeCalculator() {
+  calculatorOpen.value = false
+  calculatorLineIndex.value = null
+}
+
+function addCalculatorItem() {
+  const amount = dollarsToCents(calculatorInput.value)
+  if (amount <= 0) return
+  calculatorItems.value.push(amount)
+  calculatorInput.value = ''
+}
+
+function removeCalculatorItem(index: number) {
+  calculatorItems.value.splice(index, 1)
+}
+
+function applyCalculator() {
+  if (calculatorLineIndex.value === null) return
+  const line = lines.value[calculatorLineIndex.value]
+  if (!line) return
+  line.amount = centsToDollars(calculatorTotalCents.value)
+  closeCalculator()
 }
 
 async function submit() {
   submitting.value = true
   try {
     if (tab.value === 'transaction' || tab.value === 'income') {
+      if (!canSubmitLines.value) return
       const endpoint = tab.value === 'transaction' ? '/api/transactions/transaction' : '/api/transactions/income'
       const payload: TransactionRequest = {
         description: description.value,
         date: date.value,
         items: lines.value
-          .filter(l => l.expenseCategoryId !== null && l.amount !== '')
+          .filter(isCompleteLine)
           .map(l => ({
-            expenseCategoryId: l.expenseCategoryId as number,
+            expenseCategoryId: l.expenseCategoryId,
             amount: dollarsToCents(l.amount),
           })),
       }
@@ -108,34 +187,59 @@ async function submit() {
           <v-tab value="transfer">Transfer</v-tab>
         </v-tabs>
 
-        <div class="d-flex flex-column" style="gap: 16px;">
-          <v-text-field label="Description" v-model="description" />
-          <v-text-field label="Date" type="date" v-model="date" />
+        <div class="d-flex flex-column ga-3">
+          <v-text-field label="Description" v-model="description" hide-details />
+          <v-text-field label="Date" type="date" v-model="date" hide-details />
 
           <template v-if="tab === 'transaction' || tab === 'income'">
             <span class="text-subtitle-2">Items</span>
-            <div v-for="(item, index) in lines" :key="index" class="d-flex align-center mb-2" style="gap: 8px;">
-              <v-select
+            <div v-for="(item, index) in lines" :key="index" class="allocation-line d-flex align-center ga-1">
+              <v-combobox
                 label="Category"
                 :items="props.categories"
                 item-title="name"
                 item-value="id"
                 v-model="item.expenseCategoryId"
-                style="flex: 2;"
+                :return-object="false"
+                auto-select-first="exact"
+                clearable
+                hide-details
+                :error="item.expenseCategoryId !== null && !isValidCategoryId(item.expenseCategoryId)"
                 density="compact"
+                class="category-field"
               />
-              <v-text-field
-                label="Amount ($)"
-                type="number"
-                step="0.01"
-                min="0"
-                v-model="item.amount"
-                style="flex: 1;"
-                density="compact"
+              <div class="amount-field d-flex align-center ga-1">
+                <v-text-field
+                  label="Amount ($)"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  v-model="item.amount"
+                  hide-details
+                  density="compact"
+                />
+                <v-btn
+                  icon="mdi-calculator"
+                  size="small"
+                  variant="text"
+                  aria-label="Open amount calculator"
+                  @click="openCalculator(index)"
+                />
+              </div>
+              <v-btn
+                v-if="lines.length > 1"
+                icon="mdi-delete"
+                size="small"
+                variant="text"
+                color="error"
+                aria-label="Remove line"
+                class="align-self-center"
+                @click="removeLine(index)"
               />
-              <v-btn v-if="lines.length > 1" icon="mdi-minus" size="small" variant="text" aria-label="Remove line" @click="removeLine(index)" />
             </div>
-            <v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addLine">Add Line</v-btn>
+            <span v-if="hasPartialLines" class="text-body-2 text-error">
+              Each line item must have a category and an amount greater than zero.
+            </span>
           </template>
 
           <template v-else>
@@ -148,8 +252,77 @@ async function submit() {
       <v-card-actions>
         <v-spacer />
         <v-btn @click="close">Cancel</v-btn>
-        <v-btn color="primary" :loading="submitting" @click="submit">Save</v-btn>
+        <v-btn
+          color="primary"
+          :loading="submitting"
+          :disabled="(tab === 'transaction' || tab === 'income') && !canSubmitLines"
+          @click="submit"
+        >
+          Save
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="calculatorOpen" max-width="400">
+    <v-card>
+      <v-card-title>Amount Calculator</v-card-title>
+      <v-card-text>
+        <v-text-field
+          v-model="calculatorInput"
+          label="Amount ($)"
+          type="number"
+          step="0.01"
+          min="0"
+          autofocus
+          hint="Press Enter to add"
+          persistent-hint
+          @keydown.enter.prevent="addCalculatorItem"
+        />
+
+        <v-list v-if="calculatorItems.length" density="compact" class="py-0">
+          <v-list-item v-for="(amount, index) in calculatorItems" :key="index">
+            <v-list-item-title>{{ formatCents(amount) }}</v-list-item-title>
+            <template #append>
+              <v-btn
+                icon="mdi-delete"
+                size="small"
+                variant="text"
+                color="error"
+                :aria-label="`Remove ${formatCents(amount)}`"
+                @click="removeCalculatorItem(index)"
+              />
+            </template>
+          </v-list-item>
+        </v-list>
+
+        <v-checkbox
+          v-model="calculatorAddTax"
+          label="Add Tax"
+          density="compact"
+          hide-details
+        />
+        <div class="text-h6">Total: {{ formatCents(calculatorTotalCents) }}</div>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn @click="closeCalculator">Cancel</v-btn>
+        <v-btn color="primary" :disabled="calculatorItems.length === 0" @click="applyCalculator">Apply</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.allocation-line {
+  min-height: 40px;
+}
+
+.category-field {
+  flex: 2 1 0;
+}
+
+.amount-field {
+  flex: 1 1 180px;
+}
+</style>
