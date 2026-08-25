@@ -77,7 +77,13 @@ const remainingCents = computed(() => props.totalCents - allocatedCents.value)
 defineExpose({ remainingCents })
 
 function applyRemainingBudget(category: ExpenseCategoryDto) {
-  setAmount(category.id, centsToDollars(remainingBudgetFor(category)))
+  const budgetRemaining = remainingBudgetFor(category)
+  if (budgetRemaining <= 0) return
+  // Cap at the smaller of the category's remaining budget or what's left to allocate overall
+  // (including this row's own current amount, since that's being replaced, not added to).
+  const availableToAllocate = remainingCents.value + amountCentsFor(category.id)
+  const amount = Math.max(0, Math.min(budgetRemaining, availableToAllocate))
+  setAmount(category.id, centsToDollars(amount))
 }
 
 function applyPercentage(category: ExpenseCategoryDto) {
@@ -103,9 +109,17 @@ function applyPercentage(category: ExpenseCategoryDto) {
           </template>
           <template v-else>
             Budget: {{ formatCents(category.budgetedAmount) }} &middot; Remaining:
-            <a href="#" class="allocation-link" @click.prevent="applyRemainingBudget(category)">
+            <a
+              v-if="remainingBudgetFor(category) > 0"
+              href="#"
+              class="allocation-link"
+              @click.prevent="applyRemainingBudget(category)"
+            >
               {{ formatCents(remainingBudgetFor(category)) }}
             </a>
+            <span v-else class="allocation-link-disabled">
+              {{ formatCents(remainingBudgetFor(category)) }}
+            </span>
           </template>
         </div>
       </div>
@@ -120,13 +134,6 @@ function applyPercentage(category: ExpenseCategoryDto) {
         density="compact"
         class="amount-field"
       />
-    </div>
-
-    <div
-      class="text-body-2 mt-2"
-      :class="remainingCents === 0 ? 'text-success' : 'text-warning'"
-    >
-      Remaining to allocate: {{ formatCents(remainingCents) }}
     </div>
   </div>
 </template>
@@ -146,5 +153,10 @@ function applyPercentage(category: ExpenseCategoryDto) {
 
 .allocation-link {
   text-decoration: underline;
+}
+
+.allocation-link-disabled {
+  text-decoration: underline;
+  opacity: 0.5;
 }
 </style>

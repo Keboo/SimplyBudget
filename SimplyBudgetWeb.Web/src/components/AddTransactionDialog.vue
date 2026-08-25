@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { ExpenseCategoryDto, TransactionRequest, TransferRequest } from '@/types'
-import { formatCents, dollarsToCents, centsToDollars } from '@/utils/currency'
+import { formatCents, dollarsToCents, centsToDollars, parseLocalDate } from '@/utils/currency'
 import IncomeAllocationList from '@/components/IncomeAllocationList.vue'
 
 const props = defineProps<{
@@ -95,10 +95,7 @@ const canSubmitIncome = computed(() =>
   incomeTotalCents.value > 0 && incomeRemainingCents.value === 0,
 )
 
-const dateAsMonth = computed(() => {
-  const parsed = new Date(date.value)
-  return Number.isNaN(parsed.getTime()) ? new Date() : parsed
-})
+const dateAsMonth = computed(() => parseLocalDate(date.value))
 
 const calculatorTotalCents = computed(() => {
   const subtotal = calculatorItems.value.reduce((sum, amount) => sum + amount, 0)
@@ -207,7 +204,7 @@ async function submit() {
   <v-dialog :model-value="props.modelValue" max-width="600" @update:model-value="(val: boolean) => !val && close()">
     <v-card>
       <v-card-title>Add Transaction</v-card-title>
-      <v-card-text>
+      <v-card-text class="dialog-scroll-area">
         <v-tabs v-model="tab" class="mb-4">
           <v-tab value="transaction">Transaction</v-tab>
           <v-tab value="income">Income</v-tab>
@@ -294,6 +291,14 @@ async function submit() {
           </template>
         </div>
       </v-card-text>
+      <div v-if="tab === 'income'" class="px-4 pt-2">
+        <span
+          class="text-body-2"
+          :class="incomeRemainingCents === 0 ? 'text-success' : 'text-warning'"
+        >
+          Remaining to allocate: {{ formatCents(incomeRemainingCents) }}
+        </span>
+      </div>
       <v-card-actions>
         <v-spacer />
         <v-btn @click="close">Cancel</v-btn>
@@ -360,6 +365,11 @@ async function submit() {
 </template>
 
 <style scoped>
+.dialog-scroll-area {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
 .allocation-line {
   min-height: 40px;
 }
