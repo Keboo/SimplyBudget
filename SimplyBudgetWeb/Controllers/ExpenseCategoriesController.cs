@@ -36,6 +36,29 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
         return ToDto(category, await context.HasItemsAsync(category));
     }
 
+    /// <summary>
+    /// Returns, for every visible (non-hidden, non-percentage) category, how much of its
+    /// budgeted amount for the given month has not yet been allocated. Used by the income
+    /// allocation UI to show/pre-fill the remaining budget for each category. Percentage-based
+    /// categories always report 0 here since their allocation is computed from the income total.
+    /// </summary>
+    [HttpGet("remaining-budget")]
+    public async Task<Dictionary<int, int>> GetRemainingBudget([FromQuery] DateTime? month)
+    {
+        var monthDate = (month ?? DateTime.Today).StartOfMonth();
+
+        var categories = await context.ExpenseCategories
+            .Where(c => !c.IsHidden)
+            .ToListAsync();
+
+        var result = new Dictionary<int, int>();
+        foreach (var category in categories)
+        {
+            result[category.ID] = await context.GetRemainingBudgetAmount(category, monthDate);
+        }
+        return result;
+    }
+
     [HttpGet("{id}/monthly-expenses")]
     public async Task<ActionResult<ExpenseCategoryMonthlyExpensesDto>> GetMonthlyExpenses(
         int id,

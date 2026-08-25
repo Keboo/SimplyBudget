@@ -3,7 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { ExpenseCategoryDto, TransactionRequest, TransferRequest } from '@/types'
-import { formatCents } from '@/utils/currency'
+import { formatCents, dollarsToCents, centsToDollars } from '@/utils/currency'
+import IncomeAllocationList from '@/components/IncomeAllocationList.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -28,6 +29,8 @@ const tab = ref<'transaction' | 'income' | 'transfer'>('transaction')
 const description = ref('')
 const date = ref(new Date().toISOString().split('T')[0])
 const lines = ref<LineItem[]>([emptyLine()])
+const incomeTotal = ref('')
+const incomeAllocations = ref<Record<number, string>>({})
 const transferAmount = ref('')
 const fromCategoryId = ref<number | null>(null)
 const toCategoryId = ref<number | null>(null)
@@ -46,6 +49,8 @@ function resetForm() {
   description.value = ''
   date.value = new Date().toISOString().split('T')[0]
   lines.value = [emptyLine()]
+  incomeTotal.value = ''
+  incomeAllocations.value = {}
   transferAmount.value = ''
   fromCategoryId.value = null
   toCategoryId.value = null
@@ -56,14 +61,6 @@ function close() {
   closeCalculator()
   resetForm()
   emit('update:modelValue', false)
-}
-
-function dollarsToCents(s: string) {
-  return Math.round((parseFloat(s) || 0) * 100)
-}
-
-function centsToDollars(cents: number) {
-  return (cents / 100).toFixed(2)
 }
 
 function isValidCategoryId(value: LineItem['expenseCategoryId']): value is number {
@@ -86,6 +83,23 @@ const canSubmitLines = computed(() =>
   !hasPartialLines.value && lines.value.some(isCompleteLine),
 )
 
+const incomeTotalCents = computed(() => dollarsToCents(incomeTotal.value))
+
+const incomeAllocatedCents = computed(() =>
+  Object.values(incomeAllocations.value).reduce((sum, amount) => sum + dollarsToCents(amount || '0'), 0),
+)
+
+const incomeRemainingCents = computed(() => incomeTotalCents.value - incomeAllocatedCents.value)
+
+const canSubmitIncome = computed(() =>
+  incomeTotalCents.value > 0 && incomeRemainingCents.value === 0,
+)
+
+const dateAsMonth = computed(() => {
+  const parsed = new Date(date.value)
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed
+})
+
 const calculatorTotalCents = computed(() => {
   const subtotal = calculatorItems.value.reduce((sum, amount) => sum + amount, 0)
   return calculatorAddTax.value ? Math.round(subtotal * 1.091) : subtotal
@@ -95,7 +109,7 @@ watch(
   lines,
   currentLines => {
     if (
-      (tab.value === 'transaction' || tab.value === 'income')
+      tab.value === 'transaction'
       && currentLines.length > 0
       && currentLines.every(line => isCompleteLine(line))
     ) {
@@ -140,9 +154,8 @@ function applyCalculator() {
 async function submit() {
   submitting.value = true
   try {
-    if (tab.value === 'transaction' || tab.value === 'income') {
+    if (tab.value === 'transaction') {
       if (!canSubmitLines.value) return
-      const endpoint = tab.value === 'transaction' ? '/api/transactions/transaction' : '/api/transactions/income'
       const payload: TransactionRequest = {
         description: description.value,
         date: date.value,
@@ -153,8 +166,22 @@ async function submit() {
             amount: dollarsToCents(l.amount),
           })),
       }
-      await apiClient.post(endpoint, payload)
-      snackbar.enqueueSnackbar(tab.value === 'transaction' ? 'Transaction added' : 'Income added', { variant: 'success' })
+      await apiClient.post('/api/transactions/transaction', payload)
+      snackbar.enqueueSnackbar('Transaction added', { variant: 'success' })
+    } else if (tab.value === 'income') {
+      if (!canSubmitIncome.value) return
+      const payload: TransactionRequest = {
+        description: description.value,
+        date: date.value,
+        items: Object.entries(incomeAllocations.value)
+          .map(([categoryId, amount]) => ({
+            expenseCategoryId: Number(categoryId),
+            amount: dollarsToCents(amount),
+          }))
+          .filter(item => item.amount > 0),
+      }
+      await apiClient.post('/api/transactions/income', payload)
+      snackbar.enqueueSnackbar('Income added', { variant: 'success' })
     } else {
       const payload: TransferRequest = {
         description: description.value,
@@ -191,7 +218,7 @@ async function submit() {
           <v-text-field label="Description" v-model="description" hide-details />
           <v-text-field label="Date" type="date" v-model="date" hide-details />
 
-          <template v-if="tab === 'transaction' || tab === 'income'">
+          <template v-if="tab === 'transaction'">
             <span class="text-subtitle-2">Items</span>
             <div v-for="(item, index) in lines" :key="index" class="allocation-line d-flex align-center ga-1">
               <v-combobox
@@ -242,6 +269,24 @@ async function submit() {
             </span>
           </template>
 
+          <template v-else-if="tab === 'income'">
+            <v-text-field
+              label="Total Income Amount ($)"
+              type="number"
+              step="0.01"
+              min="0"
+              v-model="incomeTotal"
+              hide-details
+            />
+            <span class="text-subtitle-2">Allocate to Categories</span>
+            <IncomeAllocationList
+              :total-cents="incomeTotalCents"
+              :categories="props.categories"
+              :month="dateAsMonth"
+              v-model="incomeAllocations"
+            />
+          </template>
+
           <template v-else>
             <v-text-field label="Amount ($)" type="number" step="0.01" min="0" v-model="transferAmount" />
             <v-select label="From Category" :items="props.categories" item-title="name" item-value="id" v-model="fromCategoryId" />
@@ -255,7 +300,7 @@ async function submit() {
         <v-btn
           color="primary"
           :loading="submitting"
-          :disabled="(tab === 'transaction' || tab === 'income') && !canSubmitLines"
+          :disabled="(tab === 'transaction' && !canSubmitLines) || (tab === 'income' && !canSubmitIncome)"
           @click="submit"
         >
           Save
@@ -263,6 +308,7 @@ async function submit() {
       </v-card-actions>
     </v-card>
   </v-dialog>
+
 
   <v-dialog v-model="calculatorOpen" max-width="400">
     <v-card>
