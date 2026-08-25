@@ -3,7 +3,8 @@ import { ref, computed, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { ExpenseCategoryDto, PendingExpenseDto, ConvertPendingExpenseRequest } from '@/types'
-import { formatCents } from '@/utils/currency'
+import { formatCents, dollarsToCents, centsToDollars } from '@/utils/currency'
+import IncomeAllocationList from '@/components/IncomeAllocationList.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -28,6 +29,7 @@ const emptyLine = (): LineItem => ({ expenseCategoryId: null, amount: '' })
 const description = ref('')
 const date = ref('')
 const lines = ref<LineItem[]>([emptyLine()])
+const incomeAllocations = ref<Record<number, string>>({})
 const ignoreBudget = ref(false)
 const submitting = ref(false)
 const calculatorOpen = ref(false)
@@ -35,14 +37,6 @@ const calculatorLineIndex = ref<number | null>(null)
 const calculatorInput = ref('')
 const calculatorItems = ref<number[]>([])
 const calculatorAddTax = ref(false)
-
-function centsToDollars(cents: number) {
-  return (cents / 100).toFixed(2)
-}
-
-function dollarsToCents(s: string) {
-  return Math.round((parseFloat(s) || 0) * 100)
-}
 
 function isValidCategoryId(value: LineItem['expenseCategoryId']): value is number {
   return typeof value === 'number' && props.categories.some(category => category.id === value)
@@ -58,7 +52,8 @@ function isCompleteLine(line: LineItem): line is LineItem & { expenseCategoryId:
 
 // Pre-fill the form whenever a new pending expense is opened for conversion:
 // a single line item defaulting to the suggested category (if any) and the
-// full amount, ready for the user to edit or split across categories.
+// full amount, ready for the user to edit or split across categories. Income
+// (credit) items instead use the allocation list, seeded empty.
 watch(
   () => props.pendingExpense,
   pe => {
@@ -70,6 +65,7 @@ watch(
       expenseCategoryId: pe.suggestedCategoryId ?? null,
       amount: centsToDollars(pe.amount),
     }]
+    incomeAllocations.value = {}
   },
   { immediate: true },
 )
@@ -78,8 +74,20 @@ const sortedCategories = computed(() =>
   [...props.categories].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')),
 )
 
+const dateAsMonth = computed(() => {
+  const parsed = new Date(date.value)
+  return Number.isNaN(parsed.getTime()) ? new Date() : parsed
+})
+
+const incomeRemainingCents = computed(() => {
+  if (!props.pendingExpense) return 0
+  const allocated = Object.values(incomeAllocations.value).reduce((sum, amount) => sum + dollarsToCents(amount || '0'), 0)
+  return props.pendingExpense.amount - allocated
+})
+
 const remainingCents = computed(() => {
   if (!props.pendingExpense) return 0
+  if (!props.pendingExpense.isDebit) return incomeRemainingCents.value
   const allocated = lines.value.reduce((sum, l) => sum + dollarsToCents(l.amount || '0'), 0)
   return props.pendingExpense.amount - allocated
 })
@@ -88,11 +96,13 @@ const hasPartialLines = computed(() =>
   lines.value.some(line => !isEmptyLine(line) && !isCompleteLine(line)),
 )
 
-const canSubmit = computed(() =>
-  remainingCents.value === 0
-  && !hasPartialLines.value
-  && lines.value.some(isCompleteLine),
-)
+const canSubmit = computed(() => {
+  if (!props.pendingExpense) return false
+  if (!props.pendingExpense.isDebit) return incomeRemainingCents.value === 0
+  return remainingCents.value === 0
+    && !hasPartialLines.value
+    && lines.value.some(isCompleteLine)
+})
 
 const calculatorTotalCents = computed(() => {
   const subtotal = calculatorItems.value.reduce((sum, amount) => sum + amount, 0)
@@ -158,17 +168,26 @@ async function submit() {
   if (!props.pendingExpense || !canSubmit.value) return
   submitting.value = true
   try {
+    const items = props.pendingExpense.isDebit
+      ? lines.value
+        .filter(isCompleteLine)
+        .map(l => ({
+          expenseCategoryId: l.expenseCategoryId,
+          amount: dollarsToCents(l.amount),
+        }))
+      : Object.entries(incomeAllocations.value)
+        .map(([categoryId, amount]) => ({
+          expenseCategoryId: Number(categoryId),
+          amount: dollarsToCents(amount),
+        }))
+        .filter(item => item.amount > 0)
+
     const payload: ConvertPendingExpenseRequest = {
       description: description.value,
       date: date.value,
       version: props.pendingExpense.version,
       ignoreBudget: ignoreBudget.value,
-      items: lines.value
-        .filter(isCompleteLine)
-        .map(l => ({
-          expenseCategoryId: l.expenseCategoryId,
-          amount: dollarsToCents(l.amount),
-        })),
+      items,
     }
     await apiClient.post(`/api/pending-expenses/${props.pendingExpense.id}/convert`, payload)
     snackbar.enqueueSnackbar('Pending expense converted', { variant: 'success' })
@@ -202,63 +221,73 @@ async function submit() {
             />
           </div>
 
-          <span class="text-subtitle-2">
-            {{ pendingExpense.isDebit ? 'Split expense across categories' : 'Split income across categories' }}
-          </span>
-          <div v-for="(item, index) in lines" :key="index" class="allocation-line d-flex align-center ga-1">
-            <v-combobox
-              label="Category"
-              :items="sortedCategories"
-              item-title="name"
-              item-value="id"
-              v-model="item.expenseCategoryId"
-              :return-object="false"
-              auto-select-first="exact"
-              clearable
-              hide-details
-              :error="item.expenseCategoryId !== null && !isValidCategoryId(item.expenseCategoryId)"
-              density="compact"
-              class="category-field"
-            />
-            <div class="amount-field d-flex align-center ga-1">
-              <v-text-field
-                label="Amount ($)"
-                type="number"
-                step="0.01"
-                min="0"
-                v-model="item.amount"
+          <template v-if="pendingExpense.isDebit">
+            <span class="text-subtitle-2">Split expense across categories</span>
+            <div v-for="(item, index) in lines" :key="index" class="allocation-line d-flex align-center ga-1">
+              <v-combobox
+                label="Category"
+                :items="sortedCategories"
+                item-title="name"
+                item-value="id"
+                v-model="item.expenseCategoryId"
+                :return-object="false"
+                auto-select-first="exact"
+                clearable
                 hide-details
+                :error="item.expenseCategoryId !== null && !isValidCategoryId(item.expenseCategoryId)"
                 density="compact"
+                class="category-field"
               />
+              <div class="amount-field d-flex align-center ga-1">
+                <v-text-field
+                  label="Amount ($)"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  v-model="item.amount"
+                  hide-details
+                  density="compact"
+                />
+                <v-btn
+                  icon="mdi-calculator"
+                  size="small"
+                  variant="text"
+                  aria-label="Open amount calculator"
+                  @click="openCalculator(index)"
+                />
+              </div>
               <v-btn
-                icon="mdi-calculator"
+                v-if="lines.length > 1"
+                icon="mdi-delete"
                 size="small"
                 variant="text"
-                aria-label="Open amount calculator"
-                @click="openCalculator(index)"
+                color="error"
+                aria-label="Remove line"
+                class="align-self-center"
+                @click="removeLine(index)"
               />
             </div>
-            <v-btn
-              v-if="lines.length > 1"
-              icon="mdi-delete"
-              size="small"
-              variant="text"
-              color="error"
-              aria-label="Remove line"
-              class="align-self-center"
-              @click="removeLine(index)"
-            />
-          </div>
 
-          <span
-            class="text-body-2"
-            :class="remainingCents === 0 ? 'text-success' : 'text-warning'"
-          >
-            Remaining to allocate: {{ formatCents(remainingCents) }}
-          </span>
-          <span v-if="hasPartialLines" class="text-body-2 text-error">
-            Each line item must have a category and an amount greater than zero.
-          </span>
+            <span
+              class="text-body-2"
+              :class="remainingCents === 0 ? 'text-success' : 'text-warning'"
+            >
+              Remaining to allocate: {{ formatCents(remainingCents) }}
+            </span>
+            <span v-if="hasPartialLines" class="text-body-2 text-error">
+              Each line item must have a category and an amount greater than zero.
+            </span>
+          </template>
+
+          <template v-else>
+            <span class="text-subtitle-2">Allocate income to categories</span>
+            <IncomeAllocationList
+              :total-cents="pendingExpense.amount"
+              :categories="sortedCategories"
+              :month="dateAsMonth"
+              v-model="incomeAllocations"
+            />
+          </template>
         </div>
       </v-card-text>
       <v-card-actions>

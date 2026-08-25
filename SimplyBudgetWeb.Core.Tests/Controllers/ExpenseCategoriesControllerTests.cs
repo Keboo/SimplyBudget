@@ -206,6 +206,38 @@ public class ExpenseCategoriesControllerTests
     }
 
     [Test]
+    public async Task GetRemainingBudget_ReturnsRemainingAmountPerCategory()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        var (groceriesId, savingsId) = await mocker.InDbScopeAsync(async context =>
+        {
+            var groceries = new ExpenseCategory { Name = "Groceries", BudgetedAmount = 30000 };
+            var savings = new ExpenseCategory { Name = "Savings", BudgetedPercentage = 10 };
+            context.ExpenseCategories.AddRange(groceries, savings);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryItems.Add(new ExpenseCategoryItem
+            {
+                Date = new DateTime(2026, 1, 10),
+                Description = "Paycheck allocation",
+                Details = [new ExpenseCategoryItemDetail { Amount = 10000, ExpenseCategoryId = groceries.ID }],
+            });
+            await context.SaveChangesAsync();
+            return (groceries.ID, savings.ID);
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.GetRemainingBudget(new DateTime(2026, 1, 15));
+
+        await Assert.That(result[groceriesId]).IsEqualTo(20000);
+        await Assert.That(result[savingsId]).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task GetMonthlyExpenses_ReturnsMonthlySpendingAndBudgetedAmount()
     {
         AutoMocker mocker = new();

@@ -10,3 +10,11 @@ export function parseMonth(yearMonth: string): Date {
   const [year, month] = yearMonth.split('-').map(Number)
   return new Date(year, month - 1, 1)
 }
+
+export function dollarsToCents(s: string): number {
+  return Math.round((parseFloat(s) || 0) * 100)
+}
+
+export function centsToDollars(cents: number): string {
+  return (cents / 100).toFixed(2)
+}
