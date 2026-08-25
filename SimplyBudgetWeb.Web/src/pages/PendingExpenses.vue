@@ -336,6 +336,11 @@ onMounted(() => {
                 </template>
                 <v-list density="compact">
                   <v-list-item
+                    prepend-icon="mdi-check-circle-outline"
+                    title="Apply Expense"
+                    @click="openConvert(item)"
+                  />
+                  <v-list-item
                     prepend-icon="mdi-note-edit-outline"
                     title="Edit note"
                     :disabled="isEditingNote(item.id)"
