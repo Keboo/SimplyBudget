@@ -26,12 +26,12 @@ const deletingAll = ref(false)
 const editingNoteItemId = ref<number | null>(null)
 const noteDrafts = ref<Record<number, string>>({})
 const addRuleOpen = ref(false)
-const addRuleTargetCategoryLabel = ref('')
 const ruleForm = ref({ name: '', ruleRegex: '', expenseCategoryId: null as number | null })
 
 // "All" plus the real filter options; used for both the toolbar filter and the
 // page-level assignee filter.
 const assigneeFilterOptions = computed(() => [{ id: null, name: 'All' }, ...assignees.value])
+const ruleCategoryOptions = computed(() => [{ id: null, name: 'None' }, ...categories.value])
 
 // Items are returned sorted oldest-first, so consecutive entries belong to the same
 // month unless this changes; used to show a divider between months in the list.
@@ -176,14 +176,12 @@ function openConvert(item: PendingExpenseDto) {
 
 function resetRuleForm() {
   ruleForm.value = { name: '', ruleRegex: '', expenseCategoryId: null }
-  addRuleTargetCategoryLabel.value = ''
 }
 
 function openAddRule(item: PendingExpenseDto) {
   resetRuleForm()
   ruleForm.value.ruleRegex = item.description ?? ''
   ruleForm.value.expenseCategoryId = item.suggestedCategoryId ?? null
-  addRuleTargetCategoryLabel.value = item.suggestedCategoryName ?? 'No category'
   addRuleOpen.value = true
 }
 
@@ -399,7 +397,7 @@ onMounted(() => {
         <v-card-text class="d-flex flex-column" style="gap: 16px;">
           <v-text-field label="Name" v-model="ruleForm.name" />
           <v-text-field label="Regex Pattern" v-model="ruleForm.ruleRegex" />
-          <v-text-field label="Target Category" :model-value="addRuleTargetCategoryLabel" readonly />
+          <v-select label="Target Category" :items="ruleCategoryOptions" item-title="name" item-value="id" v-model="ruleForm.expenseCategoryId" />
         </v-card-text>
         <v-card-actions>
           <v-spacer />

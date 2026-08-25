@@ -34,7 +34,6 @@ const categories = ref<ExpenseCategoryDto[]>([])
 const rulesLoading = ref(false)
 const rulesLoaded = ref(false)
 const addRuleOpen = ref(false)
-const addTargetCategoryLabel = ref('')
 const deleteRule = ref<RuleDto | null>(null)
 const editRule = ref<RuleDto | null>(null)
 const ruleForm = ref({ name: '', ruleRegex: '', expenseCategoryId: null as number | null })
@@ -219,10 +218,8 @@ function resetRuleForm() {
   ruleForm.value = { name: '', ruleRegex: '', expenseCategoryId: null }
 }
 
-function openAddRuleForCategory(expenseCategoryId: number | null, categoryLabel: string) {
+function openAddRule() {
   resetRuleForm()
-  ruleForm.value.expenseCategoryId = expenseCategoryId
-  addTargetCategoryLabel.value = categoryLabel
   addRuleOpen.value = true
 }
 
@@ -245,7 +242,6 @@ async function handleAddRule() {
     snackbar.enqueueSnackbar('Rule added', { variant: 'success' })
     addRuleOpen.value = false
     resetRuleForm()
-    addTargetCategoryLabel.value = ''
     void fetchRules()
   } catch {
     snackbar.enqueueSnackbar('Failed to add rule', { variant: 'error' })
@@ -355,7 +351,6 @@ watch(showHiddenCategories, () => {
 watch(addRuleOpen, (isOpen) => {
   if (!isOpen) {
     resetRuleForm()
-    addTargetCategoryLabel.value = ''
   }
 })
 
@@ -480,17 +475,11 @@ watch(openPanel, (panel) => {
             <v-progress-circular indeterminate aria-label="Loading import rules" />
           </div>
           <div v-else>
+            <div class="d-flex justify-end mb-4">
+              <v-btn color="primary" @click="openAddRule">Add Rule</v-btn>
+            </div>
             <v-card v-for="group in ruleGroups" :key="group.key" class="mb-4">
-              <v-card-title class="d-flex justify-space-between align-center">
-                <span>{{ group.label }}</span>
-                <v-btn
-                  size="small"
-                  color="primary"
-                  @click="openAddRuleForCategory(group.expenseCategoryId, group.label)"
-                >
-                  Add Rule
-                </v-btn>
-              </v-card-title>
+              <v-card-title>{{ group.label }}</v-card-title>
               <v-divider />
               <v-list>
                 <v-list-item v-if="group.rules.length === 0">
@@ -625,7 +614,7 @@ watch(openPanel, (panel) => {
         <v-card-text class="d-flex flex-column" style="gap: 16px;">
           <v-text-field label="Name" v-model="ruleForm.name" />
           <v-text-field label="Regex Pattern" v-model="ruleForm.ruleRegex" />
-          <v-text-field label="Target Category" :model-value="addTargetCategoryLabel" readonly />
+          <v-select label="Target Category" :items="categoryOptions" item-title="name" item-value="id" v-model="ruleForm.expenseCategoryId" />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
