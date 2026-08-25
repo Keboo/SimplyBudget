@@ -437,3 +437,61 @@ onMounted(() => {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.pending-month-group-header {
+  min-height: 22px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.65);
+  padding-inline: 8px;
+}
+
+.pending-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.pending-main {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pending-date {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+}
+
+.pending-description {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.pending-right {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 720px) {
+  .pending-row {
+    align-items: center;
+  }
+
+  .pending-main {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 4px;
+  }
+
+  .pending-description {
+    grid-column: 1;
+  }
+}
+</style>
