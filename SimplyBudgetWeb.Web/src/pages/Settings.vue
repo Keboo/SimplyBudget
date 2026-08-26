@@ -5,6 +5,7 @@ import { useSnackbarStore } from '@/stores/snackbar'
 import { useAuthStore } from '@/stores/auth'
 import type { RuleDto, ExpenseCategoryDto, AccountDto, CurrentUserDto } from '@/types'
 import { formatCents } from '@/utils/currency'
+import CategorySelector from '@/components/CategorySelector.vue'
 
 const snackbar = useSnackbarStore()
 const authStore = useAuthStore()
@@ -37,8 +38,6 @@ const addRuleOpen = ref(false)
 const deleteRule = ref<RuleDto | null>(null)
 const editRule = ref<RuleDto | null>(null)
 const ruleForm = ref({ name: '', ruleRegex: '', expenseCategoryId: null as number | null })
-
-const categoryOptions = computed(() => [{ id: null, name: 'None' }, ...categories.value])
 
 interface RuleGroup {
   key: string
@@ -616,7 +615,13 @@ watch(openPanel, (panel) => {
         <v-card-text class="d-flex flex-column" style="gap: 16px;">
           <v-text-field label="Name" v-model="ruleForm.name" />
           <v-text-field label="Regex Pattern" v-model="ruleForm.ruleRegex" />
-          <v-select label="Target Category" :items="categoryOptions" item-title="name" item-value="id" v-model="ruleForm.expenseCategoryId" />
+          <CategorySelector
+            label="Target Category"
+            :categories="categories"
+            null-option-label="None"
+            :clearable="false"
+            v-model="ruleForm.expenseCategoryId"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -632,7 +637,13 @@ watch(openPanel, (panel) => {
         <v-card-text class="d-flex flex-column" style="gap: 16px;">
           <v-text-field label="Name" v-model="ruleForm.name" />
           <v-text-field label="Regex Pattern" v-model="ruleForm.ruleRegex" />
-          <v-select label="Category" :items="categoryOptions" item-title="name" item-value="id" v-model="ruleForm.expenseCategoryId" />
+          <CategorySelector
+            label="Category"
+            :categories="categories"
+            null-option-label="None"
+            :clearable="false"
+            v-model="ruleForm.expenseCategoryId"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />

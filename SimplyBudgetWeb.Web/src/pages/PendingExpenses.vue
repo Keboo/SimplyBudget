@@ -9,6 +9,7 @@ import { AMAZON_TRANSACTIONS_URL, hasAmazonInDescription } from '@/utils/merchan
 import { includesSearchText, tryParseSearchAmountInCents } from '@/utils/search'
 import ConvertPendingExpenseDialog from '@/components/ConvertPendingExpenseDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
+import CategorySelector from '@/components/CategorySelector.vue'
 
 const snackbar = useSnackbarStore()
 
@@ -33,7 +34,6 @@ const ruleForm = ref({ name: '', ruleRegex: '', expenseCategoryId: null as numbe
 // "All" plus the real filter options; used for both the toolbar filter and the
 // page-level assignee filter.
 const assigneeFilterOptions = computed(() => [{ id: null, name: 'All' }, ...assignees.value])
-const ruleCategoryOptions = computed(() => [{ id: null, name: 'None' }, ...categories.value])
 const filteredItems = computed(() => {
   const searchText = search.value.trim()
   if (!searchText) return items.value
@@ -48,7 +48,6 @@ const filteredItems = computed(() => {
     return Math.abs(item.amount) === searchAmountAbs
   })
 })
-
 // Items are returned sorted oldest-first, so consecutive entries belong to the same
 // month unless this changes; used to show a divider between months in the list.
 function monthGroupLabel(dateString: string) {
@@ -461,7 +460,13 @@ onMounted(() => {
         <v-card-text class="d-flex flex-column" style="gap: 16px;">
           <v-text-field label="Name" v-model="ruleForm.name" />
           <v-text-field label="Regex Pattern" v-model="ruleForm.ruleRegex" />
-          <v-select label="Target Category" :items="ruleCategoryOptions" item-title="name" item-value="id" v-model="ruleForm.expenseCategoryId" />
+          <CategorySelector
+            label="Target Category"
+            :categories="categories"
+            null-option-label="None"
+            :clearable="false"
+            v-model="ruleForm.expenseCategoryId"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />

@@ -10,6 +10,7 @@ import { includesSearchText, tryParseSearchAmountInCents } from '@/utils/search'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
 import { useRoute } from 'vue-router'
+import CategorySelector from '@/components/CategorySelector.vue'
 
 const snackbar = useSnackbarStore()
 const route = useRoute()
@@ -29,7 +30,6 @@ const monthLabel = computed(() =>
   currentMonth.value.toLocaleString('default', { month: 'long', year: 'numeric' }),
 )
 
-const categoryOptions = computed(() => [{ id: null, name: 'All' }, ...categories.value])
 const filteredItems = computed(() => {
   const searchText = search.value.trim()
   if (!searchText) return items.value
@@ -46,7 +46,6 @@ const filteredItems = computed(() => {
       || Math.abs(totalForItem(item)) === searchAmountAbs
   })
 })
-
 function monthGroupLabel(dateString: string) {
   return new Date(dateString).toLocaleDateString('default', { month: 'long', year: 'numeric' })
 }
@@ -136,15 +135,13 @@ function onDialogSuccess() {
 
       <v-text-field label="Search" v-model="search" density="compact" style="max-width: 200px;" hide-details />
 
-      <v-select
+      <CategorySelector
         label="Category"
-        :items="categoryOptions"
-        item-title="name"
-        item-value="id"
+        :categories="categories"
+        null-option-label="All"
+        :clearable="false"
         v-model="categoryId"
-        density="compact"
         style="max-width: 200px;"
-        hide-details
       />
     </v-card>
 
