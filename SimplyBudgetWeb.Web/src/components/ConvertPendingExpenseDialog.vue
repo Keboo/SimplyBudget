@@ -15,6 +15,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   success: []
+  noteSaved: [pendingExpense: PendingExpenseDto]
 }>()
 
 const snackbar = useSnackbarStore()
@@ -227,15 +228,13 @@ async function saveNote() {
   try {
     const nextNoteRaw = notes.value ?? ''
     const nextNote = nextNoteRaw.trim().length > 0 ? nextNoteRaw.trim() : null
-    await apiClient.put(`/api/pending-expenses/${props.pendingExpense.id}`, {
+    const refreshed = await apiClient.put<PendingExpenseDto>(`/api/pending-expenses/${props.pendingExpense.id}`, {
       assigneeId: props.pendingExpense.assigneeId,
       notes: nextNote,
       version: props.pendingExpense.version,
     })
-    const refreshed = await apiClient.get<PendingExpenseDto>(`/api/pending-expenses/${props.pendingExpense.id}`)
-    props.pendingExpense.version = refreshed.version
-    props.pendingExpense.notes = refreshed.notes
     notes.value = refreshed.notes ?? ''
+    emit('noteSaved', refreshed)
     snackbar.enqueueSnackbar('Pending expense note saved', { variant: 'success' })
     close()
   } catch (e: unknown) {
