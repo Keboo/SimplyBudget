@@ -232,6 +232,13 @@ function onConvertSuccess() {
   convertItem.value = null
 }
 
+function onConvertNoteSaved(updated: PendingExpenseDto) {
+  const existing = items.value.find((item) => item.id === updated.id)
+  if (existing) {
+    Object.assign(existing, updated)
+  }
+}
+
 watch([currentMonth, search, assigneeId], fetchPendingExpenses)
 
 onMounted(() => {
@@ -420,6 +427,7 @@ onMounted(() => {
       :pending-expense="convertItem"
       :categories="categories"
       @success="onConvertSuccess"
+      @note-saved="onConvertNoteSaved"
     />
     <v-dialog :model-value="addRuleOpen" max-width="500" @update:model-value="(val: boolean) => !val && closeAddRule()">
       <v-card>
