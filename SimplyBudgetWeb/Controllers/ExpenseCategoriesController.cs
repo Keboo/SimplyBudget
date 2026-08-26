@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Utilities;
 
 namespace SimplyBudgetWeb.Controllers;
 
@@ -21,7 +22,19 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
             query = query.Where(c => !c.IsHidden);
 
         if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(c => c.Name != null && c.Name.Contains(search));
+        {
+            var searchText = search.Trim();
+            var hasSearchAmount = SearchAmountParser.TryParseAmountInCents(searchText, out var searchAmountInCents);
+            var searchAmountAbs = Math.Abs(searchAmountInCents);
+
+            query = query.Where(c =>
+                (c.Name != null && c.Name.Contains(searchText)) ||
+                (c.CategoryName != null && c.CategoryName.Contains(searchText)) ||
+                (hasSearchAmount &&
+                 (Math.Abs(c.BudgetedAmount) == searchAmountAbs ||
+                  Math.Abs(c.CurrentBalance) == searchAmountAbs ||
+                  (c.Cap.HasValue && Math.Abs(c.Cap.Value) == searchAmountAbs))));
+        }
 
         var categories = await query.ToListAsync();
         var idsWithItems = await GetIdsWithItemsAsync(categories.Select(c => c.ID));

@@ -9,6 +9,30 @@ namespace SimplyBudgetWeb.Core.Tests.Controllers;
 public class ExpenseCategoriesControllerTests
 {
     [Test]
+    public async Task GetAll_FiltersByAmount()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            context.ExpenseCategories.AddRange(
+                new ExpenseCategory { Name = "Groceries", BudgetedAmount = 1234 },
+                new ExpenseCategory { Name = "Savings", BudgetedAmount = 3000 });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.GetAll(includeHidden: true, search: "12.34");
+
+        await Assert.That(result.Length).IsEqualTo(1);
+        await Assert.That(result[0].Name).IsEqualTo("Groceries");
+        await Assert.That(result[0].BudgetedAmount).IsEqualTo(1234);
+    }
+
+    [Test]
     public async Task Update_RenamesCategory()
     {
         AutoMocker mocker = new();

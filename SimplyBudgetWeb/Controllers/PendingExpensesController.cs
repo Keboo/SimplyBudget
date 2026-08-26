@@ -4,6 +4,7 @@ using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
 using SimplyBudgetWeb.Services;
+using SimplyBudgetWeb.Utilities;
 
 namespace SimplyBudgetWeb.Controllers;
 
@@ -37,7 +38,7 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
         }
 
         if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(x => x.Description != null && x.Description.Contains(search));
+            query = ApplySearchFilter(query, search);
 
         if (assigneeId.HasValue)
             query = query.Where(x => x.AssigneeId == assigneeId.Value);
@@ -162,7 +163,7 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
         }
 
         if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(x => x.Description != null && x.Description.Contains(search));
+            query = ApplySearchFilter(query, search);
 
         if (assigneeId.HasValue)
             query = query.Where(x => x.AssigneeId == assigneeId.Value);
@@ -265,6 +266,17 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
         {
             return false;
         }
+    }
+
+    private static IQueryable<PendingExpense> ApplySearchFilter(IQueryable<PendingExpense> query, string search)
+    {
+        var searchText = search.Trim();
+        var hasSearchAmount = SearchAmountParser.TryParseAmountInCents(searchText, out var searchAmountInCents);
+        var searchAmountAbs = Math.Abs(searchAmountInCents);
+
+        return query.Where(x =>
+            (x.Description != null && x.Description.Contains(searchText)) ||
+            (hasSearchAmount && Math.Abs(x.Amount) == searchAmountAbs));
     }
 }
 
