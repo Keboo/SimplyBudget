@@ -109,12 +109,33 @@ const calculatorTotalCents = computed(() => {
 watch(
   lines,
   currentLines => {
-    if (
+    if (!props.pendingExpense?.isDebit) return
+
+    const nonEmptyLines = currentLines.filter(line => !isEmptyLine(line))
+    const shouldAddEmptyLine = (
       remainingCents.value > 0
-      && currentLines.length > 0
-      && currentLines.every(line => dollarsToCents(line.amount) > 0)
-    ) {
-      currentLines.push(emptyLine())
+      && nonEmptyLines.length > 0
+      && nonEmptyLines.every(isCompleteLine)
+    )
+
+    const nextLines = shouldAddEmptyLine
+      ? [...nonEmptyLines, emptyLine()]
+      : nonEmptyLines.length > 0
+        ? nonEmptyLines
+        : [emptyLine()]
+
+    const didChange = (
+      currentLines.length !== nextLines.length
+      || currentLines.some((line, index) => {
+        const nextLine = nextLines[index]
+        return !nextLine
+          || line.expenseCategoryId !== nextLine.expenseCategoryId
+          || line.amount !== nextLine.amount
+      })
+    )
+
+    if (didChange) {
+      lines.value = nextLines
     }
   },
   { deep: true },
