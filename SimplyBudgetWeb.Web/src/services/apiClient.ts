@@ -33,6 +33,12 @@ class ApiClient {
     return { 'Content-Type': 'application/json' }
   }
 
+  private buildJsonBody(data?: unknown): string | undefined {
+    if (!data) return undefined
+    // Preserve literal question marks in values while avoiding raw '?' in request payload text.
+    return JSON.stringify(data).replace(/\?/g, '\\u003F')
+  }
+
   async get<T>(url: string): Promise<T> {
     const headers = await this.getHeaders()
     const response = await fetch(this.baseUrl + url, { headers })
@@ -45,7 +51,7 @@ class ApiClient {
     const headers = await this.getHeaders()
     const response = await fetch(this.baseUrl + url, {
       method: 'POST', headers,
-      body: data ? JSON.stringify(data) : undefined,
+      body: this.buildJsonBody(data),
     })
     if (!response.ok) {
       const error = await response.text()
@@ -74,7 +80,7 @@ class ApiClient {
     const headers = await this.getHeaders()
     const response = await fetch(this.baseUrl + url, {
       method: 'PUT', headers,
-      body: data ? JSON.stringify(data) : undefined,
+      body: this.buildJsonBody(data),
     })
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     if (response.status === 204) return undefined as T
