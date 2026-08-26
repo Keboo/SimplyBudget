@@ -313,6 +313,51 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
+    public async Task Update_AssignsToSelf_WhenAssigneeAlreadyTrackedInContext()
+    {
+        // Regression test for a 400 error: "The navigation 'PendingExpense.Assignee' cannot have
+        // 'IsLoaded' set to false because the referenced entity is non-null and is therefore
+        // loaded." CurrentUserSyncMiddleware runs earlier in the same request and already tracks
+        // (AsTracking) the current user's PendingExpenseAssignee row in the shared, scoped
+        // DbContext before the controller action executes. When the pending expense is assigned
+        // to that same (already-tracked) assignee, EF Core's relationship fixup automatically
+        // sets the Assignee navigation to the tracked entity after SaveChangesAsync, so it is
+        // non-null by the time the controller tries to refresh it.
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        var (pendingId, selfAssigneeId, version) = await mocker.InDbScopeAsync(async context =>
+        {
+            var selfAssignee = new PendingExpenseAssignee { Name = "Me", ObjectId = "me-oid" };
+            context.PendingExpenseAssignees.Add(selfAssignee);
+            var pending = new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Costco", Amount = 100 };
+            context.PendingExpenses.Add(pending);
+            await context.SaveChangesAsync();
+            return (pending.ID, selfAssignee.ID, System.Convert.ToBase64String(pending.Version));
+        });
+
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            // Simulate CurrentUserSyncMiddleware tracking the current user's assignee row in
+            // this same DbContext instance before the controller action runs.
+            await context.PendingExpenseAssignees.AsTracking().SingleAsync(x => x.ID == selfAssigneeId);
+
+            var controller = new PendingExpensesController(context);
+            var result = await controller.Update(pendingId, new PendingExpenseUpdateRequest(selfAssigneeId, null, version));
+
+            var dto = (result.Value as PendingExpenseDto) ?? ((OkObjectResult)result.Result!).Value as PendingExpenseDto;
+            await Assert.That(dto!.AssigneeId).IsEqualTo(selfAssigneeId);
+            await Assert.That(dto.AssigneeName).IsEqualTo("Me");
+        }
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var pending = await context.PendingExpenses.SingleAsync(x => x.ID == pendingId);
+            await Assert.That(pending.AssigneeId).IsEqualTo(selfAssigneeId);
+        });
+    }
+
+    [Test]
     public async Task Update_WithUnknownAssignee_ReturnsBadRequest()
     {
         AutoMocker mocker = new();
