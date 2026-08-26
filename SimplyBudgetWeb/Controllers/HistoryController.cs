@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Utilities;
 
 namespace SimplyBudgetWeb.Controllers;
 
@@ -27,7 +28,17 @@ public class HistoryController(BudgetWebContext context) : ControllerBase
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(x => x.Description != null && x.Description.Contains(search));
+        {
+            var searchText = search.Trim();
+            var hasSearchAmount = SearchAmountParser.TryParseAmountInCents(searchText, out var searchAmountInCents);
+            var searchAmountAbs = Math.Abs(searchAmountInCents);
+
+            query = query.Where(x =>
+                (x.Description != null && x.Description.Contains(searchText)) ||
+                (hasSearchAmount &&
+                 (x.Details!.Any(d => Math.Abs(d.Amount) == searchAmountAbs) ||
+                  Math.Abs(x.Details!.Sum(d => d.Amount)) == searchAmountAbs)));
+        }
 
         if (categoryId.HasValue)
             query = query.Where(x => x.Details!.Any(d => d.ExpenseCategoryId == categoryId.Value));
