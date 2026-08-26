@@ -29,9 +29,11 @@ const emptyLine = (): LineItem => ({ expenseCategoryId: null, amount: '' })
 const description = ref('')
 const date = ref('')
 const lines = ref<LineItem[]>([emptyLine()])
+const notes = ref('')
 const incomeAllocations = ref<Record<number, string>>({})
 const ignoreBudget = ref(false)
 const submitting = ref(false)
+const savingNote = ref(false)
 const calculatorOpen = ref(false)
 const calculatorLineIndex = ref<number | null>(null)
 const calculatorInput = ref('')
@@ -60,6 +62,7 @@ watch(
     if (!pe) return
     description.value = pe.description ?? ''
     date.value = pe.date.split('T')[0]
+    notes.value = pe.notes ?? ''
     ignoreBudget.value = false
     lines.value = [{
       expenseCategoryId: pe.suggestedCategoryId ?? null,
@@ -217,6 +220,30 @@ async function submit() {
     submitting.value = false
   }
 }
+
+async function saveNote() {
+  if (!props.pendingExpense) return
+  savingNote.value = true
+  try {
+    const nextNoteRaw = notes.value ?? ''
+    const nextNote = nextNoteRaw.trim().length > 0 ? nextNoteRaw.trim() : null
+    await apiClient.put(`/api/pending-expenses/${props.pendingExpense.id}`, {
+      assigneeId: props.pendingExpense.assigneeId,
+      notes: nextNote,
+      version: props.pendingExpense.version,
+    })
+    const refreshed = await apiClient.get<PendingExpenseDto>(`/api/pending-expenses/${props.pendingExpense.id}`)
+    props.pendingExpense.version = refreshed.version
+    props.pendingExpense.notes = refreshed.notes
+    notes.value = refreshed.notes ?? ''
+    snackbar.enqueueSnackbar('Pending expense note saved', { variant: 'success' })
+    close()
+  } catch (e: unknown) {
+    snackbar.enqueueSnackbar(e instanceof Error ? e.message : 'Failed to save pending expense note', { variant: 'error' })
+  } finally {
+    savingNote.value = false
+  }
+}
 </script>
 
 <template>
@@ -309,10 +336,20 @@ async function submit() {
         >
           Remaining to allocate: {{ formatCents(remainingCents) }}
         </span>
+
+        <v-textarea
+          label="Notes"
+          v-model="notes"
+          rows="2"
+          auto-grow
+          density="compact"
+          class="mt-2"
+        />
       </div>
       <v-card-actions>
         <v-spacer />
         <v-btn @click="close">Cancel</v-btn>
+        <v-btn :loading="savingNote" :disabled="submitting" @click="saveNote">Save Note</v-btn>
         <v-btn color="primary" :loading="submitting" :disabled="!canSubmit" @click="submit">Apply</v-btn>
       </v-card-actions>
     </v-card>
