@@ -5,6 +5,7 @@ import { useSnackbarStore } from '@/stores/snackbar'
 import type { ExpenseCategoryDto, PendingExpenseDto, ConvertPendingExpenseRequest } from '@/types'
 import { formatCents, dollarsToCents, centsToDollars, parseLocalDate } from '@/utils/currency'
 import IncomeAllocationList from '@/components/IncomeAllocationList.vue'
+import CategorySelector from '@/components/CategorySelector.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -268,18 +269,12 @@ async function saveNote() {
           <template v-if="pendingExpense.isDebit">
             <span class="text-subtitle-2">Split expense across categories</span>
             <div v-for="(item, index) in lines" :key="index" class="allocation-line d-flex align-center ga-1">
-              <v-combobox
+              <CategorySelector
                 label="Category"
-                :items="sortedCategories"
-                item-title="name"
-                item-value="id"
+                :categories="sortedCategories"
                 v-model="item.expenseCategoryId"
-                :return-object="false"
-                auto-select-first="exact"
-                clearable
-                hide-details
                 :error="item.expenseCategoryId !== null && !isValidCategoryId(item.expenseCategoryId)"
-                density="compact"
+                :allow-custom="true"
                 class="category-field"
               />
               <div class="amount-field d-flex align-center ga-1">

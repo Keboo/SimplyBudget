@@ -5,6 +5,7 @@ import { useSnackbarStore } from '@/stores/snackbar'
 import type { ExpenseCategoryDto, TransactionRequest, TransferRequest } from '@/types'
 import { formatCents, dollarsToCents, centsToDollars, parseLocalDate } from '@/utils/currency'
 import IncomeAllocationList from '@/components/IncomeAllocationList.vue'
+import CategorySelector from '@/components/CategorySelector.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -222,18 +223,12 @@ async function submit() {
           <template v-if="tab === 'transaction'">
             <span class="text-subtitle-2">Items</span>
             <div v-for="(item, index) in lines" :key="index" class="allocation-line d-flex align-center ga-1">
-              <v-combobox
+              <CategorySelector
                 label="Category"
-                :items="props.categories"
-                item-title="name"
-                item-value="id"
+                :categories="props.categories"
                 v-model="item.expenseCategoryId"
-                :return-object="false"
-                auto-select-first="exact"
-                clearable
-                hide-details
                 :error="item.expenseCategoryId !== null && !isValidCategoryId(item.expenseCategoryId)"
-                density="compact"
+                :allow-custom="true"
                 class="category-field"
               />
               <div class="amount-field d-flex align-center ga-1">
@@ -290,8 +285,8 @@ async function submit() {
 
           <template v-else>
             <v-text-field label="Amount ($)" type="number" step="0.01" min="0" v-model="transferAmount" />
-            <v-select label="From Category" :items="props.categories" item-title="name" item-value="id" v-model="fromCategoryId" />
-            <v-select label="To Category" :items="props.categories" item-title="name" item-value="id" v-model="toCategoryId" />
+            <CategorySelector label="From Category" :categories="props.categories" :clearable="false" v-model="fromCategoryId" />
+            <CategorySelector label="To Category" :categories="props.categories" :clearable="false" v-model="toCategoryId" />
           </template>
         </div>
       </v-card-text>
