@@ -46,7 +46,10 @@ public class HistoryController(BudgetWebContext context) : ControllerBase
         if (accountId.HasValue)
             query = query.Where(x => x.Details!.Any(d => d.ExpenseCategory!.AccountID == accountId.Value));
 
-        var items = await query.OrderByDescending(x => x.Date).ToListAsync();
+        var items = await query
+            .OrderBy(x => x.Date)
+            .ThenBy(x => x.ID)
+            .ToListAsync();
 
         return items.Select(item => new HistoryItemDto(
             Id: item.ID,

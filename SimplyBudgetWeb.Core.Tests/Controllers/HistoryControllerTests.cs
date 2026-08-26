@@ -48,4 +48,71 @@ public class HistoryControllerTests
         await Assert.That(result[0].Description).IsEqualTo("Small purchase");
         await Assert.That(result[0].Details[0].Amount).IsEqualTo(-1234);
     }
+
+    [Test]
+    public async Task GetAll_ReturnsSelectedMonthItemsOrderedByOldestDateFirst()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Food" };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryItems.AddRange(
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 6, 20),
+                    Description = "June newest",
+                    Details =
+                    [
+                        new ExpenseCategoryItemDetail { ExpenseCategoryId = category.ID, Amount = -1200 },
+                    ],
+                },
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 6, 3),
+                    Description = "June oldest",
+                    Details =
+                    [
+                        new ExpenseCategoryItemDetail { ExpenseCategoryId = category.ID, Amount = -800 },
+                    ],
+                },
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 6, 12),
+                    Description = "June middle",
+                    Details =
+                    [
+                        new ExpenseCategoryItemDetail { ExpenseCategoryId = category.ID, Amount = -1000 },
+                    ],
+                },
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 7, 1),
+                    Description = "July item",
+                    Details =
+                    [
+                        new ExpenseCategoryItemDetail { ExpenseCategoryId = category.ID, Amount = -500 },
+                    ],
+                });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new HistoryController(context);
+
+        var result = await controller.GetAll(
+            month: new DateTime(2026, 6, 1),
+            search: null,
+            categoryId: null,
+            accountId: null);
+
+        await Assert.That(result.Length).IsEqualTo(3);
+        await Assert.That(result[0].Description).IsEqualTo("June oldest");
+        await Assert.That(result[1].Description).IsEqualTo("June middle");
+        await Assert.That(result[2].Description).IsEqualTo("June newest");
+    }
 }
