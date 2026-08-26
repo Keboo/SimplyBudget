@@ -83,6 +83,10 @@ const canSubmitLines = computed(() =>
   !hasPartialLines.value && lines.value.some(isCompleteLine),
 )
 
+const lineItemsTotalCents = computed(() =>
+  lines.value.reduce((sum, line) => sum + dollarsToCents(line.amount || '0'), 0),
+)
+
 const incomeTotalCents = computed(() => dollarsToCents(incomeTotal.value))
 
 const incomeAllocatedCents = computed(() =>
@@ -291,7 +295,12 @@ async function submit() {
           </template>
         </div>
       </v-card-text>
-      <div v-if="tab === 'income'" class="px-4 pt-2">
+      <div v-if="tab === 'transaction'" class="px-4 pt-2">
+        <span class="text-body-2">
+          Line items total: {{ formatCents(lineItemsTotalCents) }}
+        </span>
+      </div>
+      <div v-else-if="tab === 'income'" class="px-4 pt-2">
         <span
           class="text-body-2"
           :class="incomeRemainingCents === 0 ? 'text-success' : 'text-warning'"
