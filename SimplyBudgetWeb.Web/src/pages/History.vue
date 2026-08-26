@@ -6,6 +6,7 @@ import type { HistoryItemDto, ExpenseCategoryDto, AccountDto } from '@/types'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import { AMAZON_TRANSACTIONS_URL, hasAmazonInDescription } from '@/utils/merchantLinks'
+import { includesSearchText, tryParseSearchAmountInCents } from '@/utils/search'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
 import { useRoute } from 'vue-router'
@@ -29,6 +30,22 @@ const monthLabel = computed(() =>
 )
 
 const categoryOptions = computed(() => [{ id: null, name: 'All' }, ...categories.value])
+const filteredItems = computed(() => {
+  const searchText = search.value.trim()
+  if (!searchText) return items.value
+
+  const normalizedSearchText = searchText.toLocaleLowerCase()
+  const searchAmountInCents = tryParseSearchAmountInCents(searchText)
+  const searchAmountAbs = searchAmountInCents === null ? null : Math.abs(searchAmountInCents)
+
+  return items.value.filter((item) => {
+    if (includesSearchText(item.description, normalizedSearchText)) return true
+    if (searchAmountAbs === null) return false
+
+    return item.details.some((detail) => Math.abs(detail.amount) === searchAmountAbs)
+      || Math.abs(totalForItem(item)) === searchAmountAbs
+  })
+})
 
 function monthGroupLabel(dateString: string) {
   return new Date(dateString).toLocaleDateString('default', { month: 'long', year: 'numeric' })
@@ -36,7 +53,7 @@ function monthGroupLabel(dateString: string) {
 
 function isNewMonth(index: number) {
   if (index === 0) return true
-  return monthGroupLabel(items.value[index].date) !== monthGroupLabel(items.value[index - 1].date)
+  return monthGroupLabel(filteredItems.value[index].date) !== monthGroupLabel(filteredItems.value[index - 1].date)
 }
 
 async function fetchCategories() {
@@ -50,7 +67,6 @@ async function fetchHistory() {
   try {
     const month = `${formatMonth(currentMonth.value)}-01`
     const params = new URLSearchParams({ month })
-    if (search.value) params.set('search', search.value)
     if (categoryId.value !== null) params.set('categoryId', String(categoryId.value))
     items.value = await apiClient.get<HistoryItemDto[]>(`/api/history?${params}`) ?? []
   } catch {
@@ -89,7 +105,7 @@ function totalForItem(item: HistoryItemDto) {
   return item.details.reduce((sum, d) => sum + d.amount, 0)
 }
 
-watch([currentMonth, search, categoryId], fetchHistory)
+watch([currentMonth, categoryId], fetchHistory)
 watch(currentMonth, fetchAccountBalances)
 
 onMounted(() => {
@@ -149,10 +165,10 @@ function onDialogSuccess() {
       <v-progress-circular indeterminate aria-label="Loading history" />
     </div>
     <v-list v-else>
-      <v-list-item v-if="items.length === 0">
+      <v-list-item v-if="filteredItems.length === 0">
         <v-list-item-title>No transactions found.</v-list-item-title>
       </v-list-item>
-      <template v-for="(item, index) in items" :key="item.id">
+      <template v-for="(item, index) in filteredItems" :key="item.id">
         <v-list-subheader v-if="isNewMonth(index)" class="expense-month-group-header">
           {{ monthGroupLabel(item.date) }}
         </v-list-subheader>

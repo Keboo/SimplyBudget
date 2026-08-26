@@ -6,6 +6,7 @@ import type { PendingExpenseDto, AssigneeDto, ExpenseCategoryDto } from '@/types
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import { AMAZON_TRANSACTIONS_URL, hasAmazonInDescription } from '@/utils/merchantLinks'
+import { includesSearchText, tryParseSearchAmountInCents } from '@/utils/search'
 import ConvertPendingExpenseDialog from '@/components/ConvertPendingExpenseDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
 
@@ -33,6 +34,20 @@ const ruleForm = ref({ name: '', ruleRegex: '', expenseCategoryId: null as numbe
 // page-level assignee filter.
 const assigneeFilterOptions = computed(() => [{ id: null, name: 'All' }, ...assignees.value])
 const ruleCategoryOptions = computed(() => [{ id: null, name: 'None' }, ...categories.value])
+const filteredItems = computed(() => {
+  const searchText = search.value.trim()
+  if (!searchText) return items.value
+
+  const normalizedSearchText = searchText.toLocaleLowerCase()
+  const searchAmountInCents = tryParseSearchAmountInCents(searchText)
+  const searchAmountAbs = searchAmountInCents === null ? null : Math.abs(searchAmountInCents)
+
+  return items.value.filter((item) => {
+    if (includesSearchText(item.description, normalizedSearchText)) return true
+    if (searchAmountAbs === null) return false
+    return Math.abs(item.amount) === searchAmountAbs
+  })
+})
 
 // Items are returned sorted oldest-first, so consecutive entries belong to the same
 // month unless this changes; used to show a divider between months in the list.
@@ -42,13 +57,12 @@ function monthGroupLabel(dateString: string) {
 
 function isNewMonth(index: number) {
   if (index === 0) return true
-  return monthGroupLabel(items.value[index].date) !== monthGroupLabel(items.value[index - 1].date)
+  return monthGroupLabel(filteredItems.value[index].date) !== monthGroupLabel(filteredItems.value[index - 1].date)
 }
 
 function buildFilters() {
   const month = `${formatMonth(currentMonth.value)}-01`
   const params = new URLSearchParams({ month })
-  if (search.value) params.set('search', search.value)
   if (assigneeId.value !== null) params.set('assigneeId', String(assigneeId.value))
   return params
 }
@@ -158,13 +172,25 @@ async function handleDiscard() {
 async function handleDeleteAll() {
   deletingAll.value = true
   try {
-    const query = buildFilters().toString()
-    await apiClient.delete(`/api/pending-expenses${query ? `?${query}` : ''}`)
+    const visibleItems = filteredItems.value
+    const hasSearch = search.value.trim().length > 0
+
+    if (hasSearch) {
+      await Promise.all(visibleItems.map((item) => apiClient.delete(`/api/pending-expenses/${item.id}`, { ifMatch: item.version })))
+      const visibleIds = new Set(visibleItems.map((item) => item.id))
+      items.value = items.value.filter((item) => !visibleIds.has(item.id))
+    } else {
+      const query = buildFilters().toString()
+      await apiClient.delete(`/api/pending-expenses${query ? `?${query}` : ''}`)
+      items.value = []
+    }
+
     snackbar.enqueueSnackbar('Pending expenses discarded', { variant: 'success' })
     deleteAllOpen.value = false
     void fetchPendingExpenses()
   } catch {
     snackbar.enqueueSnackbar('Failed to discard pending expenses', { variant: 'error' })
+    void fetchPendingExpenses()
   } finally {
     deletingAll.value = false
   }
@@ -239,7 +265,7 @@ function onConvertNoteSaved(updated: PendingExpenseDto) {
   }
 }
 
-watch([currentMonth, search, assigneeId], fetchPendingExpenses)
+watch([currentMonth, assigneeId], fetchPendingExpenses)
 
 onMounted(() => {
   void fetchAssignees()
@@ -286,7 +312,7 @@ onMounted(() => {
         size="small"
         color="error"
         prepend-icon="mdi-delete-sweep"
-        :disabled="items.length === 0"
+        :disabled="filteredItems.length === 0"
         @click="deleteAllOpen = true"
       >
         Delete All
@@ -297,10 +323,10 @@ onMounted(() => {
       <v-progress-circular indeterminate aria-label="Loading pending expenses" />
     </div>
     <v-list v-else>
-      <v-list-item v-if="items.length === 0">
+      <v-list-item v-if="filteredItems.length === 0">
         <v-list-item-title>No pending expenses found.</v-list-item-title>
       </v-list-item>
-      <template v-for="(item, index) in items" :key="item.id">
+      <template v-for="(item, index) in filteredItems" :key="item.id">
         <v-list-subheader v-if="isNewMonth(index)" class="pending-month-group-header">
           {{ monthGroupLabel(item.date) }}
         </v-list-subheader>
@@ -460,7 +486,7 @@ onMounted(() => {
       <v-card>
         <v-card-title>Confirm Delete All</v-card-title>
         <v-card-text>
-          Discard all {{ items.length }} pending expense{{ items.length === 1 ? '' : 's' }}
+          Discard all {{ filteredItems.length }} pending expense{{ filteredItems.length === 1 ? '' : 's' }}
           <template v-if="search || assigneeId !== null">matching the current filters</template>?
           This cannot be undone.
         </v-card-text>
