@@ -40,7 +40,7 @@ public class HistoryControllerTests
 
         var result = await controller.GetAll(
             month: new DateTime(2026, 1, 1),
-            search: "$12.34",
+            search: "12.34",
             categoryId: null,
             accountId: null);
 

@@ -449,7 +449,7 @@ public class PendingExpensesControllerTests
         using (var context = mocker.Get<BudgetWebContext>())
         {
             var controller = new PendingExpensesController(context);
-            await controller.DeleteAll(search: "$12.34", assigneeId: null);
+            await controller.DeleteAll(search: "12.34", assigneeId: null);
         }
 
         await mocker.InDbScopeAsync(async context =>
