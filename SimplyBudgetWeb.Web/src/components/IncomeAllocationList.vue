@@ -50,6 +50,22 @@ function remainingBudgetFor(category: ExpenseCategoryDto): number {
   return remainingBudgetByCategory.value[category.id] ?? 0
 }
 
+function maxSuggestedAmountFor(category: ExpenseCategoryDto): number {
+  const budgetRemaining = remainingBudgetFor(category)
+  const availableToAllocate = remainingCents.value + amountCentsFor(category.id)
+  return Math.max(0, Math.min(budgetRemaining, availableToAllocate))
+}
+
+function remainingSuggestionFor(category: ExpenseCategoryDto): number {
+  const budgetRemaining = remainingBudgetFor(category)
+  if (category.cap === null) return budgetRemaining
+
+  // For capped categories, the remaining suggestion should represent the extra amount
+  // that can still be added on top of the current value without exceeding the cap.
+  const currentAmount = amountCentsFor(category.id)
+  return Math.max(0, maxSuggestedAmountFor(category) - currentAmount)
+}
+
 function percentageAmountFor(category: ExpenseCategoryDto): number {
   return Math.round((category.budgetedPercentage / 100) * props.totalCents)
 }
@@ -77,12 +93,8 @@ const remainingCents = computed(() => props.totalCents - allocatedCents.value)
 defineExpose({ remainingCents })
 
 function applyRemainingBudget(category: ExpenseCategoryDto) {
-  const budgetRemaining = remainingBudgetFor(category)
-  if (budgetRemaining <= 0) return
-  // Cap at the smaller of the category's remaining budget or what's left to allocate overall
-  // (including this row's own current amount, since that's being replaced, not added to).
-  const availableToAllocate = remainingCents.value + amountCentsFor(category.id)
-  const amount = Math.max(0, Math.min(budgetRemaining, availableToAllocate))
+  const amount = maxSuggestedAmountFor(category)
+  if (amount <= 0) return
   setAmount(category.id, centsToDollars(amount))
 }
 
@@ -110,15 +122,15 @@ function applyPercentage(category: ExpenseCategoryDto) {
           <template v-else>
             Budget: {{ formatCents(category.budgetedAmount) }} &middot; Remaining:
             <a
-              v-if="remainingBudgetFor(category) > 0"
+              v-if="remainingSuggestionFor(category) > 0"
               href="#"
               class="allocation-link"
               @click.prevent="applyRemainingBudget(category)"
             >
-              {{ formatCents(remainingBudgetFor(category)) }}
+              {{ formatCents(remainingSuggestionFor(category)) }}
             </a>
             <span v-else class="allocation-link-disabled">
-              {{ formatCents(remainingBudgetFor(category)) }}
+              {{ formatCents(remainingSuggestionFor(category)) }}
             </span>
           </template>
         </div>
