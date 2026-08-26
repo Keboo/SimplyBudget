@@ -110,11 +110,14 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
             return Conflict(ConcurrencyConflictMessage);
         }
 
-        // AssigneeId may have changed since the initial .Include(x => x.Assignee) load, and
-        // Reference(...).LoadAsync() is normally a no-op once a navigation is marked as loaded.
-        // Reset the loaded flag so it re-queries using the (possibly new/cleared) AssigneeId.
-        context.Entry(pending).Reference(x => x.Assignee).IsLoaded = false;
-        await context.Entry(pending).Reference(x => x.Assignee).LoadAsync();
+        // AssigneeId may have changed since the initial .Include(x => x.Assignee) load, so the
+        // Assignee navigation may now be stale (pointing at the old assignee, or non-null when
+        // it should be cleared). Explicitly refresh it to match the current AssigneeId; setting
+        // the navigation directly keeps EF's IsLoaded tracking consistent (unlike forcing
+        // IsLoaded = false on an already-loaded, non-null reference, which throws).
+        pending.Assignee = request.AssigneeId.HasValue
+            ? await context.PendingExpenseAssignees.FindAsync(request.AssigneeId.Value)
+            : null;
 
         return ToDto(pending);
     }
