@@ -223,6 +223,37 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
+    public async Task Update_AllowsQuestionMarkInNotes()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        const string note = "Is this reimbursable?";
+        var (pendingId, version) = await mocker.InDbScopeAsync(async context =>
+        {
+            var pending = new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Costco", Amount = 100 };
+            context.PendingExpenses.Add(pending);
+            await context.SaveChangesAsync();
+            return (pending.ID, System.Convert.ToBase64String(pending.Version));
+        });
+
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            var controller = new PendingExpensesController(context);
+            var result = await controller.Update(pendingId, new PendingExpenseUpdateRequest(null, note, version));
+
+            var dto = (result.Value as PendingExpenseDto) ?? ((OkObjectResult)result.Result!).Value as PendingExpenseDto;
+            await Assert.That(dto!.Notes).IsEqualTo(note);
+        }
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var pending = await context.PendingExpenses.SingleAsync(x => x.ID == pendingId);
+            await Assert.That(pending.Notes).IsEqualTo(note);
+        });
+    }
+
+    [Test]
     public async Task Update_CanClearAssignee()
     {
         AutoMocker mocker = new();
