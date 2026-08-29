@@ -257,8 +257,10 @@ public class ExpenseCategoriesControllerTests
 
         var result = await controller.GetRemainingBudget(new DateTime(2026, 1, 15));
 
-        await Assert.That(result[groceriesId]).IsEqualTo(20000);
-        await Assert.That(result[savingsId]).IsEqualTo(0);
+        await Assert.That(result[groceriesId].CurrentAmount).IsEqualTo(10000);
+        await Assert.That(result[groceriesId].RemainingAmount).IsEqualTo(20000);
+        await Assert.That(result[savingsId].CurrentAmount).IsEqualTo(0);
+        await Assert.That(result[savingsId].RemainingAmount).IsEqualTo(0);
     }
 
     [Test]
