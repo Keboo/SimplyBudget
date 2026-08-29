@@ -314,7 +314,7 @@ public class BudgetContextExtensionsTests
 
     [TestMethod]
     [Description("Issue 10")]
-    public async Task GetRemainingBudgetAmount_WithExpenseCategoryCap_ReturnsRemainingAmount()
+    public async Task GetRemainingBudgetAmount_WithExpenseCategoryCap_UsesCapAgainstMonthlyAllocation()
     {
         // Arrange
         AutoMocker mocker = new();
@@ -323,32 +323,7 @@ public class BudgetContextExtensionsTests
         var category = new ExpenseCategory
         {
             CurrentBalance = 100,
-            BudgetedAmount = 50,
-            Cap = 120
-        };
-
-        var now = DateTime.Now;
-        using var setupContext = factory.Create();
-        setupContext.AddRange(category);
-        await setupContext.SaveChangesAsync();
-
-        //Act/Assert
-        using var context = factory.Create();
-        Assert.AreEqual(20, await context.GetRemainingBudgetAmount(category, now));
-    }
-
-    [TestMethod]
-    [Description("Issue 10")]
-    public async Task GetRemainingBudgetAmount_WhenCurrentIsOverCap_ReturnsZero()
-    {
-        // Arrange
-        AutoMocker mocker = new();
-        using var factory = mocker.WithDbScope();
-
-        var category = new ExpenseCategory
-        {
-            CurrentBalance = 100,
-            BudgetedAmount = 50,
+            BudgetedAmount = 100,
             Cap = 80
         };
 
@@ -356,6 +331,33 @@ public class BudgetContextExtensionsTests
         using var setupContext = factory.Create();
         setupContext.AddRange(category);
         await setupContext.SaveChangesAsync();
+        await setupContext.AddIncome("", now, (30, category.ID));
+
+        //Act/Assert
+        using var context = factory.Create();
+        Assert.AreEqual(50, await context.GetRemainingBudgetAmount(category, now));
+    }
+
+    [TestMethod]
+    [Description("Issue 10")]
+    public async Task GetRemainingBudgetAmount_WhenMonthlyAllocationIsOverCap_ReturnsZero()
+    {
+        // Arrange
+        AutoMocker mocker = new();
+        using var factory = mocker.WithDbScope();
+
+        var category = new ExpenseCategory
+        {
+            CurrentBalance = 100,
+            BudgetedAmount = 100,
+            Cap = 80
+        };
+
+        var now = DateTime.Now;
+        using var setupContext = factory.Create();
+        setupContext.AddRange(category);
+        await setupContext.SaveChangesAsync();
+        await setupContext.AddIncome("", now, (90, category.ID));
 
         //Act/Assert
         using var context = factory.Create();

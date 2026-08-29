@@ -18,13 +18,18 @@ const emit = defineEmits<{
   'update:modelValue': [value: Record<number, string>]
 }>()
 
-const remainingBudgetByCategory = ref<Record<number, number>>({})
+interface RemainingBudgetByCategoryDto {
+  currentAmount: number
+  remainingAmount: number
+}
+
+const remainingBudgetByCategory = ref<Record<number, RemainingBudgetByCategoryDto>>({})
 
 async function loadRemainingBudget() {
   const year = props.month.getFullYear()
   const month = String(props.month.getMonth() + 1).padStart(2, '0')
   try {
-    remainingBudgetByCategory.value = await apiClient.get<Record<number, number>>(
+    remainingBudgetByCategory.value = await apiClient.get<Record<number, RemainingBudgetByCategoryDto>>(
       `/api/expense-categories/remaining-budget?month=${year}-${month}-01`,
     ) ?? {}
   } catch {
@@ -46,24 +51,19 @@ function amountCentsFor(categoryId: number): number {
   return dollarsToCents(amountFor(categoryId))
 }
 
+function currentAmountFor(category: ExpenseCategoryDto): number {
+  if (category.usePercentage) return amountCentsFor(category.id)
+  return remainingBudgetByCategory.value[category.id]?.currentAmount ?? 0
+}
+
 function remainingBudgetFor(category: ExpenseCategoryDto): number {
-  return remainingBudgetByCategory.value[category.id] ?? 0
+  return remainingBudgetByCategory.value[category.id]?.remainingAmount ?? 0
 }
 
 function maxSuggestedAmountFor(category: ExpenseCategoryDto): number {
   const budgetRemaining = remainingBudgetFor(category)
   const availableToAllocate = remainingCents.value + amountCentsFor(category.id)
   return Math.max(0, Math.min(budgetRemaining, availableToAllocate))
-}
-
-function remainingSuggestionFor(category: ExpenseCategoryDto): number {
-  const budgetRemaining = remainingBudgetFor(category)
-  if (category.cap === null) return budgetRemaining
-
-  // For capped categories, the remaining suggestion should represent the extra amount
-  // that can still be added on top of the current value without exceeding the cap.
-  const currentAmount = amountCentsFor(category.id)
-  return Math.max(0, maxSuggestedAmountFor(category) - currentAmount)
 }
 
 function percentageAmountFor(category: ExpenseCategoryDto): number {
@@ -111,26 +111,36 @@ function applyPercentage(category: ExpenseCategoryDto) {
       class="income-allocation-row d-flex align-center ga-2"
     >
       <div class="category-info">
-        <div>{{ category.name }}</div>
+        <div>
+          {{ category.name }}
+          <span class="text-caption text-medium-emphasis">
+            &middot; Budget:
+            <template v-if="category.usePercentage">
+              {{ category.budgetedPercentage }}%
+            </template>
+            <template v-else>
+              {{ formatCents(category.budgetedAmount) }}
+            </template>
+          </span>
+        </div>
         <div class="text-caption text-medium-emphasis">
+          Current: {{ formatCents(currentAmountFor(category)) }} &middot; Remaining:
           <template v-if="category.usePercentage">
-            Budget:
             <a href="#" class="allocation-link" @click.prevent="applyPercentage(category)">
               {{ category.budgetedPercentage }}%
             </a>
           </template>
           <template v-else>
-            Budget: {{ formatCents(category.budgetedAmount) }} &middot; Remaining:
             <a
-              v-if="remainingSuggestionFor(category) > 0"
+              v-if="remainingBudgetFor(category) > 0"
               href="#"
               class="allocation-link"
               @click.prevent="applyRemainingBudget(category)"
             >
-              {{ formatCents(remainingSuggestionFor(category)) }}
+              {{ formatCents(remainingBudgetFor(category)) }}
             </a>
             <span v-else class="allocation-link-disabled">
-              {{ formatCents(remainingSuggestionFor(category)) }}
+              {{ formatCents(remainingBudgetFor(category)) }}
             </span>
           </template>
         </div>

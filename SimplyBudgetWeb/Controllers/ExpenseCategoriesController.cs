@@ -50,13 +50,11 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
     }
 
     /// <summary>
-    /// Returns, for every visible (non-hidden, non-percentage) category, how much of its
-    /// budgeted amount for the given month has not yet been allocated. Used by the income
-    /// allocation UI to show/pre-fill the remaining budget for each category. Percentage-based
-    /// categories always report 0 here since their allocation is computed from the income total.
+    /// Returns, for every visible (non-hidden) category, the month's currently allocated amount
+    /// and remaining budget amount used by the income-allocation UI.
     /// </summary>
     [HttpGet("remaining-budget")]
-    public async Task<Dictionary<int, int>> GetRemainingBudget([FromQuery] DateTime? month)
+    public async Task<Dictionary<int, RemainingBudgetDto>> GetRemainingBudget([FromQuery] DateTime? month)
     {
         var monthDate = (month ?? DateTime.Today).StartOfMonth();
 
@@ -64,10 +62,16 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
             .Where(c => !c.IsHidden)
             .ToListAsync();
 
-        var result = new Dictionary<int, int>();
+        var result = new Dictionary<int, RemainingBudgetDto>();
         foreach (var category in categories)
         {
-            result[category.ID] = await context.GetRemainingBudgetAmount(category, monthDate);
+            var currentAmount = category.UsePercentage
+                ? 0
+                : await context.GetCurrentMonthAllocatedAmount(category, monthDate);
+
+            result[category.ID] = new RemainingBudgetDto(
+                CurrentAmount: currentAmount,
+                RemainingAmount: BudgetContextExtensions.CalculateRemainingBudgetAmount(category, currentAmount));
         }
         return result;
     }
@@ -276,4 +280,9 @@ public record ExpenseCategoryMonthlyExpensesDto(
 public record ExpenseCategoryMonthlyExpensePointDto(
     string Month,
     int Amount
+);
+
+public record RemainingBudgetDto(
+    int CurrentAmount,
+    int RemainingAmount
 );

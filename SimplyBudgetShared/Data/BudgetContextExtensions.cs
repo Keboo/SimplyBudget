@@ -242,6 +242,49 @@ public static class BudgetContextExtensions
         return !await context.ExpenseCategoryRules.AnyAsync(x => x.ExpenseCategoryID == expenseCategory.ID);
     }
 
+    public static async Task<int> GetCurrentMonthAllocatedAmount(this BudgetContext context, ExpenseCategory expenseCategory, DateTime month)
+    {
+        if (context is null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        if (expenseCategory is null)
+        {
+            throw new ArgumentNullException(nameof(expenseCategory));
+        }
+
+        var start = month.StartOfMonth();
+        var end = month.EndOfMonth();
+
+        return await context.ExpenseCategoryItemDetails
+            .Include(x => x.ExpenseCategoryItem)
+            .Where(x => x.ExpenseCategoryId == expenseCategory.ID)
+            .Where(x => x.Amount > 0)
+            .Where(x => x.ExpenseCategoryItem!.Date >= start && x.ExpenseCategoryItem.Date <= end)
+            .Where(x => x.IgnoreBudget == false)
+            .SumAsync(x => x.Amount);
+    }
+
+    public static int CalculateRemainingBudgetAmount(ExpenseCategory expenseCategory, int currentlyAllocatedAmount)
+    {
+        if (expenseCategory is null)
+        {
+            throw new ArgumentNullException(nameof(expenseCategory));
+        }
+
+        if (expenseCategory.UsePercentage) return 0;
+
+        var remaining = expenseCategory.BudgetedAmount - currentlyAllocatedAmount;
+
+        if (expenseCategory.Cap is int cap)
+        {
+            remaining = Math.Min(remaining, cap - currentlyAllocatedAmount);
+        }
+
+        return Math.Max(0, remaining);
+    }
+
     public static async Task<int> GetRemainingBudgetAmount(this BudgetContext context, ExpenseCategory expenseCategory, DateTime month)
     {
         if (context is null)
@@ -256,22 +299,7 @@ public static class BudgetContextExtensions
 
         if (expenseCategory.UsePercentage) return 0;
 
-        var start = month.StartOfMonth();
-        var end = month.EndOfMonth();
-
-        var allocatedAmount =
-            await context.ExpenseCategoryItemDetails
-                .Include(x => x.ExpenseCategoryItem)
-                .Where(x => x.ExpenseCategoryId == expenseCategory.ID)
-                .Where(x => x.Amount > 0)
-                .Where(x => x.ExpenseCategoryItem!.Date >= start && x.ExpenseCategoryItem.Date <= end)
-                .Where(x => x.IgnoreBudget == false)
-                .SumAsync(x => x.Amount);
-        int remaining = Math.Max(0, expenseCategory.BudgetedAmount - allocatedAmount);
-        if (expenseCategory.Cap is int cap)
-        {
-            return Math.Min(remaining, Math.Max(0, cap - expenseCategory.CurrentBalance));
-        }
-        return remaining;
+        var currentlyAllocatedAmount = await context.GetCurrentMonthAllocatedAmount(expenseCategory, month);
+        return CalculateRemainingBudgetAmount(expenseCategory, currentlyAllocatedAmount);
     }
 }
