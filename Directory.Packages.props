@@ -6,12 +6,12 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Aspire -->
-    <PackageVersion Include="Aspire.Hosting.Azure" Version="13.5.2" />
-    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.5.2" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Sql" Version="13.5.2" />
-    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.5.2" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.2" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.5.2" />
+    <PackageVersion Include="Aspire.Hosting.Azure" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Sql" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.5.3" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.6.0" />
 
     <!-- WPF / MVVM (existing desktop app) -->
@@ -89,7 +89,7 @@
     <PackageVersion Include="Moq.AutoMock" Version="4.0.3" />
     <PackageVersion Include="MSTest.TestAdapter" Version="4.3.3" />
     <PackageVersion Include="MSTest.TestFramework" Version="4.3.3" />
-    <PackageVersion Include="TUnit" Version="1.65.38" />
+    <PackageVersion Include="TUnit" Version="1.65.68" />
     <PackageVersion Include="xunit" Version="2.4.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
