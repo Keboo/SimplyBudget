@@ -7,6 +7,7 @@ import Settings from '@/pages/Settings.vue'
 import Import from '@/pages/Import.vue'
 import PendingExpenses from '@/pages/PendingExpenses.vue'
 import { useAuthStore } from '@/stores/auth'
+import { setLoginNavigator } from '@/services/sessionNavigation'
 
 // Pages are imported eagerly (not lazy) so the initial navigation resolves
 // synchronously and the Layout/header render on first paint without an
@@ -30,6 +31,15 @@ const router = createRouter({
       ],
     },
   ],
+})
+
+// Allows the auth store to bounce the user back to the sign in page when their
+// session expires and cannot be refreshed. Not awaited, because this can be
+// triggered from inside a navigation guard where a nested await would deadlock.
+setLoginNavigator(() => {
+  if (router.currentRoute.value.name !== 'login') {
+    void router.replace({ name: 'login' })
+  }
 })
 
 // Landing page becomes the login page for anonymous users: any navigation to a

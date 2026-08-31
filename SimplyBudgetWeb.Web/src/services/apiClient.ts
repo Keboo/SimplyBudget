@@ -1,7 +1,23 @@
 let getTokenFn: (() => Promise<string>) | null = null
+let onUnauthorizedFn: (() => void | Promise<void>) | null = null
 
 export function setTokenProvider(fn: () => Promise<string>) {
   getTokenFn = fn
+}
+
+/**
+ * Registers the callback invoked when the API rejects a request because the
+ * caller is no longer authenticated (expired/invalid token).
+ */
+export function setUnauthorizedHandler(fn: () => void | Promise<void>) {
+  onUnauthorizedFn = fn
+}
+
+export class SessionExpiredError extends Error {
+  constructor(message = 'Your session has expired. Please sign in again.') {
+    super(message)
+    this.name = 'SessionExpiredError'
+  }
 }
 
 interface DeleteOptions {
@@ -10,6 +26,12 @@ interface DeleteOptions {
 
 class ApiClient {
   private baseUrl = __API_BASE_URL__ || ''
+
+  private async throwIfUnauthorized(response: Response): Promise<void> {
+    if (response.status !== 401) return
+    await onUnauthorizedFn?.()
+    throw new SessionExpiredError()
+  }
 
   private parseFileName(contentDisposition: string | null): string | null {
     if (!contentDisposition) return null
@@ -25,10 +47,10 @@ class ApiClient {
 
   private async getHeaders(): Promise<HeadersInit> {
     if (getTokenFn) {
-      try {
-        const token = await getTokenFn()
-        return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-      } catch { /* fall through */ }
+      // Any failure here (including an unrecoverable session) propagates: all
+      // API endpoints require auth, so an anonymous request would only 401.
+      const token = await getTokenFn()
+      return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
     }
     return { 'Content-Type': 'application/json' }
   }
@@ -42,6 +64,7 @@ class ApiClient {
   async get<T>(url: string): Promise<T> {
     const headers = await this.getHeaders()
     const response = await fetch(this.baseUrl + url, { headers })
+    await this.throwIfUnauthorized(response)
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     const text = await response.text()
     return text ? JSON.parse(text) : undefined as T
@@ -53,6 +76,7 @@ class ApiClient {
       method: 'POST', headers,
       body: this.buildJsonBody(data),
     })
+    await this.throwIfUnauthorized(response)
     if (!response.ok) {
       const error = await response.text()
       throw new Error(error || `HTTP error! status: ${response.status}`)
@@ -65,6 +89,7 @@ class ApiClient {
   async download(url: string): Promise<{ blob: Blob; fileName: string | null }> {
     const headers = await this.getHeaders()
     const response = await fetch(this.baseUrl + url, { headers })
+    await this.throwIfUnauthorized(response)
     if (!response.ok) {
       const error = await response.text()
       throw new Error(error || `HTTP error! status: ${response.status}`)
@@ -82,6 +107,7 @@ class ApiClient {
       method: 'PUT', headers,
       body: this.buildJsonBody(data),
     })
+    await this.throwIfUnauthorized(response)
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
     if (response.status === 204) return undefined as T
     return response.json()
@@ -96,6 +122,7 @@ class ApiClient {
         }
       : headers
     const response = await fetch(this.baseUrl + url, { method: 'DELETE', headers: requestHeaders })
+    await this.throwIfUnauthorized(response)
     if (!response.ok) {
       const error = await response.text()
       throw new Error(error || `HTTP error! status: ${response.status}`)
