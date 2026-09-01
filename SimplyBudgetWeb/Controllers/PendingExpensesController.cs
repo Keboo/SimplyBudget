@@ -218,6 +218,10 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
 
         var items = request.Items.Select(i => (i.Amount, i.ExpenseCategoryId)).ToArray();
 
+        var convertedItemNotes = string.IsNullOrWhiteSpace(request.Notes)
+            ? pending.Notes
+            : request.Notes;
+
         ExpenseCategoryItem item;
         if (pending.IsDebit)
         {
@@ -227,7 +231,7 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
         {
             item = await context.AddIncome(request.Description, request.Date, request.IgnoreBudget, items);
         }
-        item.Notes = request.Notes ?? pending.Notes;
+        item.Notes = convertedItemNotes;
 
         context.PendingExpenses.Remove(pending);
         try
