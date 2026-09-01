@@ -1,4 +1,6 @@
 using Moq.AutoMock;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using SimplyBudgetWeb.Controllers;
 using SimplyBudgetWeb.Data;
@@ -149,5 +151,61 @@ public class HistoryControllerTests
 
         await Assert.That(result.Length).IsEqualTo(1);
         await Assert.That(result[0].Notes).IsEqualTo("Business membership renewal");
+    }
+
+    [Test]
+    public async Task Update_UpdatesNotesAndReturnsUpdatedItem()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        var itemId = await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Groceries" };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+
+            var item = new ExpenseCategoryItem
+            {
+                Date = new DateTime(2026, 1, 10),
+                Description = "Costco",
+                Notes = "Original note",
+                Details = [new ExpenseCategoryItemDetail { Amount = -1234, ExpenseCategoryId = category.ID }],
+            };
+            context.ExpenseCategoryItems.Add(item);
+            await context.SaveChangesAsync();
+
+            return item.ID;
+        });
+
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            var controller = new HistoryController(context);
+            var result = await controller.Update(itemId, new HistoryItemUpdateRequest("  Updated note  "));
+
+            var dto = (result.Value as HistoryItemDto) ?? ((OkObjectResult?)result.Result)?.Value as HistoryItemDto;
+            await Assert.That(dto).IsNotNull();
+            await Assert.That(dto!.Notes).IsEqualTo("Updated note");
+        }
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var stored = await context.ExpenseCategoryItems.SingleAsync(x => x.ID == itemId);
+            await Assert.That(stored.Notes).IsEqualTo("Updated note");
+        });
+    }
+
+    [Test]
+    public async Task Update_WithUnknownId_ReturnsNotFound()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new HistoryController(context);
+
+        var result = await controller.Update(999, new HistoryItemUpdateRequest("Some note"));
+
+        await Assert.That(result.Result).IsTypeOf<NotFoundResult>();
     }
 }
