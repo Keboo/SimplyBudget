@@ -11,7 +11,7 @@ import type {
   CalculatorTaxOptionsDto,
   CurrentUserDto,
 } from '@/types'
-import { formatCents } from '@/utils/currency'
+import { formatCents, centsToDollars } from '@/utils/currency'
 import { resetExternalLinkRulesCache } from '@/utils/externalLinks'
 import CategorySelector from '@/components/CategorySelector.vue'
 
@@ -58,7 +58,23 @@ const rulesLoaded = ref(false)
 const addRuleOpen = ref(false)
 const deleteRule = ref<RuleDto | null>(null)
 const editRule = ref<RuleDto | null>(null)
-const ruleForm = ref({ name: '', ruleRegex: '', notes: '', expenseCategoryId: null as number | null })
+const ruleForm = ref({ name: '', ruleRegex: '', notes: '', minimumAmount: '', maximumAmount: '', expenseCategoryId: null as number | null })
+
+/** Converts a dollars text field into cents, treating blank input as "no limit". */
+function optionalDollarsToCents(value: string): number | null {
+  const trimmed = value.trim()
+  if (trimmed.length === 0) return null
+  const parsed = Number.parseFloat(trimmed)
+  return Number.isNaN(parsed) ? null : Math.round(parsed * 100)
+}
+
+function ruleAmountRangeText(rule: RuleDto): string | null {
+  if (rule.minimumAmount === null && rule.maximumAmount === null) return null
+  if (rule.minimumAmount !== null && rule.maximumAmount !== null)
+    return `${formatCents(rule.minimumAmount)} – ${formatCents(rule.maximumAmount)}`
+  if (rule.minimumAmount !== null) return `at least ${formatCents(rule.minimumAmount)}`
+  return `at most ${formatCents(rule.maximumAmount as number)}`
+}
 
 const externalLinks = ref<ExternalLinkRuleDto[]>([])
 const externalLinksLoading = ref(false)
@@ -331,7 +347,7 @@ async function fetchRuleCategories() {
 }
 
 function resetRuleForm() {
-  ruleForm.value = { name: '', ruleRegex: '', notes: '', expenseCategoryId: null }
+  ruleForm.value = { name: '', ruleRegex: '', notes: '', minimumAmount: '', maximumAmount: '', expenseCategoryId: null }
 }
 
 function openAddRule() {
@@ -345,6 +361,8 @@ function openEditRule(rule: RuleDto) {
     name: rule.name ?? '',
     ruleRegex: rule.ruleRegex ?? '',
     notes: rule.notes ?? '',
+    minimumAmount: rule.minimumAmount !== null ? centsToDollars(rule.minimumAmount) : '',
+    maximumAmount: rule.maximumAmount !== null ? centsToDollars(rule.maximumAmount) : '',
     expenseCategoryId: rule.expenseCategoryId ?? null,
   }
 }
@@ -355,6 +373,8 @@ async function handleAddRule() {
       name: ruleForm.value.name,
       ruleRegex: ruleForm.value.ruleRegex,
       notes: ruleForm.value.notes,
+      minimumAmount: optionalDollarsToCents(ruleForm.value.minimumAmount),
+      maximumAmount: optionalDollarsToCents(ruleForm.value.maximumAmount),
       expenseCategoryId: ruleForm.value.expenseCategoryId,
     })
     snackbar.enqueueSnackbar('Rule added', { variant: 'success' })
@@ -373,6 +393,8 @@ async function handleEditRule() {
       name: ruleForm.value.name,
       ruleRegex: ruleForm.value.ruleRegex,
       notes: ruleForm.value.notes,
+      minimumAmount: optionalDollarsToCents(ruleForm.value.minimumAmount),
+      maximumAmount: optionalDollarsToCents(ruleForm.value.maximumAmount),
       expenseCategoryId: ruleForm.value.expenseCategoryId,
     })
     snackbar.enqueueSnackbar('Rule updated', { variant: 'success' })
@@ -771,6 +793,7 @@ watch(openPanel, (panel) => {
                   <v-list-item-title>{{ rule.name }}</v-list-item-title>
                   <v-list-item-subtitle>Pattern: {{ rule.ruleRegex ?? '—' }}</v-list-item-subtitle>
                   <v-list-item-subtitle v-if="rule.notes">Notes: {{ rule.notes }}</v-list-item-subtitle>
+                  <v-list-item-subtitle v-if="ruleAmountRangeText(rule)">Amount: {{ ruleAmountRangeText(rule) }}</v-list-item-subtitle>
                   <template #append>
                     <div class="d-flex" style="gap: 4px;">
                       <v-btn icon="mdi-pencil" variant="text" aria-label="Edit rule" @click="openEditRule(rule)" />
@@ -949,6 +972,24 @@ watch(openPanel, (panel) => {
             persistent-hint
             v-model="ruleForm.notes"
           />
+          <div class="d-flex" style="gap: 16px;">
+            <v-text-field
+              label="Min Amount"
+              type="number"
+              prefix="$"
+              hint="Optional. Only match amounts at or above this."
+              persistent-hint
+              v-model="ruleForm.minimumAmount"
+            />
+            <v-text-field
+              label="Max Amount"
+              type="number"
+              prefix="$"
+              hint="Optional. Only match amounts at or below this."
+              persistent-hint
+              v-model="ruleForm.maximumAmount"
+            />
+          </div>
           <CategorySelector
             label="Target Category"
             :categories="categories"
@@ -979,6 +1020,24 @@ watch(openPanel, (panel) => {
             persistent-hint
             v-model="ruleForm.notes"
           />
+          <div class="d-flex" style="gap: 16px;">
+            <v-text-field
+              label="Min Amount"
+              type="number"
+              prefix="$"
+              hint="Optional. Only match amounts at or above this."
+              persistent-hint
+              v-model="ruleForm.minimumAmount"
+            />
+            <v-text-field
+              label="Max Amount"
+              type="number"
+              prefix="$"
+              hint="Optional. Only match amounts at or below this."
+              persistent-hint
+              v-model="ruleForm.maximumAmount"
+            />
+          </div>
           <CategorySelector
             label="Category"
             :categories="categories"

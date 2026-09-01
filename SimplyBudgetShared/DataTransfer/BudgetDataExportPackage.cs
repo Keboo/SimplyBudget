@@ -63,7 +63,9 @@ public record BudgetDataExportRule(
     string? Name,
     string? RuleRegex,
     int? ExpenseCategoryId,
-    string? Notes = null
+    string? Notes = null,
+    int? MinimumAmount = null,
+    int? MaximumAmount = null
 );
 
 public record BudgetDataExportMetadata(

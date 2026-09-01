@@ -91,6 +91,8 @@ export interface RuleDto {
   name: string | null
   ruleRegex: string | null
   notes: string | null
+  minimumAmount: number | null
+  maximumAmount: number | null
   expenseCategoryId: number | null
   categoryName: string | null
 }
@@ -245,6 +247,8 @@ export interface BudgetDataExportRuleDto {
   ruleRegex: string | null
   expenseCategoryId: number | null
   notes: string | null
+  minimumAmount: number | null
+  maximumAmount: number | null
 }
 
 export interface BudgetDataExportMetadataDto {
