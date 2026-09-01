@@ -567,7 +567,7 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
-    public async Task ReapplyRules_UpdatesSuggestedCategoriesFromLatestRules()
+    public async Task ReapplyRules_AppliesRulesOnlyToDebitPendingExpenses()
     {
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
@@ -593,8 +593,22 @@ public class PendingExpensesControllerTests
                     ExpenseCategoryID = groceriesCategory.ID
                 });
             context.PendingExpenses.AddRange(
-                new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Costco haul", Amount = 45_00, SuggestedCategoryId = utilitiesCategory.ID },
-                new PendingExpense { Date = new DateTime(2026, 1, 2), Description = "Electric bill", Amount = 90_00, SuggestedCategoryId = utilitiesCategory.ID });
+                new PendingExpense
+                {
+                    Date = new DateTime(2026, 1, 1),
+                    Description = "Costco haul",
+                    Amount = 45_00,
+                    SuggestedCategoryId = utilitiesCategory.ID,
+                    IsDebit = true
+                },
+                new PendingExpense
+                {
+                    Date = new DateTime(2026, 1, 2),
+                    Description = "Costco refund",
+                    Amount = 90_00,
+                    SuggestedCategoryId = utilitiesCategory.ID,
+                    IsDebit = false
+                });
             await context.SaveChangesAsync();
 
             return groceriesCategory.ID;
@@ -614,6 +628,7 @@ public class PendingExpensesControllerTests
 
         await Assert.That(updatedItems[0].SuggestedCategoryId).IsEqualTo(groceriesCategoryId);
         await Assert.That(updatedItems[1].SuggestedCategoryId).IsNull();
+        await Assert.That(updatedItems[1].IsDebit).IsFalse();
     }
 
     [Test]
