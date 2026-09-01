@@ -109,6 +109,16 @@ export interface CurrentUserDto {
   email: string | null
 }
 
+export interface CalculatorTaxOptionDto {
+  name: string
+  percentage: number
+  isDefault: boolean
+}
+
+export interface CalculatorTaxOptionsDto {
+  options: CalculatorTaxOptionDto[]
+}
+
 export interface PendingExpenseDto {
   id: number
   version: string

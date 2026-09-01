@@ -3,7 +3,13 @@ import { ref, computed, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { useAuthStore } from '@/stores/auth'
-import type { RuleDto, ExpenseCategoryDto, AccountDto, CurrentUserDto } from '@/types'
+import type {
+  RuleDto,
+  ExpenseCategoryDto,
+  AccountDto,
+  CalculatorTaxOptionsDto,
+  CurrentUserDto,
+} from '@/types'
 import { formatCents } from '@/utils/currency'
 import CategorySelector from '@/components/CategorySelector.vue'
 
@@ -11,9 +17,10 @@ const snackbar = useSnackbarStore()
 const authStore = useAuthStore()
 
 const PANEL_PROFILE = 0
-const PANEL_ACCOUNTS = 1
-const PANEL_RULES = 2
-const PANEL_CATEGORIES = 3
+const PANEL_TAX_OPTIONS = 1
+const PANEL_ACCOUNTS = 2
+const PANEL_RULES = 3
+const PANEL_CATEGORIES = 4
 
 const openPanel = ref<number | undefined>(undefined)
 
@@ -21,6 +28,17 @@ const profileLoaded = ref(false)
 const profileLoading = ref(false)
 const profileSaving = ref(false)
 const profileDisplayName = ref(authStore.displayName ?? authStore.account?.name ?? '')
+
+interface TaxOptionFormRow {
+  name: string
+  percentage: string
+}
+
+const taxOptionsLoading = ref(false)
+const taxOptionsLoaded = ref(false)
+const taxOptionsSaving = ref(false)
+const taxOptions = ref<TaxOptionFormRow[]>([])
+const taxDefaultKey = ref('none')
 
 const accounts = ref<AccountDto[]>([])
 const accountsLoading = ref(false)
@@ -131,6 +149,92 @@ async function handleSaveDisplayName() {
     snackbar.enqueueSnackbar('Failed to update display name', { variant: 'error' })
   } finally {
     profileSaving.value = false
+  }
+}
+
+function applyTaxOptionsResponse(response: CalculatorTaxOptionsDto) {
+  const options = response.options ?? []
+  taxOptions.value = options.map(option => ({
+    name: option.name ?? '',
+    percentage: option.percentage.toString(),
+  }))
+
+  const defaultIndex = options.findIndex(option => option.isDefault)
+  taxDefaultKey.value = defaultIndex >= 0 ? `tax-${defaultIndex}` : 'none'
+}
+
+async function fetchTaxOptions() {
+  taxOptionsLoading.value = true
+  try {
+    const response = await apiClient.get<CalculatorTaxOptionsDto>('/api/calculator-tax-options')
+    applyTaxOptionsResponse(response)
+    taxOptionsLoaded.value = true
+  } catch {
+    snackbar.enqueueSnackbar('Failed to load tax options', { variant: 'error' })
+  } finally {
+    taxOptionsLoading.value = false
+  }
+}
+
+function addTaxOption() {
+  taxOptions.value.push({ name: '', percentage: '' })
+}
+
+function removeTaxOption(index: number) {
+  taxOptions.value.splice(index, 1)
+
+  if (taxDefaultKey.value === `tax-${index}`) {
+    taxDefaultKey.value = 'none'
+    return
+  }
+
+  if (!taxDefaultKey.value.startsWith('tax-')) return
+  const selectedIndex = Number.parseInt(taxDefaultKey.value.slice(4), 10)
+  if (Number.isInteger(selectedIndex) && selectedIndex > index) {
+    taxDefaultKey.value = `tax-${selectedIndex - 1}`
+  }
+}
+
+async function handleSaveTaxOptions() {
+  const normalizedOptions = taxOptions.value.map((option, index) => {
+    const name = option.name.trim()
+    const percentage = Number.parseFloat(option.percentage)
+    return {
+      name,
+      percentage,
+      isDefault: taxDefaultKey.value === `tax-${index}`,
+    }
+  })
+
+  const firstMissingName = normalizedOptions.find(option => option.name.length === 0)
+  if (firstMissingName) {
+    snackbar.enqueueSnackbar('Every tax option must include a name', { variant: 'error' })
+    return
+  }
+
+  const invalidPercentage = normalizedOptions.find(option => !Number.isFinite(option.percentage) || option.percentage <= 0 || option.percentage > 100)
+  if (invalidPercentage) {
+    snackbar.enqueueSnackbar('Tax percentages must be greater than 0 and no more than 100', { variant: 'error' })
+    return
+  }
+
+  const names = normalizedOptions.map(option => option.name.toLocaleLowerCase())
+  if (new Set(names).size !== names.length) {
+    snackbar.enqueueSnackbar('Tax option names must be unique', { variant: 'error' })
+    return
+  }
+
+  taxOptionsSaving.value = true
+  try {
+    const response = await apiClient.put<CalculatorTaxOptionsDto>('/api/calculator-tax-options', {
+      options: normalizedOptions,
+    })
+    applyTaxOptionsResponse(response)
+    snackbar.enqueueSnackbar('Tax options updated', { variant: 'success' })
+  } catch (error) {
+    snackbar.enqueueSnackbar(error instanceof Error ? error.message : 'Failed to save tax options', { variant: 'error' })
+  } finally {
+    taxOptionsSaving.value = false
   }
 }
 
@@ -366,6 +470,11 @@ watch(openPanel, (panel) => {
     return
   }
 
+  if (panel === PANEL_TAX_OPTIONS && !taxOptionsLoaded.value) {
+    void fetchTaxOptions()
+    return
+  }
+
   if (panel === PANEL_ACCOUNTS && !accountsLoaded.value) {
     void fetchAccounts()
     return
@@ -408,6 +517,78 @@ watch(openPanel, (panel) => {
             />
             <div>
               <v-btn color="primary" :loading="profileSaving" @click="handleSaveDisplayName">Save Display Name</v-btn>
+            </div>
+          </div>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+
+      <v-expansion-panel>
+        <v-expansion-panel-title>
+          <div>
+            <div class="text-subtitle-1 font-weight-medium">Calculator Tax Options</div>
+            <div class="text-body-2 text-medium-emphasis">Manage named tax percentages used in amount calculators.</div>
+          </div>
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <div v-if="taxOptionsLoading" class="d-flex justify-center pa-8">
+            <v-progress-circular indeterminate aria-label="Loading calculator tax options" />
+          </div>
+          <div v-else class="d-flex flex-column" style="gap: 12px;">
+            <v-radio-group
+              v-model="taxDefaultKey"
+              label="Default selected tax"
+              density="compact"
+              hide-details
+            >
+              <v-radio label="None" value="none" />
+              <v-radio
+                v-for="(option, index) in taxOptions"
+                :key="`default-tax-${index}`"
+                :label="option.name.trim() || `Tax option ${index + 1}`"
+                :value="`tax-${index}`"
+              />
+            </v-radio-group>
+
+            <v-alert v-if="taxOptions.length === 0" type="info" variant="tonal">
+              No tax options defined. Add one to make it available in the calculator.
+            </v-alert>
+
+            <div
+              v-for="(option, index) in taxOptions"
+              :key="`tax-option-${index}`"
+              class="d-flex align-center flex-wrap"
+              style="gap: 8px;"
+            >
+              <v-text-field
+                v-model="option.name"
+                label="Name"
+                density="compact"
+                hide-details
+                style="max-width: 240px;"
+              />
+              <v-text-field
+                v-model="option.percentage"
+                label="Percentage"
+                type="number"
+                step="0.001"
+                min="0"
+                density="compact"
+                hide-details
+                suffix="%"
+                style="max-width: 180px;"
+              />
+              <v-btn
+                icon="mdi-delete"
+                variant="text"
+                color="error"
+                aria-label="Remove tax option"
+                @click="removeTaxOption(index)"
+              />
+            </div>
+
+            <div class="d-flex flex-wrap" style="gap: 8px;">
+              <v-btn variant="outlined" @click="addTaxOption">Add Tax Option</v-btn>
+              <v-btn color="primary" :loading="taxOptionsSaving" @click="handleSaveTaxOptions">Save Tax Options</v-btn>
             </div>
           </div>
         </v-expansion-panel-text>
