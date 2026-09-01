@@ -110,7 +110,9 @@ public class ImportController(BudgetWebContext context) : ControllerBase
                 Description = i.Description,
                 Amount = i.Amount,
                 IsDebit = i.IsDebit,
-                SuggestedCategoryId = ExpenseCategoryRuleMatcher.GetSuggestedCategoryId(rules, i.Description),
+                SuggestedCategoryId = i.IsDebit
+                    ? ExpenseCategoryRuleMatcher.GetSuggestedCategoryId(rules, i.Description)
+                    : null,
             })
             .ToList();
 

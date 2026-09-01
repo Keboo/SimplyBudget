@@ -136,6 +136,43 @@ public class ImportControllerTests
     }
 
     [Test]
+    public async Task Save_CreditItem_DoesNotApplySuggestedCategoryRule()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Income" };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryRules.Add(new ExpenseCategoryRule
+            {
+                Name = "Payroll rule",
+                RuleRegex = "PAYROLL",
+                ExpenseCategoryID = category.ID
+            });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ImportController(context);
+
+        var items = new[]
+        {
+            new ImportItemDto(new DateTime(2026, 1, 1), "PAYROLL", 1_000_00, false, true),
+        };
+
+        var result = await controller.Save(items);
+
+        await Assert.That(((StatusCodeResult)result).StatusCode).IsEqualTo(201);
+        var saved = await context.PendingExpenses.SingleAsync();
+        await Assert.That(saved.IsDebit).IsFalse();
+        await Assert.That(saved.SuggestedCategoryId).IsNull();
+    }
+
+    [Test]
     public async Task Save_WithNoItemsChecked_CreatesNoPendingExpenses()
     {
         AutoMocker mocker = new();
