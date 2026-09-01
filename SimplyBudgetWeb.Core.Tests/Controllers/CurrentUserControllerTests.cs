@@ -3,6 +3,9 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
+using SimplyBudgetShared.Data;
+
 using SimplyBudgetWeb.Controllers;
 using SimplyBudgetWeb.Data;
 

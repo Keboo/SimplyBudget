@@ -5,7 +5,7 @@ namespace SimplyBudgetWeb.Middleware;
 
 /// <summary>
 /// Runs after authentication/authorization for every request and upserts a
-/// <see cref="Data.PendingExpenseAssignee"/> row for the current user, so the Pending Expenses
+/// <see cref="SimplyBudgetShared.Data.PendingExpenseAssignee"/> row for the current user, so the Pending Expenses
 /// assignee list always reflects everyone who has signed in.
 /// </summary>
 public class CurrentUserSyncMiddleware(RequestDelegate next, ILogger<CurrentUserSyncMiddleware> logger)

@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
+using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Import;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;

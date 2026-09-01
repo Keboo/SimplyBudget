@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
+using SimplyBudgetShared.Data;
+
 using SimplyBudgetWeb.Data;
 
 namespace SimplyBudgetWeb.Controllers;

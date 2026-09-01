@@ -1,8 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using SimplyBudgetShared.Data;
 
-namespace SimplyBudgetWeb.Data;
+namespace SimplyBudgetShared.Data;
 
 /// <summary>
 /// A receipt/transaction that has occurred but has not yet been categorized (or split) into
