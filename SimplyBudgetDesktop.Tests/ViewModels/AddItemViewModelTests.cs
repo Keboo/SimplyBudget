@@ -209,6 +209,28 @@ public class AddItemViewModelTests
     }
 
     [TestMethod]
+    public void ApplyRemainingCommand_Transaction_AppliesToLastEmptyLineItem()
+    {
+        var mocker = new AutoMocker().WithDefaults();
+        using var _ = mocker.WithDbScope();
+
+        var vm = mocker.CreateInstance<AddItemViewModel>();
+
+        vm.SelectedType = AddType.Transaction;
+        vm.AddItemCommand.Execute(null);
+        vm.AddItemCommand.Execute(null);
+        vm.TotalAmount = 100_00;
+        vm.LineItems[0].Amount = 25_00;
+        vm.LineItems[2].Amount = 10_00;
+
+        vm.ApplyRemainingCommand.Execute(null);
+
+        Assert.AreEqual(65_00, vm.LineItems[1].Amount);
+        Assert.AreEqual(10_00, vm.LineItems[2].Amount);
+        Assert.AreEqual(0, vm.RemainingAmount);
+    }
+
+    [TestMethod]
     public async Task SubmitCommand_TransactionIgnoreBudget_CreatesTransaction()
     {
         var mocker = new AutoMocker().WithDefaults();

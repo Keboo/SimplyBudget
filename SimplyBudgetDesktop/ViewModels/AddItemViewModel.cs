@@ -146,6 +146,21 @@ public partial class AddItemViewModel : ValidationViewModel,
     }
 
     [RelayCommand]
+    private void OnApplyRemaining()
+    {
+        if (SelectedType != AddType.Transaction || RemainingAmount <= 0)
+        {
+            return;
+        }
+
+        var lineItem = LineItems.LastOrDefault(x => x.Amount == 0);
+        if (lineItem is not null)
+        {
+            lineItem.Amount = RemainingAmount;
+        }
+    }
+
+    [RelayCommand]
     private void OnAutoAllocate()
     {
         int total = RemainingAmount;
