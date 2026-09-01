@@ -40,6 +40,7 @@ const filteredItems = computed(() => {
 
   return items.value.filter((item) => {
     if (includesSearchText(item.description, normalizedSearchText)) return true
+    if (includesSearchText(item.notes, normalizedSearchText)) return true
     if (searchAmountAbs === null) return false
 
     return item.details.some((detail) => Math.abs(detail.amount) === searchAmountAbs)
@@ -193,6 +194,7 @@ function onDialogSuccess() {
             </div>
           </v-list-item-title>
           <v-list-item-subtitle>
+            <div v-if="item.notes" class="expense-notes mt-1">{{ item.notes }}</div>
             <div class="d-flex flex-wrap mt-1" style="gap: 4px;">
               <v-chip v-for="d in item.details" :key="d.id" size="small" variant="outlined">
                 {{ d.categoryName }}: {{ formatCents(d.amount) }}
@@ -288,6 +290,11 @@ function onDialogSuccess() {
 .expense-amount {
   flex: 0 0 auto;
   text-align: right;
+}
+
+.expense-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 720px) {

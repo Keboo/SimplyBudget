@@ -668,7 +668,8 @@ public class PendingExpensesControllerTests
                 Date = new DateTime(2026, 1, 5),
                 Description = "Costco",
                 Amount = 45_00,
-                IsDebit = true
+                IsDebit = true,
+                Notes = "Business membership renewal"
             };
             context.PendingExpenses.Add(pending);
             await context.SaveChangesAsync();
@@ -689,6 +690,7 @@ public class PendingExpensesControllerTests
                 .Include(x => x.Details)
                 .SingleAsync();
             await Assert.That(item.Description).IsEqualTo("Costco");
+            await Assert.That(item.Notes).IsEqualTo("Business membership renewal");
             await Assert.That(item.Details!.Single().Amount).IsEqualTo(-45_00);
 
             var category = await context.ExpenseCategories.SingleAsync();
@@ -731,6 +733,43 @@ public class PendingExpensesControllerTests
                 .Include(x => x.Details)
                 .SingleAsync();
             await Assert.That(item.Details!.Single().IgnoreBudget).IsTrue();
+        });
+    }
+
+    [Test]
+    public async Task Convert_UsesEditedNotesFromRequest()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            var category = new ExpenseCategory { Name = "Groceries" };
+            context.ExpenseCategories.Add(category);
+            var pending = new PendingExpense
+            {
+                Date = new DateTime(2026, 1, 5),
+                Description = "Costco",
+                Amount = 45_00,
+                IsDebit = true,
+                Notes = "Original note"
+            };
+            context.PendingExpenses.Add(pending);
+            await context.SaveChangesAsync();
+
+            var controller = new PendingExpensesController(context);
+            await controller.Convert(pending.ID, new ConvertPendingExpenseRequest(
+                "Costco",
+                new DateTime(2026, 1, 5),
+                [new ConvertPendingExpenseItemRequest(category.ID, 45_00)],
+                System.Convert.ToBase64String(pending.Version),
+                Notes: "Edited during conversion"));
+        }
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var item = await context.ExpenseCategoryItems.SingleAsync();
+            await Assert.That(item.Notes).IsEqualTo("Edited during conversion");
         });
     }
 
@@ -795,7 +834,8 @@ public class PendingExpensesControllerTests
                 Date = new DateTime(2026, 1, 5),
                 Description = "Refund",
                 Amount = 20_00,
-                IsDebit = false
+                IsDebit = false,
+                Notes = "Returned damaged item"
             };
             context.PendingExpenses.Add(pending);
             await context.SaveChangesAsync();
@@ -810,6 +850,7 @@ public class PendingExpensesControllerTests
             var item = await context.ExpenseCategoryItems
                 .Include(x => x.Details)
                 .SingleAsync();
+            await Assert.That(item.Notes).IsEqualTo("Returned damaged item");
             await Assert.That(item.Details!.Single().Amount).IsEqualTo(20_00);
 
             var category = await context.ExpenseCategories.SingleAsync();

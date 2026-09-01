@@ -35,6 +35,7 @@ public class HistoryController(BudgetWebContext context) : ControllerBase
 
             query = query.Where(x =>
                 (x.Description != null && x.Description.Contains(searchText)) ||
+                (x.Notes != null && x.Notes.Contains(searchText)) ||
                 (hasSearchAmount &&
                  (x.Details!.Any(d => Math.Abs(d.Amount) == searchAmountAbs) ||
                   Math.Abs(x.Details!.Sum(d => d.Amount)) == searchAmountAbs)));
@@ -55,6 +56,7 @@ public class HistoryController(BudgetWebContext context) : ControllerBase
             Id: item.ID,
             Date: item.Date,
             Description: item.Description,
+            Notes: item.Notes,
             IsTransfer: item.IsTransfer,
             Details: (item.Details ?? []).Select(d => new HistoryDetailDto(
                 Id: d.ID,
@@ -84,6 +86,7 @@ public record HistoryItemDto(
     int Id,
     DateTime Date,
     string? Description,
+    string? Notes,
     bool IsTransfer,
     HistoryDetailDto[] Details
 );

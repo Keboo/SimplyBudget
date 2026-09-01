@@ -115,4 +115,39 @@ public class HistoryControllerTests
         await Assert.That(result[1].Description).IsEqualTo("June middle");
         await Assert.That(result[2].Description).IsEqualTo("June newest");
     }
+
+    [Test]
+    public async Task GetAll_ReturnsAndSearchesNotes()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Groceries" };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryItems.Add(new ExpenseCategoryItem
+            {
+                Date = new DateTime(2026, 1, 10),
+                Description = "Costco",
+                Notes = "Business membership renewal",
+                Details = [new ExpenseCategoryItemDetail { Amount = -1234, ExpenseCategoryId = category.ID }],
+            });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new HistoryController(context);
+
+        var result = await controller.GetAll(
+            month: new DateTime(2026, 1, 1),
+            search: "membership",
+            categoryId: null,
+            accountId: null);
+
+        await Assert.That(result.Length).IsEqualTo(1);
+        await Assert.That(result[0].Notes).IsEqualTo("Business membership renewal");
+    }
 }
