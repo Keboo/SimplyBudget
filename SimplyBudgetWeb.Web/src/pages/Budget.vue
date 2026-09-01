@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
+import { useAuthStore } from '@/stores/auth'
 import type { AccountDto, BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto, ExpenseCategoryMonthlyExpensesDto } from '@/types'
 import { formatCents, formatMonth, parseMonth } from '@/utils/currency'
 import { useRouter } from 'vue-router'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
+import { createMonthUpdatesHubClient } from '@/services/monthUpdatesHub'
 
 const snackbar = useSnackbarStore()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const { currentMonth } = useMonthQueryParam()
 const budget = ref<BudgetResponse | null>(null)
@@ -22,6 +25,8 @@ const categories = ref<ExpenseCategoryDto[]>([])
 const categoryChartDialogOpen = ref(false)
 const categoryChartLoading = ref(false)
 const categoryChart = ref<ExpenseCategoryMonthlyExpensesDto | null>(null)
+let realtimeRefreshInFlight = false
+let realtimeRefreshQueued = false
 
 const monthLabel = computed(() =>
   currentMonth.value.toLocaleString('default', { month: 'long', year: 'numeric' }),
@@ -71,20 +76,20 @@ const budgetLineLabel = computed(() => {
     : `${formatCents(chart.budgetedAmount)} budget`
 })
 
-async function fetchBudget() {
-  loading.value = true
+async function fetchBudget(background = false) {
+  if (!background) loading.value = true
   try {
     const month = formatMonth(currentMonth.value)
     budget.value = await apiClient.get<BudgetResponse>(`/api/budget?month=${month}-01`)
   } catch {
     snackbar.enqueueSnackbar('Failed to load budget', { variant: 'error' })
   } finally {
-    loading.value = false
+    if (!background) loading.value = false
   }
 }
 
-async function fetchAccountBalances() {
-  accountLoading.value = true
+async function fetchAccountBalances(background = false) {
+  if (!background) accountLoading.value = true
   try {
     const month = `${formatMonth(currentMonth.value)}-01`
     const params = new URLSearchParams({ month })
@@ -92,7 +97,7 @@ async function fetchAccountBalances() {
   } catch {
     snackbar.enqueueSnackbar('Failed to load account balances', { variant: 'error' })
   } finally {
-    accountLoading.value = false
+    if (!background) accountLoading.value = false
   }
 }
 
@@ -102,15 +107,47 @@ async function fetchCategories() {
   } catch { /* ignore */ }
 }
 
+async function refreshMonthInBackground() {
+  if (realtimeRefreshInFlight) {
+    realtimeRefreshQueued = true
+    return
+  }
+
+  realtimeRefreshInFlight = true
+  try {
+    do {
+      realtimeRefreshQueued = false
+      await Promise.all([fetchBudget(true), fetchAccountBalances(true)])
+    } while (realtimeRefreshQueued)
+  } finally {
+    realtimeRefreshInFlight = false
+  }
+}
+
+const monthUpdatesHub = createMonthUpdatesHubClient(
+  () => authStore.getToken(),
+  (month) => {
+    if (month === formatMonth(currentMonth.value)) {
+      void refreshMonthInBackground()
+    }
+  },
+)
+
 onMounted(() => {
   void fetchBudget()
   void fetchAccountBalances()
   void fetchCategories()
+  void monthUpdatesHub.start(formatMonth(currentMonth.value))
 })
 
 watch(currentMonth, () => {
   void fetchBudget()
   void fetchAccountBalances()
+  void monthUpdatesHub.setMonth(formatMonth(currentMonth.value))
+})
+
+onBeforeUnmount(() => {
+  void monthUpdatesHub.stop()
 })
 
 function onDialogSuccess() {

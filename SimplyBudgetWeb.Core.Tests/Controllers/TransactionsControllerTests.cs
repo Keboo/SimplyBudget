@@ -1,14 +1,46 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using Moq.AutoMock;
 using SimplyBudgetShared.Data;
 using SimplyBudgetWeb.Controllers;
 using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Services;
 
 namespace SimplyBudgetWeb.Core.Tests.Controllers;
 
 public class TransactionsControllerTests
 {
+    [Test]
+    public async Task AddTransaction_NotifiesChangedMonth()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+        var notifier = new Mock<IBudgetMonthUpdateNotifier>();
+
+        var categoryId = await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Groceries", CurrentBalance = 500_00 };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+            return category.ID;
+        });
+
+        var monthDate = new DateTime(2026, 1, 10);
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            var controller = new TransactionsController(context, notifier.Object);
+            await controller.AddTransaction(new TransactionRequest(
+                Description: "Costco",
+                Date: monthDate,
+                Items: [new TransactionItemRequest(categoryId, 45_00)]));
+        }
+
+        notifier.Verify(
+            x => x.NotifyMonthUpdated(monthDate, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
     [Test]
     public async Task AddTransaction_PersistsNotes()
     {

@@ -1,13 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
 using SimplyBudgetShared.Data;
 using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Services;
 
 namespace SimplyBudgetWeb.Controllers;
 
 [ApiController]
 [Route("api/transactions")]
-public class TransactionsController(BudgetWebContext context) : ControllerBase
+public class TransactionsController(
+    BudgetWebContext context,
+    IBudgetMonthUpdateNotifier? budgetMonthUpdateNotifier = null) : ControllerBase
 {
+    private readonly IBudgetMonthUpdateNotifier budgetMonthUpdates = budgetMonthUpdateNotifier ?? NullBudgetMonthUpdateNotifier.Instance;
+
     [HttpPost("transaction")]
     public async Task<IActionResult> AddTransaction([FromBody] TransactionRequest request)
     {
@@ -22,6 +27,7 @@ public class TransactionsController(BudgetWebContext context) : ControllerBase
             item.Notes = notes;
             await context.SaveChangesAsync();
         }
+        await budgetMonthUpdates.NotifyMonthUpdated(request.Date);
         return StatusCode(201);
     }
 
@@ -39,6 +45,7 @@ public class TransactionsController(BudgetWebContext context) : ControllerBase
             item.Notes = notes;
             await context.SaveChangesAsync();
         }
+        await budgetMonthUpdates.NotifyMonthUpdated(request.Date);
         return StatusCode(201);
     }
 
@@ -52,6 +59,7 @@ public class TransactionsController(BudgetWebContext context) : ControllerBase
         if (toCategory is null) return NotFound($"Category {request.ToCategoryId} not found.");
 
         await context.AddTransfer(request.Description, request.Date, request.Amount, fromCategory, toCategory);
+        await budgetMonthUpdates.NotifyMonthUpdated(request.Date);
         return StatusCode(201);
     }
 

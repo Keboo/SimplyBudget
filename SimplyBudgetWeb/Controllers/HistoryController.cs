@@ -3,14 +3,19 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Services;
 using SimplyBudgetWeb.Utilities;
 
 namespace SimplyBudgetWeb.Controllers;
 
 [ApiController]
 [Route("api/history")]
-public class HistoryController(BudgetWebContext context) : ControllerBase
+public class HistoryController(
+    BudgetWebContext context,
+    IBudgetMonthUpdateNotifier? budgetMonthUpdateNotifier = null) : ControllerBase
 {
+    private readonly IBudgetMonthUpdateNotifier budgetMonthUpdates = budgetMonthUpdateNotifier ?? NullBudgetMonthUpdateNotifier.Instance;
+
     [HttpGet]
     public async Task<HistoryItemDto[]> GetAll(
         [FromQuery] DateTime? month,
@@ -82,6 +87,7 @@ public class HistoryController(BudgetWebContext context) : ControllerBase
 
         context.ExpenseCategoryItems.Remove(item);
         await context.SaveChangesAsync();
+        await budgetMonthUpdates.NotifyMonthUpdated(item.Date);
         return NoContent();
     }
 
