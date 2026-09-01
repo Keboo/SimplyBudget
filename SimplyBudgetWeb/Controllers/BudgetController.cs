@@ -16,6 +16,7 @@ public class BudgetController(BudgetWebContext context) : ControllerBase
         var monthDate = (month ?? DateTime.Today).StartOfMonth();
         var start = monthDate.StartOfMonth();
         var end = monthDate.EndOfMonth();
+        var estimatedMonthlyIncome = await CalculateEstimatedMonthlyIncome(monthDate);
         var totalAccountAmount = await context.ExpenseCategories
             .Where(x => x.AccountID != null)
             .Select(x => (int?)x.CurrentBalance)
@@ -78,9 +79,26 @@ public class BudgetController(BudgetWebContext context) : ControllerBase
         return new BudgetResponse(
             TotalBudget: totalBudget,
             TotalAccountAmount: totalAccountAmount,
+            EstimatedMonthlyIncome: estimatedMonthlyIncome,
             Month: monthDate.ToString("yyyy-MM"),
             Categories: categoryDtos
         );
+    }
+
+    private async Task<int> CalculateEstimatedMonthlyIncome(DateTime month)
+    {
+        var rangeStart = month.AddMonths(-3);
+        var priorItems = await context.ExpenseCategoryItems
+            .Where(x => x.Date >= rangeStart && x.Date < month)
+            .Include(x => x.Details)
+            .ToListAsync();
+
+        int totalIncome = priorItems
+            .Where(x => (x.Details?.Count ?? 0) > 0)
+            .Where(x => x.Details!.All(d => d.Amount > 0 && !d.IgnoreBudget))
+            .Sum(x => x.Details!.Sum(d => d.Amount));
+
+        return totalIncome / 3;
     }
 
     private static int CalculateAverage(IList<ExpenseCategoryItemDetail> categoryItems, DateTime month, int numMonths)
@@ -97,7 +115,12 @@ public class BudgetController(BudgetWebContext context) : ControllerBase
     }
 }
 
-public record BudgetResponse(int TotalBudget, int TotalAccountAmount, string Month, List<BudgetCategoryDto> Categories);
+public record BudgetResponse(
+    int TotalBudget,
+    int TotalAccountAmount,
+    int EstimatedMonthlyIncome,
+    string Month,
+    List<BudgetCategoryDto> Categories);
 
 public record BudgetCategoryDto(
     int Id,
