@@ -6,6 +6,7 @@ import type { ExpenseCategoryDto, TransactionRequest, TransferRequest } from '@/
 import { formatCents, dollarsToCents, centsToDollars, parseLocalDate } from '@/utils/currency'
 import IncomeAllocationList from '@/components/IncomeAllocationList.vue'
 import CategorySelector from '@/components/CategorySelector.vue'
+import AmountField from '@/components/AmountField.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -232,15 +233,7 @@ async function submit() {
                 class="category-field"
               />
               <div class="amount-field d-flex align-center ga-1">
-                <v-text-field
-                  label="Amount ($)"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  v-model="item.amount"
-                  hide-details
-                  density="compact"
-                />
+                <AmountField v-model="item.amount" />
                 <v-btn
                   icon="mdi-calculator"
                   size="small"

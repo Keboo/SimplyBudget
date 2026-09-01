@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import type { ExpenseCategoryDto } from '@/types'
 import { formatCents, dollarsToCents, centsToDollars } from '@/utils/currency'
+import AmountField from '@/components/AmountField.vue'
 
 const props = defineProps<{
   /** Total income amount (in cents) being allocated. */
@@ -145,15 +146,9 @@ function applyPercentage(category: ExpenseCategoryDto) {
           </template>
         </div>
       </div>
-      <v-text-field
-        label="Amount ($)"
-        type="number"
-        step="0.01"
-        min="0"
+      <AmountField
         :model-value="amountFor(category.id)"
         @update:model-value="(val: string) => setAmount(category.id, val)"
-        hide-details
-        density="compact"
         class="amount-field"
       />
     </div>
