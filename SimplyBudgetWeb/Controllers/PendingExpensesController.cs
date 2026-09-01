@@ -190,9 +190,10 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
 
         foreach (var pendingExpense in pendingExpenses)
         {
-            pendingExpense.SuggestedCategoryId = pendingExpense.IsDebit
-                ? ExpenseCategoryRuleMatcher.GetSuggestedCategoryId(rules, pendingExpense.Description)
-                : null;
+            pendingExpense.SuggestedCategoryId = ExpenseCategoryRuleMatcher.GetSuggestedCategoryId(
+                rules,
+                pendingExpense.Description,
+                isTransaction: pendingExpense.IsDebit);
         }
 
         await context.SaveChangesAsync();
