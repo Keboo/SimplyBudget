@@ -33,6 +33,30 @@ public class ExpenseCategoriesControllerTests
     }
 
     [Test]
+    public async Task GetAll_FiltersByDescription()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            context.ExpenseCategories.AddRange(
+                new ExpenseCategory { Name = "Groceries", Description = "Food and household essentials" },
+                new ExpenseCategory { Name = "Savings", Description = "Long-term goals" });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.GetAll(includeHidden: true, search: "household");
+
+        await Assert.That(result.Length).IsEqualTo(1);
+        await Assert.That(result[0].Name).IsEqualTo("Groceries");
+        await Assert.That(result[0].Description).IsEqualTo("Food and household essentials");
+    }
+
+    [Test]
     public async Task Update_RenamesCategory()
     {
         AutoMocker mocker = new();
@@ -50,9 +74,11 @@ public class ExpenseCategoriesControllerTests
         var controller = new ExpenseCategoriesController(context);
 
         var result = await controller.Update(categoryId, new ExpenseCategoryRequest(
-            Name: "New Name", CategoryName: "New Group", BudgetedAmount: 0, BudgetedPercentage: 0, Cap: null, AccountId: null));
+            Name: "New Name", Description: "New Description", CategoryName: "New Group",
+            BudgetedAmount: 0, BudgetedPercentage: 0, Cap: null, AccountId: null));
 
         await Assert.That(result.Value!.Name).IsEqualTo("New Name");
+        await Assert.That(result.Value!.Description).IsEqualTo("New Description");
         await Assert.That(result.Value!.CategoryName).IsEqualTo("New Group");
     }
 

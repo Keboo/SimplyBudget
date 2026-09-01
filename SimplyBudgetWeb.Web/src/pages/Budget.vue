@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
-import type { BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto, ExpenseCategoryMonthlyExpensesDto } from '@/types'
+import type { AccountDto, BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto, ExpenseCategoryMonthlyExpensesDto } from '@/types'
 import { formatCents, formatMonth, parseMonth } from '@/utils/currency'
 import { useRouter } from 'vue-router'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
@@ -14,12 +14,18 @@ const router = useRouter()
 
 const { currentMonth } = useMonthQueryParam({ storageKey: 'budget' })
 const budget = ref<BudgetResponse | null>(null)
+const accounts = ref<AccountDto[]>([])
 const loading = ref(false)
+const accountLoading = ref(false)
 const dialogOpen = ref(false)
 const categories = ref<ExpenseCategoryDto[]>([])
 const categoryChartDialogOpen = ref(false)
 const categoryChartLoading = ref(false)
 const categoryChart = ref<ExpenseCategoryMonthlyExpensesDto | null>(null)
+
+const monthLabel = computed(() =>
+  currentMonth.value.toLocaleString('default', { month: 'long', year: 'numeric' }),
+)
 
 interface Group {
   groupName: string
@@ -77,6 +83,19 @@ async function fetchBudget() {
   }
 }
 
+async function fetchAccountBalances() {
+  accountLoading.value = true
+  try {
+    const month = `${formatMonth(currentMonth.value)}-01`
+    const params = new URLSearchParams({ month })
+    accounts.value = await apiClient.get<AccountDto[]>(`/api/accounts?${params}`) ?? []
+  } catch {
+    snackbar.enqueueSnackbar('Failed to load account balances', { variant: 'error' })
+  } finally {
+    accountLoading.value = false
+  }
+}
+
 async function fetchCategories() {
   try {
     categories.value = await apiClient.get<ExpenseCategoryDto[]>('/api/expense-categories')
@@ -85,13 +104,18 @@ async function fetchCategories() {
 
 onMounted(() => {
   void fetchBudget()
+  void fetchAccountBalances()
   void fetchCategories()
 })
 
-watch(currentMonth, fetchBudget)
+watch(currentMonth, () => {
+  void fetchBudget()
+  void fetchAccountBalances()
+})
 
 function onDialogSuccess() {
   void fetchBudget()
+  void fetchAccountBalances()
   dialogOpen.value = false
 }
 
@@ -145,6 +169,19 @@ function openCategoryHistory(category: BudgetCategoryDto) {
       </div>
     </v-card>
 
+    <v-card class="pa-4 mb-4">
+      <div class="text-subtitle-2 mb-2">Account balances through {{ monthLabel }}</div>
+      <div v-if="accountLoading" class="d-flex justify-center py-2">
+        <v-progress-circular size="20" indeterminate aria-label="Loading account balances" />
+      </div>
+      <div v-else-if="accounts.length === 0" class="text-medium-emphasis">No accounts found.</div>
+      <div v-else class="d-flex flex-wrap" style="gap: 8px;">
+        <v-chip v-for="account in accounts" :key="account.id" size="small" variant="outlined">
+          {{ account.name ?? 'Unnamed account' }}: {{ formatCents(account.currentAmount) }}
+        </v-chip>
+      </div>
+    </v-card>
+
     <div v-if="loading" class="d-flex justify-center pa-8">
       <v-progress-circular indeterminate aria-label="Loading budget" />
     </div>
@@ -164,6 +201,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
               >
                 <v-list-item-title>{{ cat.name ?? '(unnamed)' }}</v-list-item-title>
                 <v-list-item-subtitle>
+                  <div v-if="cat.description" class="mb-1">{{ cat.description }}</div>
                   <div class="budget-chip-row d-flex flex-wrap mt-1" style="gap: 4px;">
                     <v-chip size="small">Budget: {{ cat.usePercentage ? `${cat.budgetedPercentage}%` : formatCents(cat.budgetedAmount) }}</v-chip>
                     <v-chip size="small" color="error" variant="outlined">Spent: {{ formatCents(cat.monthlyExpenses) }}</v-chip>

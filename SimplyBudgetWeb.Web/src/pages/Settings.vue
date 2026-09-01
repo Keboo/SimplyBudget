@@ -97,7 +97,7 @@ const categoriesLoading = ref(false)
 const showHiddenCategories = ref(false)
 const manageCategories = ref<ExpenseCategoryDto[]>([])
 const editCategoryId = ref<number | null>(null)
-const editCategoryForm = ref({ name: '', categoryName: '' })
+const editCategoryForm = ref({ name: '', description: '', categoryName: '' })
 const deleteCategory = ref<ExpenseCategoryDto | null>(null)
 
 async function fetchCurrentUserProfile() {
@@ -294,13 +294,18 @@ async function fetchManageCategories() {
 
 function startEditCategory(category: ExpenseCategoryDto) {
   editCategoryId.value = category.id
-  editCategoryForm.value = { name: category.name ?? '', categoryName: category.categoryName ?? '' }
+  editCategoryForm.value = {
+    name: category.name ?? '',
+    description: category.description ?? '',
+    categoryName: category.categoryName ?? '',
+  }
 }
 
 async function handleSaveCategoryEdit(category: ExpenseCategoryDto) {
   try {
     await apiClient.put(`/api/expense-categories/${category.id}`, {
       name: editCategoryForm.value.name,
+      description: editCategoryForm.value.description,
       categoryName: editCategoryForm.value.categoryName,
       budgetedAmount: category.budgetedAmount,
       budgetedPercentage: category.budgetedPercentage,
@@ -532,7 +537,7 @@ watch(openPanel, (panel) => {
             <v-card v-for="category in manageCategories" :key="category.id" class="mb-2">
               <v-list-item>
                 <v-list-item-title>
-                  <div v-if="editCategoryId === category.id" class="d-flex align-center" style="gap: 8px;">
+                  <div v-if="editCategoryId === category.id" class="d-flex flex-wrap align-center" style="gap: 8px;">
                     <v-text-field
                       v-model="editCategoryForm.name"
                       label="Name"
@@ -550,6 +555,14 @@ watch(openPanel, (panel) => {
                       style="max-width: 220px;"
                       @keydown.enter="handleSaveCategoryEdit(category)"
                     />
+                    <v-text-field
+                      v-model="editCategoryForm.description"
+                      label="Description"
+                      density="compact"
+                      hide-details
+                      style="min-width: 260px;"
+                      @keydown.enter="handleSaveCategoryEdit(category)"
+                    />
                   </div>
                   <div v-else class="d-flex align-center" style="gap: 8px;">
                     <span>{{ category.name }}</span>
@@ -557,7 +570,8 @@ watch(openPanel, (panel) => {
                   </div>
                 </v-list-item-title>
                 <v-list-item-subtitle v-if="editCategoryId !== category.id">
-                  {{ category.categoryName ?? 'No group' }}
+                  <div>{{ category.categoryName ?? 'No group' }}</div>
+                  <div v-if="category.description">{{ category.description }}</div>
                 </v-list-item-subtitle>
                 <template #append>
                   <div v-if="editCategoryId === category.id" class="d-flex" style="gap: 4px;">

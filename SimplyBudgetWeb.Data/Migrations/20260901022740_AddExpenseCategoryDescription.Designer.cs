@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SimplyBudgetWeb.Data;
 
@@ -11,9 +12,11 @@ using SimplyBudgetWeb.Data;
 namespace SimplyBudgetWeb.Data.Migrations
 {
     [DbContext(typeof(BudgetWebContext))]
-    partial class BudgetWebContextModelSnapshot : ModelSnapshot
+    [Migration("20260901022740_AddExpenseCategoryDescription")]
+    partial class AddExpenseCategoryDescription
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -103,9 +106,6 @@ namespace SimplyBudgetWeb.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("ID");
