@@ -5,7 +5,7 @@ import { useSnackbarStore } from '@/stores/snackbar'
 import type { HistoryItemDto, HistoryItemUpdateRequest, ExpenseCategoryDto, AccountDto } from '@/types'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
-import { AMAZON_TRANSACTIONS_URL, hasAmazonInDescription } from '@/utils/merchantLinks'
+import { useExternalLinkRules } from '@/utils/externalLinks'
 import { includesSearchText, tryParseSearchAmountInCents } from '@/utils/search'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
@@ -14,6 +14,7 @@ import CategorySelector from '@/components/CategorySelector.vue'
 
 const snackbar = useSnackbarStore()
 const route = useRoute()
+const { loadExternalLinkRules, externalLinksFor } = useExternalLinkRules()
 
 const { currentMonth } = useMonthQueryParam({ storageKey: 'history' })
 const search = ref('')
@@ -148,6 +149,7 @@ onMounted(() => {
   void fetchCategories()
   void fetchHistory()
   void fetchAccountBalances()
+  void loadExternalLinkRules()
 
   const rawCategoryId = route.query.categoryId
   const categoryIdQuery = Array.isArray(rawCategoryId) ? rawCategoryId[0] : rawCategoryId
@@ -215,15 +217,17 @@ function onDialogSuccess() {
                 <span class="expense-description">{{ item.description }}</span>
                 <v-chip v-if="item.isTransfer" size="small">Transfer</v-chip>
                 <v-btn
-                  v-if="hasAmazonInDescription(item.description)"
+                  v-for="link in externalLinksFor(item.description)"
+                  :key="link.url"
                   icon="mdi-open-in-new"
                   variant="text"
                   size="x-small"
                   color="primary"
-                  :href="AMAZON_TRANSACTIONS_URL"
+                  :href="link.url"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Open Amazon transactions page"
+                  :aria-label="`Open ${link.name} link`"
+                  :title="link.name"
                 />
               </span>
               <span class="font-weight-bold expense-amount">{{ formatCents(totalForItem(item)) }}</span>

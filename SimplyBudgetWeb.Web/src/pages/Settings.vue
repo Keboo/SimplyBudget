@@ -5,12 +5,14 @@ import { useSnackbarStore } from '@/stores/snackbar'
 import { useAuthStore } from '@/stores/auth'
 import type {
   RuleDto,
+  ExternalLinkRuleDto,
   ExpenseCategoryDto,
   AccountDto,
   CalculatorTaxOptionsDto,
   CurrentUserDto,
 } from '@/types'
 import { formatCents } from '@/utils/currency'
+import { resetExternalLinkRulesCache } from '@/utils/externalLinks'
 import CategorySelector from '@/components/CategorySelector.vue'
 
 const snackbar = useSnackbarStore()
@@ -20,7 +22,8 @@ const PANEL_PROFILE = 0
 const PANEL_TAX_OPTIONS = 1
 const PANEL_ACCOUNTS = 2
 const PANEL_RULES = 3
-const PANEL_CATEGORIES = 4
+const PANEL_EXTERNAL_LINKS = 4
+const PANEL_CATEGORIES = 5
 
 const openPanel = ref<number | undefined>(undefined)
 
@@ -56,6 +59,14 @@ const addRuleOpen = ref(false)
 const deleteRule = ref<RuleDto | null>(null)
 const editRule = ref<RuleDto | null>(null)
 const ruleForm = ref({ name: '', ruleRegex: '', expenseCategoryId: null as number | null })
+
+const externalLinks = ref<ExternalLinkRuleDto[]>([])
+const externalLinksLoading = ref(false)
+const externalLinksLoaded = ref(false)
+const addExternalLinkOpen = ref(false)
+const editExternalLink = ref<ExternalLinkRuleDto | null>(null)
+const deleteExternalLink = ref<ExternalLinkRuleDto | null>(null)
+const externalLinkForm = ref({ name: '', ruleRegex: '', url: '' })
 
 interface RuleGroup {
   key: string
@@ -382,6 +393,75 @@ async function handleDeleteRule() {
   }
 }
 
+async function fetchExternalLinks() {
+  externalLinksLoading.value = true
+  try {
+    externalLinks.value = await apiClient.get<ExternalLinkRuleDto[]>('/api/external-links') ?? []
+  } catch {
+    snackbar.enqueueSnackbar('Failed to load external links', { variant: 'error' })
+  } finally {
+    externalLinksLoading.value = false
+  }
+}
+
+function resetExternalLinkForm() {
+  externalLinkForm.value = { name: '', ruleRegex: '', url: '' }
+}
+
+function openAddExternalLink() {
+  resetExternalLinkForm()
+  addExternalLinkOpen.value = true
+}
+
+function openEditExternalLink(link: ExternalLinkRuleDto) {
+  editExternalLink.value = link
+  externalLinkForm.value = {
+    name: link.name ?? '',
+    ruleRegex: link.ruleRegex ?? '',
+    url: link.url ?? '',
+  }
+}
+
+async function handleAddExternalLink() {
+  try {
+    await apiClient.post('/api/external-links', { ...externalLinkForm.value })
+    snackbar.enqueueSnackbar('External link added', { variant: 'success' })
+    addExternalLinkOpen.value = false
+    resetExternalLinkForm()
+    resetExternalLinkRulesCache()
+    void fetchExternalLinks()
+  } catch (err) {
+    snackbar.enqueueSnackbar(err instanceof Error ? err.message : 'Failed to add external link', { variant: 'error' })
+  }
+}
+
+async function handleEditExternalLink() {
+  if (!editExternalLink.value) return
+  try {
+    await apiClient.put(`/api/external-links/${editExternalLink.value.id}`, { ...externalLinkForm.value })
+    snackbar.enqueueSnackbar('External link updated', { variant: 'success' })
+    editExternalLink.value = null
+    resetExternalLinkForm()
+    resetExternalLinkRulesCache()
+    void fetchExternalLinks()
+  } catch (err) {
+    snackbar.enqueueSnackbar(err instanceof Error ? err.message : 'Failed to update external link', { variant: 'error' })
+  }
+}
+
+async function handleDeleteExternalLink() {
+  if (!deleteExternalLink.value) return
+  try {
+    await apiClient.delete(`/api/external-links/${deleteExternalLink.value.id}`)
+    snackbar.enqueueSnackbar('External link deleted', { variant: 'success' })
+    deleteExternalLink.value = null
+    resetExternalLinkRulesCache()
+    void fetchExternalLinks()
+  } catch {
+    snackbar.enqueueSnackbar('Failed to delete external link', { variant: 'error' })
+  }
+}
+
 async function fetchManageCategories() {
   categoriesLoading.value = true
   try {
@@ -464,6 +544,12 @@ watch(addRuleOpen, (isOpen) => {
   }
 })
 
+watch(addExternalLinkOpen, (isOpen) => {
+  if (!isOpen) {
+    resetExternalLinkForm()
+  }
+})
+
 watch(openPanel, (panel) => {
   if (panel === PANEL_PROFILE && !profileLoaded.value) {
     void fetchCurrentUserProfile()
@@ -483,6 +569,12 @@ watch(openPanel, (panel) => {
   if (panel === PANEL_RULES && !rulesLoaded.value) {
     rulesLoaded.value = true
     void Promise.all([fetchRules(), fetchRuleCategories()])
+    return
+  }
+
+  if (panel === PANEL_EXTERNAL_LINKS && !externalLinksLoaded.value) {
+    externalLinksLoaded.value = true
+    void fetchExternalLinks()
     return
   }
 
@@ -692,6 +784,41 @@ watch(openPanel, (panel) => {
       <v-expansion-panel>
         <v-expansion-panel-title>
           <div>
+            <div class="text-subtitle-1 font-weight-medium">External Links</div>
+            <div class="text-body-2 text-medium-emphasis">Show a link on transactions whose description matches a pattern.</div>
+          </div>
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <div v-if="externalLinksLoading" class="d-flex justify-center pa-8">
+            <v-progress-circular indeterminate aria-label="Loading external links" />
+          </div>
+          <div v-else>
+            <div class="d-flex justify-end mb-4">
+              <v-btn color="primary" @click="openAddExternalLink">Add External Link</v-btn>
+            </div>
+            <v-card v-if="externalLinks.length > 0">
+              <v-list>
+                <v-list-item v-for="link in externalLinks" :key="link.id">
+                  <v-list-item-title>{{ link.name }}</v-list-item-title>
+                  <v-list-item-subtitle>Pattern: {{ link.ruleRegex ?? '—' }}</v-list-item-subtitle>
+                  <v-list-item-subtitle>Link: {{ link.url ?? '—' }}</v-list-item-subtitle>
+                  <template #append>
+                    <div class="d-flex" style="gap: 4px;">
+                      <v-btn icon="mdi-pencil" variant="text" aria-label="Edit external link" @click="openEditExternalLink(link)" />
+                      <v-btn icon="mdi-delete" variant="text" color="error" aria-label="Delete external link" @click="deleteExternalLink = link" />
+                    </div>
+                  </template>
+                </v-list-item>
+              </v-list>
+            </v-card>
+            <v-alert v-else type="info" variant="tonal">No external links defined yet.</v-alert>
+          </div>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+
+      <v-expansion-panel>
+        <v-expansion-panel-title>
+          <div>
             <div class="text-subtitle-1 font-weight-medium">Expense Categories</div>
             <div class="text-body-2 text-medium-emphasis">Rename, hide, restore, or delete categories.</div>
           </div>
@@ -856,6 +983,50 @@ watch(openPanel, (panel) => {
           <v-spacer />
           <v-btn @click="deleteRule = null">Cancel</v-btn>
           <v-btn color="error" @click="handleDeleteRule">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="addExternalLinkOpen" max-width="500">
+      <v-card>
+        <v-card-title>Add External Link</v-card-title>
+        <v-card-text class="d-flex flex-column" style="gap: 16px;">
+          <v-text-field label="Name" v-model="externalLinkForm.name" />
+          <v-text-field label="Regex Pattern" v-model="externalLinkForm.ruleRegex" hint="Matched against the description, case insensitive" persistent-hint />
+          <v-text-field label="URL" v-model="externalLinkForm.url" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="addExternalLinkOpen = false">Cancel</v-btn>
+          <v-btn color="primary" @click="handleAddExternalLink">Add</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog :model-value="!!editExternalLink" max-width="500" @update:model-value="(val: boolean) => !val && (editExternalLink = null)">
+      <v-card>
+        <v-card-title>Edit External Link</v-card-title>
+        <v-card-text class="d-flex flex-column" style="gap: 16px;">
+          <v-text-field label="Name" v-model="externalLinkForm.name" />
+          <v-text-field label="Regex Pattern" v-model="externalLinkForm.ruleRegex" hint="Matched against the description, case insensitive" persistent-hint />
+          <v-text-field label="URL" v-model="externalLinkForm.url" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="editExternalLink = null">Cancel</v-btn>
+          <v-btn color="primary" @click="handleEditExternalLink">Save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog :model-value="!!deleteExternalLink" max-width="480" @update:model-value="(val: boolean) => !val && (deleteExternalLink = null)">
+      <v-card>
+        <v-card-title>Confirm Delete</v-card-title>
+        <v-card-text>Delete external link "{{ deleteExternalLink?.name }}"?</v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="deleteExternalLink = null">Cancel</v-btn>
+          <v-btn color="error" @click="handleDeleteExternalLink">Delete</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

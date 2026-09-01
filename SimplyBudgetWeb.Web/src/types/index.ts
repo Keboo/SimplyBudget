@@ -93,6 +93,13 @@ export interface RuleDto {
   categoryName: string | null
 }
 
+export interface ExternalLinkRuleDto {
+  id: number
+  name: string | null
+  ruleRegex: string | null
+  url: string | null
+}
+
 export interface ImportItemDto {
   date: string
   description: string | null

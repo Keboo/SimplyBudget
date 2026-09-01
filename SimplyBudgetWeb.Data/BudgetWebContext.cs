@@ -26,6 +26,11 @@ public class BudgetWebContext(DbContextOptions<BudgetWebContext> options)
     public DbSet<PendingExpense> PendingExpenses => Set<PendingExpense>();
     public DbSet<PendingExpenseAssignee> PendingExpenseAssignees => Set<PendingExpenseAssignee>();
 
+    /// <summary>
+    /// Rules that drive the external links shown next to matching transactions and pending expenses.
+    /// </summary>
+    public DbSet<ExternalLinkRule> ExternalLinkRules => Set<ExternalLinkRule>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(Schema);
