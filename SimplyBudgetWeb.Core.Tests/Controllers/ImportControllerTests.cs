@@ -186,6 +186,47 @@ public class ImportControllerTests
     }
 
     [Test]
+    public async Task Save_WithAmountRangeRule_OnlyAppliesRuleWithinRange()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        int categoryId = await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Gas" };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryRules.Add(new ExpenseCategoryRule
+            {
+                Name = "Small Costco purchases",
+                RuleRegex = "Costco",
+                ExpenseCategoryID = category.ID,
+                MinimumAmount = 10_00,
+                MaximumAmount = 50_00
+            });
+            await context.SaveChangesAsync();
+            return category.ID;
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ImportController(context);
+
+        var items = new[]
+        {
+            new ImportItemDto(new DateTime(2026, 1, 1), "Costco", 45_00, true, true),
+            new ImportItemDto(new DateTime(2026, 1, 2), "Costco", 250_00, true, true),
+        };
+
+        var result = await controller.Save(items);
+
+        await Assert.That(((StatusCodeResult)result).StatusCode).IsEqualTo(201);
+        var saved = await context.PendingExpenses.OrderBy(x => x.Date).ToListAsync();
+        await Assert.That(saved[0].SuggestedCategoryId).IsEqualTo(categoryId);
+        await Assert.That(saved[1].SuggestedCategoryId).IsNull();
+    }
+
+    [Test]
     public async Task Save_CreditItem_DoesNotApplySuggestedCategoryRule()
     {
         AutoMocker mocker = new();

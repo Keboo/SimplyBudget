@@ -122,4 +122,111 @@ public class ExpenseCategoryRuleMatcherTests
         await Assert.That(result.SuggestedCategoryId).IsEqualTo(42);
         await Assert.That(result.Notes).IsNull();
     }
+
+    [Test]
+    public async Task Match_WhenAmountBelowMinimum_RuleDoesNotMatch()
+    {
+        List<ExpenseCategoryRule> rules =
+        [
+            new ExpenseCategoryRule
+            {
+                RuleRegex = "Costco",
+                ExpenseCategoryID = 42,
+                MinimumAmount = 5000
+            }
+        ];
+
+        var result = ExpenseCategoryRuleMatcher.Match(rules, "Costco gas", isTransaction: true, amount: 4999);
+
+        await Assert.That(result.SuggestedCategoryId).IsNull();
+    }
+
+    [Test]
+    public async Task Match_WhenAmountAboveMaximum_RuleDoesNotMatch()
+    {
+        List<ExpenseCategoryRule> rules =
+        [
+            new ExpenseCategoryRule
+            {
+                RuleRegex = "Costco",
+                ExpenseCategoryID = 42,
+                MaximumAmount = 5000
+            }
+        ];
+
+        var result = ExpenseCategoryRuleMatcher.Match(rules, "Costco gas", isTransaction: true, amount: 5001);
+
+        await Assert.That(result.SuggestedCategoryId).IsNull();
+    }
+
+    [Test]
+    [Arguments(1000)]
+    [Arguments(5000)]
+    [Arguments(2500)]
+    public async Task Match_WhenAmountWithinInclusiveRange_RuleMatches(int amount)
+    {
+        List<ExpenseCategoryRule> rules =
+        [
+            new ExpenseCategoryRule
+            {
+                RuleRegex = "Costco",
+                ExpenseCategoryID = 42,
+                Notes = "Warehouse club",
+                MinimumAmount = 1000,
+                MaximumAmount = 5000
+            }
+        ];
+
+        var result = ExpenseCategoryRuleMatcher.Match(rules, "Costco gas", isTransaction: true, amount: amount);
+
+        await Assert.That(result.SuggestedCategoryId).IsEqualTo(42);
+        await Assert.That(result.Notes).IsEqualTo("Warehouse club");
+    }
+
+    [Test]
+    public async Task Match_WhenAmountIsNegative_UsesMagnitudeForRange()
+    {
+        List<ExpenseCategoryRule> rules =
+        [
+            new ExpenseCategoryRule
+            {
+                RuleRegex = "Costco",
+                ExpenseCategoryID = 42,
+                MinimumAmount = 1000,
+                MaximumAmount = 5000
+            }
+        ];
+
+        var result = ExpenseCategoryRuleMatcher.Match(rules, "Costco gas", isTransaction: true, amount: -2500);
+
+        await Assert.That(result.SuggestedCategoryId).IsEqualTo(42);
+    }
+
+    [Test]
+    public async Task Match_WhenRuleHasRangeAndAmountUnknown_RuleDoesNotMatch()
+    {
+        List<ExpenseCategoryRule> rules =
+        [
+            new ExpenseCategoryRule { RuleRegex = "Costco", ExpenseCategoryID = 42, MinimumAmount = 1000 },
+            new ExpenseCategoryRule { RuleRegex = "Costco", ExpenseCategoryID = 7 }
+        ];
+
+        var result = ExpenseCategoryRuleMatcher.Match(rules, "Costco gas", isTransaction: true);
+
+        await Assert.That(result.SuggestedCategoryId).IsEqualTo(7);
+    }
+
+    [Test]
+    public async Task Match_WhenRangedRuleExcluded_FallsBackToEarlierMatchingRule()
+    {
+        List<ExpenseCategoryRule> rules =
+        [
+            new ExpenseCategoryRule { RuleRegex = "Costco", ExpenseCategoryID = 7 },
+            new ExpenseCategoryRule { RuleRegex = "Costco", ExpenseCategoryID = 42, MinimumAmount = 10000 }
+        ];
+
+        var result = ExpenseCategoryRuleMatcher.Match(rules, "Costco gas", isTransaction: true, amount: 2500);
+
+        await Assert.That(result.SuggestedCategoryId).IsEqualTo(7);
+    }
 }

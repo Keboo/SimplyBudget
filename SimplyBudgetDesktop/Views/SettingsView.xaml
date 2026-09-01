@@ -6,6 +6,7 @@
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              mc:Ignorable="d" 
              xmlns:vm="clr-namespace:SimplyBudget.ViewModels" xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
+             xmlns:valueConverter="clr-namespace:SimplyBudget.ValueConverter"
              d:DataContext="{d:DesignInstance Type={x:Type vm:SettingsViewModel}}"
              d:DesignHeight="450" d:DesignWidth="800">
   <UserControl.Resources>
@@ -79,6 +80,8 @@
         <DataGridTextColumn Header="Name" Binding="{Binding Name}" />
         <DataGridTextColumn Header="Regex Rule" Binding="{Binding RuleRegex}" />
         <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" />
+        <DataGridTextColumn Header="Min Amount" Binding="{Binding MinimumAmount, Converter={valueConverter:NullableCurrencyValueConverter}}" />
+        <DataGridTextColumn Header="Max Amount" Binding="{Binding MaximumAmount, Converter={valueConverter:NullableCurrencyValueConverter}}" />
         <materialDesign:DataGridComboBoxColumn 
             Header="Expense Category" 
             ItemsSourceBinding="{Binding DataContext.ExpenseCategories, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGrid}}"

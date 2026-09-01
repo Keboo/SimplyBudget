@@ -109,7 +109,8 @@ public class ImportController(BudgetWebContext context) : ControllerBase
                 var match = ExpenseCategoryRuleMatcher.Match(
                     rules,
                     i.Description,
-                    isTransaction: i.IsDebit);
+                    isTransaction: i.IsDebit,
+                    amount: i.Amount);
                 return new PendingExpense
                 {
                     Date = i.Date,

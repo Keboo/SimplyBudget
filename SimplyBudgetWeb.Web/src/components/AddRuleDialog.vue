@@ -20,13 +20,23 @@ const emit = defineEmits<{
 
 const snackbar = useSnackbarStore()
 const saving = ref(false)
-const form = ref({ name: '', ruleRegex: '', notes: '', expenseCategoryId: null as number | null })
+const form = ref({ name: '', ruleRegex: '', notes: '', minimumAmount: '', maximumAmount: '', expenseCategoryId: null as number | null })
+
+/** Converts a dollars text field into cents, treating blank input as "no limit". */
+function optionalDollarsToCents(value: string): number | null {
+  const trimmed = value.trim()
+  if (trimmed.length === 0) return null
+  const parsed = Number.parseFloat(trimmed)
+  return Number.isNaN(parsed) ? null : Math.round(parsed * 100)
+}
 
 function resetForm() {
   form.value = {
     name: '',
     ruleRegex: props.description ?? '',
     notes: props.notes ?? '',
+    minimumAmount: '',
+    maximumAmount: '',
     expenseCategoryId: props.expenseCategoryId ?? null,
   }
 }
@@ -52,6 +62,8 @@ async function handleAdd() {
       name: form.value.name,
       ruleRegex: form.value.ruleRegex,
       notes: notes.length > 0 ? notes : null,
+      minimumAmount: optionalDollarsToCents(form.value.minimumAmount),
+      maximumAmount: optionalDollarsToCents(form.value.maximumAmount),
       expenseCategoryId: form.value.expenseCategoryId,
     })
     snackbar.enqueueSnackbar('Rule added', { variant: 'success' })
@@ -80,6 +92,24 @@ async function handleAdd() {
           persistent-hint
           v-model="form.notes"
         />
+        <div class="d-flex" style="gap: 16px;">
+          <v-text-field
+            label="Min Amount"
+            type="number"
+            prefix="$"
+            hint="Optional. Only match amounts at or above this."
+            persistent-hint
+            v-model="form.minimumAmount"
+          />
+          <v-text-field
+            label="Max Amount"
+            type="number"
+            prefix="$"
+            hint="Optional. Only match amounts at or below this."
+            persistent-hint
+            v-model="form.maximumAmount"
+          />
+        </div>
         <CategorySelector
           label="Target Category"
           :categories="categories"

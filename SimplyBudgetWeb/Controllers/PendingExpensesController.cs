@@ -196,7 +196,8 @@ public class PendingExpensesController(
             var match = ExpenseCategoryRuleMatcher.Match(
                 rules,
                 pendingExpense.Description,
-                isTransaction: pendingExpense.IsDebit);
+                isTransaction: pendingExpense.IsDebit,
+                amount: pendingExpense.Amount);
 
             pendingExpense.SuggestedCategoryId = match.SuggestedCategoryId;
 

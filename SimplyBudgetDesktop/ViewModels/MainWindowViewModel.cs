@@ -132,7 +132,11 @@ public partial class MainWindowViewModel : ObservableObject,
                     var rules = context.ExpenseCategoryRules
                         .Where(x => x.RuleRegex != null && x.ExpenseCategoryID != null)
                         .ToList();
-                    var matchingRule = rules.Where(r => Regex.IsMatch(message.Description ?? "", r.RuleRegex ?? "", RegexOptions.IgnoreCase)).LastOrDefault();
+                    var transactionAmount = message.Items.Sum(x => x.Amount);
+                    var matchingRule = rules
+                        .Where(r => r.IsAmountInRange(transactionAmount) &&
+                                    Regex.IsMatch(message.Description ?? "", r.RuleRegex ?? "", RegexOptions.IgnoreCase))
+                        .LastOrDefault();
                     AddItem.LineItems.Clear();
                     AddItem.LineItems.AddRange(message.Items
                         .Select(x => new LineItemViewModel(AddItem.ExpenseCategories, Messenger)
