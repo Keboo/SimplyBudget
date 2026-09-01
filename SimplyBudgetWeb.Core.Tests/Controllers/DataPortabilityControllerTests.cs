@@ -29,6 +29,7 @@ public class DataPortabilityControllerTests
             var category = new ExpenseCategory
             {
                 Name = "Groceries",
+                Description = "Food and household essentials",
                 CategoryName = "Food",
                 AccountID = account.ID,
                 BudgetedAmount = 500_00
@@ -125,8 +126,8 @@ public class DataPortabilityControllerTests
             ],
             Categories =
             [
-                new BudgetDataExportCategory(10, "Groceries", "Food", 1, 500_00, 0, 125_00, null, false),
-                new BudgetDataExportCategory(20, "Emergency Fund", "Savings", 2, 0, 10, 875_00, null, false)
+                new BudgetDataExportCategory(10, "Groceries", "Food and household essentials", "Food", 1, 500_00, 0, 125_00, null, false),
+                new BudgetDataExportCategory(20, "Emergency Fund", "Unexpected expenses", "Savings", 2, 0, 10, 875_00, null, false)
             ],
             Items =
             [
@@ -183,6 +184,12 @@ public class DataPortabilityControllerTests
 
             var groceries = categories.Single(x => x.Name == "Groceries");
             var emergency = categories.Single(x => x.Name == "Emergency Fund");
+            if (groceries.Description != "Food and household essentials" ||
+                emergency.Description != "Unexpected expenses")
+            {
+                throw new Exception("Category descriptions were not imported.");
+            }
+
             if (groceries.CurrentBalance != 125_00 || emergency.CurrentBalance != 875_00)
             {
                 throw new Exception("Expected category balances to match imported export values.");

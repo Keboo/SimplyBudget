@@ -52,6 +52,7 @@ public class BudgetController(BudgetWebContext context) : ControllerBase
             categoryDtos.Add(new BudgetCategoryDto(
                 Id: category.ID,
                 Name: category.Name,
+                Description: category.Description,
                 CategoryName: category.CategoryName,
                 AccountId: category.AccountID,
                 BudgetedAmount: category.BudgetedAmount,
@@ -101,6 +102,7 @@ public record BudgetResponse(int TotalBudget, int TotalAccountAmount, string Mon
 public record BudgetCategoryDto(
     int Id,
     string? Name,
+    string? Description,
     string? CategoryName,
     int? AccountId,
     int BudgetedAmount,

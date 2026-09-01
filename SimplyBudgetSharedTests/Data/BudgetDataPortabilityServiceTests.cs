@@ -28,6 +28,7 @@ public class BudgetDataPortabilityServiceTests
         var groceries = new ExpenseCategory
         {
             Name = "Groceries",
+            Description = "Food and household essentials",
             CategoryName = "Food",
             AccountID = checking.ID,
             BudgetedAmount = 500_00
@@ -60,6 +61,7 @@ public class BudgetDataPortabilityServiceTests
         Assert.AreEqual(1, exportPackage.Rules.Count);
         Assert.AreEqual(1, exportPackage.Metadata.Count);
         Assert.IsTrue(exportPackage.Accounts.Single(x => x.Name == "Savings").IsDefault);
+        Assert.AreEqual("Food and household essentials", exportPackage.Categories.Single().Description);
     }
 
     [TestMethod]
@@ -85,8 +87,8 @@ public class BudgetDataPortabilityServiceTests
             ],
             Categories =
             [
-                new BudgetDataExportCategory(100, "Groceries", "Food", 10, 500_00, 0, 200_00, null, false),
-                new BudgetDataExportCategory(200, "Emergency Fund", "Savings", 20, 0, 10, 300_00, null, false)
+                new BudgetDataExportCategory(100, "Groceries", "Food and household essentials", "Food", 10, 500_00, 0, 200_00, null, false),
+                new BudgetDataExportCategory(200, "Emergency Fund", "Unexpected expenses", "Savings", 20, 0, 10, 300_00, null, false)
             ],
             Items =
             [
@@ -131,6 +133,8 @@ public class BudgetDataPortabilityServiceTests
 
         Assert.AreEqual(200_00, groceries.CurrentBalance);
         Assert.AreEqual(300_00, emergency.CurrentBalance);
+        Assert.AreEqual("Food and household essentials", groceries.Description);
+        Assert.AreEqual("Unexpected expenses", emergency.Description);
 
         var rules = await assertContext.ExpenseCategoryRules
             .Include(x => x.ExpenseCategory)

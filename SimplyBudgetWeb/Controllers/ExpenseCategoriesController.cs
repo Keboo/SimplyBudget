@@ -29,6 +29,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
 
             query = query.Where(c =>
                 (c.Name != null && c.Name.Contains(searchText)) ||
+                (c.Description != null && c.Description.Contains(searchText)) ||
                 (c.CategoryName != null && c.CategoryName.Contains(searchText)) ||
                 (hasSearchAmount &&
                  (Math.Abs(c.BudgetedAmount) == searchAmountAbs ||
@@ -145,6 +146,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
         var category = new ExpenseCategory
         {
             Name = request.Name,
+            Description = request.Description,
             CategoryName = request.CategoryName,
             BudgetedAmount = request.BudgetedAmount,
             BudgetedPercentage = request.BudgetedPercentage,
@@ -163,6 +165,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
         if (category is null) return NotFound();
 
         category.Name = request.Name;
+        category.Description = request.Description;
         category.CategoryName = request.CategoryName;
         category.BudgetedAmount = request.BudgetedAmount;
         category.BudgetedPercentage = request.BudgetedPercentage;
@@ -233,6 +236,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
     private static ExpenseCategoryDto ToDto(ExpenseCategory c, bool hasItems) => new(
         Id: c.ID,
         Name: c.Name,
+        Description: c.Description,
         CategoryName: c.CategoryName,
         AccountId: c.AccountID,
         BudgetedAmount: c.BudgetedAmount,
@@ -248,6 +252,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
 public record ExpenseCategoryDto(
     int Id,
     string? Name,
+    string? Description,
     string? CategoryName,
     int? AccountId,
     int BudgetedAmount,
@@ -261,6 +266,7 @@ public record ExpenseCategoryDto(
 
 public record ExpenseCategoryRequest(
     string? Name,
+    string? Description,
     string? CategoryName,
     int BudgetedAmount,
     int BudgetedPercentage,

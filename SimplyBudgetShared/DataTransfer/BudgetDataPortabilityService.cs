@@ -28,6 +28,7 @@ public static class BudgetDataPortabilityService
                 .Select(x => new BudgetDataExportCategory(
                     x.ID,
                     x.Name,
+                    x.Description,
                     x.CategoryName,
                     x.AccountID,
                     x.BudgetedAmount,
@@ -138,6 +139,7 @@ public static class BudgetDataPortabilityService
             var importedCategories = categorySeed.Select(x => new ExpenseCategory
             {
                 Name = x.Name,
+                Description = x.Description,
                 CategoryName = x.CategoryName,
                 AccountID = ResolveOptionalReference(accountIdMap, x.AccountId, "account"),
                 BudgetedAmount = x.BudgetedAmount,

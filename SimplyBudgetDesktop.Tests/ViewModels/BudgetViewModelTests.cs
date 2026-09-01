@@ -35,6 +35,7 @@ public partial class BudgetViewModelTests
             ID = 42,
             CategoryName = "CategoryName",
             Name = "Name",
+            Description = "Description",
             BudgetedAmount = 100
         });
         await context.SaveChangesAsync();
@@ -43,6 +44,7 @@ public partial class BudgetViewModelTests
         var expenseCategory = await ExpenseCategoryViewModelEx.Create(mocker.Get<Func<BudgetContext>>(), new ExpenseCategory { ID = 42 });
         expenseCategory.EditingCategory = "CategoryNameChanged";
         expenseCategory.EditingName = "NameChanged";
+        expenseCategory.EditingDescription = "DescriptionChanged";
         expenseCategory.EditAmount = 120;
         expenseCategory.EditIsAmountType = true;
 
@@ -53,6 +55,7 @@ public partial class BudgetViewModelTests
         var existing = await verificationContext.ExpenseCategories.FindAsync(42);
         Assert.AreEqual("CategoryNameChanged", existing?.CategoryName);
         Assert.AreEqual("NameChanged", existing!.Name);
+        Assert.AreEqual("DescriptionChanged", existing.Description);
         Assert.AreEqual(120, existing.BudgetedAmount);
         Assert.AreEqual(0, existing.BudgetedPercentage);
     }

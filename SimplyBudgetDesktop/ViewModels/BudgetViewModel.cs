@@ -123,6 +123,7 @@ public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelE
         if (await context.ExpenseCategories.FirstOrDefaultAsync(x => x.ID == category.ExpenseCategoryID) is ExpenseCategory dbCategory)
         {
             dbCategory.Name = category.EditingName;
+            dbCategory.Description = category.EditingDescription;
             dbCategory.CategoryName = category.EditingCategory;
             dbCategory.BudgetedPercentage = !category.EditIsAmountType ? category.EditAmount : 0;
             dbCategory.BudgetedAmount = category.EditIsAmountType ? category.EditAmount : 0;
@@ -130,6 +131,7 @@ public class BudgetViewModel : CollectionViewModelBase<ExpenseCategoryViewModelE
             dbCategory.AccountID = category.Account?.ID;
             await context.SaveChangesAsync();
             category.Name = dbCategory.Name;
+            category.Description = dbCategory.Description;
             category.CategoryName = dbCategory.CategoryName;
             category.BudgetedAmount = dbCategory.BudgetedAmount;
             category.BudgetedPercentage = dbCategory.BudgetedPercentage;

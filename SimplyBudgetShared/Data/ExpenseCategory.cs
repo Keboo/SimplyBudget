@@ -12,6 +12,7 @@ public class ExpenseCategory : BaseItem, IBeforeCreate
     public Account? Account { get; set; }
 
     public string? Name { get; set; }
+    public string? Description { get; set; }
     public int BudgetedPercentage { get; set; }
     public int BudgetedAmount { get; set; }
     public int CurrentBalance { get; set; }
