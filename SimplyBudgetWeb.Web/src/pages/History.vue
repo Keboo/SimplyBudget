@@ -17,7 +17,7 @@ const snackbar = useSnackbarStore()
 const route = useRoute()
 const { loadExternalLinkRules, externalLinksFor } = useExternalLinkRules()
 
-const { currentMonth } = useMonthQueryParam({ storageKey: 'history' })
+const { currentMonth } = useMonthQueryParam()
 const search = ref('')
 const categoryId = ref<number | null>(null)
 const items = ref<HistoryItemDto[]>([])

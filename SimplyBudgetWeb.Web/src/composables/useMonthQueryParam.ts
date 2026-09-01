@@ -2,11 +2,7 @@ import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { formatMonth, parseMonth } from '@/utils/currency'
 
-const MONTH_STORAGE_PREFIX = 'SimplyBudgetWebMonth'
-
-interface UseMonthQueryParamOptions {
-  storageKey?: string
-}
+const MONTH_STORAGE_KEY = 'SimplyBudgetWebMonth'
 
 function isValidYearMonth(value: unknown): value is string {
   return typeof value === 'string' && /^\d{4}-\d{2}$/.test(value)
@@ -16,26 +12,21 @@ function isValidYearMonth(value: unknown): value is string {
  * Returns a reactive `currentMonth` ref that is kept in sync with the `month`
  * query parameter (`?month=YYYY-MM`). The URL is updated immediately on setup
  * so the address bar always reflects the active month, enabling deep linking
- * and full-page refresh. When a `storageKey` is provided, the selected month is
- * also persisted per page.
+ * and full-page refresh. The selected month is also persisted and shared across
+ * every page that uses this composable.
  */
-export function useMonthQueryParam(options: UseMonthQueryParamOptions = {}) {
+export function useMonthQueryParam() {
   const route = useRoute()
   const router = useRouter()
-  const storageKey = options.storageKey
-    ? `${MONTH_STORAGE_PREFIX}:${options.storageKey}`
-    : null
 
   function getStoredMonth(): Date | null {
-    if (!storageKey) return null
-    const stored = localStorage.getItem(storageKey)
+    const stored = localStorage.getItem(MONTH_STORAGE_KEY)
     if (!isValidYearMonth(stored)) return null
     return parseMonth(stored)
   }
 
   function storeMonth(month: Date) {
-    if (!storageKey) return
-    localStorage.setItem(storageKey, formatMonth(month))
+    localStorage.setItem(MONTH_STORAGE_KEY, formatMonth(month))
   }
 
   function resolveMonth(): Date {
