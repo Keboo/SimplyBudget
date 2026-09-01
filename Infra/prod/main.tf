@@ -5,11 +5,12 @@ locals {
       "Environment" = local.environment
   })
 
-  sql_server_name            = var.existing_sql_server_name
-  sql_database_name          = var.existing_sql_database_name
-  database_schema_name       = var.database_schema_name
-  backend_container_app_name = "simplybudget-${lower(local.environment)}-backend"
-  static_web_app_name        = "simplybudget-${lower(local.environment)}-swa"
+  sql_server_name                               = var.existing_sql_server_name
+  sql_database_name                             = var.existing_sql_database_name
+  database_schema_name                          = var.database_schema_name
+  backend_container_app_name                    = "simplybudget-${lower(local.environment)}-backend"
+  backend_container_app_cooldown_period_seconds = 3600
+  static_web_app_name                           = "simplybudget-${lower(local.environment)}-swa"
 
   base_database_connection_string         = "Server=tcp:${data.azurerm_mssql_server.existing.fully_qualified_domain_name},1433;Initial Catalog=${data.azurerm_mssql_database.existing.name};Encrypt=True;TrustServerCertificate=False;Connection Timeout=120;"
   provisioning_database_connection_string = "Server=tcp:${data.azurerm_mssql_server.existing.fully_qualified_domain_name},1433;Initial Catalog=${data.azurerm_mssql_database.existing.name};Encrypt=True;TrustServerCertificate=False;Connection Timeout=300;"
@@ -338,7 +339,7 @@ module "backend_container_app" {
   # Keep the backend warm for 60 minutes of inactivity before KEDA scales it
   # down to 0 replicas (min_replicas defaults to 0), avoiding cold starts for
   # infrequent traffic.
-  cooldown_period_seconds = 3600
+  cooldown_period_seconds = local.backend_container_app_cooldown_period_seconds
 
   # AllowedOrigins must cover every hostname the frontend can be served from
   # (the SWA's auto-generated default hostname and the production custom

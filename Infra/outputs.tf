@@ -8,6 +8,11 @@ output "backend_container_app_name" {
   value       = module.prod.backend_container_app_name
 }
 
+output "backend_container_app_cooldown_period_seconds" {
+  description = "Cooldown period for backend container app autoscaling, in seconds"
+  value       = module.prod.backend_container_app_cooldown_period_seconds
+}
+
 output "resource_group_name" {
   description = "The name of the dedicated SimplyBudget resource group containing the app's non-shared resources"
   value       = module.prod.resource_group_name
