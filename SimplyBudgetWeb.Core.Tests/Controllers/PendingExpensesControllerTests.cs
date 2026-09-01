@@ -789,6 +789,43 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
+    public async Task Convert_UsesPendingNotesWhenRequestNotesAreWhitespace()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            var category = new ExpenseCategory { Name = "Groceries" };
+            context.ExpenseCategories.Add(category);
+            var pending = new PendingExpense
+            {
+                Date = new DateTime(2026, 1, 5),
+                Description = "Costco",
+                Amount = 45_00,
+                IsDebit = true,
+                Notes = "Copied from pending note"
+            };
+            context.PendingExpenses.Add(pending);
+            await context.SaveChangesAsync();
+
+            var controller = new PendingExpensesController(context);
+            await controller.Convert(pending.ID, new ConvertPendingExpenseRequest(
+                "Costco",
+                new DateTime(2026, 1, 5),
+                [new ConvertPendingExpenseItemRequest(category.ID, 45_00)],
+                System.Convert.ToBase64String(pending.Version),
+                Notes: "   "));
+        }
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var item = await context.ExpenseCategoryItems.SingleAsync();
+            await Assert.That(item.Notes).IsEqualTo("Copied from pending note");
+        });
+    }
+
+    [Test]
     public async Task Convert_Debit_CanSplitAcrossMultipleCategories()
     {
         AutoMocker mocker = new();
