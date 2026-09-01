@@ -254,6 +254,7 @@
       <StackPanel Orientation="Horizontal" Margin="0,0,10,0" Grid.Column="9" VerticalAlignment="Bottom">
         <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" 
                  materialDesign:HintAssist.Hint="Search"
+                 materialDesign:TextFieldAssist.HasClearButton="True"
                  Margin="5,0"
                  MinWidth="200">
           <TextBox.InputBindings>
