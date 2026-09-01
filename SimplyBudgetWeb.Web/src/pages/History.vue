@@ -11,6 +11,7 @@ import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
 import { useRoute } from 'vue-router'
 import CategorySelector from '@/components/CategorySelector.vue'
+import AddRuleDialog from '@/components/AddRuleDialog.vue'
 
 const snackbar = useSnackbarStore()
 const route = useRoute()
@@ -29,6 +30,8 @@ const editNotesDraft = ref('')
 const savingNotes = ref(false)
 const deleteItem = ref<HistoryItemDto | null>(null)
 const dialogOpen = ref(false)
+const addRuleOpen = ref(false)
+const ruleSourceItem = ref<HistoryItemDto | null>(null)
 
 const monthLabel = computed(() =>
   currentMonth.value.toLocaleString('default', { month: 'long', year: 'numeric' }),
@@ -108,6 +111,18 @@ async function handleDelete() {
 
 function totalForItem(item: HistoryItemDto) {
   return item.details.reduce((sum, d) => sum + d.amount, 0)
+}
+
+function openAddRule(item: HistoryItemDto) {
+  ruleSourceItem.value = item
+  addRuleOpen.value = true
+}
+
+function ruleCategoryIdFor(item: HistoryItemDto | null) {
+  if (!item) return null
+  // Only prefill when the transaction maps to a single category; multi-category
+  // transactions have no obvious target for the rule.
+  return item.details.length === 1 ? item.details[0].expenseCategoryId : null
 }
 
 function openNotesEditor(item: HistoryItemDto) {
@@ -260,6 +275,11 @@ function onDialogSuccess() {
                   @click="openNotesEditor(item)"
                 />
                 <v-list-item
+                  prepend-icon="mdi-filter-plus-outline"
+                  title="Create rule"
+                  @click="openAddRule(item)"
+                />
+                <v-list-item
                   prepend-icon="mdi-delete"
                   title="Delete transaction"
                   base-color="error"
@@ -282,6 +302,14 @@ function onDialogSuccess() {
     />
 
     <AddTransactionDialog v-model="dialogOpen" :categories="categories" @success="onDialogSuccess" />
+
+    <AddRuleDialog
+      v-model="addRuleOpen"
+      :categories="categories"
+      :description="ruleSourceItem?.description"
+      :notes="ruleSourceItem?.notes"
+      :expense-category-id="ruleCategoryIdFor(ruleSourceItem)"
+    />
 
     <v-dialog :model-value="!!editNotesItem" max-width="560" @update:model-value="(val: boolean) => !val && closeNotesEditor()">
       <v-card>

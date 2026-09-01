@@ -9,7 +9,7 @@ import { useExternalLinkRules } from '@/utils/externalLinks'
 import { includesSearchText, tryParseSearchAmountInCents } from '@/utils/search'
 import ConvertPendingExpenseDialog from '@/components/ConvertPendingExpenseDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
-import CategorySelector from '@/components/CategorySelector.vue'
+import AddRuleDialog from '@/components/AddRuleDialog.vue'
 
 const snackbar = useSnackbarStore()
 const { loadExternalLinkRules, externalLinksFor } = useExternalLinkRules()
@@ -30,7 +30,7 @@ const reapplyingRules = ref(false)
 const editingNoteItemId = ref<number | null>(null)
 const noteDrafts = ref<Record<number, string>>({})
 const addRuleOpen = ref(false)
-const ruleForm = ref({ name: '', ruleRegex: '', expenseCategoryId: null as number | null })
+const ruleSourceItem = ref<PendingExpenseDto | null>(null)
 
 // "All" plus the real filter options; used for both the toolbar filter and the
 // page-level assignee filter.
@@ -215,38 +215,14 @@ function openConvert(item: PendingExpenseDto) {
   convertDialogOpen.value = true
 }
 
-function resetRuleForm() {
-  ruleForm.value = { name: '', ruleRegex: '', expenseCategoryId: null }
-}
-
 function openAddRule(item: PendingExpenseDto) {
-  resetRuleForm()
-  ruleForm.value.ruleRegex = item.description ?? ''
-  ruleForm.value.expenseCategoryId = item.suggestedCategoryId ?? null
+  ruleSourceItem.value = item
   addRuleOpen.value = true
-}
-
-function closeAddRule() {
-  addRuleOpen.value = false
-}
-
-async function handleAddRule() {
-  try {
-    await apiClient.post('/api/rules', {
-      name: ruleForm.value.name,
-      ruleRegex: ruleForm.value.ruleRegex,
-      expenseCategoryId: ruleForm.value.expenseCategoryId,
-    })
-    snackbar.enqueueSnackbar('Rule added', { variant: 'success' })
-    addRuleOpen.value = false
-  } catch {
-    snackbar.enqueueSnackbar('Failed to add rule', { variant: 'error' })
-  }
 }
 
 watch(addRuleOpen, (isOpen) => {
   if (!isOpen) {
-    resetRuleForm()
+    ruleSourceItem.value = null
   }
 })
 
@@ -463,27 +439,13 @@ onMounted(() => {
       @success="onConvertSuccess"
       @note-saved="onConvertNoteSaved"
     />
-    <v-dialog :model-value="addRuleOpen" max-width="500" @update:model-value="(val: boolean) => !val && closeAddRule()">
-      <v-card>
-        <v-card-title>Add Rule</v-card-title>
-        <v-card-text class="d-flex flex-column" style="gap: 16px;">
-          <v-text-field label="Name" v-model="ruleForm.name" />
-          <v-text-field label="Regex Pattern" v-model="ruleForm.ruleRegex" />
-          <CategorySelector
-            label="Target Category"
-            :categories="categories"
-            null-option-label="None"
-            :clearable="false"
-            v-model="ruleForm.expenseCategoryId"
-          />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn @click="closeAddRule">Cancel</v-btn>
-          <v-btn color="primary" @click="handleAddRule">Add</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <AddRuleDialog
+      v-model="addRuleOpen"
+      :categories="categories"
+      :description="ruleSourceItem?.description"
+      :notes="ruleSourceItem?.notes"
+      :expense-category-id="ruleSourceItem?.suggestedCategoryId ?? null"
+    />
 
     <v-dialog :model-value="!!discardItem" max-width="480" @update:model-value="(val: boolean) => !val && (discardItem = null)">
       <v-card>
