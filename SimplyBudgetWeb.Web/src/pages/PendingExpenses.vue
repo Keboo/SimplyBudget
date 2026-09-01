@@ -14,7 +14,7 @@ import CategorySelector from '@/components/CategorySelector.vue'
 const snackbar = useSnackbarStore()
 const { loadExternalLinkRules, externalLinksFor } = useExternalLinkRules()
 
-const { currentMonth } = useMonthQueryParam({ storageKey: 'pending-expenses' })
+const { currentMonth } = useMonthQueryParam()
 const search = ref('')
 const assigneeId = ref<number | null>(null)
 const items = ref<PendingExpenseDto[]>([])

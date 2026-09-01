@@ -12,7 +12,7 @@ import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 const snackbar = useSnackbarStore()
 const router = useRouter()
 
-const { currentMonth } = useMonthQueryParam({ storageKey: 'budget' })
+const { currentMonth } = useMonthQueryParam()
 const budget = ref<BudgetResponse | null>(null)
 const accounts = ref<AccountDto[]>([])
 const loading = ref(false)
