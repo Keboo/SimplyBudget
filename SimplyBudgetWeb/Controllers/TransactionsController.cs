@@ -11,20 +11,34 @@ public class TransactionsController(BudgetWebContext context) : ControllerBase
     [HttpPost("transaction")]
     public async Task<IActionResult> AddTransaction([FromBody] TransactionRequest request)
     {
-        await context.AddTransaction(
+        var item = await context.AddTransaction(
             request.Description,
             request.Date,
             request.Items.Select(i => (i.Amount, i.ExpenseCategoryId)).ToArray());
+
+        var notes = NormalizeNotes(request.Notes);
+        if (notes is not null)
+        {
+            item.Notes = notes;
+            await context.SaveChangesAsync();
+        }
         return StatusCode(201);
     }
 
     [HttpPost("income")]
     public async Task<IActionResult> AddIncome([FromBody] TransactionRequest request)
     {
-        await context.AddIncome(
+        var item = await context.AddIncome(
             request.Description,
             request.Date,
             request.Items.Select(i => (i.Amount, i.ExpenseCategoryId)).ToArray());
+
+        var notes = NormalizeNotes(request.Notes);
+        if (notes is not null)
+        {
+            item.Notes = notes;
+            await context.SaveChangesAsync();
+        }
         return StatusCode(201);
     }
 
@@ -40,11 +54,14 @@ public class TransactionsController(BudgetWebContext context) : ControllerBase
         await context.AddTransfer(request.Description, request.Date, request.Amount, fromCategory, toCategory);
         return StatusCode(201);
     }
+
+    private static string? NormalizeNotes(string? notes)
+        => string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
 }
 
 public record TransactionItemRequest(int ExpenseCategoryId, int Amount);
 
-public record TransactionRequest(string Description, DateTime Date, TransactionItemRequest[] Items);
+public record TransactionRequest(string Description, DateTime Date, TransactionItemRequest[] Items, string? Notes = null);
 
 public record TransferRequest(
     string Description,

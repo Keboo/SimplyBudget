@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
 using SimplyBudgetWeb.Utilities;
@@ -52,20 +53,22 @@ public class HistoryController(BudgetWebContext context) : ControllerBase
             .ThenBy(x => x.ID)
             .ToListAsync();
 
-        return items.Select(item => new HistoryItemDto(
-            Id: item.ID,
-            Date: item.Date,
-            Description: item.Description,
-            Notes: item.Notes,
-            IsTransfer: item.IsTransfer,
-            Details: (item.Details ?? []).Select(d => new HistoryDetailDto(
-                Id: d.ID,
-                ExpenseCategoryId: d.ExpenseCategoryId,
-                CategoryName: d.ExpenseCategory?.Name,
-                Amount: d.Amount,
-                IgnoreBudget: d.IgnoreBudget
-            )).ToArray()
-        )).ToArray();
+        return items.Select(ToDto).ToArray();
+    }
+
+    [HttpPut("{id}")]
+    public async Task<ActionResult<HistoryItemDto>> Update(int id, [FromBody] HistoryItemUpdateRequest request)
+    {
+        var item = await context.ExpenseCategoryItems
+            .AsTracking()
+            .Include(x => x.Details!)
+                .ThenInclude(d => d.ExpenseCategory)
+            .FirstOrDefaultAsync(x => x.ID == id);
+        if (item is null) return NotFound();
+
+        item.Notes = NormalizeNotes(request.Notes);
+        await context.SaveChangesAsync();
+        return ToDto(item);
     }
 
     [HttpDelete("{id}")]
@@ -80,6 +83,24 @@ public class HistoryController(BudgetWebContext context) : ControllerBase
         await context.SaveChangesAsync();
         return NoContent();
     }
+
+    private static HistoryItemDto ToDto(ExpenseCategoryItem item) => new(
+        Id: item.ID,
+        Date: item.Date,
+        Description: item.Description,
+        Notes: item.Notes,
+        IsTransfer: item.IsTransfer,
+        Details: (item.Details ?? []).Select(d => new HistoryDetailDto(
+            Id: d.ID,
+            ExpenseCategoryId: d.ExpenseCategoryId,
+            CategoryName: d.ExpenseCategory?.Name,
+            Amount: d.Amount,
+            IgnoreBudget: d.IgnoreBudget
+        )).ToArray()
+    );
+
+    private static string? NormalizeNotes(string? notes)
+        => string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
 }
 
 public record HistoryItemDto(
@@ -98,3 +119,5 @@ public record HistoryDetailDto(
     int Amount,
     bool IgnoreBudget
 );
+
+public record HistoryItemUpdateRequest(string? Notes);

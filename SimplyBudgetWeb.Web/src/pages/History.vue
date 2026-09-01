@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
-import type { HistoryItemDto, ExpenseCategoryDto, AccountDto } from '@/types'
+import type { HistoryItemDto, HistoryItemUpdateRequest, ExpenseCategoryDto, AccountDto } from '@/types'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import { AMAZON_TRANSACTIONS_URL, hasAmazonInDescription } from '@/utils/merchantLinks'
@@ -23,6 +23,9 @@ const categories = ref<ExpenseCategoryDto[]>([])
 const accounts = ref<AccountDto[]>([])
 const loading = ref(false)
 const accountLoading = ref(false)
+const editNotesItem = ref<HistoryItemDto | null>(null)
+const editNotesDraft = ref('')
+const savingNotes = ref(false)
 const deleteItem = ref<HistoryItemDto | null>(null)
 const dialogOpen = ref(false)
 
@@ -103,6 +106,39 @@ async function handleDelete() {
 
 function totalForItem(item: HistoryItemDto) {
   return item.details.reduce((sum, d) => sum + d.amount, 0)
+}
+
+function openNotesEditor(item: HistoryItemDto) {
+  editNotesItem.value = item
+  editNotesDraft.value = item.notes ?? ''
+}
+
+function closeNotesEditor() {
+  if (savingNotes.value) return
+  editNotesItem.value = null
+  editNotesDraft.value = ''
+}
+
+async function saveNotes() {
+  if (!editNotesItem.value) return
+  savingNotes.value = true
+  try {
+    const notesRaw = editNotesDraft.value ?? ''
+    const payload: HistoryItemUpdateRequest = {
+      notes: notesRaw.trim().length > 0 ? notesRaw.trim() : null,
+    }
+    const updated = await apiClient.put<HistoryItemDto>(`/api/history/${editNotesItem.value.id}`, payload)
+    const index = items.value.findIndex(x => x.id === updated.id)
+    if (index >= 0) {
+      items.value[index] = updated
+    }
+    snackbar.enqueueSnackbar('Transaction notes updated', { variant: 'success' })
+    closeNotesEditor()
+  } catch {
+    snackbar.enqueueSnackbar('Failed to update notes', { variant: 'error' })
+  } finally {
+    savingNotes.value = false
+  }
 }
 
 watch([currentMonth, categoryId], fetchHistory)
@@ -214,6 +250,11 @@ function onDialogSuccess() {
               </template>
               <v-list density="compact">
                 <v-list-item
+                  prepend-icon="mdi-note-edit-outline"
+                  :title="item.notes ? 'Edit notes' : 'Add note'"
+                  @click="openNotesEditor(item)"
+                />
+                <v-list-item
                   prepend-icon="mdi-delete"
                   title="Delete transaction"
                   base-color="error"
@@ -236,6 +277,29 @@ function onDialogSuccess() {
     />
 
     <AddTransactionDialog v-model="dialogOpen" :categories="categories" @success="onDialogSuccess" />
+
+    <v-dialog :model-value="!!editNotesItem" max-width="560" @update:model-value="(val: boolean) => !val && closeNotesEditor()">
+      <v-card>
+        <v-card-title>{{ editNotesItem?.notes ? 'Edit Notes' : 'Add Notes' }}</v-card-title>
+        <v-card-text>
+          <div class="text-body-2 mb-2 text-medium-emphasis">
+            {{ editNotesItem?.description ?? '(No description)' }}
+          </div>
+          <v-textarea
+            v-model="editNotesDraft"
+            label="Notes"
+            rows="4"
+            auto-grow
+            autofocus
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn :disabled="savingNotes" @click="closeNotesEditor">Cancel</v-btn>
+          <v-btn color="primary" :loading="savingNotes" @click="saveNotes">Save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-dialog :model-value="!!deleteItem" max-width="480" @update:model-value="(val: boolean) => !val && (deleteItem = null)">
       <v-card>

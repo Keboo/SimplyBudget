@@ -73,6 +73,10 @@ export interface HistoryItemDto {
   details: HistoryDetailDto[]
 }
 
+export interface HistoryItemUpdateRequest {
+  notes: string | null
+}
+
 export interface HistoryDetailDto {
   id: number
   expenseCategoryId: number
@@ -167,6 +171,7 @@ export interface TransactionRequest {
   description: string
   date: string
   items: TransactionItemRequest[]
+  notes: string | null
 }
 
 export interface TransferRequest {

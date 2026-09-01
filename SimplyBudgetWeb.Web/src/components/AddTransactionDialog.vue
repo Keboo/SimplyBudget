@@ -36,6 +36,7 @@ const emptyLine = (): LineItem => ({ expenseCategoryId: null, amount: '' })
 const tab = ref<'transaction' | 'income' | 'transfer'>('transaction')
 const description = ref('')
 const date = ref(new Date().toISOString().split('T')[0])
+const notes = ref('')
 const lines = ref<LineItem[]>([emptyLine()])
 const incomeTotal = ref('')
 const incomeAllocations = ref<Record<number, string>>({})
@@ -57,6 +58,7 @@ function removeLine(index: number) {
 function resetForm() {
   description.value = ''
   date.value = new Date().toISOString().split('T')[0]
+  notes.value = ''
   lines.value = [emptyLine()]
   incomeTotal.value = ''
   incomeAllocations.value = {}
@@ -192,6 +194,8 @@ function applyCalculator() {
 async function submit() {
   submitting.value = true
   try {
+    const normalizedNotes = notes.value.trim().length > 0 ? notes.value.trim() : null
+
     if (tab.value === 'transaction') {
       if (!canSubmitLines.value) return
       const payload: TransactionRequest = {
@@ -203,6 +207,7 @@ async function submit() {
             expenseCategoryId: l.expenseCategoryId,
             amount: dollarsToCents(l.amount),
           })),
+        notes: normalizedNotes,
       }
       await apiClient.post('/api/transactions/transaction', payload)
       snackbar.enqueueSnackbar('Transaction added', { variant: 'success' })
@@ -217,6 +222,7 @@ async function submit() {
             amount: dollarsToCents(amount),
           }))
           .filter(item => item.amount > 0),
+        notes: normalizedNotes,
       }
       await apiClient.post('/api/transactions/income', payload)
       snackbar.enqueueSnackbar('Income added', { variant: 'success' })
@@ -255,6 +261,13 @@ async function submit() {
         <div class="d-flex flex-column ga-3">
           <v-text-field label="Description" v-model="description" hide-details />
           <v-text-field label="Date" type="date" v-model="date" hide-details />
+          <v-textarea
+            label="Notes"
+            v-model="notes"
+            rows="2"
+            auto-grow
+            density="compact"
+          />
 
           <template v-if="tab === 'transaction'">
             <span class="text-subtitle-2">Items</span>
