@@ -3,6 +3,7 @@
 export interface BudgetCategoryDto {
   id: number
   name: string | null
+  description: string | null
   categoryName: string | null
   accountId: number | null
   budgetedAmount: number
@@ -28,6 +29,7 @@ export interface BudgetResponse {
 export interface ExpenseCategoryDto {
   id: number
   name: string | null
+  description: string | null
   categoryName: string | null
   accountId: number | null
   budgetedAmount: number
@@ -184,6 +186,7 @@ export interface BudgetDataExportAccountDto {
 export interface BudgetDataExportCategoryDto {
   id: number
   name: string | null
+  description: string | null
   categoryName: string | null
   accountId: number | null
   budgetedAmount: number

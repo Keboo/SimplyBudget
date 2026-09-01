@@ -133,6 +133,7 @@ public class ExpenseCategoryViewModelEx : ExpenseCategoryViewModel
             if (SetProperty(ref _isEditing, value) && value)
             {
                 EditingName = Name;
+                EditingDescription = Description;
                 EditingCategory = CategoryName;
                 EditIsAmountType = BudgetedPercentage <= 0;
                 EditAmount = BudgetedPercentage > 0 ? BudgetedPercentage : BudgetedAmount;
@@ -146,6 +147,13 @@ public class ExpenseCategoryViewModelEx : ExpenseCategoryViewModel
     {
         get => _editingName;
         set => SetProperty(ref _editingName, value);
+    }
+
+    private string? _editingDescription;
+    public string? EditingDescription
+    {
+        get => _editingDescription;
+        set => SetProperty(ref _editingDescription, value);
     }
 
     private string? _editingCategory;

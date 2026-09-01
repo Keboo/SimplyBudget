@@ -164,6 +164,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
               >
                 <v-list-item-title>{{ cat.name ?? '(unnamed)' }}</v-list-item-title>
                 <v-list-item-subtitle>
+                  <div v-if="cat.description" class="mb-1">{{ cat.description }}</div>
                   <div class="budget-chip-row d-flex flex-wrap mt-1" style="gap: 4px;">
                     <v-chip size="small">Budget: {{ cat.usePercentage ? `${cat.budgetedPercentage}%` : formatCents(cat.budgetedAmount) }}</v-chip>
                     <v-chip size="small" color="error" variant="outlined">Spent: {{ formatCents(cat.monthlyExpenses) }}</v-chip>

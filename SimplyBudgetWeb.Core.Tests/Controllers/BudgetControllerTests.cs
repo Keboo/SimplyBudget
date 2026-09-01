@@ -27,6 +27,7 @@ public class BudgetControllerTests
             var category = new ExpenseCategory
             {
                 Name = "Checking Category",
+                Description = "Tracks the checking account",
                 AccountID = account.ID,
             };
             context.ExpenseCategories.Add(category);
@@ -71,5 +72,6 @@ public class BudgetControllerTests
 
         await Assert.That(februaryBudget.TotalAccountAmount).IsEqualTo(1000);
         await Assert.That(aprilBudget.TotalAccountAmount).IsEqualTo(700);
+        await Assert.That(februaryBudget.Categories.Single().Description).IsEqualTo("Tracks the checking account");
     }
 }

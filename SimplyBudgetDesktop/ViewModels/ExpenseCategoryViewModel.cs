@@ -20,6 +20,7 @@ public class ExpenseCategoryViewModel : ObservableObject, IClipboardData
         if (expenseCategory is null) throw new ArgumentNullException(nameof(expenseCategory));
         if (viewModel is null) throw new ArgumentNullException(nameof(viewModel));
         viewModel.Name = expenseCategory.Name;
+        viewModel.Description = expenseCategory.Description;
         viewModel.Balance = expenseCategory.CurrentBalance;
         viewModel.BudgetedAmount = expenseCategory.BudgetedAmount;
         viewModel.BudgetedPercentage = expenseCategory.BudgetedPercentage;
@@ -45,6 +46,13 @@ public class ExpenseCategoryViewModel : ObservableObject, IClipboardData
     {
         get => _name;
         set => SetProperty(ref _name, value);
+    }
+
+    private string? _description;
+    public string? Description
+    {
+        get => _description;
+        set => SetProperty(ref _description, value);
     }
 
     private int _balance;
