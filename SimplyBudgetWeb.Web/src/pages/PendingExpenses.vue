@@ -5,13 +5,14 @@ import { useSnackbarStore } from '@/stores/snackbar'
 import type { PendingExpenseDto, AssigneeDto, ExpenseCategoryDto } from '@/types'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
-import { AMAZON_TRANSACTIONS_URL, hasAmazonInDescription } from '@/utils/merchantLinks'
+import { useExternalLinkRules } from '@/utils/externalLinks'
 import { includesSearchText, tryParseSearchAmountInCents } from '@/utils/search'
 import ConvertPendingExpenseDialog from '@/components/ConvertPendingExpenseDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
 import CategorySelector from '@/components/CategorySelector.vue'
 
 const snackbar = useSnackbarStore()
+const { loadExternalLinkRules, externalLinksFor } = useExternalLinkRules()
 
 const { currentMonth } = useMonthQueryParam({ storageKey: 'pending-expenses' })
 const search = ref('')
@@ -270,6 +271,7 @@ onMounted(() => {
   void fetchAssignees()
   void fetchCategories()
   void fetchPendingExpenses()
+  void loadExternalLinkRules()
 })
 </script>
 
@@ -337,15 +339,17 @@ onMounted(() => {
                   <span class="pending-date">{{ new Date(item.date).toLocaleDateString() }}</span>
                   <span class="pending-description">{{ item.description }}</span>
                   <v-btn
-                    v-if="hasAmazonInDescription(item.description)"
+                    v-for="link in externalLinksFor(item.description)"
+                    :key="link.url"
                     icon="mdi-open-in-new"
                     variant="text"
                     size="x-small"
                     color="primary"
-                    :href="AMAZON_TRANSACTIONS_URL"
+                    :href="link.url"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="Open Amazon transactions page"
+                    :aria-label="`Open ${link.name} link`"
+                    :title="link.name"
                     @click.stop
                   />
                   <v-chip v-if="item.suggestedCategoryName" size="small" variant="outlined" class="ml-1">
