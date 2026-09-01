@@ -165,6 +165,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
     <v-card v-if="budget" class="pa-4 mb-4">
       <div class="d-flex flex-wrap" style="gap: 16px;">
         <span class="text-h5">Total Budget: <strong>{{ formatCents(budget.totalBudget) }}</strong></span>
+        <span class="text-h5">Estimated Monthly Income: <strong>{{ formatCents(budget.estimatedMonthlyIncome) }}</strong></span>
         <span class="text-h5">Total In Accounts: <strong>{{ formatCents(budget.totalAccountAmount) }}</strong></span>
       </div>
     </v-card>

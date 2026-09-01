@@ -22,6 +22,7 @@ export interface BudgetCategoryDto {
 export interface BudgetResponse {
   totalBudget: number
   totalAccountAmount: number
+  estimatedMonthlyIncome: number
   month: string
   categories: BudgetCategoryDto[]
 }
