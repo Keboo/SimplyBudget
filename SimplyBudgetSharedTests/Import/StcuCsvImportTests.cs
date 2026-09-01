@@ -78,6 +78,18 @@ public class StcuCsvImportTests
     }
 
     [TestMethod]
+    public async Task CanRead_Transactions_IgnoresEfundTransferDescription()
+    {
+        string csv = @"""2020112212345678,12345,123,123,123,123,123"",""11/22/2020"",""11/22/2020"",""Debit"",""-50.00000"","""",""500000000"",""efund transfer"","""",""Debit Card"",""10000.00000"","""",""efund transfer""";
+        using var stream = AsStream(csv);
+        var csvImport = new StcuCsvImport(stream);
+
+        var items = await csvImport.GetItems().ToListAsync();
+
+        Assert.AreEqual(0, items.Count);
+    }
+
+    [TestMethod]
     [Description("Issue 3")]
     public async Task Import_WithDifferentEffectiveAndPostingDate_UsesEffectiveDate()
     {

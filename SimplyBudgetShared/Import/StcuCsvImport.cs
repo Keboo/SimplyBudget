@@ -12,10 +12,12 @@ public class StcuCsvImport : CsvImport<StcuRecord>
     protected override ExpenseCategoryItem? ConvertRow(StcuRecord row)
     {
         if (row.Amount is null) return null;
+        if (IsTransfer(row)) return null;
+
         switch (row.TransactionType?.ToLowerInvariant())
         {
             case "check":
-            case "debit" when !string.Equals(row.Type, "Transfer", StringComparison.Ordinal):
+            case "debit":
                 return new()
                 {
                     Date = row.EffectiveDate?.Date ?? row.PostingDate?.Date ?? DateTime.Today,
@@ -28,7 +30,6 @@ public class StcuCsvImport : CsvImport<StcuRecord>
                         }
                     ]
                 };
-            case "debit": return null;
             case "credit":
                 return new()
                 {
@@ -46,6 +47,10 @@ public class StcuCsvImport : CsvImport<StcuRecord>
                 throw new InvalidOperationException($"Unknown transaction type '{row.TransactionType}'");
         }
     }
+
+    private static bool IsTransfer(StcuRecord row)
+        => string.Equals(row.Type?.Trim(), "Transfer", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(row.Description?.Trim(), "efund transfer", StringComparison.OrdinalIgnoreCase);
 }
 
 public class StcuRecord

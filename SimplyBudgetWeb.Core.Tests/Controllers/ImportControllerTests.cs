@@ -53,6 +53,22 @@ public class ImportControllerTests
     }
 
     [Test]
+    public async Task Parse_WithEfundTransferDescription_FiltersOutTransfer()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ImportController(context);
+
+        var csv = BuildCsv(@"""1"",""11/23/2020"",""11/23/2020"",""Debit"",""-200.00000"","""",""1"",""efund transfer"","""",""Debit Card"",""1"","""",""efund transfer""");
+        var result = await controller.Parse(new ImportRequest(csv));
+
+        var items = ((OkObjectResult)result.Result!).Value as ImportItemDto[];
+        await Assert.That(items!.Length).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task Save_CreatesPendingExpensesForCheckedItems()
     {
         AutoMocker mocker = new();
