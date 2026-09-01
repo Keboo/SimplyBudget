@@ -8,6 +8,7 @@ namespace SimplyBudgetShared.Data;
 public class Metadata : BaseItem
 {
     public const string VERSION_KEY = "Version";
+    public const string CALCULATOR_TAX_OPTIONS_KEY = "CalculatorTaxOptions";
 
     //[Indexed]
     public string? Key { get; set; }

@@ -2,7 +2,13 @@
 import { computed, ref, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
-import type { ExpenseCategoryDto, TransactionRequest, TransferRequest } from '@/types'
+import type {
+  CalculatorTaxOptionDto,
+  CalculatorTaxOptionsDto,
+  ExpenseCategoryDto,
+  TransactionRequest,
+  TransferRequest,
+} from '@/types'
 import { formatCents, dollarsToCents, centsToDollars, parseLocalDate } from '@/utils/currency'
 import IncomeAllocationList from '@/components/IncomeAllocationList.vue'
 import CategorySelector from '@/components/CategorySelector.vue'
@@ -41,7 +47,8 @@ const calculatorOpen = ref(false)
 const calculatorLineIndex = ref<number | null>(null)
 const calculatorInput = ref('')
 const calculatorItems = ref<number[]>([])
-const calculatorAddTax = ref(false)
+const calculatorTaxOptions = ref<CalculatorTaxOptionDto[]>([])
+const calculatorSelectedTaxKey = ref('none')
 
 function removeLine(index: number) {
   lines.value = lines.value.filter((_, i) => i !== index)
@@ -105,7 +112,22 @@ const dateAsMonth = computed(() => parseLocalDate(date.value))
 
 const calculatorTotalCents = computed(() => {
   const subtotal = calculatorItems.value.reduce((sum, amount) => sum + amount, 0)
-  return calculatorAddTax.value ? Math.round(subtotal * 1.091) : subtotal
+  const taxPercentage = selectedTaxPercentage.value
+  return taxPercentage === null
+    ? subtotal
+    : Math.round(subtotal * (1 + (taxPercentage / 100)))
+})
+
+const selectedTaxPercentage = computed<number | null>(() => {
+  if (calculatorSelectedTaxKey.value === 'none') return null
+  if (!calculatorSelectedTaxKey.value.startsWith('tax-')) return null
+
+  const selectedIndex = Number.parseInt(calculatorSelectedTaxKey.value.slice(4), 10)
+  const selectedTaxOption = Number.isInteger(selectedIndex)
+    ? calculatorTaxOptions.value[selectedIndex]
+    : undefined
+
+  return selectedTaxOption?.percentage ?? null
 })
 
 watch(
@@ -122,12 +144,12 @@ watch(
   { deep: true },
 )
 
-function openCalculator(index: number) {
+async function openCalculator(index: number) {
   calculatorLineIndex.value = index
   calculatorInput.value = ''
   calculatorItems.value = []
-  calculatorAddTax.value = false
   calculatorOpen.value = true
+  await loadCalculatorTaxOptions()
 }
 
 function closeCalculator() {
@@ -144,6 +166,19 @@ function addCalculatorItem() {
 
 function removeCalculatorItem(index: number) {
   calculatorItems.value.splice(index, 1)
+}
+
+async function loadCalculatorTaxOptions() {
+  try {
+    const response = await apiClient.get<CalculatorTaxOptionsDto>('/api/calculator-tax-options')
+    calculatorTaxOptions.value = response.options ?? []
+
+    const defaultTaxIndex = calculatorTaxOptions.value.findIndex(option => option.isDefault)
+    calculatorSelectedTaxKey.value = defaultTaxIndex >= 0 ? `tax-${defaultTaxIndex}` : 'none'
+  } catch {
+    calculatorTaxOptions.value = []
+    calculatorSelectedTaxKey.value = 'none'
+  }
 }
 
 function applyCalculator() {
@@ -344,12 +379,15 @@ async function submit() {
           </v-list-item>
         </v-list>
 
-        <v-checkbox
-          v-model="calculatorAddTax"
-          label="Add Tax"
-          density="compact"
-          hide-details
-        />
+        <v-radio-group v-model="calculatorSelectedTaxKey" density="compact" hide-details>
+          <v-radio label="None" value="none" />
+          <v-radio
+            v-for="(option, index) in calculatorTaxOptions"
+            :key="`${option.name}-${index}`"
+            :label="`${option.name} (+${option.percentage}%)`"
+            :value="`tax-${index}`"
+          />
+        </v-radio-group>
         <div class="text-h6">Total: {{ formatCents(calculatorTotalCents) }}</div>
       </v-card-text>
       <v-card-actions>
