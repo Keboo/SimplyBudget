@@ -104,16 +104,21 @@ public class ImportController(BudgetWebContext context) : ControllerBase
 
         var pendingExpenses = items
             .Where(i => i.IsChecked)
-            .Select(i => new PendingExpense
+            .Select(i =>
             {
-                Date = i.Date,
-                Description = i.Description,
-                Amount = i.Amount,
-                IsDebit = i.IsDebit,
-                SuggestedCategoryId = ExpenseCategoryRuleMatcher.GetSuggestedCategoryId(
+                var match = ExpenseCategoryRuleMatcher.Match(
                     rules,
                     i.Description,
-                    isTransaction: i.IsDebit),
+                    isTransaction: i.IsDebit);
+                return new PendingExpense
+                {
+                    Date = i.Date,
+                    Description = i.Description,
+                    Amount = i.Amount,
+                    IsDebit = i.IsDebit,
+                    SuggestedCategoryId = match.SuggestedCategoryId,
+                    Notes = match.Notes,
+                };
             })
             .ToList();
 

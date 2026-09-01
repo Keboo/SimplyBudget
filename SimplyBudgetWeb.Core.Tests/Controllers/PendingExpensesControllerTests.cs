@@ -632,6 +632,53 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
+    public async Task ReapplyRules_AppliesRuleNotesWithoutOverwritingExistingNotes()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            context.ExpenseCategoryRules.Add(new ExpenseCategoryRule
+            {
+                Name = "Square rule",
+                RuleRegex = "SQ \\*",
+                Notes = "Square payment",
+                ExpenseCategoryID = null
+            });
+            context.PendingExpenses.AddRange(
+                new PendingExpense
+                {
+                    Date = new DateTime(2026, 1, 1),
+                    Description = "SQ *COFFEE",
+                    Amount = 5_00,
+                    IsDebit = true
+                },
+                new PendingExpense
+                {
+                    Date = new DateTime(2026, 1, 2),
+                    Description = "SQ *BAKERY",
+                    Amount = 8_00,
+                    IsDebit = true,
+                    Notes = "User written note"
+                });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new PendingExpensesController(context);
+
+        await controller.ReapplyRules();
+
+        var updatedItems = await context.PendingExpenses
+            .OrderBy(x => x.Date)
+            .ToListAsync();
+
+        await Assert.That(updatedItems[0].Notes).IsEqualTo("Square payment");
+        await Assert.That(updatedItems[1].Notes).IsEqualTo("User written note");
+    }
+
+    [Test]
     public async Task Convert_WithNoItems_ReturnsBadRequest()
     {
         AutoMocker mocker = new();

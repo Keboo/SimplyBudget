@@ -55,7 +55,7 @@ const rulesLoaded = ref(false)
 const addRuleOpen = ref(false)
 const deleteRule = ref<RuleDto | null>(null)
 const editRule = ref<RuleDto | null>(null)
-const ruleForm = ref({ name: '', ruleRegex: '', expenseCategoryId: null as number | null })
+const ruleForm = ref({ name: '', ruleRegex: '', notes: '', expenseCategoryId: null as number | null })
 
 interface RuleGroup {
   key: string
@@ -320,7 +320,7 @@ async function fetchRuleCategories() {
 }
 
 function resetRuleForm() {
-  ruleForm.value = { name: '', ruleRegex: '', expenseCategoryId: null }
+  ruleForm.value = { name: '', ruleRegex: '', notes: '', expenseCategoryId: null }
 }
 
 function openAddRule() {
@@ -333,6 +333,7 @@ function openEditRule(rule: RuleDto) {
   ruleForm.value = {
     name: rule.name ?? '',
     ruleRegex: rule.ruleRegex ?? '',
+    notes: rule.notes ?? '',
     expenseCategoryId: rule.expenseCategoryId ?? null,
   }
 }
@@ -342,6 +343,7 @@ async function handleAddRule() {
     await apiClient.post('/api/rules', {
       name: ruleForm.value.name,
       ruleRegex: ruleForm.value.ruleRegex,
+      notes: ruleForm.value.notes,
       expenseCategoryId: ruleForm.value.expenseCategoryId,
     })
     snackbar.enqueueSnackbar('Rule added', { variant: 'success' })
@@ -359,6 +361,7 @@ async function handleEditRule() {
     await apiClient.put(`/api/rules/${editRule.value.id}`, {
       name: ruleForm.value.name,
       ruleRegex: ruleForm.value.ruleRegex,
+      notes: ruleForm.value.notes,
       expenseCategoryId: ruleForm.value.expenseCategoryId,
     })
     snackbar.enqueueSnackbar('Rule updated', { variant: 'success' })
@@ -675,6 +678,7 @@ watch(openPanel, (panel) => {
                 <v-list-item v-for="rule in group.rules" :key="rule.id">
                   <v-list-item-title>{{ rule.name }}</v-list-item-title>
                   <v-list-item-subtitle>Pattern: {{ rule.ruleRegex ?? '—' }}</v-list-item-subtitle>
+                  <v-list-item-subtitle v-if="rule.notes">Notes: {{ rule.notes }}</v-list-item-subtitle>
                   <template #append>
                     <div class="d-flex" style="gap: 4px;">
                       <v-btn icon="mdi-pencil" variant="text" aria-label="Edit rule" @click="openEditRule(rule)" />
@@ -810,6 +814,14 @@ watch(openPanel, (panel) => {
         <v-card-text class="d-flex flex-column" style="gap: 16px;">
           <v-text-field label="Name" v-model="ruleForm.name" />
           <v-text-field label="Regex Pattern" v-model="ruleForm.ruleRegex" />
+          <v-textarea
+            label="Notes"
+            rows="2"
+            auto-grow
+            hint="Added to matching pending expenses. A rule can add notes without setting a category."
+            persistent-hint
+            v-model="ruleForm.notes"
+          />
           <CategorySelector
             label="Target Category"
             :categories="categories"
@@ -832,6 +844,14 @@ watch(openPanel, (panel) => {
         <v-card-text class="d-flex flex-column" style="gap: 16px;">
           <v-text-field label="Name" v-model="ruleForm.name" />
           <v-text-field label="Regex Pattern" v-model="ruleForm.ruleRegex" />
+          <v-textarea
+            label="Notes"
+            rows="2"
+            auto-grow
+            hint="Added to matching pending expenses. A rule can add notes without setting a category."
+            persistent-hint
+            v-model="ruleForm.notes"
+          />
           <CategorySelector
             label="Category"
             :categories="categories"

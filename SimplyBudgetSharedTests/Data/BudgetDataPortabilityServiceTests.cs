@@ -42,6 +42,7 @@ public class BudgetDataPortabilityServiceTests
         {
             Name = "Grocery Rule",
             RuleRegex = "GROCERY",
+            Notes = "Local grocery store",
             ExpenseCategoryID = groceries.ID
         });
         setupContext.Metadatas.Add(new Metadata { Key = "Version", Value = "test" });
@@ -64,6 +65,7 @@ public class BudgetDataPortabilityServiceTests
         Assert.IsTrue(exportPackage.Accounts.Single(x => x.Name == "Savings").IsDefault);
         Assert.AreEqual("February salary", exportPackage.Items.Single().Notes);
         Assert.AreEqual("Food and household essentials", exportPackage.Categories.Single().Description);
+        Assert.AreEqual("Local grocery store", exportPackage.Rules.Single().Notes);
     }
 
     [TestMethod]
@@ -105,7 +107,7 @@ public class BudgetDataPortabilityServiceTests
             ],
             Rules =
             [
-                new BudgetDataExportRule(9000, "Market Rule", "MARKET", 100)
+                new BudgetDataExportRule(9000, "Market Rule", "MARKET", 100, "Farmers market")
             ],
             Metadata =
             [
@@ -143,6 +145,7 @@ public class BudgetDataPortabilityServiceTests
             .ToListAsync();
         Assert.AreEqual(1, rules.Count);
         Assert.AreEqual("Groceries", rules[0].ExpenseCategory?.Name);
+        Assert.AreEqual("Farmers market", rules[0].Notes);
 
         Assert.AreEqual(1, await assertContext.Metadatas.CountAsync());
         Assert.AreEqual(2, await assertContext.ExpenseCategoryItems.CountAsync());

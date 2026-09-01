@@ -78,6 +78,7 @@
       <DataGrid.Columns>
         <DataGridTextColumn Header="Name" Binding="{Binding Name}" />
         <DataGridTextColumn Header="Regex Rule" Binding="{Binding RuleRegex}" />
+        <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" />
         <materialDesign:DataGridComboBoxColumn 
             Header="Expense Category" 
             ItemsSourceBinding="{Binding DataContext.ExpenseCategories, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGrid}}"

@@ -14,6 +14,9 @@ public partial class ExpenseCategoryRuleViewModel : ObservableObject
     private string? _ruleRegex;
 
     [ObservableProperty]
+    private string? _notes;
+
+    [ObservableProperty]
     private int? _expenseCategoryId;
 
     public ExpenseCategoryRuleViewModel()
@@ -28,6 +31,7 @@ public partial class ExpenseCategoryRuleViewModel : ObservableObject
         ExistingRuleId = rule.ID;
         Name = rule.Name;
         RuleRegex = rule.RuleRegex;
+        Notes = rule.Notes;
         ExpenseCategoryId = rule.ExpenseCategoryID;
     }
 }
