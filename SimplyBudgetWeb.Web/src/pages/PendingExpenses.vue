@@ -45,6 +45,7 @@ const filteredItems = computed(() => {
 
   return items.value.filter((item) => {
     if (includesSearchText(item.description, normalizedSearchText)) return true
+    if (includesSearchText(item.suggestedCategoryDescription, normalizedSearchText)) return true
     if (searchAmountAbs === null) return false
     return Math.abs(item.amount) === searchAmountAbs
   })

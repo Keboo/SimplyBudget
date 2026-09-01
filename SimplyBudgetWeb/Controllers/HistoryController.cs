@@ -37,6 +37,7 @@ public class HistoryController(BudgetWebContext context) : ControllerBase
             query = query.Where(x =>
                 (x.Description != null && x.Description.Contains(searchText)) ||
                 (x.Notes != null && x.Notes.Contains(searchText)) ||
+                x.Details!.Any(d => d.ExpenseCategory!.Description != null && d.ExpenseCategory.Description.Contains(searchText)) ||
                 (hasSearchAmount &&
                  (x.Details!.Any(d => Math.Abs(d.Amount) == searchAmountAbs) ||
                   Math.Abs(x.Details!.Sum(d => d.Amount)) == searchAmountAbs)));
@@ -94,6 +95,7 @@ public class HistoryController(BudgetWebContext context) : ControllerBase
             Id: d.ID,
             ExpenseCategoryId: d.ExpenseCategoryId,
             CategoryName: d.ExpenseCategory?.Name,
+            CategoryDescription: d.ExpenseCategory?.Description,
             Amount: d.Amount,
             IgnoreBudget: d.IgnoreBudget
         )).ToArray()
@@ -116,6 +118,7 @@ public record HistoryDetailDto(
     int Id,
     int ExpenseCategoryId,
     string? CategoryName,
+    string? CategoryDescription,
     int Amount,
     bool IgnoreBudget
 );
