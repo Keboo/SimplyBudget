@@ -5,8 +5,11 @@ namespace SimplyBudgetWeb.Services;
 
 public static class ExpenseCategoryRuleMatcher
 {
-    public static int? GetSuggestedCategoryId(IEnumerable<ExpenseCategoryRule> rules, string? description)
+    public static int? GetSuggestedCategoryId(IEnumerable<ExpenseCategoryRule> rules, string? description, bool isTransaction)
     {
+        if (!isTransaction)
+            return null;
+
         var descriptionToMatch = description ?? "";
         int? suggestedCategoryId = null;
 
