@@ -36,7 +36,8 @@ public class BudgetDataPortabilityServiceTests
         setupContext.ExpenseCategories.Add(groceries);
         await setupContext.SaveChangesAsync();
 
-        await setupContext.AddIncome("Paycheck", new DateTime(2026, 2, 1), (1_500_00, groceries.ID));
+        var paycheck = await setupContext.AddIncome("Paycheck", new DateTime(2026, 2, 1), (1_500_00, groceries.ID));
+        paycheck.Notes = "February salary";
         setupContext.ExpenseCategoryRules.Add(new ExpenseCategoryRule
         {
             Name = "Grocery Rule",
@@ -61,6 +62,7 @@ public class BudgetDataPortabilityServiceTests
         Assert.AreEqual(1, exportPackage.Rules.Count);
         Assert.AreEqual(1, exportPackage.Metadata.Count);
         Assert.IsTrue(exportPackage.Accounts.Single(x => x.Name == "Savings").IsDefault);
+        Assert.AreEqual("February salary", exportPackage.Items.Single().Notes);
         Assert.AreEqual("Food and household essentials", exportPackage.Categories.Single().Description);
     }
 
@@ -92,7 +94,7 @@ public class BudgetDataPortabilityServiceTests
             ],
             Items =
             [
-                new BudgetDataExportItem(1000, new DateTime(2026, 3, 5), "Paycheck"),
+                new BudgetDataExportItem(1000, new DateTime(2026, 3, 5), "Paycheck", "March salary"),
                 new BudgetDataExportItem(2000, new DateTime(2026, 3, 7), "Market")
             ],
             ItemDetails =
@@ -145,6 +147,7 @@ public class BudgetDataPortabilityServiceTests
         Assert.AreEqual(1, await assertContext.Metadatas.CountAsync());
         Assert.AreEqual(2, await assertContext.ExpenseCategoryItems.CountAsync());
         Assert.AreEqual(3, await assertContext.ExpenseCategoryItemDetails.CountAsync());
+        Assert.AreEqual("March salary", (await assertContext.ExpenseCategoryItems.SingleAsync(x => x.Description == "Paycheck")).Notes);
     }
 
     [TestMethod]

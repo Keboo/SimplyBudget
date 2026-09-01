@@ -40,7 +40,7 @@ public static class BudgetDataPortabilityService
             Items = await context.ExpenseCategoryItems
                 .AsNoTracking()
                 .OrderBy(x => x.ID)
-                .Select(x => new BudgetDataExportItem(x.ID, x.Date, x.Description))
+                .Select(x => new BudgetDataExportItem(x.ID, x.Date, x.Description, x.Notes))
                 .ToListAsync(cancellationToken),
             ItemDetails = await context.ExpenseCategoryItemDetails
                 .AsNoTracking()
@@ -159,7 +159,8 @@ public static class BudgetDataPortabilityService
             var importedItems = itemSeed.Select(x => new ExpenseCategoryItem
             {
                 Date = x.Date,
-                Description = x.Description
+                Description = x.Description,
+                Notes = x.Notes
             }).ToList();
             context.ExpenseCategoryItems.AddRange(importedItems);
             await context.SaveChangesAsync(cancellationToken);

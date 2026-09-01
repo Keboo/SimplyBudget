@@ -67,6 +67,7 @@ export interface HistoryItemDto {
   id: number
   date: string
   description: string | null
+  notes: string | null
   isTransfer: boolean
   details: HistoryDetailDto[]
 }
@@ -143,6 +144,7 @@ export interface ConvertPendingExpenseRequest {
   items: ConvertPendingExpenseItemRequest[]
   version: string
   ignoreBudget: boolean
+  notes: string | null
 }
 
 export interface TransactionItemRequest {
@@ -200,6 +202,7 @@ export interface BudgetDataExportItemDto {
   id: number
   date: string
   description: string | null
+  notes: string | null
 }
 
 export interface BudgetDataExportItemDetailDto {

@@ -46,7 +46,8 @@ public record BudgetDataExportCategory(
 public record BudgetDataExportItem(
     int Id,
     DateTime Date,
-    string? Description
+    string? Description,
+    string? Notes = null
 );
 
 public record BudgetDataExportItemDetail(

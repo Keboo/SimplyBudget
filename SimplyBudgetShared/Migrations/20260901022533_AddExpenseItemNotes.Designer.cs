@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SimplyBudgetShared.Data;
 
@@ -10,9 +11,11 @@ using SimplyBudgetShared.Data;
 namespace SimplyBudgetShared.Migrations
 {
     [DbContext(typeof(BudgetContext))]
-    partial class BudgetContextModelSnapshot : ModelSnapshot
+    [Migration("20260901022533_AddExpenseItemNotes")]
+    partial class AddExpenseItemNotes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -62,9 +65,6 @@ namespace SimplyBudgetShared.Migrations
 
                     b.Property<int>("CurrentBalance")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("TEXT");
 
                     b.Property<bool>("IsHidden")
                         .HasColumnType("INTEGER");

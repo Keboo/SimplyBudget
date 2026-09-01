@@ -211,6 +211,7 @@ async function submit() {
       date: date.value,
       version: props.pendingExpense.version,
       ignoreBudget: ignoreBudget.value,
+      notes: notes.value,
       items,
     }
     await apiClient.post(`/api/pending-expenses/${props.pendingExpense.id}/convert`, payload)

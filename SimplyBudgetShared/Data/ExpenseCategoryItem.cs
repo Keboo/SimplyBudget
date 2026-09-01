@@ -15,6 +15,8 @@ public class ExpenseCategoryItem : BaseItem, IBeforeRemove
 
     public string? Description { get; set; }
 
+    public string? Notes { get; set; }
+
     public List<ExpenseCategoryItemDetail>? Details { get; set; }
 
     public async Task BeforeRemove(BudgetContext context)

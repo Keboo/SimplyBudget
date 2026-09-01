@@ -217,14 +217,16 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
 
         var items = request.Items.Select(i => (i.Amount, i.ExpenseCategoryId)).ToArray();
 
+        ExpenseCategoryItem item;
         if (pending.IsDebit)
         {
-            await context.AddTransaction(request.Description, request.Date, request.IgnoreBudget, items);
+            item = await context.AddTransaction(request.Description, request.Date, request.IgnoreBudget, items);
         }
         else
         {
-            await context.AddIncome(request.Description, request.Date, request.IgnoreBudget, items);
+            item = await context.AddIncome(request.Description, request.Date, request.IgnoreBudget, items);
         }
+        item.Notes = request.Notes ?? pending.Notes;
 
         context.PendingExpenses.Remove(pending);
         try
@@ -308,6 +310,7 @@ public record ConvertPendingExpenseRequest(
     DateTime Date,
     ConvertPendingExpenseItemRequest[] Items,
     string Version,
-    bool IgnoreBudget = false);
+    bool IgnoreBudget = false,
+    string? Notes = null);
 
 public record ReapplyPendingExpenseRulesResponse(int UpdatedCount);
