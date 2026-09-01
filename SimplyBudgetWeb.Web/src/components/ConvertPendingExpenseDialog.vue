@@ -39,6 +39,7 @@ const description = ref('')
 const date = ref('')
 const lines = ref<LineItem[]>([emptyLine()])
 const notes = ref('')
+const savedNotes = ref('')
 const incomeAllocations = ref<Record<number, string>>({})
 const ignoreBudget = ref(false)
 const submitting = ref(false)
@@ -73,6 +74,7 @@ watch(
     description.value = pe.description ?? ''
     date.value = pe.date.split('T')[0]
     notes.value = pe.notes ?? ''
+    savedNotes.value = notes.value
     ignoreBudget.value = false
     lines.value = [{
       expenseCategoryId: pe.suggestedCategoryId ?? null,
@@ -113,6 +115,8 @@ const canSubmit = computed(() => {
     && !hasPartialLines.value
     && lines.value.some(isCompleteLine)
 })
+
+const hasNoteChanges = computed(() => (notes.value ?? '').trim() !== (savedNotes.value ?? '').trim())
 
 const calculatorTotalCents = computed(() => {
   const subtotal = calculatorItems.value.reduce((sum, amount) => sum + amount, 0)
@@ -261,7 +265,7 @@ async function submit() {
 }
 
 async function saveNote() {
-  if (!props.pendingExpense) return
+  if (!props.pendingExpense || !hasNoteChanges.value) return
   savingNote.value = true
   try {
     const nextNoteRaw = notes.value ?? ''
@@ -272,9 +276,9 @@ async function saveNote() {
       version: props.pendingExpense.version,
     })
     notes.value = refreshed.notes ?? ''
+    savedNotes.value = notes.value
     emit('noteSaved', refreshed)
-    snackbar.enqueueSnackbar('Pending expense note saved', { variant: 'success' })
-    close()
+    snackbar.enqueueSnackbar('Note saved', { variant: 'success' })
   } catch (e: unknown) {
     snackbar.enqueueSnackbar(e instanceof Error ? e.message : 'Failed to save pending expense note', { variant: 'error' })
   } finally {
@@ -372,7 +376,7 @@ async function saveNote() {
       <v-card-actions>
         <v-spacer />
         <v-btn @click="close">Cancel</v-btn>
-        <v-btn :loading="savingNote" :disabled="submitting" @click="saveNote">Save Note</v-btn>
+        <v-btn :loading="savingNote" :disabled="submitting || !hasNoteChanges" @click="saveNote">Save Note</v-btn>
         <v-btn color="primary" :loading="submitting" :disabled="!canSubmit" @click="submit">Apply</v-btn>
       </v-card-actions>
     </v-card>
