@@ -154,6 +154,49 @@ public class HistoryControllerTests
     }
 
     [Test]
+    public async Task GetAll_ReturnsAndSearchesCategoryDescription()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Groceries", Description = "Costco and Aldi runs" };
+            var otherCategory = new ExpenseCategory { Name = "Utilities", Description = "Power and water" };
+            context.ExpenseCategories.AddRange(category, otherCategory);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryItems.AddRange(
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 1, 10),
+                    Description = "Weekly shopping",
+                    Details = [new ExpenseCategoryItemDetail { Amount = -1234, ExpenseCategoryId = category.ID }],
+                },
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 1, 11),
+                    Description = "Electric bill",
+                    Details = [new ExpenseCategoryItemDetail { Amount = -5678, ExpenseCategoryId = otherCategory.ID }],
+                });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new HistoryController(context);
+
+        var result = await controller.GetAll(
+            month: new DateTime(2026, 1, 1),
+            search: "Aldi",
+            categoryId: null,
+            accountId: null);
+
+        await Assert.That(result.Length).IsEqualTo(1);
+        await Assert.That(result[0].Description).IsEqualTo("Weekly shopping");
+        await Assert.That(result[0].Details[0].CategoryDescription).IsEqualTo("Costco and Aldi runs");
+    }
+
+    [Test]
     public async Task Update_UpdatesNotesAndReturnsUpdatedItem()
     {
         AutoMocker mocker = new();

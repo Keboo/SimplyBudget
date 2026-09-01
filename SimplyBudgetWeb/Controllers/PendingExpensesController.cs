@@ -264,7 +264,8 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
         AssigneeId: p.AssigneeId,
         AssigneeName: p.Assignee?.Name,
         SuggestedCategoryId: p.SuggestedCategoryId,
-        SuggestedCategoryName: p.SuggestedCategory?.Name
+        SuggestedCategoryName: p.SuggestedCategory?.Name,
+        SuggestedCategoryDescription: p.SuggestedCategory?.Description
     );
 
     private bool TrySetOriginalVersion(PendingExpense pending, string? version)
@@ -293,6 +294,7 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
 
         return query.Where(x =>
             (x.Description != null && x.Description.Contains(searchText)) ||
+            (x.SuggestedCategory != null && x.SuggestedCategory.Description != null && x.SuggestedCategory.Description.Contains(searchText)) ||
             (hasSearchAmount && Math.Abs(x.Amount) == searchAmountAbs));
     }
 }
@@ -308,7 +310,8 @@ public record PendingExpenseDto(
     int? AssigneeId,
     string? AssigneeName,
     int? SuggestedCategoryId,
-    string? SuggestedCategoryName
+    string? SuggestedCategoryName,
+    string? SuggestedCategoryDescription
 );
 
 public record OldestPendingExpenseMonthDto(DateTime? Month);

@@ -81,6 +81,7 @@ export interface HistoryDetailDto {
   id: number
   expenseCategoryId: number
   categoryName: string | null
+  categoryDescription: string | null
   amount: number
   ignoreBudget: boolean
 }
@@ -144,6 +145,7 @@ export interface PendingExpenseDto {
   assigneeName: string | null
   suggestedCategoryId: number | null
   suggestedCategoryName: string | null
+  suggestedCategoryDescription: string | null
 }
 
 export interface OldestPendingExpenseMonthDto {

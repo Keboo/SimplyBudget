@@ -144,6 +144,34 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
+    public async Task GetAll_FiltersBySuggestedCategoryDescription()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Groceries", Description = "Costco and Aldi runs" };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+
+            context.PendingExpenses.AddRange(
+                new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Weekly shopping", Amount = 100, SuggestedCategoryId = category.ID },
+                new PendingExpense { Date = new DateTime(2026, 1, 2), Description = "Gas station", Amount = 200 });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new PendingExpensesController(context);
+
+        var result = await controller.GetAll(search: "Aldi", assigneeId: null);
+
+        await Assert.That(result.Length).IsEqualTo(1);
+        await Assert.That(result[0].Description).IsEqualTo("Weekly shopping");
+        await Assert.That(result[0].SuggestedCategoryDescription).IsEqualTo("Costco and Aldi runs");
+    }
+
+    [Test]
     public async Task GetAll_FiltersByAmount()
     {
         AutoMocker mocker = new();
