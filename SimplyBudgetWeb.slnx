@@ -11,6 +11,7 @@
     <File Path="global.json" />
     <File Path="NuGet.config" />
     <File Path="README.md" />
+    <File Path="SimplyBudgetSharedTests/SimplyBudgetSharedTests.csproj" />
   </Folder>
   <Folder Name="/Solution Items/.config/">
     <File Path=".config/dotnet-tools.json" />
@@ -20,6 +21,7 @@
     <File Path=".github/workflows/build-and-deploy.yml" />
     <File Path=".github/workflows/deploy-infrastructure.yml" />
   </Folder>
+  <Project Path="SimplyBudgetShared/SimplyBudgetShared.csproj" />
   <Project Path="SimplyBudgetWeb.AppHost/SimplyBudgetWeb.AppHost.csproj" />
   <Project Path="SimplyBudgetWeb.Core.Tests/SimplyBudgetWeb.Core.Tests.csproj" />
   <Project Path="SimplyBudgetWeb.Core/SimplyBudgetWeb.Core.csproj" />

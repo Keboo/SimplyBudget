@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
-using SimplyBudgetShared.Data;
 
-namespace SimplyBudgetWeb.Data;
+namespace SimplyBudgetShared.Data;
 
 /// <summary>
 /// A data driven rule that displays an external link next to any transaction (or pending expense)

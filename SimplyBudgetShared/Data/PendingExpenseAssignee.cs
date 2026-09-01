@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations.Schema;
-using SimplyBudgetShared.Data;
 
-namespace SimplyBudgetWeb.Data;
+namespace SimplyBudgetShared.Data;
 
 /// <summary>
 /// A person a <see cref="PendingExpense"/> can optionally be assigned to.

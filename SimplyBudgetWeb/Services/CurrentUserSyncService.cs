@@ -3,6 +3,8 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
 
+using SimplyBudgetShared.Data;
+
 using SimplyBudgetWeb.Data;
 
 namespace SimplyBudgetWeb.Services;
