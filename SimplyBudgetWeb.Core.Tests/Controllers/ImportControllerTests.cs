@@ -152,6 +152,40 @@ public class ImportControllerTests
     }
 
     [Test]
+    public async Task Save_WithNoteOnlyRule_SetsPendingExpenseNotes()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            context.ExpenseCategoryRules.Add(new ExpenseCategoryRule
+            {
+                Name = "Square rule",
+                RuleRegex = "SQ \\*",
+                Notes = "Square payment",
+                ExpenseCategoryID = null
+            });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ImportController(context);
+
+        var items = new[]
+        {
+            new ImportItemDto(new DateTime(2026, 1, 1), "SQ *COFFEE", 5_00, true, true),
+        };
+
+        var result = await controller.Save(items);
+
+        await Assert.That(((StatusCodeResult)result).StatusCode).IsEqualTo(201);
+        var saved = await context.PendingExpenses.SingleAsync();
+        await Assert.That(saved.SuggestedCategoryId).IsNull();
+        await Assert.That(saved.Notes).IsEqualTo("Square payment");
+    }
+
+    [Test]
     public async Task Save_CreditItem_DoesNotApplySuggestedCategoryRule()
     {
         AutoMocker mocker = new();

@@ -25,6 +25,7 @@ public class RulesController(BudgetWebContext context) : ControllerBase
         {
             Name = request.Name,
             RuleRegex = request.RuleRegex,
+            Notes = request.Notes,
             ExpenseCategoryID = request.ExpenseCategoryId,
         };
         context.ExpenseCategoryRules.Add(rule);
@@ -42,6 +43,7 @@ public class RulesController(BudgetWebContext context) : ControllerBase
 
         rule.Name = request.Name;
         rule.RuleRegex = request.RuleRegex;
+        rule.Notes = request.Notes;
         rule.ExpenseCategoryID = request.ExpenseCategoryId;
 
         await context.SaveChangesAsync();
@@ -63,6 +65,7 @@ public class RulesController(BudgetWebContext context) : ControllerBase
         Id: r.ID,
         Name: r.Name,
         RuleRegex: r.RuleRegex,
+        Notes: r.Notes,
         ExpenseCategoryId: r.ExpenseCategoryID,
         CategoryName: r.ExpenseCategory?.Name
     );
@@ -72,8 +75,9 @@ public record RuleDto(
     int Id,
     string? Name,
     string? RuleRegex,
+    string? Notes,
     int? ExpenseCategoryId,
     string? CategoryName
 );
 
-public record RuleRequest(string? Name, string? RuleRegex, int? ExpenseCategoryId);
+public record RuleRequest(string? Name, string? RuleRegex, int? ExpenseCategoryId, string? Notes = null);

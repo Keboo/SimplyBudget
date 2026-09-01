@@ -55,7 +55,7 @@ public static class BudgetDataPortabilityService
             Rules = await context.ExpenseCategoryRules
                 .AsNoTracking()
                 .OrderBy(x => x.ID)
-                .Select(x => new BudgetDataExportRule(x.ID, x.Name, x.RuleRegex, x.ExpenseCategoryID))
+                .Select(x => new BudgetDataExportRule(x.ID, x.Name, x.RuleRegex, x.ExpenseCategoryID, x.Notes))
                 .ToListAsync(cancellationToken),
             Metadata = await context.Metadatas
                 .AsNoTracking()
@@ -197,6 +197,7 @@ public static class BudgetDataPortabilityService
                 {
                     Name = x.Name,
                     RuleRegex = x.RuleRegex,
+                    Notes = x.Notes,
                     ExpenseCategoryID = ResolveOptionalReference(categoryIdMap, x.ExpenseCategoryId, "category")
                 })
                 .ToList();

@@ -70,6 +70,7 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
                 {
                     existingRule.Name = ruleViewModel.Name;
                     existingRule.RuleRegex = ruleViewModel.RuleRegex;
+                    existingRule.Notes = ruleViewModel.Notes;
                     existingRule.ExpenseCategoryID = ruleViewModel.ExpenseCategoryId;
                 }
                 //TODO Else?
@@ -80,6 +81,7 @@ public partial class SettingsViewModel : CollectionViewModelBase<ExpenseCategory
                 {
                     Name = ruleViewModel.Name,
                     RuleRegex = ruleViewModel.RuleRegex,
+                    Notes = ruleViewModel.Notes,
                     ExpenseCategoryID = ruleViewModel.ExpenseCategoryId
                 };
                 context.ExpenseCategoryRules.Add(rule);

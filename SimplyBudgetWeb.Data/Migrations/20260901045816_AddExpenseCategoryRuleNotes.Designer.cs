@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SimplyBudgetWeb.Data;
 
@@ -11,9 +12,11 @@ using SimplyBudgetWeb.Data;
 namespace SimplyBudgetWeb.Data.Migrations
 {
     [DbContext(typeof(BudgetWebContext))]
-    partial class BudgetWebContextModelSnapshot : ModelSnapshot
+    [Migration("20260901045816_AddExpenseCategoryRuleNotes")]
+    partial class AddExpenseCategoryRuleNotes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -186,28 +189,6 @@ namespace SimplyBudgetWeb.Data.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("MetaData", "SimplyBudget");
-                });
-
-            modelBuilder.Entity("SimplyBudgetWeb.Data.ExternalLinkRule", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RuleRegex")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Url")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ID");
-
-                    b.ToTable("ExternalLinkRule", "SimplyBudget");
                 });
 
             modelBuilder.Entity("SimplyBudgetWeb.Data.PendingExpense", b =>

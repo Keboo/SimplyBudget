@@ -89,6 +89,7 @@ export interface RuleDto {
   id: number
   name: string | null
   ruleRegex: string | null
+  notes: string | null
   expenseCategoryId: number | null
   categoryName: string | null
 }
@@ -241,6 +242,7 @@ export interface BudgetDataExportRuleDto {
   name: string | null
   ruleRegex: string | null
   expenseCategoryId: number | null
+  notes: string | null
 }
 
 export interface BudgetDataExportMetadataDto {

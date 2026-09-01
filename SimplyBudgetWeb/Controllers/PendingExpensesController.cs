@@ -190,10 +190,16 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
 
         foreach (var pendingExpense in pendingExpenses)
         {
-            pendingExpense.SuggestedCategoryId = ExpenseCategoryRuleMatcher.GetSuggestedCategoryId(
+            var match = ExpenseCategoryRuleMatcher.Match(
                 rules,
                 pendingExpense.Description,
                 isTransaction: pendingExpense.IsDebit);
+
+            pendingExpense.SuggestedCategoryId = match.SuggestedCategoryId;
+
+            // Never clobber notes a user has already written for this pending expense.
+            if (match.Notes is not null && string.IsNullOrWhiteSpace(pendingExpense.Notes))
+                pendingExpense.Notes = match.Notes;
         }
 
         await context.SaveChangesAsync();
