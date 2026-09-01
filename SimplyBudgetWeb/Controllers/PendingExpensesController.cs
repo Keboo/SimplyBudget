@@ -15,9 +15,12 @@ namespace SimplyBudgetWeb.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/pending-expenses")]
-public class PendingExpensesController(BudgetWebContext context) : ControllerBase
+public class PendingExpensesController(
+    BudgetWebContext context,
+    IBudgetMonthUpdateNotifier? budgetMonthUpdateNotifier = null) : ControllerBase
 {
     private const string ConcurrencyConflictMessage = "This pending expense was changed by another user. Refresh and try again.";
+    private readonly IBudgetMonthUpdateNotifier budgetMonthUpdates = budgetMonthUpdateNotifier ?? NullBudgetMonthUpdateNotifier.Instance;
 
     [HttpGet]
     public async Task<PendingExpenseDto[]> GetAll(
@@ -250,6 +253,7 @@ public class PendingExpensesController(BudgetWebContext context) : ControllerBas
             return Conflict(ConcurrencyConflictMessage);
         }
 
+        await budgetMonthUpdates.NotifyMonthUpdated(item.Date);
         return StatusCode(201);
     }
 

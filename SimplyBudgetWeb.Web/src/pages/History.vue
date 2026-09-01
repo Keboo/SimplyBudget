@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { HistoryItemDto, HistoryItemUpdateRequest, ExpenseCategoryDto, AccountDto } from '@/types'
+import { useAuthStore } from '@/stores/auth'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import { useExternalLinkRules } from '@/utils/externalLinks'
@@ -12,9 +13,11 @@ import MonthPickerNav from '@/components/MonthPickerNav.vue'
 import { useRoute } from 'vue-router'
 import CategorySelector from '@/components/CategorySelector.vue'
 import AddRuleDialog from '@/components/AddRuleDialog.vue'
+import { createMonthUpdatesHubClient } from '@/services/monthUpdatesHub'
 
 const snackbar = useSnackbarStore()
 const route = useRoute()
+const authStore = useAuthStore()
 const { loadExternalLinkRules, externalLinksFor } = useExternalLinkRules()
 
 const { currentMonth } = useMonthQueryParam()
@@ -32,6 +35,8 @@ const deleteItem = ref<HistoryItemDto | null>(null)
 const dialogOpen = ref(false)
 const addRuleOpen = ref(false)
 const ruleSourceItem = ref<HistoryItemDto | null>(null)
+let realtimeRefreshInFlight = false
+let realtimeRefreshQueued = false
 
 const monthLabel = computed(() =>
   currentMonth.value.toLocaleString('default', { month: 'long', year: 'numeric' }),
@@ -70,8 +75,8 @@ async function fetchCategories() {
   } catch { /* ignore */ }
 }
 
-async function fetchHistory() {
-  loading.value = true
+async function fetchHistory(background = false) {
+  if (!background) loading.value = true
   try {
     const month = `${formatMonth(currentMonth.value)}-01`
     const params = new URLSearchParams({ month })
@@ -80,12 +85,12 @@ async function fetchHistory() {
   } catch {
     snackbar.enqueueSnackbar('Failed to load history', { variant: 'error' })
   } finally {
-    loading.value = false
+    if (!background) loading.value = false
   }
 }
 
-async function fetchAccountBalances() {
-  accountLoading.value = true
+async function fetchAccountBalances(background = false) {
+  if (!background) accountLoading.value = true
   try {
     const month = `${formatMonth(currentMonth.value)}-01`
     const params = new URLSearchParams({ month })
@@ -93,9 +98,35 @@ async function fetchAccountBalances() {
   } catch {
     snackbar.enqueueSnackbar('Failed to load account balances', { variant: 'error' })
   } finally {
-    accountLoading.value = false
+    if (!background) accountLoading.value = false
   }
 }
+
+async function refreshMonthInBackground() {
+  if (realtimeRefreshInFlight) {
+    realtimeRefreshQueued = true
+    return
+  }
+
+  realtimeRefreshInFlight = true
+  try {
+    do {
+      realtimeRefreshQueued = false
+      await Promise.all([fetchHistory(true), fetchAccountBalances(true)])
+    } while (realtimeRefreshQueued)
+  } finally {
+    realtimeRefreshInFlight = false
+  }
+}
+
+const monthUpdatesHub = createMonthUpdatesHubClient(
+  () => authStore.getToken(),
+  (month) => {
+    if (month === formatMonth(currentMonth.value)) {
+      void refreshMonthInBackground()
+    }
+  },
+)
 
 async function handleDelete() {
   if (!deleteItem.value) return
@@ -158,14 +189,26 @@ async function saveNotes() {
   }
 }
 
-watch([currentMonth, categoryId], fetchHistory)
-watch(currentMonth, fetchAccountBalances)
+watch([currentMonth, categoryId], () => {
+  void fetchHistory()
+})
+watch(currentMonth, () => {
+  void fetchAccountBalances()
+})
+watch(currentMonth, () => {
+  void monthUpdatesHub.setMonth(formatMonth(currentMonth.value))
+})
+
+onBeforeUnmount(() => {
+  void monthUpdatesHub.stop()
+})
 
 onMounted(() => {
   void fetchCategories()
   void fetchHistory()
   void fetchAccountBalances()
   void loadExternalLinkRules()
+  void monthUpdatesHub.start(formatMonth(currentMonth.value))
 
   const rawCategoryId = route.query.categoryId
   const categoryIdQuery = Array.isArray(rawCategoryId) ? rawCategoryId[0] : rawCategoryId

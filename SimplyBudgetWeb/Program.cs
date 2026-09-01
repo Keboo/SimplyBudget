@@ -1,7 +1,9 @@
 using SimplyBudgetWeb.Core;
+using SimplyBudgetWeb.Hubs;
 using SimplyBudgetWeb.Middleware;
 using SimplyBudgetWeb.Services;
 
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +15,7 @@ builder.AddServiceDefaults()
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSignalR();
 
 // Add CORS for frontend in development
 builder.Services.AddCors(options =>
@@ -40,6 +43,35 @@ builder.Services.AddCors(options =>
 
 // Entra ID authentication via Microsoft.Identity.Web
 builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration, "AzureAd");
+builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+{
+    options.Events ??= new JwtBearerEvents();
+    var existingOnMessageReceived = options.Events.OnMessageReceived;
+
+    options.Events.OnMessageReceived = async context =>
+    {
+        if (existingOnMessageReceived is not null)
+        {
+            await existingOnMessageReceived(context);
+        }
+
+        if (!string.IsNullOrEmpty(context.Token))
+        {
+            return;
+        }
+
+        var accessToken = context.Request.Query["access_token"];
+        if (string.IsNullOrEmpty(accessToken))
+        {
+            return;
+        }
+
+        if (context.HttpContext.Request.Path.StartsWithSegments(BudgetMonthHub.HubPath))
+        {
+            context.Token = accessToken;
+        }
+    };
+});
 
 // Authorization: restrict to the SimplyBudgetUsers Entra security group
 builder.Services.AddAuthorization(options =>
@@ -59,6 +91,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddScoped<CurrentUserSyncService>();
+builder.Services.AddScoped<IBudgetMonthUpdateNotifier, BudgetMonthUpdateNotifier>();
 
 var app = builder.Build();
 
@@ -97,6 +130,7 @@ app.UseAuthorization();
 app.UseMiddleware<CurrentUserSyncMiddleware>();
 
 app.MapControllers();
+app.MapHub<BudgetMonthHub>(BudgetMonthHub.HubPath);
 
 if (!app.Environment.IsDevelopment())
 {
