@@ -82,6 +82,7 @@
           Margin="5,0"
           VerticalAlignment="Center"
           materialDesign:HintAssist.Hint="Search"
+          materialDesign:TextFieldAssist.HasClearButton="True"
           Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}">
           <TextBox.InputBindings>
             <KeyBinding Key="Return" Command="{Binding DoSearchCommand}" />
