@@ -336,6 +336,18 @@ onMounted(() => {
                 <span class="pending-main">
                   <span class="pending-date">{{ new Date(item.date).toLocaleDateString() }}</span>
                   <span class="pending-description">{{ item.description }}</span>
+                  <v-btn
+                    v-if="hasAmazonInDescription(item.description)"
+                    icon="mdi-open-in-new"
+                    variant="text"
+                    size="x-small"
+                    color="primary"
+                    :href="AMAZON_TRANSACTIONS_URL"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Open Amazon transactions page"
+                    @click.stop
+                  />
                   <v-chip v-if="item.suggestedCategoryName" size="small" variant="outlined" class="ml-1">
                     Suggested: {{ item.suggestedCategoryName }}
                   </v-chip>
@@ -407,14 +419,6 @@ onMounted(() => {
                     prepend-icon="mdi-filter-plus-outline"
                     title="Create rule"
                     @click="openAddRule(item)"
-                  />
-                  <v-list-item
-                    v-if="hasAmazonInDescription(item.description)"
-                    prepend-icon="mdi-open-in-new"
-                    title="Open Amazon transactions page"
-                    :href="AMAZON_TRANSACTIONS_URL"
-                    target="_blank"
-                    rel="noopener noreferrer"
                   />
                   <v-list-item
                     prepend-icon="mdi-delete"
