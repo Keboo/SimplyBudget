@@ -128,4 +128,36 @@ public static class Extensions
 
         return app;
     }
+
+    /// <summary>
+    /// Logs how long the process took to reach key startup milestones. These numbers are the
+    /// baseline for cold-start work: on a scale-to-zero host the gap between process start and
+    /// <c>ApplicationStarted</c> is the window during which startup probes are still failing.
+    /// </summary>
+    public static WebApplication LogStartupTimings(this WebApplication app)
+    {
+        var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+
+        logger.LogInformation(
+            "Startup milestone: host built {ElapsedMilliseconds}ms after process start",
+            (long)ElapsedSinceProcessStart().TotalMilliseconds);
+
+        var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+        lifetime.ApplicationStarted.Register(() =>
+            logger.LogInformation(
+                "Startup milestone: application started and accepting requests {ElapsedMilliseconds}ms after process start",
+                (long)ElapsedSinceProcessStart().TotalMilliseconds));
+
+        return app;
+    }
+
+    /// <summary>
+    /// Time since the OS process started, which includes host construction and runtime startup
+    /// that a <see cref="System.Diagnostics.Stopwatch"/> created inside <c>Main</c> would miss.
+    /// </summary>
+    public static TimeSpan ElapsedSinceProcessStart()
+    {
+        using var process = System.Diagnostics.Process.GetCurrentProcess();
+        return DateTime.UtcNow - process.StartTime.ToUniversalTime();
+    }
 }

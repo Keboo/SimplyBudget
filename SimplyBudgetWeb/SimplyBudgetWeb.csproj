@@ -8,6 +8,42 @@
     <EnableDefaultRazorComponentItems>false</EnableDefaultRazorComponentItems>
   </PropertyGroup>
 
+  <PropertyGroup Label="Cold start">
+    <!--
+    The backend runs as an Azure Container App with min_replicas = 0, so every request after an
+    idle period pays a full cold start. These settings target that path.
+
+    Native AOT is deliberately not used: EF Core relational providers and migrations, MVC
+    controllers, SignalR and Microsoft.Identity.Web are all reflection-heavy and unsupported (or
+    untested) under AOT. ReadyToRun gives most of the startup-JIT win with none of that risk.
+    Trimming is likewise avoided for the same compatibility reasons.
+
+    ReadyToRun requires a RuntimeIdentifier, so it is only applied to the RID-specific publish
+    used for the container image; the plain "dotnet publish" in CI keeps working unchanged.
+    -->
+    <PublishReadyToRun Condition="'$(RuntimeIdentifier)' != ''">true</PublishReadyToRun>
+    <!--
+    Composite R2R can start marginally faster but produces a substantially larger image, and
+    image pull time is itself part of the cold start on a scaled-to-zero replica.
+    -->
+    <PublishReadyToRunComposite>false</PublishReadyToRunComposite>
+
+    <!--
+    The container is provisioned with a single CPU (see Infra/modules/container_app), where
+    workstation GC starts faster and uses less memory than the ASP.NET Core default of server GC.
+    -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+
+    <!--
+    Chiseled base image: much smaller than the default runtime-deps image, which shortens the
+    ACR pull that precedes every cold start. The "-extra" variant is used (rather than plain
+    chiseled) because it ships ICU and tzdata - the app still relies on culture-aware parsing and
+    formatting, so InvariantGlobalization is intentionally NOT enabled.
+    -->
+    <ContainerFamily>noble-chiseled-extra</ContainerFamily>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\SimplyBudgetWeb.Core\SimplyBudgetWeb.Core.csproj" />
     <ProjectReference Include="..\SimplyBudgetWeb.Data\SimplyBudgetWeb.Data.csproj" />

@@ -9,13 +9,20 @@ using Microsoft.Identity.Web;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults()
-    .AddDatabase();
+    .AddDatabase()
+    .AddStartupWarmup();
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
+
+// Swagger is only mapped in Development, so avoid paying to build the generator and its
+// document/schema services on a production cold start.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+}
 
 // Add CORS for frontend in development
 builder.Services.AddCors(options =>
@@ -94,6 +101,8 @@ builder.Services.AddScoped<CurrentUserSyncService>();
 builder.Services.AddScoped<IBudgetMonthUpdateNotifier, BudgetMonthUpdateNotifier>();
 
 var app = builder.Build();
+
+app.LogStartupTimings();
 
 app.MapDefaultEndpoints();
 

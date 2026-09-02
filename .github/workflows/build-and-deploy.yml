@@ -471,10 +471,13 @@ jobs:
           exit $exitCode
 
 
-  # Build and push Docker image for backend
+  # Build and push Docker image for backend.
+  # Depends on deploy-database so the schema is already migrated before the new image goes live.
+  # That ordering is what allows RunMigrationsOnStartup to stay off in production, keeping
+  # EF model build + MigrateAsync (and any Azure SQL resume) off the cold-start path.
   deploy-backend:
     runs-on: ubuntu-latest
-    needs: [build, ui-tests, get-infrastructure-outputs]
+    needs: [build, ui-tests, get-infrastructure-outputs, deploy-database]
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && needs.get-infrastructure-outputs.outputs.deploy_ready == 'true'
     environment: production
     steps:

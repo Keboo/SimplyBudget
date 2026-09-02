@@ -83,10 +83,13 @@ var frontendApp = builder.AddJavaScriptApp(Resources.Frontend, "../SimplyBudgetW
 
 if (builder.ExecutionContext.IsPublishMode)
 {
-    // Enable migrations on startup for Azure deployments
-    // Applying migrations on startup is not recommended for production scenarios.
+    // Note: migrations are intentionally NOT applied on startup. The deploy pipeline's
+    // "deploy-database" job runs an EF migrations bundle before "deploy-backend" publishes the
+    // new image. Running MigrateAsync in the app would force the EF model to be built and a
+    // database round trip - potentially waiting on a serverless Azure SQL resume - on every cold
+    // start of a scaled-to-zero replica.
     // See: https://learn.microsoft.com/ef/core/managing-schemas/migrations/applying?tabs=dotnet-core-cli&WT.mc_id=DT-MVP-5003472
-    backend.WithEnvironment("RunMigrationsOnStartup", "true");
+    backend.WithEnvironment("RunMigrationsOnStartup", "false");
 }
 
 builder.Build().Run();
