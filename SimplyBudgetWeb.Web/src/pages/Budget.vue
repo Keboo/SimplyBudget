@@ -237,8 +237,8 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                 class="border-b category-clickable-row"
                 @click="openCategoryHistory(cat)"
               >
-                <v-list-item-title>{{ cat.name ?? '(unnamed)' }}</v-list-item-title>
                 <v-list-item-subtitle>
+                  <div class="budget-category-name mb-1">{{ cat.name ?? '(unnamed)' }}</div>
                   <div v-if="cat.description" class="mb-1">{{ cat.description }}</div>
                   <div class="budget-chip-row d-flex flex-wrap mt-1" style="gap: 4px;">
                     <v-chip size="small">Budget: {{ cat.usePercentage ? `${cat.budgetedPercentage}%` : formatCents(cat.budgetedAmount) }}</v-chip>
@@ -337,6 +337,13 @@ function openCategoryHistory(category: BudgetCategoryDto) {
 <style scoped>
 .category-clickable-row {
   cursor: pointer;
+}
+
+.budget-category-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  color: rgba(var(--v-theme-on-surface), 0.87);
 }
 
 .expense-chart {
