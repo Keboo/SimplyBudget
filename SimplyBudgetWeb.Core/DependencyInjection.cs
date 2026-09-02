@@ -35,4 +35,19 @@ public static class DependencyInjection
 
         return builder;
     }
+
+    /// <summary>
+    /// Registers the post-start warm-up that primes the database connection and Entra ID metadata
+    /// so the first request after a cold start doesn't have to. Enabled by default; set
+    /// <c>WarmUpOnStartup</c> to <c>false</c> to disable.
+    /// </summary>
+    public static TBuilder AddStartupWarmup<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+    {
+        if (builder.Configuration.GetValue("WarmUpOnStartup", defaultValue: true))
+        {
+            builder.Services.AddHostedService<StartupWarmupService>();
+        }
+
+        return builder;
+    }
 }

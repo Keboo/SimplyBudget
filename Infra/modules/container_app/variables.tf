@@ -35,7 +35,17 @@ variable "memory" {
 }
 
 variable "min_replicas" {
-  description = "Minimum number of replicas."
+  description = <<-EOT
+    Minimum number of replicas.
+
+    Deliberately 0: scale-to-zero is the main cost lever for this low-traffic app, and the
+    cooldown period (see cooldown_period_seconds) already keeps the app warm through a normal
+    session. The cost of that choice is a cold start after an idle period, which is mitigated in
+    the app itself (ReadyToRun publish, chiseled base image, no migrate-on-startup, post-start
+    warm-up of the database connection and Entra ID metadata) and by a fast startup probe.
+
+    Set to 1 to eliminate cold starts entirely at the cost of running a replica 24/7.
+  EOT
   type        = number
   default     = 0
 }

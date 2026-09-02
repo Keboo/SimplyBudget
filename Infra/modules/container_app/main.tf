@@ -68,15 +68,20 @@ resource "azurerm_container_app" "app" {
         path             = "/alive"
         port             = 8081
         transport        = "HTTP"
-        interval_seconds = 10
+        interval_seconds = 2
       }
 
+      # The startup probe gates how quickly a cold (scaled-from-zero) replica can start
+      # serving. A long interval adds pure latency even when the app is ready immediately, so
+      # poll frequently and get the failure budget from the threshold instead.
+      # "/health" must stay cheap and dependency-free (no database check) - adding a
+      # dependency check here would put Azure SQL resume time on the critical startup path.
       startup_probe {
         path                    = "/health"
         port                    = 8081
         transport               = "HTTP"
-        interval_seconds        = 5
-        failure_count_threshold = 15 # 5 * 15 = 75 seconds
+        interval_seconds        = 2
+        failure_count_threshold = 40 # 2 * 40 = 80 seconds
       }
     }
   }
