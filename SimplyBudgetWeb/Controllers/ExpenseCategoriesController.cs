@@ -37,6 +37,10 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
                   (c.Cap.HasValue && Math.Abs(c.Cap.Value) == searchAmountAbs))));
         }
 
+        query = query
+            .OrderBy(c => c.Name ?? string.Empty)
+            .ThenBy(c => c.ID);
+
         var categories = await query.ToListAsync();
         var idsWithItems = await GetIdsWithItemsAsync(categories.Select(c => c.ID));
         return categories.Select(c => ToDto(c, idsWithItems.Contains(c.ID))).ToArray();
