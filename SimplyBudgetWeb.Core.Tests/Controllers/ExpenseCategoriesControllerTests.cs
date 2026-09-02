@@ -57,6 +57,32 @@ public class ExpenseCategoriesControllerTests
     }
 
     [Test]
+    public async Task GetAll_ReturnsCategoriesSortedAlphabetically()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            context.ExpenseCategories.AddRange(
+                new ExpenseCategory { Name = "Utilities" },
+                new ExpenseCategory { Name = "Auto" },
+                new ExpenseCategory { Name = "Groceries" });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.GetAll(includeHidden: true, search: null);
+
+        await Assert.That(result.Length).IsEqualTo(3);
+        await Assert.That(result[0].Name).IsEqualTo("Auto");
+        await Assert.That(result[1].Name).IsEqualTo("Groceries");
+        await Assert.That(result[2].Name).IsEqualTo("Utilities");
+    }
+
+    [Test]
     public async Task Update_RenamesCategory()
     {
         AutoMocker mocker = new();

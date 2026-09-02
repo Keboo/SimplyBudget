@@ -11,7 +11,7 @@ import type {
   CalculatorTaxOptionsDto,
   CurrentUserDto,
 } from '@/types'
-import { formatCents, centsToDollars } from '@/utils/currency'
+import { formatCents, centsToDollars, dollarsToCents } from '@/utils/currency'
 import { resetExternalLinkRulesCache } from '@/utils/externalLinks'
 import CategorySelector from '@/components/CategorySelector.vue'
 
@@ -142,7 +142,14 @@ const categoriesLoading = ref(false)
 const showHiddenCategories = ref(false)
 const manageCategories = ref<ExpenseCategoryDto[]>([])
 const editCategoryId = ref<number | null>(null)
-const editCategoryForm = ref({ name: '', description: '', categoryName: '' })
+const editCategoryForm = ref({
+  name: '',
+  description: '',
+  categoryName: '',
+  budgetType: 'fixed' as 'fixed' | 'percentage',
+  budgetedAmount: '0.00',
+  budgetedPercentage: '0',
+})
 const deleteCategory = ref<ExpenseCategoryDto | null>(null)
 
 async function fetchCurrentUserProfile() {
@@ -490,9 +497,12 @@ async function handleDeleteExternalLink() {
 async function fetchManageCategories() {
   categoriesLoading.value = true
   try {
-    manageCategories.value = await apiClient.get<ExpenseCategoryDto[]>(
+    const fetchedCategories = await apiClient.get<ExpenseCategoryDto[]>(
       `/api/expense-categories?includeHidden=${showHiddenCategories.value}`,
     ) ?? []
+    manageCategories.value = fetchedCategories.sort((a, b) =>
+      (a.name ?? '').localeCompare(b.name ?? '', undefined, { sensitivity: 'base' }) || (a.id - b.id),
+    )
     categoriesLoaded.value = true
   } catch {
     snackbar.enqueueSnackbar('Failed to load expense categories', { variant: 'error' })
@@ -507,17 +517,34 @@ function startEditCategory(category: ExpenseCategoryDto) {
     name: category.name ?? '',
     description: category.description ?? '',
     categoryName: category.categoryName ?? '',
+    budgetType: category.usePercentage ? 'percentage' : 'fixed',
+    budgetedAmount: centsToDollars(category.budgetedAmount),
+    budgetedPercentage: category.budgetedPercentage.toString(),
   }
 }
 
 async function handleSaveCategoryEdit(category: ExpenseCategoryDto) {
+  const budgetType = editCategoryForm.value.budgetType
+  const budgetedAmount = dollarsToCents(editCategoryForm.value.budgetedAmount)
+  const budgetedPercentage = Number.parseInt(editCategoryForm.value.budgetedPercentage, 10)
+
+  if (budgetType === 'fixed' && (Number.isNaN(budgetedAmount) || budgetedAmount < 0)) {
+    snackbar.enqueueSnackbar('Budgeted amount must be 0 or greater', { variant: 'error' })
+    return
+  }
+
+  if (budgetType === 'percentage' && (!Number.isInteger(budgetedPercentage) || budgetedPercentage <= 0 || budgetedPercentage > 100)) {
+    snackbar.enqueueSnackbar('Budgeted percentage must be a whole number between 1 and 100', { variant: 'error' })
+    return
+  }
+
   try {
     await apiClient.put(`/api/expense-categories/${category.id}`, {
       name: editCategoryForm.value.name,
       description: editCategoryForm.value.description,
       categoryName: editCategoryForm.value.categoryName,
-      budgetedAmount: category.budgetedAmount,
-      budgetedPercentage: category.budgetedPercentage,
+      budgetedAmount: budgetType === 'fixed' ? budgetedAmount : 0,
+      budgetedPercentage: budgetType === 'percentage' ? budgetedPercentage : 0,
       cap: category.cap,
       accountId: category.accountId,
     })
@@ -896,6 +923,42 @@ watch(openPanel, (panel) => {
                       density="compact"
                       hide-details
                       style="min-width: 260px;"
+                      @keydown.enter="handleSaveCategoryEdit(category)"
+                    />
+                    <v-btn-toggle
+                      v-model="editCategoryForm.budgetType"
+                      mandatory
+                      density="compact"
+                      divided
+                    >
+                      <v-btn value="fixed" size="small">Fixed</v-btn>
+                      <v-btn value="percentage" size="small">Percentage</v-btn>
+                    </v-btn-toggle>
+                    <v-text-field
+                      v-if="editCategoryForm.budgetType === 'fixed'"
+                      v-model="editCategoryForm.budgetedAmount"
+                      label="Budget"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      density="compact"
+                      hide-details
+                      prefix="$"
+                      style="max-width: 160px;"
+                      @keydown.enter="handleSaveCategoryEdit(category)"
+                    />
+                    <v-text-field
+                      v-else
+                      v-model="editCategoryForm.budgetedPercentage"
+                      label="Budget"
+                      type="number"
+                      step="1"
+                      min="1"
+                      max="100"
+                      density="compact"
+                      hide-details
+                      suffix="%"
+                      style="max-width: 160px;"
                       @keydown.enter="handleSaveCategoryEdit(category)"
                     />
                   </div>
