@@ -237,9 +237,9 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                 class="border-b category-clickable-row"
                 @click="openCategoryHistory(cat)"
               >
-                <v-list-item-subtitle>
+                <div class="budget-category-content">
                   <div class="budget-category-name mb-1">{{ cat.name ?? '(unnamed)' }}</div>
-                  <div v-if="cat.description" class="mb-1">{{ cat.description }}</div>
+                  <div v-if="cat.description" class="budget-category-description mb-1">{{ cat.description }}</div>
                   <div class="budget-chip-row d-flex flex-wrap mt-1" style="gap: 4px;">
                     <v-chip size="small">Budget: {{ cat.usePercentage ? `${cat.budgetedPercentage}%` : formatCents(cat.budgetedAmount) }}</v-chip>
                     <v-chip size="small" color="error" variant="outlined">Spent: {{ formatCents(cat.monthlyExpenses) }}</v-chip>
@@ -248,7 +248,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                     <v-chip size="small" variant="outlined" class="avg-spend-chip">6mo avg: {{ formatCents(cat.sixMonthAverage) }}</v-chip>
                     <v-chip size="small" variant="outlined" class="avg-spend-chip">12mo avg: {{ formatCents(cat.twelveMonthAverage) }}</v-chip>
                   </div>
-                </v-list-item-subtitle>
+                </div>
                 <template #append>
                   <v-btn
                     icon="mdi-chart-bar"
@@ -339,11 +339,22 @@ function openCategoryHistory(category: BudgetCategoryDto) {
   cursor: pointer;
 }
 
+.budget-category-content {
+  white-space: normal;
+  overflow: visible;
+}
+
 .budget-category-name {
   font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.25rem;
   color: rgba(var(--v-theme-on-surface), 0.87);
+}
+
+.budget-category-description {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(var(--v-theme-on-surface), 0.6);
 }
 
 .expense-chart {
