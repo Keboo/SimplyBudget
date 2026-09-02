@@ -83,6 +83,173 @@ public class ExpenseCategoriesControllerTests
     }
 
     [Test]
+    public async Task Create_AddsCategoryWithFixedBudget()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            await context.SetAsDefaultAsync(new Account { Name = "Checking" });
+            await context.SaveChangesAsync();
+        });
+
+        int createdId;
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            var controller = new ExpenseCategoriesController(context);
+
+            var result = await controller.Create(new ExpenseCategoryRequest(
+                Name: "  Groceries  ", Description: "Food", CategoryName: "Living",
+                BudgetedAmount: 5000, BudgetedPercentage: 0, Cap: null, AccountId: null));
+
+            var created = result.Result as CreatedAtActionResult;
+            await Assert.That(created).IsNotNull();
+            var dto = (ExpenseCategoryDto)created!.Value!;
+            await Assert.That(dto.Name).IsEqualTo("Groceries");
+            await Assert.That(dto.BudgetedAmount).IsEqualTo(5000);
+            await Assert.That(dto.UsePercentage).IsFalse();
+            createdId = dto.Id;
+        }
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var stored = await context.ExpenseCategories.FindAsync(createdId);
+            await Assert.That(stored).IsNotNull();
+            await Assert.That(stored!.CategoryName).IsEqualTo("Living");
+            await Assert.That(stored.Description).IsEqualTo("Food");
+        });
+    }
+
+    [Test]
+    public async Task Create_AddsCategoryWithPercentageBudget()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            await context.SetAsDefaultAsync(new Account { Name = "Checking" });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.Create(new ExpenseCategoryRequest(
+            Name: "Savings", Description: null, CategoryName: null,
+            BudgetedAmount: 0, BudgetedPercentage: 15, Cap: null, AccountId: null));
+
+        var created = result.Result as CreatedAtActionResult;
+        await Assert.That(created).IsNotNull();
+        var dto = (ExpenseCategoryDto)created!.Value!;
+        await Assert.That(dto.BudgetedPercentage).IsEqualTo(15);
+        await Assert.That(dto.UsePercentage).IsTrue();
+    }
+
+    [Test]
+    public async Task Create_AssignsDefaultAccount_WhenAccountIsNotSpecified()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        int defaultAccountId = await mocker.InDbScopeAsync(async context =>
+        {
+            var other = new Account { Name = "Savings" };
+            var defaultAccount = new Account { Name = "Checking" };
+            context.Accounts.Add(other);
+            await context.SetAsDefaultAsync(defaultAccount);
+            await context.SaveChangesAsync();
+            return defaultAccount.ID;
+        });
+
+        int createdId;
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            var controller = new ExpenseCategoriesController(context);
+            var result = await controller.Create(new ExpenseCategoryRequest(
+                Name: "Groceries", Description: null, CategoryName: null,
+                BudgetedAmount: 100, BudgetedPercentage: 0, Cap: null, AccountId: null));
+
+            var created = result.Result as CreatedAtActionResult;
+            await Assert.That(created).IsNotNull();
+            createdId = ((ExpenseCategoryDto)created!.Value!).Id;
+        }
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var stored = await context.ExpenseCategories.FindAsync(createdId);
+            await Assert.That(stored!.AccountID).IsEqualTo(defaultAccountId);
+        });
+    }
+
+    [Test]
+    public async Task Create_ReturnsBadRequest_WhenNameIsBlank()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.Create(new ExpenseCategoryRequest(
+            Name: "   ", Description: null, CategoryName: null,
+            BudgetedAmount: 0, BudgetedPercentage: 0, Cap: null, AccountId: null));
+
+        await Assert.That(result.Result).IsTypeOf<BadRequestObjectResult>();
+        await Assert.That(await context.ExpenseCategories.CountAsync()).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task Create_ReturnsBadRequest_WhenPercentageIsOutOfRange()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.Create(new ExpenseCategoryRequest(
+            Name: "Savings", Description: null, CategoryName: null,
+            BudgetedAmount: 0, BudgetedPercentage: 150, Cap: null, AccountId: null));
+
+        await Assert.That(result.Result).IsTypeOf<BadRequestObjectResult>();
+        await Assert.That(await context.ExpenseCategories.CountAsync()).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task Create_ReturnsBadRequest_WhenBothAmountAndPercentageAreSet()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.Create(new ExpenseCategoryRequest(
+            Name: "Savings", Description: null, CategoryName: null,
+            BudgetedAmount: 100, BudgetedPercentage: 10, Cap: null, AccountId: null));
+
+        await Assert.That(result.Result).IsTypeOf<BadRequestObjectResult>();
+    }
+
+    [Test]
+    public async Task Create_ReturnsBadRequest_WhenAccountDoesNotExist()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.Create(new ExpenseCategoryRequest(
+            Name: "Groceries", Description: null, CategoryName: null,
+            BudgetedAmount: 100, BudgetedPercentage: 0, Cap: null, AccountId: 9999));
+
+        await Assert.That(result.Result).IsTypeOf<BadRequestObjectResult>();
+    }
+
+    [Test]
     public async Task Update_RenamesCategory()
     {
         AutoMocker mocker = new();
