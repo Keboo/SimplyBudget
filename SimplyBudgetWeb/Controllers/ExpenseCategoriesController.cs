@@ -147,9 +147,18 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
     [HttpPost]
     public async Task<ActionResult<ExpenseCategoryDto>> Create([FromBody] ExpenseCategoryRequest request)
     {
+        if (Validate(request) is { } validationError)
+            return BadRequest(validationError);
+
+        if (request.AccountId is { } accountId &&
+            await context.Accounts.FindAsync(accountId) is null)
+        {
+            return BadRequest("The specified account does not exist.");
+        }
+
         var category = new ExpenseCategory
         {
-            Name = request.Name,
+            Name = request.Name?.Trim(),
             Description = request.Description,
             CategoryName = request.CategoryName,
             BudgetedAmount = request.BudgetedAmount,
@@ -224,8 +233,28 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
         return NoContent();
     }
 
-    private async Task<HashSet<int>> GetIdsWithItemsAsync(IEnumerable<int> categoryIds)
+    /// <summary>
+    /// Validates the shared create/update payload. Returns an error message, or null when valid.
+    /// A category is budgeted either by a fixed amount or by a percentage of income, never both.
+    /// </summary>
+    private static string? Validate(ExpenseCategoryRequest request)
     {
+        if (string.IsNullOrWhiteSpace(request.Name))
+            return "Name is required.";
+
+        if (request.BudgetedAmount < 0)
+            return "Budgeted amount must be 0 or greater.";
+
+        if (request.BudgetedPercentage is < 0 or > 100)
+            return "Budgeted percentage must be between 0 and 100.";
+
+        if (request.BudgetedAmount > 0 && request.BudgetedPercentage > 0)
+            return "A category cannot use both a budgeted amount and a budgeted percentage.";
+
+        return null;
+    }
+
+    private async Task<HashSet<int>> GetIdsWithItemsAsync(IEnumerable<int> categoryIds)    {
         var ids = categoryIds.ToList();
         if (ids.Count == 0) return [];
 

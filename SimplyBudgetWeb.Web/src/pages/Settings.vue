@@ -151,6 +151,17 @@ const editCategoryForm = ref({
   budgetedPercentage: '0',
 })
 const deleteCategory = ref<ExpenseCategoryDto | null>(null)
+const addCategoryOpen = ref(false)
+const addCategorySaving = ref(false)
+const newCategoryForm = ref({
+  name: '',
+  description: '',
+  categoryName: '',
+  budgetType: 'fixed' as 'fixed' | 'percentage',
+  budgetedAmount: '0.00',
+  budgetedPercentage: '0',
+  accountId: null as number | null,
+})
 
 async function fetchCurrentUserProfile() {
   profileLoading.value = true
@@ -571,6 +582,69 @@ async function handleToggleHideCategory(category: ExpenseCategoryDto) {
   }
 }
 
+function resetNewCategoryForm() {
+  newCategoryForm.value = {
+    name: '',
+    description: '',
+    categoryName: '',
+    budgetType: 'fixed',
+    budgetedAmount: '0.00',
+    budgetedPercentage: '0',
+    accountId: null,
+  }
+}
+
+function openAddCategory() {
+  resetNewCategoryForm()
+  addCategoryOpen.value = true
+  if (!accountsLoaded.value) {
+    void fetchAccounts()
+  }
+}
+
+async function handleAddCategory() {
+  const name = newCategoryForm.value.name.trim()
+  if (!name) {
+    snackbar.enqueueSnackbar('Category name is required', { variant: 'error' })
+    return
+  }
+
+  const budgetType = newCategoryForm.value.budgetType
+  const budgetedAmount = dollarsToCents(newCategoryForm.value.budgetedAmount)
+  const budgetedPercentage = Number.parseInt(newCategoryForm.value.budgetedPercentage, 10)
+
+  if (budgetType === 'fixed' && (Number.isNaN(budgetedAmount) || budgetedAmount < 0)) {
+    snackbar.enqueueSnackbar('Budgeted amount must be 0 or greater', { variant: 'error' })
+    return
+  }
+
+  if (budgetType === 'percentage' && (!Number.isInteger(budgetedPercentage) || budgetedPercentage <= 0 || budgetedPercentage > 100)) {
+    snackbar.enqueueSnackbar('Budgeted percentage must be a whole number between 1 and 100', { variant: 'error' })
+    return
+  }
+
+  addCategorySaving.value = true
+  try {
+    await apiClient.post('/api/expense-categories', {
+      name,
+      description: newCategoryForm.value.description,
+      categoryName: newCategoryForm.value.categoryName,
+      budgetedAmount: budgetType === 'fixed' ? budgetedAmount : 0,
+      budgetedPercentage: budgetType === 'percentage' ? budgetedPercentage : 0,
+      cap: null,
+      accountId: newCategoryForm.value.accountId,
+    })
+    snackbar.enqueueSnackbar('Category added', { variant: 'success' })
+    addCategoryOpen.value = false
+    resetNewCategoryForm()
+    void fetchManageCategories()
+  } catch (err) {
+    snackbar.enqueueSnackbar(err instanceof Error ? err.message : 'Failed to add category', { variant: 'error' })
+  } finally {
+    addCategorySaving.value = false
+  }
+}
+
 async function handleDeleteCategory() {
   if (!deleteCategory.value) return
   try {
@@ -599,6 +673,12 @@ watch(addRuleOpen, (isOpen) => {
 watch(addExternalLinkOpen, (isOpen) => {
   if (!isOpen) {
     resetExternalLinkForm()
+  }
+})
+
+watch(addCategoryOpen, (isOpen) => {
+  if (!isOpen) {
+    resetNewCategoryForm()
   }
 })
 
@@ -880,13 +960,16 @@ watch(openPanel, (panel) => {
         <v-expansion-panel-text>
           <div class="d-flex justify-space-between align-center mb-4">
             <h5 class="text-h5">Expense Categories</h5>
-            <v-switch
-              v-model="showHiddenCategories"
-              label="Show hidden"
-              density="compact"
-              hide-details
-              color="primary"
-            />
+            <div class="d-flex align-center" style="gap: 16px;">
+              <v-switch
+                v-model="showHiddenCategories"
+                label="Show hidden"
+                density="compact"
+                hide-details
+                color="primary"
+              />
+              <v-btn color="primary" prepend-icon="mdi-plus" @click="openAddCategory">Add Category</v-btn>
+            </div>
           </div>
 
           <div v-if="categoriesLoading" class="d-flex justify-center pa-8">
@@ -1169,6 +1252,72 @@ watch(openPanel, (panel) => {
           <v-spacer />
           <v-btn @click="deleteExternalLink = null">Cancel</v-btn>
           <v-btn color="error" @click="handleDeleteExternalLink">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="addCategoryOpen" max-width="520">
+      <v-card>
+        <v-card-title>Add Expense Category</v-card-title>
+        <v-card-text class="d-flex flex-column" style="gap: 16px;">
+          <v-text-field
+            v-model="newCategoryForm.name"
+            label="Name"
+            autofocus
+            @keydown.enter="handleAddCategory"
+          />
+          <v-text-field
+            v-model="newCategoryForm.categoryName"
+            label="Group"
+            hint="Optional. Categories with the same group are shown together."
+            persistent-hint
+            @keydown.enter="handleAddCategory"
+          />
+          <v-text-field
+            v-model="newCategoryForm.description"
+            label="Description"
+            @keydown.enter="handleAddCategory"
+          />
+          <v-select
+            v-model="newCategoryForm.accountId"
+            :items="accounts"
+            item-title="name"
+            item-value="id"
+            label="Account"
+            clearable
+            hint="Leave blank to use the default account."
+            persistent-hint
+          />
+          <v-btn-toggle v-model="newCategoryForm.budgetType" mandatory density="compact" divided>
+            <v-btn value="fixed" size="small">Fixed</v-btn>
+            <v-btn value="percentage" size="small">Percentage</v-btn>
+          </v-btn-toggle>
+          <v-text-field
+            v-if="newCategoryForm.budgetType === 'fixed'"
+            v-model="newCategoryForm.budgetedAmount"
+            label="Budget"
+            type="number"
+            step="0.01"
+            min="0"
+            prefix="$"
+            @keydown.enter="handleAddCategory"
+          />
+          <v-text-field
+            v-else
+            v-model="newCategoryForm.budgetedPercentage"
+            label="Budget"
+            type="number"
+            step="1"
+            min="1"
+            max="100"
+            suffix="%"
+            @keydown.enter="handleAddCategory"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn :disabled="addCategorySaving" @click="addCategoryOpen = false">Cancel</v-btn>
+          <v-btn color="primary" :loading="addCategorySaving" @click="handleAddCategory">Add</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
