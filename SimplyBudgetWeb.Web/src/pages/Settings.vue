@@ -603,6 +603,8 @@ function openAddCategory() {
 }
 
 async function handleAddCategory() {
+  if (addCategorySaving.value) return
+
   const name = newCategoryForm.value.name.trim()
   if (!name) {
     snackbar.enqueueSnackbar('Category name is required', { variant: 'error' })
@@ -1256,7 +1258,7 @@ watch(openPanel, (panel) => {
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="addCategoryOpen" max-width="520">
+    <v-dialog v-model="addCategoryOpen" max-width="520" :persistent="addCategorySaving">
       <v-card>
         <v-card-title>Add Expense Category</v-card-title>
         <v-card-text class="d-flex flex-column" style="gap: 16px;">
