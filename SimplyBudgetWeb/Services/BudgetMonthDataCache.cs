@@ -19,6 +19,7 @@ public interface IBudgetMonthDataCache
 
     void InvalidateMonth(DateTime month);
     void InvalidateMonths(IEnumerable<DateTime> months);
+    void InvalidateAllMonths();
 }
 
 public sealed class BudgetMonthDataCache(IMemoryCache cache) : IBudgetMonthDataCache
@@ -77,6 +78,12 @@ public sealed class BudgetMonthDataCache(IMemoryCache cache) : IBudgetMonthDataC
         InvalidateMonthKey(AllMonthsKey);
     }
 
+    public void InvalidateAllMonths()
+    {
+        foreach (var monthKey in monthTokens.Keys)
+            InvalidateMonthKey(monthKey);
+    }
+
     private CancellationTokenSource GetToken(string monthKey)
         => monthTokens.GetOrAdd(monthKey, _ => new CancellationTokenSource());
 
@@ -120,6 +127,10 @@ public sealed class NullBudgetMonthDataCache : IBudgetMonthDataCache
     }
 
     public void InvalidateMonths(IEnumerable<DateTime> months)
+    {
+    }
+
+    public void InvalidateAllMonths()
     {
     }
 }

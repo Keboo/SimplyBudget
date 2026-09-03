@@ -92,4 +92,47 @@ public class BudgetMonthDataCacheTests
 
         await Assert.That(valueAfterInvalidation).IsEqualTo("all-2");
     }
+
+    [Test]
+    public async Task InvalidateAllMonths_RemovesEntriesForEveryMonth()
+    {
+        using var memoryCache = new MemoryCache(new MemoryCacheOptions());
+        var cache = new BudgetMonthDataCache(memoryCache);
+
+        int januaryFactoryCallCount = 0;
+        int februaryFactoryCallCount = 0;
+        int allMonthsFactoryCallCount = 0;
+
+        Task<string> CreateJanuaryValue()
+        {
+            januaryFactoryCallCount++;
+            return Task.FromResult($"jan-{januaryFactoryCallCount}");
+        }
+
+        Task<string> CreateFebruaryValue()
+        {
+            februaryFactoryCallCount++;
+            return Task.FromResult($"feb-{februaryFactoryCallCount}");
+        }
+
+        Task<string> CreateAllMonthsValue()
+        {
+            allMonthsFactoryCallCount++;
+            return Task.FromResult($"all-{allMonthsFactoryCallCount}");
+        }
+
+        _ = await cache.GetOrCreateAsync("budget", new DateTime(2026, 1, 1), "default", CreateJanuaryValue);
+        _ = await cache.GetOrCreateAsync("budget", new DateTime(2026, 2, 1), "default", CreateFebruaryValue);
+        _ = await cache.GetOrCreateAsync("pending-expenses", null, "default", CreateAllMonthsValue);
+
+        cache.InvalidateAllMonths();
+
+        var januaryAfterInvalidation = await cache.GetOrCreateAsync("budget", new DateTime(2026, 1, 20), "default", CreateJanuaryValue);
+        var februaryAfterInvalidation = await cache.GetOrCreateAsync("budget", new DateTime(2026, 2, 20), "default", CreateFebruaryValue);
+        var allMonthsAfterInvalidation = await cache.GetOrCreateAsync("pending-expenses", null, "default", CreateAllMonthsValue);
+
+        await Assert.That(januaryAfterInvalidation).IsEqualTo("jan-2");
+        await Assert.That(februaryAfterInvalidation).IsEqualTo("feb-2");
+        await Assert.That(allMonthsAfterInvalidation).IsEqualTo("all-2");
+    }
 }
