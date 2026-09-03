@@ -149,6 +149,7 @@ const editCategoryForm = ref({
   budgetType: 'fixed' as 'fixed' | 'percentage',
   budgetedAmount: '0.00',
   budgetedPercentage: '0',
+  cap: '',
 })
 const deleteCategory = ref<ExpenseCategoryDto | null>(null)
 const addCategoryOpen = ref(false)
@@ -160,8 +161,23 @@ const newCategoryForm = ref({
   budgetType: 'fixed' as 'fixed' | 'percentage',
   budgetedAmount: '0.00',
   budgetedPercentage: '0',
+  cap: '',
   accountId: null as number | null,
 })
+
+function parseOptionalNonNegativeDollars(value: string): { valid: boolean; value: number | null } {
+  const trimmed = value.trim()
+  if (trimmed.length === 0) {
+    return { valid: true, value: null }
+  }
+
+  const parsed = Number.parseFloat(trimmed)
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return { valid: false, value: null }
+  }
+
+  return { valid: true, value: Math.round(parsed * 100) }
+}
 
 async function fetchCurrentUserProfile() {
   profileLoading.value = true
@@ -531,6 +547,7 @@ function startEditCategory(category: ExpenseCategoryDto) {
     budgetType: category.usePercentage ? 'percentage' : 'fixed',
     budgetedAmount: centsToDollars(category.budgetedAmount),
     budgetedPercentage: category.budgetedPercentage.toString(),
+    cap: category.cap === null ? '' : centsToDollars(category.cap),
   }
 }
 
@@ -538,6 +555,7 @@ async function handleSaveCategoryEdit(category: ExpenseCategoryDto) {
   const budgetType = editCategoryForm.value.budgetType
   const budgetedAmount = dollarsToCents(editCategoryForm.value.budgetedAmount)
   const budgetedPercentage = Number.parseInt(editCategoryForm.value.budgetedPercentage, 10)
+  const parsedCap = parseOptionalNonNegativeDollars(editCategoryForm.value.cap)
 
   if (budgetType === 'fixed' && (Number.isNaN(budgetedAmount) || budgetedAmount < 0)) {
     snackbar.enqueueSnackbar('Budgeted amount must be 0 or greater', { variant: 'error' })
@@ -549,6 +567,11 @@ async function handleSaveCategoryEdit(category: ExpenseCategoryDto) {
     return
   }
 
+  if (!parsedCap.valid) {
+    snackbar.enqueueSnackbar('Cap must be a valid amount that is 0 or greater', { variant: 'error' })
+    return
+  }
+
   try {
     await apiClient.put(`/api/expense-categories/${category.id}`, {
       name: editCategoryForm.value.name,
@@ -556,7 +579,7 @@ async function handleSaveCategoryEdit(category: ExpenseCategoryDto) {
       categoryName: editCategoryForm.value.categoryName,
       budgetedAmount: budgetType === 'fixed' ? budgetedAmount : 0,
       budgetedPercentage: budgetType === 'percentage' ? budgetedPercentage : 0,
-      cap: category.cap,
+      cap: parsedCap.value,
       accountId: category.accountId,
     })
     snackbar.enqueueSnackbar('Category updated', { variant: 'success' })
@@ -590,6 +613,7 @@ function resetNewCategoryForm() {
     budgetType: 'fixed',
     budgetedAmount: '0.00',
     budgetedPercentage: '0',
+    cap: '',
     accountId: null,
   }
 }
@@ -612,6 +636,7 @@ async function handleAddCategory() {
   const budgetType = newCategoryForm.value.budgetType
   const budgetedAmount = dollarsToCents(newCategoryForm.value.budgetedAmount)
   const budgetedPercentage = Number.parseInt(newCategoryForm.value.budgetedPercentage, 10)
+  const parsedCap = parseOptionalNonNegativeDollars(newCategoryForm.value.cap)
 
   if (budgetType === 'fixed' && (Number.isNaN(budgetedAmount) || budgetedAmount < 0)) {
     snackbar.enqueueSnackbar('Budgeted amount must be 0 or greater', { variant: 'error' })
@@ -623,6 +648,11 @@ async function handleAddCategory() {
     return
   }
 
+  if (!parsedCap.valid) {
+    snackbar.enqueueSnackbar('Cap must be a valid amount that is 0 or greater', { variant: 'error' })
+    return
+  }
+
   addCategorySaving.value = true
   try {
     await apiClient.post('/api/expense-categories', {
@@ -631,7 +661,7 @@ async function handleAddCategory() {
       categoryName: newCategoryForm.value.categoryName,
       budgetedAmount: budgetType === 'fixed' ? budgetedAmount : 0,
       budgetedPercentage: budgetType === 'percentage' ? budgetedPercentage : 0,
-      cap: null,
+      cap: parsedCap.value,
       accountId: newCategoryForm.value.accountId,
     })
     snackbar.enqueueSnackbar('Category added', { variant: 'success' })
@@ -1044,6 +1074,19 @@ watch(openPanel, (panel) => {
                       style="max-width: 160px;"
                       @keydown.enter="handleSaveCategoryEdit(category)"
                     />
+                    <v-text-field
+                      v-model="editCategoryForm.cap"
+                      label="Cap"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      density="compact"
+                      hide-details
+                      prefix="$"
+                      :disabled="editCategoryForm.budgetType !== 'fixed'"
+                      style="max-width: 160px;"
+                      @keydown.enter="handleSaveCategoryEdit(category)"
+                    />
                   </div>
                   <div v-else class="d-flex align-center" style="gap: 8px;">
                     <span>{{ category.name }}</span>
@@ -1053,6 +1096,7 @@ watch(openPanel, (panel) => {
                 <v-list-item-subtitle v-if="editCategoryId !== category.id">
                   <div>{{ category.categoryName ?? 'No group' }}</div>
                   <div v-if="category.description">{{ category.description }}</div>
+                  <div v-if="category.cap !== null">Cap: {{ formatCents(category.cap) }}</div>
                 </v-list-item-subtitle>
                 <template #append>
                   <div v-if="editCategoryId === category.id" class="d-flex" style="gap: 4px;">
@@ -1311,6 +1355,18 @@ watch(openPanel, (panel) => {
             min="1"
             max="100"
             suffix="%"
+            @keydown.enter="handleAddCategory"
+          />
+          <v-text-field
+            v-model="newCategoryForm.cap"
+            label="Cap"
+            type="number"
+            step="0.01"
+            min="0"
+            prefix="$"
+            hint="Optional maximum running balance for fixed-budget categories."
+            persistent-hint
+            :disabled="newCategoryForm.budgetType !== 'fixed'"
             @keydown.enter="handleAddCategory"
           />
         </v-card-text>

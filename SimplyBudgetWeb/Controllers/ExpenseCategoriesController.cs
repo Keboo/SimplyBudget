@@ -180,6 +180,9 @@ public class ExpenseCategoriesController(
     [HttpPut("{id}")]
     public async Task<ActionResult<ExpenseCategoryDto>> Update(int id, [FromBody] ExpenseCategoryRequest request)
     {
+        if (Validate(request) is { } validationError)
+            return BadRequest(validationError);
+
         var category = await context.ExpenseCategories.FindAsync(id);
         if (category is null) return NotFound();
 
@@ -260,6 +263,9 @@ public class ExpenseCategoriesController(
 
         if (request.BudgetedAmount > 0 && request.BudgetedPercentage > 0)
             return "A category cannot use both a budgeted amount and a budgeted percentage.";
+
+        if (request.Cap is < 0)
+            return "Cap must be 0 or greater.";
 
         return null;
     }
