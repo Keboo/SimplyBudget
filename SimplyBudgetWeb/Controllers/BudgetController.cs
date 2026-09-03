@@ -119,14 +119,13 @@ public class BudgetController(
     private static int CalculateAverage(IList<ExpenseCategoryItemDetail> categoryItems, DateTime month, int numMonths)
     {
         var rangeStart = month.AddMonths(-numMonths);
-        var items = categoryItems
+        int totalSpend = categoryItems
             .Where(x => !x.IgnoreBudget && x.Amount < 0 &&
                 x.ExpenseCategoryItem?.Date >= rangeStart &&
                 x.ExpenseCategoryItem?.Date < month)
-            .GroupBy(x => x.ExpenseCategoryItem?.Date.StartOfMonth())
-            .Select(g => g.Sum(x => -x.Amount))
-            .ToList();
-        return items.Any() ? (int)items.Average() : 0;
+            .Sum(x => -x.Amount);
+
+        return totalSpend / numMonths;
     }
 }
 
