@@ -15,6 +15,7 @@ builder.AddServiceDefaults()
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
+builder.Services.AddMemoryCache();
 
 // Swagger is only mapped in Development, so avoid paying to build the generator and its
 // document/schema services on a production cold start.
@@ -99,6 +100,7 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddScoped<CurrentUserSyncService>();
 builder.Services.AddScoped<IBudgetMonthUpdateNotifier, BudgetMonthUpdateNotifier>();
+builder.Services.AddSingleton<IBudgetMonthDataCache, BudgetMonthDataCache>();
 
 var app = builder.Build();
 

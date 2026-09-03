@@ -17,10 +17,12 @@ namespace SimplyBudgetWeb.Controllers;
 [Route("api/pending-expenses")]
 public class PendingExpensesController(
     BudgetWebContext context,
-    IBudgetMonthUpdateNotifier? budgetMonthUpdateNotifier = null) : ControllerBase
+    IBudgetMonthUpdateNotifier? budgetMonthUpdateNotifier = null,
+    IBudgetMonthDataCache? budgetMonthDataCache = null) : ControllerBase
 {
     private const string ConcurrencyConflictMessage = "This pending expense was changed by another user. Refresh and try again.";
     private readonly IBudgetMonthUpdateNotifier budgetMonthUpdates = budgetMonthUpdateNotifier ?? NullBudgetMonthUpdateNotifier.Instance;
+    private readonly IBudgetMonthDataCache monthDataCache = budgetMonthDataCache ?? NullBudgetMonthDataCache.Instance;
 
     [HttpGet]
     public async Task<PendingExpenseDto[]> GetAll(
@@ -28,31 +30,42 @@ public class PendingExpensesController(
         [FromQuery] string? search = null,
         [FromQuery] int? assigneeId = null)
     {
-        var query = context.PendingExpenses
-            .Include(x => x.Assignee)
-            .Include(x => x.SuggestedCategory)
-            .AsQueryable();
+        var monthDate = month?.StartOfMonth();
+        var searchText = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+        var cacheVariant = BuildCacheVariant(searchText, assigneeId);
 
-        if (month.HasValue)
-        {
-            var start = month.Value.StartOfMonth();
-            var end = start.EndOfMonth();
-            query = query.Where(x => x.Date >= start && x.Date <= end);
-        }
+        return await monthDataCache.GetOrCreateAsync(
+            scope: "pending-expenses",
+            month: monthDate,
+            cacheVariant: cacheVariant,
+            valueFactory: async () =>
+            {
+                var query = context.PendingExpenses
+                    .Include(x => x.Assignee)
+                    .Include(x => x.SuggestedCategory)
+                    .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(search))
-            query = ApplySearchFilter(query, search);
+                if (monthDate.HasValue)
+                {
+                    var start = monthDate.Value;
+                    var end = start.EndOfMonth();
+                    query = query.Where(x => x.Date >= start && x.Date <= end);
+                }
 
-        if (assigneeId.HasValue)
-            query = query.Where(x => x.AssigneeId == assigneeId.Value);
+                if (searchText is not null)
+                    query = ApplySearchFilter(query, searchText);
 
-        // Oldest first: pending expenses are worked off like a queue.
-        var items = await query
-            .OrderBy(x => x.Date)
-            .ThenBy(x => x.ID)
-            .ToListAsync();
+                if (assigneeId.HasValue)
+                    query = query.Where(x => x.AssigneeId == assigneeId.Value);
 
-        return items.Select(ToDto).ToArray();
+                // Oldest first: pending expenses are worked off like a queue.
+                var items = await query
+                    .OrderBy(x => x.Date)
+                    .ThenBy(x => x.ID)
+                    .ToListAsync();
+
+                return items.Select(ToDto).ToArray();
+            });
     }
 
     [HttpGet("oldest-month")]
@@ -112,6 +125,7 @@ public class PendingExpensesController(
         {
             return Conflict(ConcurrencyConflictMessage);
         }
+        monthDataCache.InvalidateMonth(pending.Date);
 
         // AssigneeId may have changed since the initial .Include(x => x.Assignee) load, so the
         // Assignee navigation may now be stale (pointing at the old assignee, or non-null when
@@ -145,6 +159,7 @@ public class PendingExpensesController(
         {
             return Conflict(ConcurrencyConflictMessage);
         }
+        monthDataCache.InvalidateMonth(pending.Date);
         return NoContent();
     }
 
@@ -160,6 +175,7 @@ public class PendingExpensesController(
         [FromQuery] int? assigneeId = null)
     {
         var query = context.PendingExpenses.AsQueryable();
+        var searchText = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
 
         if (month.HasValue)
         {
@@ -168,14 +184,19 @@ public class PendingExpensesController(
             query = query.Where(x => x.Date >= start && x.Date <= end);
         }
 
-        if (!string.IsNullOrWhiteSpace(search))
-            query = ApplySearchFilter(query, search);
+        if (searchText is not null)
+            query = ApplySearchFilter(query, searchText);
 
         if (assigneeId.HasValue)
             query = query.Where(x => x.AssigneeId == assigneeId.Value);
 
-        context.PendingExpenses.RemoveRange(query);
+        var itemsToDelete = await query
+            .AsTracking()
+            .ToListAsync();
+
+        context.PendingExpenses.RemoveRange(itemsToDelete);
         await context.SaveChangesAsync();
+        monthDataCache.InvalidateMonths(itemsToDelete.Select(x => x.Date));
         return NoContent();
     }
 
@@ -207,6 +228,7 @@ public class PendingExpensesController(
         }
 
         await context.SaveChangesAsync();
+        monthDataCache.InvalidateMonths(pendingExpenses.Select(x => x.Date));
         return Ok(new ReapplyPendingExpenseRulesResponse(pendingExpenses.Count));
     }
 
@@ -254,9 +276,14 @@ public class PendingExpensesController(
             return Conflict(ConcurrencyConflictMessage);
         }
 
-        await budgetMonthUpdates.NotifyMonthUpdated(item.Date);
+        var changedMonths = new[] { pending.Date, item.Date };
+        monthDataCache.InvalidateMonths(changedMonths);
+        await budgetMonthUpdates.NotifyMonthsUpdated(changedMonths);
         return StatusCode(201);
     }
+
+    private static string BuildCacheVariant(string? search, int? assigneeId)
+        => $"search={search ?? string.Empty};assigneeId={assigneeId?.ToString() ?? string.Empty}";
 
     private static PendingExpenseDto ToDto(PendingExpense p) => new(
         Id: p.ID,

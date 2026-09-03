@@ -3,17 +3,32 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Services;
 
 namespace SimplyBudgetWeb.Controllers;
 
 [ApiController]
 [Route("api/budget")]
-public class BudgetController(BudgetWebContext context) : ControllerBase
+public class BudgetController(
+    BudgetWebContext context,
+    IBudgetMonthDataCache? budgetMonthDataCache = null) : ControllerBase
 {
+    private readonly IBudgetMonthDataCache monthDataCache = budgetMonthDataCache ?? NullBudgetMonthDataCache.Instance;
+
     [HttpGet]
     public async Task<BudgetResponse> Get([FromQuery] DateTime? month)
     {
         var monthDate = (month ?? DateTime.Today).StartOfMonth();
+
+        return await monthDataCache.GetOrCreateAsync(
+            scope: "budget",
+            month: monthDate,
+            cacheVariant: "default",
+            valueFactory: () => GetBudget(monthDate));
+    }
+
+    private async Task<BudgetResponse> GetBudget(DateTime monthDate)
+    {
         var start = monthDate.StartOfMonth();
         var end = monthDate.EndOfMonth();
         var estimatedMonthlyIncome = await CalculateEstimatedMonthlyIncome(monthDate);

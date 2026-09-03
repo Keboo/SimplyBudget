@@ -11,8 +11,12 @@ namespace SimplyBudgetWeb.Controllers;
 
 [ApiController]
 [Route("api/import")]
-public class ImportController(BudgetWebContext context) : ControllerBase
+public class ImportController(
+    BudgetWebContext context,
+    IBudgetMonthDataCache? budgetMonthDataCache = null) : ControllerBase
 {
+    private readonly IBudgetMonthDataCache monthDataCache = budgetMonthDataCache ?? NullBudgetMonthDataCache.Instance;
+
     [HttpPost("parse")]
     public async Task<ActionResult<ImportItemDto[]>> Parse([FromBody] ImportRequest request)
     {
@@ -127,6 +131,7 @@ public class ImportController(BudgetWebContext context) : ControllerBase
 
         context.PendingExpenses.AddRange(pendingExpenses);
         await context.SaveChangesAsync();
+        monthDataCache.InvalidateMonths(pendingExpenses.Select(x => x.Date));
 
         return StatusCode(201);
     }
