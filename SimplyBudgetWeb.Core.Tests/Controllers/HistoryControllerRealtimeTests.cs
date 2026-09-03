@@ -18,6 +18,7 @@ public class HistoryControllerRealtimeTests
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
         var notifier = new Mock<IBudgetMonthUpdateNotifier>();
+        var cache = new Mock<IBudgetMonthDataCache>();
 
         var monthDate = new DateTime(2026, 5, 19);
         int itemId = await mocker.InDbScopeAsync(async context =>
@@ -45,11 +46,12 @@ public class HistoryControllerRealtimeTests
         });
 
         using var context = mocker.Get<BudgetWebContext>();
-        var controller = new HistoryController(context, notifier.Object);
+        var controller = new HistoryController(context, notifier.Object, cache.Object);
 
         var result = await controller.Delete(itemId);
 
         await Assert.That(result).IsTypeOf<NoContentResult>();
+        cache.Verify(x => x.InvalidateMonth(monthDate), Times.Once);
         notifier.Verify(
             x => x.NotifyMonthUpdated(monthDate, It.IsAny<CancellationToken>()),
             Times.Once);

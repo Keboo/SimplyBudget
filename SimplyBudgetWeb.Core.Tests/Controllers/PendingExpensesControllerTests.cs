@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using SimplyBudgetWeb.Controllers;
 using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Services;
 
 namespace SimplyBudgetWeb.Core.Tests.Controllers;
 
@@ -243,11 +244,13 @@ public class PendingExpensesControllerTests
     {
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
+        var cache = new Mock<IBudgetMonthDataCache>();
 
+        var pendingDate = new DateTime(2026, 1, 1);
         var (pendingId, assigneeId, version) = await mocker.InDbScopeAsync(async context =>
         {
             var assignee = new PendingExpenseAssignee { Name = "Jordan", ObjectId = "jordan-oid" };
-            var pending = new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Costco", Amount = 100 };
+            var pending = new PendingExpense { Date = pendingDate, Description = "Costco", Amount = 100 };
             context.PendingExpenseAssignees.Add(assignee);
             context.PendingExpenses.Add(pending);
             await context.SaveChangesAsync();
@@ -256,7 +259,7 @@ public class PendingExpensesControllerTests
 
         using (var context = mocker.Get<BudgetWebContext>())
         {
-            var controller = new PendingExpensesController(context);
+            var controller = new PendingExpensesController(context, budgetMonthDataCache: cache.Object);
             var result = await controller.Update(pendingId, new PendingExpenseUpdateRequest(assigneeId, "Needs review", version));
 
             var dto = (result.Value as PendingExpenseDto) ?? ((OkObjectResult)result.Result!).Value as PendingExpenseDto;
@@ -272,6 +275,8 @@ public class PendingExpensesControllerTests
             await Assert.That(pending.AssigneeId).IsEqualTo(assigneeId);
             await Assert.That(pending.Notes).IsEqualTo("Needs review");
         });
+
+        cache.Verify(x => x.InvalidateMonth(pendingDate), Times.Once);
     }
 
     [Test]

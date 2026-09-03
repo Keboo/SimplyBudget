@@ -12,9 +12,11 @@ namespace SimplyBudgetWeb.Controllers;
 [Route("api/history")]
 public class HistoryController(
     BudgetWebContext context,
-    IBudgetMonthUpdateNotifier? budgetMonthUpdateNotifier = null) : ControllerBase
+    IBudgetMonthUpdateNotifier? budgetMonthUpdateNotifier = null,
+    IBudgetMonthDataCache? budgetMonthDataCache = null) : ControllerBase
 {
     private readonly IBudgetMonthUpdateNotifier budgetMonthUpdates = budgetMonthUpdateNotifier ?? NullBudgetMonthUpdateNotifier.Instance;
+    private readonly IBudgetMonthDataCache monthDataCache = budgetMonthDataCache ?? NullBudgetMonthDataCache.Instance;
 
     [HttpGet]
     public async Task<HistoryItemDto[]> GetAll(
@@ -24,42 +26,51 @@ public class HistoryController(
         [FromQuery] int? accountId)
     {
         var monthDate = (month ?? DateTime.Today).StartOfMonth();
-        var start = monthDate.StartOfMonth();
-        var end = monthDate.EndOfMonth();
+        var searchText = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+        var cacheVariant = BuildCacheVariant(searchText, categoryId, accountId);
 
-        var query = context.ExpenseCategoryItems
-            .Include(x => x.Details!)
-                .ThenInclude(d => d.ExpenseCategory)
-            .Where(x => x.Date >= start && x.Date <= end)
-            .AsQueryable();
+        return await monthDataCache.GetOrCreateAsync(
+            scope: "history",
+            month: monthDate,
+            cacheVariant: cacheVariant,
+            valueFactory: async () =>
+            {
+                var start = monthDate.StartOfMonth();
+                var end = monthDate.EndOfMonth();
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var searchText = search.Trim();
-            var hasSearchAmount = SearchAmountParser.TryParseAmountInCents(searchText, out var searchAmountInCents);
-            var searchAmountAbs = Math.Abs(searchAmountInCents);
+                var query = context.ExpenseCategoryItems
+                    .Include(x => x.Details!)
+                        .ThenInclude(d => d.ExpenseCategory)
+                    .Where(x => x.Date >= start && x.Date <= end)
+                    .AsQueryable();
 
-            query = query.Where(x =>
-                (x.Description != null && x.Description.Contains(searchText)) ||
-                (x.Notes != null && x.Notes.Contains(searchText)) ||
-                x.Details!.Any(d => d.ExpenseCategory!.Description != null && d.ExpenseCategory.Description.Contains(searchText)) ||
-                (hasSearchAmount &&
-                 (x.Details!.Any(d => Math.Abs(d.Amount) == searchAmountAbs) ||
-                  Math.Abs(x.Details!.Sum(d => d.Amount)) == searchAmountAbs)));
-        }
+                if (searchText is not null)
+                {
+                    var hasSearchAmount = SearchAmountParser.TryParseAmountInCents(searchText, out var searchAmountInCents);
+                    var searchAmountAbs = Math.Abs(searchAmountInCents);
 
-        if (categoryId.HasValue)
-            query = query.Where(x => x.Details!.Any(d => d.ExpenseCategoryId == categoryId.Value));
+                    query = query.Where(x =>
+                        (x.Description != null && x.Description.Contains(searchText)) ||
+                        (x.Notes != null && x.Notes.Contains(searchText)) ||
+                        x.Details!.Any(d => d.ExpenseCategory!.Description != null && d.ExpenseCategory.Description.Contains(searchText)) ||
+                        (hasSearchAmount &&
+                         (x.Details!.Any(d => Math.Abs(d.Amount) == searchAmountAbs) ||
+                          Math.Abs(x.Details!.Sum(d => d.Amount)) == searchAmountAbs)));
+                }
 
-        if (accountId.HasValue)
-            query = query.Where(x => x.Details!.Any(d => d.ExpenseCategory!.AccountID == accountId.Value));
+                if (categoryId.HasValue)
+                    query = query.Where(x => x.Details!.Any(d => d.ExpenseCategoryId == categoryId.Value));
 
-        var items = await query
-            .OrderBy(x => x.Date)
-            .ThenBy(x => x.ID)
-            .ToListAsync();
+                if (accountId.HasValue)
+                    query = query.Where(x => x.Details!.Any(d => d.ExpenseCategory!.AccountID == accountId.Value));
 
-        return items.Select(ToDto).ToArray();
+                var items = await query
+                    .OrderBy(x => x.Date)
+                    .ThenBy(x => x.ID)
+                    .ToListAsync();
+
+                return items.Select(ToDto).ToArray();
+            });
     }
 
     [HttpPut("{id}")]
@@ -74,6 +85,7 @@ public class HistoryController(
 
         item.Notes = NormalizeNotes(request.Notes);
         await context.SaveChangesAsync();
+        monthDataCache.InvalidateMonth(item.Date);
         return ToDto(item);
     }
 
@@ -87,9 +99,13 @@ public class HistoryController(
 
         context.ExpenseCategoryItems.Remove(item);
         await context.SaveChangesAsync();
+        monthDataCache.InvalidateMonth(item.Date);
         await budgetMonthUpdates.NotifyMonthUpdated(item.Date);
         return NoContent();
     }
+
+    private static string BuildCacheVariant(string? search, int? categoryId, int? accountId)
+        => $"search={search ?? string.Empty};categoryId={categoryId?.ToString() ?? string.Empty};accountId={accountId?.ToString() ?? string.Empty}";
 
     private static HistoryItemDto ToDto(ExpenseCategoryItem item) => new(
         Id: item.ID,

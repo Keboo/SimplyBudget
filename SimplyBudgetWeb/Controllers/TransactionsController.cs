@@ -9,9 +9,11 @@ namespace SimplyBudgetWeb.Controllers;
 [Route("api/transactions")]
 public class TransactionsController(
     BudgetWebContext context,
-    IBudgetMonthUpdateNotifier? budgetMonthUpdateNotifier = null) : ControllerBase
+    IBudgetMonthUpdateNotifier? budgetMonthUpdateNotifier = null,
+    IBudgetMonthDataCache? budgetMonthDataCache = null) : ControllerBase
 {
     private readonly IBudgetMonthUpdateNotifier budgetMonthUpdates = budgetMonthUpdateNotifier ?? NullBudgetMonthUpdateNotifier.Instance;
+    private readonly IBudgetMonthDataCache monthDataCache = budgetMonthDataCache ?? NullBudgetMonthDataCache.Instance;
 
     [HttpPost("transaction")]
     public async Task<IActionResult> AddTransaction([FromBody] TransactionRequest request)
@@ -27,6 +29,7 @@ public class TransactionsController(
             item.Notes = notes;
             await context.SaveChangesAsync();
         }
+        monthDataCache.InvalidateMonth(request.Date);
         await budgetMonthUpdates.NotifyMonthUpdated(request.Date);
         return StatusCode(201);
     }
@@ -45,6 +48,7 @@ public class TransactionsController(
             item.Notes = notes;
             await context.SaveChangesAsync();
         }
+        monthDataCache.InvalidateMonth(request.Date);
         await budgetMonthUpdates.NotifyMonthUpdated(request.Date);
         return StatusCode(201);
     }
@@ -59,6 +63,7 @@ public class TransactionsController(
         if (toCategory is null) return NotFound($"Category {request.ToCategoryId} not found.");
 
         await context.AddTransfer(request.Description, request.Date, request.Amount, fromCategory, toCategory);
+        monthDataCache.InvalidateMonth(request.Date);
         await budgetMonthUpdates.NotifyMonthUpdated(request.Date);
         return StatusCode(201);
     }

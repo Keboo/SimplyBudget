@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using SimplyBudgetWeb.Controllers;
 using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Services;
 
 namespace SimplyBudgetWeb.Core.Tests.Controllers;
 
@@ -201,16 +202,18 @@ public class HistoryControllerTests
     {
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
+        var cache = new Mock<IBudgetMonthDataCache>();
 
-        var itemId = await mocker.InDbScopeAsync(async context =>
+        var (itemId, itemDate) = await mocker.InDbScopeAsync(async context =>
         {
+            var date = new DateTime(2026, 1, 10);
             var category = new ExpenseCategory { Name = "Groceries" };
             context.ExpenseCategories.Add(category);
             await context.SaveChangesAsync();
 
             var item = new ExpenseCategoryItem
             {
-                Date = new DateTime(2026, 1, 10),
+                Date = date,
                 Description = "Costco",
                 Notes = "Original note",
                 Details = [new ExpenseCategoryItemDetail { Amount = -1234, ExpenseCategoryId = category.ID }],
@@ -218,12 +221,12 @@ public class HistoryControllerTests
             context.ExpenseCategoryItems.Add(item);
             await context.SaveChangesAsync();
 
-            return item.ID;
+            return (item.ID, date);
         });
 
         using (var context = mocker.Get<BudgetWebContext>())
         {
-            var controller = new HistoryController(context);
+            var controller = new HistoryController(context, budgetMonthDataCache: cache.Object);
             var result = await controller.Update(itemId, new HistoryItemUpdateRequest("  Updated note  "));
 
             var dto = (result.Value as HistoryItemDto) ?? ((OkObjectResult?)result.Result)?.Value as HistoryItemDto;
@@ -236,6 +239,8 @@ public class HistoryControllerTests
             var stored = await context.ExpenseCategoryItems.SingleAsync(x => x.ID == itemId);
             await Assert.That(stored.Notes).IsEqualTo("Updated note");
         });
+
+        cache.Verify(x => x.InvalidateMonth(itemDate), Times.Once);
     }
 
     [Test]

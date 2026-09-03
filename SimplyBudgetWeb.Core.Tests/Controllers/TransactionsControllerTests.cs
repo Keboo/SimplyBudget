@@ -17,6 +17,7 @@ public class TransactionsControllerTests
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
         var notifier = new Mock<IBudgetMonthUpdateNotifier>();
+        var cache = new Mock<IBudgetMonthDataCache>();
 
         var categoryId = await mocker.InDbScopeAsync(async context =>
         {
@@ -29,13 +30,14 @@ public class TransactionsControllerTests
         var monthDate = new DateTime(2026, 1, 10);
         using (var context = mocker.Get<BudgetWebContext>())
         {
-            var controller = new TransactionsController(context, notifier.Object);
+            var controller = new TransactionsController(context, notifier.Object, cache.Object);
             await controller.AddTransaction(new TransactionRequest(
                 Description: "Costco",
                 Date: monthDate,
                 Items: [new TransactionItemRequest(categoryId, 45_00)]));
         }
 
+        cache.Verify(x => x.InvalidateMonth(monthDate), Times.Once);
         notifier.Verify(
             x => x.NotifyMonthUpdated(monthDate, It.IsAny<CancellationToken>()),
             Times.Once);
