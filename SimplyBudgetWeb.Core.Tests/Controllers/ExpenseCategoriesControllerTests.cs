@@ -102,13 +102,14 @@ public class ExpenseCategoriesControllerTests
 
             var result = await controller.Create(new ExpenseCategoryRequest(
                 Name: "  Groceries  ", Description: "Food", CategoryName: "Living",
-                BudgetedAmount: 5000, BudgetedPercentage: 0, Cap: null, AccountId: null));
+                BudgetedAmount: 5000, BudgetedPercentage: 0, Cap: 12000, AccountId: null));
 
             var created = result.Result as CreatedAtActionResult;
             await Assert.That(created).IsNotNull();
             var dto = (ExpenseCategoryDto)created!.Value!;
             await Assert.That(dto.Name).IsEqualTo("Groceries");
             await Assert.That(dto.BudgetedAmount).IsEqualTo(5000);
+            await Assert.That(dto.Cap).IsEqualTo(12000);
             await Assert.That(dto.UsePercentage).IsFalse();
             createdId = dto.Id;
         }
@@ -119,6 +120,7 @@ public class ExpenseCategoriesControllerTests
             await Assert.That(stored).IsNotNull();
             await Assert.That(stored!.CategoryName).IsEqualTo("Living");
             await Assert.That(stored.Description).IsEqualTo("Food");
+            await Assert.That(stored.Cap).IsEqualTo(12000);
         });
     }
 
@@ -235,6 +237,23 @@ public class ExpenseCategoriesControllerTests
     }
 
     [Test]
+    public async Task Create_ReturnsBadRequest_WhenCapIsNegative()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.Create(new ExpenseCategoryRequest(
+            Name: "Groceries", Description: null, CategoryName: null,
+            BudgetedAmount: 100, BudgetedPercentage: 0, Cap: -1, AccountId: null));
+
+        await Assert.That(result.Result).IsTypeOf<BadRequestObjectResult>();
+        await Assert.That(await context.ExpenseCategories.CountAsync()).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task Create_ReturnsBadRequest_WhenAccountDoesNotExist()
     {
         AutoMocker mocker = new();
@@ -269,11 +288,40 @@ public class ExpenseCategoriesControllerTests
 
         var result = await controller.Update(categoryId, new ExpenseCategoryRequest(
             Name: "New Name", Description: "New Description", CategoryName: "New Group",
-            BudgetedAmount: 0, BudgetedPercentage: 0, Cap: null, AccountId: null));
+            BudgetedAmount: 0, BudgetedPercentage: 0, Cap: 25000, AccountId: null));
 
         await Assert.That(result.Value!.Name).IsEqualTo("New Name");
         await Assert.That(result.Value!.Description).IsEqualTo("New Description");
         await Assert.That(result.Value!.CategoryName).IsEqualTo("New Group");
+        await Assert.That(result.Value!.Cap).IsEqualTo(25000);
+    }
+
+    [Test]
+    public async Task Update_ReturnsBadRequest_WhenCapIsNegative()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        int categoryId = await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Groceries", Cap = 1000 };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+            return category.ID;
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context);
+
+        var result = await controller.Update(categoryId, new ExpenseCategoryRequest(
+            Name: "Groceries", Description: null, CategoryName: null,
+            BudgetedAmount: 100, BudgetedPercentage: 0, Cap: -100, AccountId: null));
+
+        await Assert.That(result.Result).IsTypeOf<BadRequestObjectResult>();
+
+        var stored = await context.ExpenseCategories.FindAsync(categoryId);
+        await Assert.That(stored).IsNotNull();
+        await Assert.That(stored!.Cap).IsEqualTo(1000);
     }
 
     [Test]
