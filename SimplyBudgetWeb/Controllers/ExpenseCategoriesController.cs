@@ -3,14 +3,19 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Services;
 using SimplyBudgetWeb.Utilities;
 
 namespace SimplyBudgetWeb.Controllers;
 
 [ApiController]
 [Route("api/expense-categories")]
-public class ExpenseCategoriesController(BudgetWebContext context) : ControllerBase
+public class ExpenseCategoriesController(
+    BudgetWebContext context,
+    IBudgetMonthDataCache? budgetMonthDataCache = null) : ControllerBase
 {
+    private readonly IBudgetMonthDataCache monthDataCache = budgetMonthDataCache ?? NullBudgetMonthDataCache.Instance;
+
     [HttpGet]
     public async Task<ExpenseCategoryDto[]> GetAll(
         [FromQuery] bool includeHidden = false,
@@ -168,6 +173,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
         };
         context.ExpenseCategories.Add(category);
         await context.SaveChangesAsync();
+        monthDataCache.InvalidateAllMonths();
         return CreatedAtAction(nameof(GetById), new { id = category.ID }, ToDto(category, hasItems: false));
     }
 
@@ -186,6 +192,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
         category.AccountID = request.AccountId;
 
         await context.SaveChangesAsync();
+        monthDataCache.InvalidateAllMonths();
         return ToDto(category, await context.HasItemsAsync(category));
     }
 
@@ -201,6 +208,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
 
         category.IsHidden = true;
         await context.SaveChangesAsync();
+        monthDataCache.InvalidateAllMonths();
         return ToDto(category, await context.HasItemsAsync(category));
     }
 
@@ -212,6 +220,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
 
         category.IsHidden = false;
         await context.SaveChangesAsync();
+        monthDataCache.InvalidateAllMonths();
         return ToDto(category, await context.HasItemsAsync(category));
     }
 
@@ -230,6 +239,7 @@ public class ExpenseCategoriesController(BudgetWebContext context) : ControllerB
 
         context.ExpenseCategories.Remove(category);
         await context.SaveChangesAsync();
+        monthDataCache.InvalidateAllMonths();
         return NoContent();
     }
 

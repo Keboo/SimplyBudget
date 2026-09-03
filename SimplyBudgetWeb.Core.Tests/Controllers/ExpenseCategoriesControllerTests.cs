@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SimplyBudgetShared.Data;
 using SimplyBudgetWeb.Controllers;
 using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Services;
 
 namespace SimplyBudgetWeb.Core.Tests.Controllers;
 
@@ -273,6 +274,31 @@ public class ExpenseCategoriesControllerTests
         await Assert.That(result.Value!.Name).IsEqualTo("New Name");
         await Assert.That(result.Value!.Description).IsEqualTo("New Description");
         await Assert.That(result.Value!.CategoryName).IsEqualTo("New Group");
+    }
+
+    [Test]
+    public async Task Update_InvalidatesBudgetMonthCache()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+        var cache = new Mock<IBudgetMonthDataCache>();
+
+        int categoryId = await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Groceries", BudgetedAmount = 5000 };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+            return category.ID;
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new ExpenseCategoriesController(context, budgetMonthDataCache: cache.Object);
+
+        _ = await controller.Update(categoryId, new ExpenseCategoryRequest(
+            Name: "Groceries", Description: null, CategoryName: null,
+            BudgetedAmount: 7500, BudgetedPercentage: 0, Cap: null, AccountId: null));
+
+        cache.Verify(x => x.InvalidateAllMonths(), Times.Once);
     }
 
     [Test]
