@@ -76,6 +76,10 @@ const budgetLineLabel = computed(() => {
     : `${formatCents(chart.budgetedAmount)} budget`
 })
 
+const chartThreeMonthAverage = computed(() => getCategoryChartAverage(3))
+const chartSixMonthAverage = computed(() => getCategoryChartAverage(6))
+const chartTwelveMonthAverage = computed(() => getCategoryChartAverage(12))
+
 async function fetchBudget(background = false) {
   if (!background) loading.value = true
   try {
@@ -171,6 +175,17 @@ function formatChartTooltip(month: string, amount: number): string {
   return `${label}: ${formatCents(amount)}`
 }
 
+function getCategoryChartAverage(monthCount: number): number {
+  const chart = categoryChart.value
+  if (!chart) return 0
+
+  return chart.months.slice(-monthCount).reduce((sum, point) => sum + point.amount, 0) / monthCount
+}
+
+function getAverageChipColor(usePercentage: boolean, budgetedAmount: number, average: number): 'error' | undefined {
+  return !usePercentage && average > budgetedAmount ? 'error' : undefined
+}
+
 async function openCategoryChart(category: BudgetCategoryDto) {
   categoryChartDialogOpen.value = true
   categoryChartLoading.value = true
@@ -244,9 +259,30 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                     <v-chip size="small">Budget: {{ cat.usePercentage ? `${cat.budgetedPercentage}%` : formatCents(cat.budgetedAmount) }}</v-chip>
                     <v-chip size="small" color="error" variant="outlined">Spent: {{ formatCents(cat.monthlyExpenses) }}</v-chip>
                     <v-chip size="small" :color="cat.currentBalance >= 0 ? 'success' : 'error'">Balance: {{ formatCents(cat.currentBalance) }}</v-chip>
-                    <v-chip size="small" variant="outlined" class="avg-spend-chip">3mo avg: {{ formatCents(cat.threeMonthAverage) }}</v-chip>
-                    <v-chip size="small" variant="outlined" class="avg-spend-chip">6mo avg: {{ formatCents(cat.sixMonthAverage) }}</v-chip>
-                    <v-chip size="small" variant="outlined" class="avg-spend-chip">12mo avg: {{ formatCents(cat.twelveMonthAverage) }}</v-chip>
+                    <v-chip
+                      size="small"
+                      variant="outlined"
+                      class="avg-spend-chip"
+                      :color="getAverageChipColor(cat.usePercentage, cat.budgetedAmount, cat.threeMonthAverage)"
+                    >
+                      3mo avg: {{ formatCents(cat.threeMonthAverage) }}
+                    </v-chip>
+                    <v-chip
+                      size="small"
+                      variant="outlined"
+                      class="avg-spend-chip"
+                      :color="getAverageChipColor(cat.usePercentage, cat.budgetedAmount, cat.sixMonthAverage)"
+                    >
+                      6mo avg: {{ formatCents(cat.sixMonthAverage) }}
+                    </v-chip>
+                    <v-chip
+                      size="small"
+                      variant="outlined"
+                      class="avg-spend-chip"
+                      :color="getAverageChipColor(cat.usePercentage, cat.budgetedAmount, cat.twelveMonthAverage)"
+                    >
+                      12mo avg: {{ formatCents(cat.twelveMonthAverage) }}
+                    </v-chip>
                   </div>
                 </div>
                 <template #append>
@@ -291,9 +327,27 @@ function openCategoryHistory(category: BudgetCategoryDto) {
               Budget line: {{ budgetLineLabel }}
             </v-chip>
             <div class="d-flex flex-wrap mb-3" style="gap: 6px;">
-              <v-chip size="small" variant="outlined">3mo avg: {{ formatCents(categoryChart.months.slice(-3).reduce((sum, point) => sum + point.amount, 0) / 3) }}</v-chip>
-              <v-chip size="small" variant="outlined">6mo avg: {{ formatCents(categoryChart.months.slice(-6).reduce((sum, point) => sum + point.amount, 0) / 6) }}</v-chip>
-              <v-chip size="small" variant="outlined">12mo avg: {{ formatCents(categoryChart.months.reduce((sum, point) => sum + point.amount, 0) / 12) }}</v-chip>
+              <v-chip
+                size="small"
+                variant="outlined"
+                :color="getAverageChipColor(categoryChart.usePercentage, categoryChart.budgetedAmount, chartThreeMonthAverage)"
+              >
+                3mo avg: {{ formatCents(chartThreeMonthAverage) }}
+              </v-chip>
+              <v-chip
+                size="small"
+                variant="outlined"
+                :color="getAverageChipColor(categoryChart.usePercentage, categoryChart.budgetedAmount, chartSixMonthAverage)"
+              >
+                6mo avg: {{ formatCents(chartSixMonthAverage) }}
+              </v-chip>
+              <v-chip
+                size="small"
+                variant="outlined"
+                :color="getAverageChipColor(categoryChart.usePercentage, categoryChart.budgetedAmount, chartTwelveMonthAverage)"
+              >
+                12mo avg: {{ formatCents(chartTwelveMonthAverage) }}
+              </v-chip>
             </div>
             <div class="expense-chart">
               <div class="expense-chart-plot">
