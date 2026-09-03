@@ -52,6 +52,12 @@ const items = computed<CategoryOption[]>(() => {
 
 const validCategoryIds = computed(() => new Set(props.categories.map(category => category.id)))
 
+function isPendingSelectedCategory(value: number) {
+  return validCategoryIds.value.size === 0
+    && typeof props.modelValue === 'number'
+    && props.modelValue === value
+}
+
 function updateValue(value: CategorySelectorValue) {
   if (value === null) {
     emit('update:modelValue', null)
@@ -59,12 +65,13 @@ function updateValue(value: CategorySelectorValue) {
   }
 
   if (typeof value === 'number') {
-    emit('update:modelValue', validCategoryIds.value.has(value) ? value : null)
+    emit('update:modelValue', validCategoryIds.value.has(value) || isPendingSelectedCategory(value) ? value : null)
     return
   }
 
   const parsedValue = Number(value)
-  if (Number.isInteger(parsedValue) && validCategoryIds.value.has(parsedValue)) {
+  if (Number.isInteger(parsedValue)
+    && (validCategoryIds.value.has(parsedValue) || isPendingSelectedCategory(parsedValue))) {
     emit('update:modelValue', parsedValue)
     return
   }

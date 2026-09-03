@@ -20,9 +20,15 @@ const route = useRoute()
 const authStore = useAuthStore()
 const { loadExternalLinkRules, externalLinksFor } = useExternalLinkRules()
 
+function parseCategoryIdQuery(value: unknown): number | null {
+  const raw = Array.isArray(value) ? value[0] : value
+  const parsedCategoryId = Number(raw)
+  return Number.isInteger(parsedCategoryId) ? parsedCategoryId : null
+}
+
 const { currentMonth } = useMonthQueryParam()
 const search = ref('')
-const categoryId = ref<number | null>(null)
+const categoryId = ref<number | null>(parseCategoryIdQuery(route.query.categoryId))
 const items = ref<HistoryItemDto[]>([])
 const categories = ref<ExpenseCategoryDto[]>([])
 const accounts = ref<AccountDto[]>([])
@@ -209,13 +215,6 @@ onMounted(() => {
   void fetchAccountBalances()
   void loadExternalLinkRules()
   void monthUpdatesHub.start(formatMonth(currentMonth.value))
-
-  const rawCategoryId = route.query.categoryId
-  const categoryIdQuery = Array.isArray(rawCategoryId) ? rawCategoryId[0] : rawCategoryId
-  const parsedCategoryId = Number(categoryIdQuery)
-  if (Number.isFinite(parsedCategoryId)) {
-    categoryId.value = parsedCategoryId
-  }
 })
 
 function onDialogSuccess() {
