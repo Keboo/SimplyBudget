@@ -195,4 +195,62 @@ public class BudgetControllerTests
 
         await Assert.That(aprilBudget.EstimatedMonthlyIncome).IsEqualTo(6000);
     }
+
+    [Test]
+    public async Task Get_CategoryAverages_DivideByRequestedMonthCount()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory
+            {
+                Name = "Taxes",
+                Description = "Tax payments",
+            };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryItems.AddRange(
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2025, 10, 7),
+                    Description = "October tax payment",
+                    Details =
+                    [
+                        new ExpenseCategoryItemDetail
+                        {
+                            Amount = -3000,
+                            ExpenseCategoryId = category.ID,
+                        },
+                    ],
+                },
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2025, 12, 10),
+                    Description = "December tax payment",
+                    Details =
+                    [
+                        new ExpenseCategoryItemDetail
+                        {
+                            Amount = -3000,
+                            ExpenseCategoryId = category.ID,
+                        },
+                    ],
+                });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
+        var controller = new BudgetController(context);
+
+        var aprilBudget = await controller.Get(new DateTime(2026, 4, 1));
+        var category = aprilBudget.Categories.Single();
+
+        await Assert.That(category.ThreeMonthAverage).IsEqualTo(0);
+        await Assert.That(category.SixMonthAverage).IsEqualTo(1000);
+        await Assert.That(category.TwelveMonthAverage).IsEqualTo(500);
+    }
 }
