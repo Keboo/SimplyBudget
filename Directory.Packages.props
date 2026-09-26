@@ -6,12 +6,12 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- Aspire -->
-    <PackageVersion Include="Aspire.Hosting.Azure" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Sql" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.3" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.5.3" />
+    <PackageVersion Include="Aspire.Hosting.Azure" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Sql" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.5.4" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.5.4" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.6.0" />
 
     <!-- WPF / MVVM (existing desktop app) -->
@@ -24,14 +24,14 @@
     <PackageVersion Include="CsvHelper" Version="33.1.0" />
 
     <!-- Database -->
-    <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="10.0.12" />
     <!-- Microsoft.EntityFrameworkCore.SqlServer 10.0.9 only requires Microsoft.Data.SqlClient
          >= 6.1.1, which predates the Azure AD provider split and is binary-incompatible with
          Microsoft.Data.SqlClient.Extensions.Azure 7.0.2 (mixing them causes an
          AmbiguousMatchException in SqlAuthenticationProviderManager). Pin SqlClient itself to
          7.0.2 so both packages are from the same release line. -->
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.0.2" />
-    <PackageVersion Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="7.0.2" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.0" />
+    <PackageVersion Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="7.1.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.11" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.8" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
@@ -47,27 +47,27 @@
     </PackageVersion>
 
     <!-- ASP.NET Core -->
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.AspNetCore.SpaProxy" Version="10.0.11" />
+    <PackageVersion Include="Microsoft.AspNetCore.SpaProxy" Version="10.0.12" />
 
     <!-- Auth - Entra ID -->
-    <PackageVersion Include="Microsoft.Identity.Web" Version="4.14.2" />
+    <PackageVersion Include="Microsoft.Identity.Web" Version="4.15.0" />
 
     <!-- Extensions -->
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.9.0" />
-    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.9.0" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.10.0" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.10.0" />
 
     <!-- OpenTelemetry -->
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.18.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.18.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.18.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.18.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.18.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.19.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.19.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.19.0" />
 
     <!-- Playwright / UI Tests -->
     <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.13.0" />
@@ -97,9 +97,9 @@
     </PackageVersion>
 
     <!-- Other -->
-    <PackageVersion Include="Polly.Core" Version="8.7.0" />
+    <PackageVersion Include="Polly.Core" Version="8.8.0" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
-    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
     <PackageVersion Include="System.Linq.Async" Version="6.0.3" />
     <PackageVersion Include="System.Linq.Dynamic.Core" Version="1.7.2" />
   </ItemGroup>
