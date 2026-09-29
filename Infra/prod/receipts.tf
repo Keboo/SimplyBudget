@@ -23,10 +23,26 @@ resource "azurerm_storage_account" "receipts" {
   tags = local.tags
 }
 
+# This storage account disables shared access keys, so Terraform (via the
+# provider's storage_use_azuread setting) and the app's managed identity must
+# both use Azure AD data-plane authorization to manage/access containers and
+# blobs. The provisioning principal below is the identity Terraform apply
+# runs as (see data.azuread_service_principal.provisioning_principal) and
+# needs this role to be able to create the container itself.
+resource "azurerm_role_assignment" "provisioning_principal_receipt_storage" {
+  scope                = azurerm_storage_account.receipts.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = data.azuread_service_principal.provisioning_principal.object_id
+}
+
 resource "azurerm_storage_container" "receipts" {
   name                  = "receipts"
   storage_account_id    = azurerm_storage_account.receipts.id
   container_access_type = "private"
+
+  depends_on = [
+    azurerm_role_assignment.provisioning_principal_receipt_storage
+  ]
 }
 
 resource "azurerm_role_assignment" "app_identity_receipt_storage" {
