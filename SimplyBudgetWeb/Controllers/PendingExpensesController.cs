@@ -249,6 +249,27 @@ public class PendingExpensesController(
         if (request.Items is null || request.Items.Length == 0)
             return BadRequest("At least one category item is required.");
 
+        Receipt? receipt = null;
+        if (request.ReceiptId.HasValue)
+        {
+            if (!pending.IsDebit)
+                return BadRequest("Receipts can only be linked to pending expenses.");
+
+            receipt = await context.Receipts
+                .AsTracking()
+                .FirstOrDefaultAsync(x => x.Id == request.ReceiptId.Value);
+            if (receipt is null)
+                return BadRequest("The selected receipt was not found.");
+            if (receipt.TotalAmountCents != pending.Amount ||
+                !receipt.TransactionDate.HasValue ||
+                Math.Abs((receipt.TransactionDate.Value.Date - pending.Date.Date).Days) > 5)
+            {
+                return BadRequest("The selected receipt does not match this pending expense.");
+            }
+            if (await context.ReceiptExpenseLinks.AnyAsync(x => x.ReceiptId == receipt.Id))
+                return Conflict("The selected receipt is already linked to an expense.");
+        }
+
         var items = request.Items.Select(i => (i.Amount, i.ExpenseCategoryId)).ToArray();
 
         var convertedItemNotes = string.IsNullOrWhiteSpace(request.Notes)
@@ -265,6 +286,15 @@ public class PendingExpensesController(
             item = await context.AddIncome(request.Description, request.Date, request.IgnoreBudget, items);
         }
         item.Notes = convertedItemNotes;
+
+        if (receipt is not null)
+        {
+            context.ReceiptExpenseLinks.Add(new ReceiptExpenseLink
+            {
+                ReceiptId = receipt.Id,
+                ExpenseCategoryItemId = item.ID,
+            });
+        }
 
         context.PendingExpenses.Remove(pending);
         try
@@ -358,6 +388,7 @@ public record ConvertPendingExpenseRequest(
     ConvertPendingExpenseItemRequest[] Items,
     string Version,
     bool IgnoreBudget = false,
-    string? Notes = null);
+    string? Notes = null,
+    int? ReceiptId = null);
 
 public record ReapplyPendingExpenseRulesResponse(int UpdatedCount);

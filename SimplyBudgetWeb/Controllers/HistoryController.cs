@@ -69,7 +69,16 @@ public class HistoryController(
                     .ThenBy(x => x.ID)
                     .ToListAsync();
 
-                return items.Select(ToDto).ToArray();
+                var itemIds = items.Select(x => x.ID).ToArray();
+                var receiptsByItemId = await context.ReceiptExpenseLinks
+                    .Include(x => x.Receipt!)
+                        .ThenInclude(x => x.LineItems)
+                    .Where(x => itemIds.Contains(x.ExpenseCategoryItemId))
+                    .ToDictionaryAsync(x => x.ExpenseCategoryItemId, x => ReceiptMapper.ToDto(x.Receipt!));
+
+                return items.Select(item => ToDto(
+                    item,
+                    receiptsByItemId.GetValueOrDefault(item.ID))).ToArray();
             });
     }
 
@@ -86,7 +95,13 @@ public class HistoryController(
         item.Notes = NormalizeNotes(request.Notes);
         await context.SaveChangesAsync();
         monthDataCache.InvalidateMonth(item.Date);
-        return ToDto(item);
+        var receipt = await context.ReceiptExpenseLinks
+            .Include(x => x.Receipt!)
+                .ThenInclude(x => x.LineItems)
+            .Where(x => x.ExpenseCategoryItemId == item.ID)
+            .Select(x => x.Receipt)
+            .FirstOrDefaultAsync();
+        return ToDto(item, receipt is null ? null : ReceiptMapper.ToDto(receipt));
     }
 
     [HttpDelete("{id}")]
@@ -107,12 +122,13 @@ public class HistoryController(
     private static string BuildCacheVariant(string? search, int? categoryId, int? accountId)
         => $"search={search ?? string.Empty};categoryId={categoryId?.ToString() ?? string.Empty};accountId={accountId?.ToString() ?? string.Empty}";
 
-    private static HistoryItemDto ToDto(ExpenseCategoryItem item) => new(
+    private static HistoryItemDto ToDto(ExpenseCategoryItem item, ReceiptDto? receipt) => new(
         Id: item.ID,
         Date: item.Date,
         Description: item.Description,
         Notes: item.Notes,
         IsTransfer: item.IsTransfer,
+        Receipt: receipt,
         Details: (item.Details ?? []).Select(d => new HistoryDetailDto(
             Id: d.ID,
             ExpenseCategoryId: d.ExpenseCategoryId,
@@ -133,6 +149,7 @@ public record HistoryItemDto(
     string? Description,
     string? Notes,
     bool IsTransfer,
+    ReceiptDto? Receipt,
     HistoryDetailDto[] Details
 );
 

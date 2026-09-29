@@ -70,6 +70,7 @@ export interface HistoryItemDto {
   description: string | null
   notes: string | null
   isTransfer: boolean
+  receipt: ReceiptDto | null
   details: HistoryDetailDto[]
 }
 
@@ -172,6 +173,37 @@ export interface ConvertPendingExpenseRequest {
   version: string
   ignoreBudget: boolean
   notes: string | null
+  receiptId: number | null
+}
+
+export interface ReceiptLineItemDto {
+  id: number
+  description: string
+  amountCents: number
+}
+
+export interface ReceiptDto {
+  id: number
+  merchantName: string | null
+  transactionDate: string | null
+  totalAmountCents: number | null
+  notes: string | null
+  processingStatus: string
+  processingMessage: string | null
+  fileName: string
+  uploadedAtUtc: string
+  lineItems: ReceiptLineItemDto[]
+}
+
+export interface ReceiptUpdateRequest {
+  merchantName: string | null
+  transactionDate: string | null
+  totalAmountCents: number | null
+  notes: string | null
+  lineItems: Array<{
+    description: string
+    amountCents: number
+  }>
 }
 
 export interface TransactionItemRequest {

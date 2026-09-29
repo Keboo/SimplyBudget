@@ -89,8 +89,11 @@ Shared, existing infrastructure (referenced via Terraform data sources, not mana
 SimplyBudget-specific infrastructure (managed by this Terraform config):
 - Resource Group: `SimplyBudget` (`westus2`, configurable via `app_resource_group_name`/`location` in
   `Infra/variables.tf`)
-- Managed identity, backend Container App, Application Insights, and the Azure Static Web App all live
-  in this resource group
+- Managed identity, backend Container App, Application Insights, Azure Static Web App, private receipt
+  Blob Storage, and Azure AI Document Intelligence (Foundry tool) all live in this resource group
+- Receipt images are stored in a private container. The backend managed identity receives
+  `Storage Blob Data Contributor` and `Cognitive Services Data Reader`; receipt analysis uses the
+  `prebuilt-receipt` Document Intelligence model.
 - Frontend hosting is provisioned as an Azure Static Web App, and backend CORS allows that origin
 - Frontend production builds use Terraform's `backend_url` output
 
@@ -108,6 +111,21 @@ Apply infrastructure changes:
 terraform -chdir=Infra plan
 terraform -chdir=Infra apply -auto-approve
 ```
+
+For local receipt uploads, configure the backend with a storage account URI, container name, and
+Document Intelligence endpoint. The local developer identity (for example, the identity used by
+`az login`) needs the same two data-plane roles:
+
+```powershell
+$env:Receipts__StorageAccountUri = "https://<storage-account>.blob.core.windows.net/"
+$env:Receipts__StorageContainer = "receipts"
+$env:Receipts__DocumentIntelligenceEndpoint = "https://<document-intelligence>.cognitiveservices.azure.com/"
+aspire run
+```
+
+Receipt photos are perspective-corrected in the browser before upload. The detected merchant,
+transaction date, total, and available line items can be edited on the Receipts page; attaching a
+receipt during pending-expense conversion requires an exact total and a date within five days.
 
 ## Deployment
 Deployment is handled with the [Azure Development CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/?WT.mc_id=DT-MVP-5003472).
@@ -182,5 +200,3 @@ of hostnames (Terraform sets `AllowedOrigins__0`/`AllowedOrigins__1` env
 vars on the backend Container App in `Infra/prod/main.tf`) — an origin
 missing from this list results in a CORS "missing allowed origin" error
 in the browser instead.
-
-

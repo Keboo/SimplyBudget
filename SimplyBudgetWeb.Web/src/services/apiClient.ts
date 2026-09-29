@@ -45,14 +45,16 @@ class ApiClient {
     return basicMatch?.[1]?.trim() ?? null
   }
 
-  private async getHeaders(): Promise<HeadersInit> {
+  private async getHeaders(jsonContentType = true): Promise<HeadersInit> {
+    const headers: Record<string, string> = {}
     if (getTokenFn) {
       // Any failure here (including an unrecoverable session) propagates: all
       // API endpoints require auth, so an anonymous request would only 401.
       const token = await getTokenFn()
-      return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+      headers.Authorization = `Bearer ${token}`
     }
-    return { 'Content-Type': 'application/json' }
+    if (jsonContentType) headers['Content-Type'] = 'application/json'
+    return headers
   }
 
   private buildJsonBody(data?: unknown): string | undefined {
@@ -84,6 +86,21 @@ class ApiClient {
     if (response.status === 204) return undefined as T
     const text = await response.text()
     return text ? JSON.parse(text) : undefined as T
+  }
+
+  async upload<T>(url: string, data: FormData): Promise<T> {
+    const headers = await this.getHeaders(false)
+    const response = await fetch(this.baseUrl + url, {
+      method: 'POST',
+      headers,
+      body: data,
+    })
+    await this.throwIfUnauthorized(response)
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(error || `HTTP error! status: ${response.status}`)
+    }
+    return response.json() as Promise<T>
   }
 
   async download(url: string): Promise<{ blob: Blob; fileName: string | null }> {
