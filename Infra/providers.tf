@@ -1,4 +1,4 @@
-﻿terraform {
+terraform {
   required_providers {
     azuread = {
       source  = "hashicorp/azuread"
@@ -50,6 +50,12 @@ provider "azurerm" {
   client_id       = var.CLIENT_ID
   subscription_id = var.SUBSCRIPTION_ID
   tenant_id       = var.TENANT_ID
+
+  # Storage accounts in this configuration disable shared access keys
+  # (shared_access_key_enabled = false), so the provider must manage
+  # containers/blobs via Azure AD (data plane) rather than storage account
+  # keys.
+  storage_use_azuread = true
 }
 
 provider "random" {
