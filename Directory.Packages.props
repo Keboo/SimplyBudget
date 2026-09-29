@@ -5,6 +5,10 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
+    <PackageVersion Include="Azure.Identity" Version="1.21.0" />
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.29.2" />
+
     <!-- Aspire -->
     <PackageVersion Include="Aspire.Hosting.Azure" Version="13.5.3" />
     <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.5.3" />

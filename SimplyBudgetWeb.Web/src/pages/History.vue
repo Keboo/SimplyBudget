@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
-import type { HistoryItemDto, HistoryItemUpdateRequest, ExpenseCategoryDto, AccountDto } from '@/types'
+import type { HistoryItemDto, HistoryItemUpdateRequest, ExpenseCategoryDto, AccountDto, ReceiptDto } from '@/types'
 import { useAuthStore } from '@/stores/auth'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
@@ -41,6 +41,9 @@ const deleteItem = ref<HistoryItemDto | null>(null)
 const dialogOpen = ref(false)
 const addRuleOpen = ref(false)
 const ruleSourceItem = ref<HistoryItemDto | null>(null)
+const receiptDialogOpen = ref(false)
+const receiptToView = ref<ReceiptDto | null>(null)
+const receiptImageUrl = ref('')
 let realtimeRefreshInFlight = false
 let realtimeRefreshQueued = false
 
@@ -167,6 +170,25 @@ function openNotesEditor(item: HistoryItemDto) {
   editNotesDraft.value = item.notes ?? ''
 }
 
+async function openReceipt(receipt: ReceiptDto) {
+  try {
+    const { blob } = await apiClient.download(`/api/receipts/${receipt.id}/image`)
+    if (receiptImageUrl.value) URL.revokeObjectURL(receiptImageUrl.value)
+    receiptImageUrl.value = URL.createObjectURL(blob)
+    receiptToView.value = receipt
+    receiptDialogOpen.value = true
+  } catch (error: unknown) {
+    snackbar.enqueueSnackbar(error instanceof Error ? error.message : 'Failed to load receipt', { variant: 'error' })
+  }
+}
+
+function closeReceipt() {
+  receiptDialogOpen.value = false
+  receiptToView.value = null
+  if (receiptImageUrl.value) URL.revokeObjectURL(receiptImageUrl.value)
+  receiptImageUrl.value = ''
+}
+
 function closeNotesEditor() {
   if (savingNotes.value) return
   editNotesItem.value = null
@@ -207,6 +229,7 @@ watch(currentMonth, () => {
 
 onBeforeUnmount(() => {
   void monthUpdatesHub.stop()
+  if (receiptImageUrl.value) URL.revokeObjectURL(receiptImageUrl.value)
 })
 
 onMounted(() => {
@@ -298,6 +321,16 @@ function onDialogSuccess() {
                 {{ d.categoryName }}: {{ formatCents(d.amount) }}
               </v-chip>
             </div>
+            <v-btn
+              v-if="item.receipt"
+              size="small"
+              variant="text"
+              prepend-icon="mdi-receipt-text"
+              class="mt-1"
+              @click.stop="openReceipt(item.receipt)"
+            >
+              View receipt{{ item.receipt.merchantName ? ` · ${item.receipt.merchantName}` : '' }}
+            </v-btn>
           </v-list-item-subtitle>
           <template #append>
             <v-menu location="bottom end">
@@ -352,6 +385,32 @@ function onDialogSuccess() {
       :notes="ruleSourceItem?.notes"
       :expense-category-id="ruleCategoryIdFor(ruleSourceItem)"
     />
+
+    <v-dialog v-model="receiptDialogOpen" max-width="700" @update:model-value="(open: boolean) => !open && closeReceipt()">
+      <v-card>
+        <v-card-title>{{ receiptToView?.merchantName ?? 'Receipt' }}</v-card-title>
+        <v-card-text>
+          <v-img
+            v-if="receiptImageUrl"
+            :src="receiptImageUrl"
+            alt="Linked receipt"
+            max-height="65vh"
+            contain
+          />
+          <div v-if="receiptToView?.notes" class="mt-3 text-body-2">{{ receiptToView.notes }}</div>
+          <div v-if="receiptToView?.lineItems.length" class="mt-2">
+            <div v-for="line in receiptToView.lineItems" :key="line.id" class="d-flex justify-space-between text-body-2">
+              <span>{{ line.description }}</span>
+              <span>{{ formatCents(line.amountCents) }}</span>
+            </div>
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="closeReceipt">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-dialog :model-value="!!editNotesItem" max-width="560" @update:model-value="(val: boolean) => !val && closeNotesEditor()">
       <v-card>

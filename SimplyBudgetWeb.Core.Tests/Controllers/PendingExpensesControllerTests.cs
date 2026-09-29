@@ -794,6 +794,64 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
+    public async Task Convert_WithReceipt_LinksReceiptToHistoryExpense()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+        int receiptId;
+
+        using (var context = mocker.Get<BudgetWebContext>())
+        {
+            var category = new ExpenseCategory { Name = "Groceries" };
+            context.ExpenseCategories.Add(category);
+            var pending = new PendingExpense
+            {
+                Date = new DateTime(2026, 1, 5),
+                Description = "Store",
+                Amount = 45_00,
+                IsDebit = true,
+            };
+            var receipt = new Receipt
+            {
+                FileName = "receipt.jpg",
+                BlobName = "receipt.jpg",
+                MerchantName = "Store",
+                TransactionDate = new DateTime(2026, 1, 8),
+                TotalAmountCents = 45_00,
+            };
+            context.PendingExpenses.Add(pending);
+            context.Receipts.Add(receipt);
+            await context.SaveChangesAsync();
+            receiptId = receipt.Id;
+
+            var controller = new PendingExpensesController(context);
+            var result = await controller.Convert(pending.ID, new ConvertPendingExpenseRequest(
+                "Store",
+                new DateTime(2026, 1, 5),
+                [new ConvertPendingExpenseItemRequest(category.ID, 45_00)],
+                System.Convert.ToBase64String(pending.Version),
+                ReceiptId: receiptId));
+
+            await Assert.That(result).IsTypeOf<StatusCodeResult>();
+            await Assert.That(((StatusCodeResult)result).StatusCode).IsEqualTo(201);
+        }
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var link = await context.ReceiptExpenseLinks.SingleAsync();
+            await Assert.That(link.ReceiptId).IsEqualTo(receiptId);
+
+            var historyController = new HistoryController(context);
+            var history = await historyController.GetAll(
+                month: new DateTime(2026, 1, 1),
+                search: null,
+                categoryId: null,
+                accountId: null);
+            await Assert.That(history.Single().Receipt?.Id).IsEqualTo(receiptId);
+        });
+    }
+
+    [Test]
     public async Task Convert_WithIgnoreBudget_SetsConvertedItemDetailsToIgnoreBudget()
     {
         AutoMocker mocker = new();

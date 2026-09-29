@@ -101,6 +101,8 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddScoped<CurrentUserSyncService>();
 builder.Services.AddScoped<IBudgetMonthUpdateNotifier, BudgetMonthUpdateNotifier>();
 builder.Services.AddSingleton<IBudgetMonthDataCache, BudgetMonthDataCache>();
+builder.Services.AddSingleton<IReceiptImageStore, AzureReceiptImageStore>();
+builder.Services.AddSingleton<IReceiptAnalyzer, AzureReceiptAnalyzer>();
 
 var app = builder.Build();
 

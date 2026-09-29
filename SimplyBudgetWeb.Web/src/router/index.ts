@@ -6,6 +6,7 @@ import History from '@/pages/History.vue'
 import Settings from '@/pages/Settings.vue'
 import Import from '@/pages/Import.vue'
 import PendingExpenses from '@/pages/PendingExpenses.vue'
+import Receipts from '@/pages/Receipts.vue'
 import { useAuthStore } from '@/stores/auth'
 import { setLoginNavigator } from '@/services/sessionNavigation'
 
@@ -27,6 +28,7 @@ const router = createRouter({
         { path: 'settings', name: 'settings', component: Settings },
         { path: 'import', name: 'import', component: Import },
         { path: 'pending-expenses', name: 'pending-expenses', component: PendingExpenses },
+        { path: 'receipts', name: 'receipts', component: Receipts },
         { path: ':pathMatch(.*)*', redirect: '/budget' },
       ],
     },

@@ -355,6 +355,9 @@ module "backend_container_app" {
       AzureAd__TenantId                       = data.azurerm_client_config.current.tenant_id
       AzureAd__ClientId                       = data.azuread_application.webapp.client_id
       Authorization__SimplyBudgetUsersGroupId = data.azuread_group.app_users.object_id
+      Receipts__StorageAccountUri             = azurerm_storage_account.receipts.primary_blob_endpoint
+      Receipts__StorageContainer              = azurerm_storage_container.receipts.name
+      Receipts__DocumentIntelligenceEndpoint  = azurerm_cognitive_account.receipt_document_intelligence.endpoint
     },
     var.frontend_custom_domain != "" ? { AllowedOrigins__1 = var.frontend_custom_domain } : {}
   )
@@ -362,7 +365,9 @@ module "backend_container_app" {
   depends_on = [
     module.application_insights,
     module.static_web_app,
-    terraform_data.setup_database_principal
+    terraform_data.setup_database_principal,
+    azurerm_role_assignment.app_identity_receipt_storage,
+    azurerm_role_assignment.app_identity_receipt_document_intelligence
   ]
 }
 

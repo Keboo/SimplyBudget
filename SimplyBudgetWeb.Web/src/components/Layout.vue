@@ -16,6 +16,7 @@ const navItems = [
   { title: 'Budget', to: '/budget', icon: 'mdi-cash-multiple' },
   { title: 'Expenses', to: '/history', icon: 'mdi-history' },
   { title: 'Pending Expenses', to: '/pending-expenses', icon: 'mdi-receipt-text-clock' },
+  { title: 'Receipts', to: '/receipts', icon: 'mdi-receipt-text-check' },
   { title: 'Settings', to: '/settings', icon: 'mdi-cog' },
   { title: 'Import', to: '/import', icon: 'mdi-file-import' },
 ]

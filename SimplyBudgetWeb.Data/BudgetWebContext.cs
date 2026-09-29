@@ -25,6 +25,9 @@ public class BudgetWebContext(DbContextOptions<BudgetWebContext> options)
     /// </summary>
     public DbSet<PendingExpense> PendingExpenses => Set<PendingExpense>();
     public DbSet<PendingExpenseAssignee> PendingExpenseAssignees => Set<PendingExpenseAssignee>();
+    public DbSet<Receipt> Receipts => Set<Receipt>();
+    public DbSet<ReceiptLineItem> ReceiptLineItems => Set<ReceiptLineItem>();
+    public DbSet<ReceiptExpenseLink> ReceiptExpenseLinks => Set<ReceiptExpenseLink>();
 
     /// <summary>
     /// Rules that drive the external links shown next to matching transactions and pending expenses.
@@ -63,5 +66,32 @@ public class BudgetWebContext(DbContextOptions<BudgetWebContext> options)
         modelBuilder.Entity<PendingExpenseAssignee>()
             .HasIndex(x => x.ObjectId)
             .IsUnique();
+
+        modelBuilder.Entity<Receipt>().ToTable("Receipt", Schema);
+        modelBuilder.Entity<Receipt>()
+            .HasIndex(x => new { x.TotalAmountCents, x.TransactionDate });
+        modelBuilder.Entity<ReceiptLineItem>().ToTable("ReceiptLineItem", Schema);
+        modelBuilder.Entity<Receipt>()
+            .HasMany(x => x.LineItems)
+            .WithOne(x => x.Receipt)
+            .HasForeignKey(x => x.ReceiptId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ReceiptExpenseLink>().ToTable("ReceiptExpenseLink", Schema);
+        modelBuilder.Entity<ReceiptExpenseLink>()
+            .HasKey(x => x.ReceiptId);
+        modelBuilder.Entity<ReceiptExpenseLink>()
+            .HasIndex(x => x.ExpenseCategoryItemId)
+            .IsUnique();
+        modelBuilder.Entity<ReceiptExpenseLink>()
+            .HasOne(x => x.Receipt)
+            .WithOne()
+            .HasForeignKey<ReceiptExpenseLink>(x => x.ReceiptId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<ReceiptExpenseLink>()
+            .HasOne(x => x.ExpenseCategoryItem)
+            .WithOne()
+            .HasForeignKey<ReceiptExpenseLink>(x => x.ExpenseCategoryItemId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
