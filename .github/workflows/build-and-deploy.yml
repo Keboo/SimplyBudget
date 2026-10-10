@@ -91,6 +91,11 @@ jobs:
         working-directory: ${{ env.FRONTEND_PROJECT_PATH }}
         run: pnpm run lint
 
+      - name: Test frontend
+        if: needs.changes.outputs.app == 'true'
+        working-directory: ${{ env.FRONTEND_PROJECT_PATH }}
+        run: pnpm run test
+
       - name: Build frontend
         if: needs.changes.outputs.app == 'true'
         working-directory: ${{ env.FRONTEND_PROJECT_PATH }}

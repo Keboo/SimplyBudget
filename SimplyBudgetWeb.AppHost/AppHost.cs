@@ -71,6 +71,19 @@ var backend = builder.AddProject<Projects.SimplyBudgetWeb>("SimplyBudgetWeb-back
     .WithExternalHttpEndpoints()
     .PublishAsAzureContainerApp((infra, app) => app.Template.Scale.MaxReplicas = 1);
 
+if (!builder.ExecutionContext.IsPublishMode)
+{
+    // Receipt images are stored in Azure Blob Storage in production. Locally, use the Azurite
+    // emulator so uploading a receipt works without any Azure resources.
+    var receiptBlobs = builder.AddAzureStorage("receipt-storage")
+        .RunAsEmulator(emulator => emulator.WithLifetime(ContainerLifetime.Session))
+        .AddBlobs("receipt-blobs");
+    backend
+        .WaitFor(receiptBlobs)
+        .WithEnvironment("Receipts__StorageConnectionString", receiptBlobs)
+        .WithEnvironment("Receipts__StorageContainer", "receipts");
+}
+
 var frontendApp = builder.AddJavaScriptApp(Resources.Frontend, "../SimplyBudgetWeb.Web", "dev")
     .WithPnpm(install: true)
     .WithHttpEndpoint(env: "PORT")

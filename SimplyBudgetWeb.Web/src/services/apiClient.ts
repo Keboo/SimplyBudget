@@ -33,6 +33,21 @@ class ApiClient {
     throw new SessionExpiredError()
   }
 
+  private async readError(response: Response): Promise<string> {
+    const fallback = `HTTP error! status: ${response.status}`
+    const text = await response.text().catch(() => '')
+    if (!text) return fallback
+    try {
+      // ASP.NET Core returns ProblemDetails ({ title, detail }) or { message } JSON for failures.
+      const body = JSON.parse(text) as { detail?: unknown; message?: unknown; title?: unknown }
+      for (const value of [body.detail, body.message, body.title])
+        if (typeof value === 'string' && value.trim()) return value
+      return fallback
+    } catch {
+      return text
+    }
+  }
+
   private parseFileName(contentDisposition: string | null): string | null {
     if (!contentDisposition) return null
 
@@ -67,7 +82,7 @@ class ApiClient {
     const headers = await this.getHeaders()
     const response = await fetch(this.baseUrl + url, { headers })
     await this.throwIfUnauthorized(response)
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    if (!response.ok) throw new Error(await this.readError(response))
     const text = await response.text()
     return text ? JSON.parse(text) : undefined as T
   }
@@ -80,8 +95,7 @@ class ApiClient {
     })
     await this.throwIfUnauthorized(response)
     if (!response.ok) {
-      const error = await response.text()
-      throw new Error(error || `HTTP error! status: ${response.status}`)
+      throw new Error(await this.readError(response))
     }
     if (response.status === 204) return undefined as T
     const text = await response.text()
@@ -97,8 +111,7 @@ class ApiClient {
     })
     await this.throwIfUnauthorized(response)
     if (!response.ok) {
-      const error = await response.text()
-      throw new Error(error || `HTTP error! status: ${response.status}`)
+      throw new Error(await this.readError(response))
     }
     return response.json() as Promise<T>
   }
@@ -108,8 +121,7 @@ class ApiClient {
     const response = await fetch(this.baseUrl + url, { headers })
     await this.throwIfUnauthorized(response)
     if (!response.ok) {
-      const error = await response.text()
-      throw new Error(error || `HTTP error! status: ${response.status}`)
+      throw new Error(await this.readError(response))
     }
 
     return {
@@ -125,7 +137,7 @@ class ApiClient {
       body: this.buildJsonBody(data),
     })
     await this.throwIfUnauthorized(response)
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    if (!response.ok) throw new Error(await this.readError(response))
     if (response.status === 204) return undefined as T
     return response.json()
   }
@@ -141,8 +153,7 @@ class ApiClient {
     const response = await fetch(this.baseUrl + url, { method: 'DELETE', headers: requestHeaders })
     await this.throwIfUnauthorized(response)
     if (!response.ok) {
-      const error = await response.text()
-      throw new Error(error || `HTTP error! status: ${response.status}`)
+      throw new Error(await this.readError(response))
     }
     if (response.status === 204) return undefined as T
     const text = await response.text()

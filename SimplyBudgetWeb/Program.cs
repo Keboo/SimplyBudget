@@ -151,3 +151,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+// Exposed so integration tests can host the app with WebApplicationFactory.
+public partial class Program;
