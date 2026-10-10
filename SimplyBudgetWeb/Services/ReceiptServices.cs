@@ -72,6 +72,11 @@ public sealed class AzureReceiptImageStore : IReceiptImageStore
         if (string.IsNullOrWhiteSpace(containerName))
             throw new ReceiptIntegrationNotConfiguredException("Receipt storage is not configured.");
 
+        // Local development uses the Azurite emulator through a connection string.
+        var connectionString = configuration["Receipts:StorageConnectionString"];
+        if (!string.IsNullOrWhiteSpace(connectionString))
+            return new BlobContainerClient(connectionString, containerName);
+
         var endpoint = configuration["Receipts:StorageAccountUri"];
         if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var storageUri))
             throw new ReceiptIntegrationNotConfiguredException("Receipt storage is not configured.");
