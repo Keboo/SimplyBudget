@@ -195,7 +195,7 @@ jobs:
       # Keep this tag in sync with the Microsoft.Playwright version pinned in
       # Directory.Packages.props - the image bakes in matching browsers, so a
       # version mismatch breaks Playwright.
-      PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright/dotnet:v1.62.0-noble
+      PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright/dotnet:v1.63.0-noble
       UI_TESTS_CONTAINER: ui-tests-runner
     defaults:
       run:
