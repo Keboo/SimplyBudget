@@ -146,8 +146,61 @@ function toJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
   })
 }
 
+const uploadableTypes = ['image/jpeg', 'image/png', 'image/webp']
+
+async function decodeImage(file: File): Promise<ImageBitmap> {
+  try {
+    return await createImageBitmap(file)
+  } catch {
+    // Some mobile browsers cannot decode certain files with createImageBitmap.
+    const url = URL.createObjectURL(file)
+    try {
+      const element = new Image()
+      element.src = url
+      await element.decode()
+      return await createImageBitmap(element)
+    } finally {
+      URL.revokeObjectURL(url)
+    }
+  }
+}
+
+async function downscaleReceiptImage(file: File): Promise<File> {
+  const image = await decodeImage(file)
+  const scale = Math.min(1, 2200 / Math.max(image.width, image.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(image.width * scale))
+  canvas.height = Math.max(1, Math.round(image.height * scale))
+  const context = canvas.getContext('2d')
+  if (!context) {
+    image.close()
+    throw new Error('Image processing is not available in this browser')
+  }
+  context.drawImage(image, 0, 0, canvas.width, canvas.height)
+  image.close()
+  const blob = await toJpeg(canvas)
+  const fileName = `${file.name.replace(/\.[^.]+$/, '') || 'receipt'}.jpg`
+  return new File([blob], fileName, { type: 'image/jpeg', lastModified: Date.now() })
+}
+
+// Cropping is best-effort: phones can run out of memory or fail to load OpenCV,
+// and that should never block uploading the receipt itself.
 export async function flattenReceiptImage(file: File): Promise<File> {
-  const image = await createImageBitmap(file)
+  try {
+    return await cropReceiptImage(file)
+  } catch (cropError) {
+    console.warn('Receipt auto-crop failed; uploading without cropping', cropError)
+  }
+  try {
+    return await downscaleReceiptImage(file)
+  } catch (resizeError) {
+    if (uploadableTypes.includes(file.type)) return file
+    throw resizeError instanceof Error ? resizeError : new Error('Could not read the receipt image')
+  }
+}
+
+async function cropReceiptImage(file: File): Promise<File> {
+  const image = await decodeImage(file)
   const scale = Math.min(1, 2200 / Math.max(image.width, image.height))
   const width = Math.max(1, Math.round(image.width * scale))
   const height = Math.max(1, Math.round(image.height * scale))
