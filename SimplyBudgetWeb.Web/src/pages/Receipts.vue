@@ -13,6 +13,7 @@ interface EditableLine {
 
 const snackbar = useSnackbarStore()
 const receiptInput = ref<HTMLInputElement | null>(null)
+const cameraInput = ref<HTMLInputElement | null>(null)
 const receipts = ref<ReceiptDto[]>([])
 const selectedId = ref<number | null>(null)
 const selectedReceipt = computed(() => receipts.value.find(receipt => receipt.id === selectedId.value) ?? null)
@@ -35,6 +36,10 @@ function releaseUrl(url: string) {
 
 function chooseImage() {
   receiptInput.value?.click()
+}
+
+function takePhoto() {
+  cameraInput.value?.click()
 }
 
 async function loadReceipts() {
@@ -163,22 +168,37 @@ onBeforeUnmount(() => {
     <v-card class="pa-4 mb-4">
       <div class="text-subtitle-1 font-weight-medium mb-1">Add a receipt</div>
       <div class="text-body-2 text-medium-emphasis mb-3">
-        Choose a receipt photo. Its edges are detected and perspective-corrected before upload.
+        Take a photo or choose one from your gallery. Its edges are detected and perspective-corrected before upload.
       </div>
       <div class="d-flex flex-wrap align-center ga-3">
         <v-btn
           prepend-icon="mdi-camera-plus"
           variant="outlined"
           :loading="preparingImage"
+          @click="takePhoto"
+        >
+          Take a photo
+        </v-btn>
+        <v-btn
+          prepend-icon="mdi-image-multiple"
+          variant="outlined"
+          :loading="preparingImage"
           @click="chooseImage"
         >
-          Choose or take a photo
+          Choose from gallery
         </v-btn>
+        <input
+          ref="cameraInput"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          capture="environment"
+          class="d-none"
+          @change="selectImage"
+        >
         <input
           ref="receiptInput"
           type="file"
           accept="image/jpeg,image/png,image/webp"
-          capture="environment"
           class="d-none"
           @change="selectImage"
         >
