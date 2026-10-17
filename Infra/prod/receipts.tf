@@ -62,8 +62,9 @@ resource "azurerm_cognitive_account" "receipt_document_intelligence" {
   tags = local.tags
 }
 
+# Analyzing documents requires an action permission, not just read access.
 resource "azurerm_role_assignment" "app_identity_receipt_document_intelligence" {
   scope                = azurerm_cognitive_account.receipt_document_intelligence.id
-  role_definition_name = "Cognitive Services Data Reader"
+  role_definition_name = "Cognitive Services User"
   principal_id         = azurerm_user_assigned_identity.app_identity.principal_id
 }
