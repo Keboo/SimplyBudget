@@ -47,7 +47,7 @@ Both the SimplyBudgetWeb.Web includes full PWA support with:
 The Vue frontend uses `vite-plugin-pwa` with Workbox for advanced caching strategies. 
 
 Features include:
-- Automatic service worker registration and updates
+- Automatic service worker registration and updates; newly detected versions reload open tabs without an update toast (unsaved form edits may be lost)
 - Static asset precaching with Workbox
 - Runtime caching for images and Google Fonts
 - App Shell pattern for SPA navigation
