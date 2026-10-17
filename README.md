@@ -92,7 +92,7 @@ SimplyBudget-specific infrastructure (managed by this Terraform config):
 - Managed identity, backend Container App, Application Insights, Azure Static Web App, private receipt
   Blob Storage, and Azure AI Document Intelligence (Foundry tool) all live in this resource group
 - Receipt images are stored in a private container. The backend managed identity receives
-  `Storage Blob Data Contributor` and `Cognitive Services Data Reader`; receipt analysis uses the
+  `Storage Blob Data Contributor` and `Cognitive Services User`; receipt analysis uses the
   `prebuilt-receipt` Document Intelligence model.
 - Frontend hosting is provisioned as an Azure Static Web App, and backend CORS allows that origin
 - Frontend production builds use Terraform's `backend_url` output
@@ -126,6 +126,13 @@ aspire run
 Receipt photos are perspective-corrected in the browser before upload. The detected merchant,
 transaction date, total, and available line items can be edited on the Receipts page; attaching a
 receipt during pending-expense conversion requires an exact total and a date within five days.
+
+If an upload succeeds but automatic extraction fails with `401 PermissionDenied`, check the
+backend managed identity's role on the Document Intelligence resource. `Cognitive Services Data
+Reader` cannot perform `Microsoft.CognitiveServices/accounts/FormRecognizer/documentmodels:analyze/action`;
+the resource-scoped `Cognitive Services User` assignment in `Infra/prod/receipts.tf` permits analysis.
+Apply the Terraform change and allow time for Azure RBAC propagation before uploading again.
+The original image remains saved for manual review when extraction fails.
 
 ## Deployment
 Deployment is handled with the [Azure Development CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/?WT.mc_id=DT-MVP-5003472).
