@@ -1,291 +1,125 @@
-import type cvModule from '@techstark/opencv-js'
+import type { ReceiptImageGeometry, ReceiptImagePoint } from '@/types'
 
-type OpenCvRuntime = typeof cvModule & {
-  onRuntimeInitialized?: () => void
-  onAbort?: (reason: string) => void
+export function imageBoundary(): ReceiptImageGeometry {
+  return { version: 1, corners: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }] }
 }
 
-let openCvReady: Promise<OpenCvRuntime> | null = null
-
-async function getOpenCv(): Promise<OpenCvRuntime> {
-  const module = await import('@techstark/opencv-js')
-  const loadedModule = module.default as OpenCvRuntime | Promise<OpenCvRuntime>
-  const cv = loadedModule instanceof Promise ? await loadedModule : loadedModule
-  if (cv.Mat) return cv
-  if (!openCvReady) {
-    openCvReady = new Promise((resolve, reject) => {
-      const timeout = window.setTimeout(() => reject(new Error('Image processing did not initialize')), 20_000)
-      cv.onRuntimeInitialized = () => {
-        window.clearTimeout(timeout)
-        resolve(cv)
-      }
-      cv.onAbort = reason => {
-        window.clearTimeout(timeout)
-        reject(new Error(`Image processing failed to initialize: ${reason}`))
-      }
-    })
+export function validGeometry(value: ReceiptImageGeometry): boolean {
+  if (value?.version !== 1 || value.corners?.length !== 4
+    || value.corners.some(p => !p || !Number.isFinite(p.x) || !Number.isFinite(p.y)
+      || p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1)) return false
+  let twiceArea = 0
+  for (let i = 0; i < 4; i++) {
+    const a = value.corners[i]!
+    const b = value.corners[(i + 1) % 4]!
+    const c = value.corners[(i + 2) % 4]!
+    const dx = b.x - a.x
+    const dy = b.y - a.y
+    if (dx * dx + dy * dy < 0.000025 || dx * (c.y - b.y) - dy * (c.x - b.x) <= 0.00001)
+      return false
+    twiceArea += a.x * b.y - b.x * a.y
   }
-  return openCvReady
+  return twiceArea >= 0.002
 }
 
-interface Point {
-  x: number
-  y: number
+export function boundedSize(width: number, height: number) {
+  const scale = Math.min(1, 2200 / Math.max(width, height), Math.sqrt(4_000_000 / (width * height)))
+  return { width: Math.max(2, Math.floor(width * scale)), height: Math.max(2, Math.floor(height * scale)) }
 }
 
-function orderCorners(points: Point[]): [Point, Point, Point, Point] {
-  const bySum = [...points].sort((a, b) => (a.x + a.y) - (b.x + b.y))
-  const topLeft = bySum[0]!
-  const bottomRight = bySum[3]!
-  const remaining = points.filter(point => point !== topLeft && point !== bottomRight)
-  const topRight = remaining[0]!.x - remaining[0]!.y > remaining[1]!.x - remaining[1]!.y
-    ? remaining[0]!
-    : remaining[1]!
-  const bottomLeft = remaining[0] === topRight ? remaining[1]! : remaining[0]!
-  return [topLeft, topRight, bottomRight, bottomLeft]
-}
-
-function detectReceiptCorners(cv: OpenCvRuntime, source: InstanceType<typeof cvModule.Mat>): Point[] | null {
-  const gray = new cv.Mat()
-  const blurred = new cv.Mat()
-  const edges = new cv.Mat()
-  const contours = new cv.MatVector()
-  const hierarchy = new cv.Mat()
-  const kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(3, 3))
-
-  try {
-    cv.cvtColor(source, gray, cv.COLOR_RGBA2GRAY)
-    cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0)
-    cv.Canny(blurred, edges, 50, 150)
-    cv.dilate(edges, edges, kernel)
-    cv.findContours(edges, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
-
-    let best: Point[] | null = null
-    let bestArea = source.rows * source.cols * 0.12
-    for (let index = 0; index < contours.size(); index++) {
-      const contour = contours.get(index)
-      const approximation = new cv.Mat()
-      try {
-        cv.approxPolyDP(contour, approximation, 0.02 * cv.arcLength(contour, true), true)
-        const area = Math.abs(cv.contourArea(approximation))
-        if (
-          approximation.rows === 4
-          && area > bestArea
-          && cv.isContourConvex(approximation)
-        ) {
-          bestArea = area
-          best = Array.from({ length: 4 }, (_, pointIndex) => ({
-            x: approximation.data32S[pointIndex * 2]!,
-            y: approximation.data32S[pointIndex * 2 + 1]!,
-          }))
-        }
-      } finally {
-        contour.delete()
-        approximation.delete()
-      }
+// A unit square -> quadrilateral homography, not a bounding-box or bilinear crop.
+export function perspectiveMap(points: ReceiptImagePoint[]) {
+  const [a, b, c, d] = points as ReceiptImageGeometry['corners']
+  const dx1 = b.x - c.x, dx2 = d.x - c.x, dx3 = a.x - b.x + c.x - d.x
+  const dy1 = b.y - c.y, dy2 = d.y - c.y, dy3 = a.y - b.y + c.y - d.y
+  const determinant = dx1 * dy2 - dx2 * dy1
+  const g = (dx3 * dy2 - dx2 * dy3) / determinant
+  const h = (dx1 * dy3 - dx3 * dy1) / determinant
+  return (u: number, v: number): ReceiptImagePoint => {
+    const denominator = g * u + h * v + 1
+    return {
+      x: ((b.x - a.x + g * b.x) * u + (d.x - a.x + h * d.x) * v + a.x) / denominator,
+      y: ((b.y - a.y + g * b.y) * u + (d.y - a.y + h * d.y) * v + a.y) / denominator,
     }
-    return best
-  } finally {
-    gray.delete()
-    blurred.delete()
-    edges.delete()
-    contours.delete()
-    hierarchy.delete()
-    kernel.delete()
   }
 }
 
-function findFallbackBounds(imageData: ImageData): { x: number; y: number; width: number; height: number } | null {
-  const { data, width, height } = imageData
-  const corners = [
-    [0, 0],
-    [width - 1, 0],
-    [0, height - 1],
-    [width - 1, height - 1],
-  ].map(([x, y]) => {
-    const offset = (y! * width + x!) * 4
-    return [data[offset]!, data[offset + 1]!, data[offset + 2]!]
-  })
-  const background = [0, 1, 2].map(channel =>
-    corners.reduce((sum, corner) => sum + corner[channel]!, 0) / corners.length,
+export function flattenPixels(source: Pick<ImageData, 'width' | 'height' | 'data'>, geometry: ReceiptImageGeometry) {
+  if (!validGeometry(geometry)) throw new Error('Corners must form a clockwise convex receipt. Move them apart without crossing.')
+  const corners = geometry.corners.map(p => ({ x: p.x * (source.width - 1), y: p.y * (source.height - 1) }))
+  const [a, b, c, d] = corners as ReceiptImageGeometry['corners']
+  const distance = (p: ReceiptImagePoint, q: ReceiptImagePoint) => Math.hypot(p.x - q.x, p.y - q.y)
+  const { width, height } = boundedSize(
+    Math.round(Math.max(distance(a, b), distance(d, c))) + 1,
+    Math.round(Math.max(distance(a, d), distance(b, c))) + 1,
   )
-  let left = width
-  let top = height
-  let right = -1
-  let bottom = -1
-  for (let y = 0; y < height; y += 2) {
-    for (let x = 0; x < width; x += 2) {
+  const data = new Uint8ClampedArray(width * height * 4)
+  const map = perspectiveMap(corners)
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const point = map(x / (width - 1), y / (height - 1))
+      const sx = Math.max(0, Math.min(source.width - 1, point.x))
+      const sy = Math.max(0, Math.min(source.height - 1, point.y))
+      const left = Math.floor(sx), top = Math.floor(sy)
+      const right = Math.min(left + 1, source.width - 1), bottom = Math.min(top + 1, source.height - 1)
+      const fx = sx - left, fy = sy - top
+      const topLeft = (top * source.width + left) * 4
+      const topRight = (top * source.width + right) * 4
+      const bottomLeft = (bottom * source.width + left) * 4
+      const bottomRight = (bottom * source.width + right) * 4
       const offset = (y * width + x) * 4
-      const difference = Math.abs(data[offset]! - background[0]!)
-        + Math.abs(data[offset + 1]! - background[1]!)
-        + Math.abs(data[offset + 2]! - background[2]!)
-      if (difference > 75) {
-        left = Math.min(left, x)
-        top = Math.min(top, y)
-        right = Math.max(right, x)
-        bottom = Math.max(bottom, y)
+      for (let channel = 0; channel < 4; channel++) {
+        data[offset + channel] =
+          source.data[topLeft + channel]! * (1 - fx) * (1 - fy) + source.data[topRight + channel]! * fx * (1 - fy)
+          + source.data[bottomLeft + channel]! * (1 - fx) * fy + source.data[bottomRight + channel]! * fx * fy
       }
     }
   }
-  if (right < 0 || bottom < 0 || (right - left) * (bottom - top) < width * height * 0.1)
-    return null
-  const padding = Math.round(Math.max(right - left, bottom - top) * 0.015)
-  left = Math.max(0, left - padding)
-  top = Math.max(0, top - padding)
-  right = Math.min(width - 1, right + padding)
-  bottom = Math.min(height - 1, bottom + padding)
-  return { x: left, y: top, width: right - left + 1, height: bottom - top + 1 }
+  return { width, height, data }
 }
 
-function toJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(blob => {
-      if (blob) resolve(blob)
-      else reject(new Error('Could not create the cropped receipt image'))
-    }, 'image/jpeg', 0.92)
-  })
-}
-
-const uploadableTypes = ['image/jpeg', 'image/png', 'image/webp']
-
-async function decodeImage(file: File): Promise<ImageBitmap> {
+export async function prepareReceiptCanvas(blob: Blob): Promise<HTMLCanvasElement> {
+  const url = URL.createObjectURL(blob)
+  const image = new Image()
   try {
-    return await createImageBitmap(file)
-  } catch {
-    // Some mobile browsers cannot decode certain files with createImageBitmap.
-    const url = URL.createObjectURL(file)
-    try {
-      const element = new Image()
-      element.src = url
-      await element.decode()
-      return await createImageBitmap(element)
-    } finally {
-      URL.revokeObjectURL(url)
-    }
-  }
-}
-
-async function downscaleReceiptImage(file: File): Promise<File> {
-  const image = await decodeImage(file)
-  const scale = Math.min(1, 2200 / Math.max(image.width, image.height))
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.max(1, Math.round(image.width * scale))
-  canvas.height = Math.max(1, Math.round(image.height * scale))
-  const context = canvas.getContext('2d')
-  if (!context) {
-    image.close()
-    throw new Error('Image processing is not available in this browser')
-  }
-  context.drawImage(image, 0, 0, canvas.width, canvas.height)
-  image.close()
-  const blob = await toJpeg(canvas)
-  const fileName = `${file.name.replace(/\.[^.]+$/, '') || 'receipt'}.jpg`
-  return new File([blob], fileName, { type: 'image/jpeg', lastModified: Date.now() })
-}
-
-// Cropping is best-effort: phones can run out of memory or fail to load OpenCV,
-// and that should never block uploading the receipt itself.
-export async function flattenReceiptImage(file: File): Promise<File> {
-  try {
-    return await cropReceiptImage(file)
-  } catch (cropError) {
-    console.warn('Receipt auto-crop failed; uploading without cropping', cropError)
-  }
-  try {
-    return await downscaleReceiptImage(file)
-  } catch (resizeError) {
-    if (uploadableTypes.includes(file.type)) return file
-    throw resizeError instanceof Error ? resizeError : new Error('Could not read the receipt image')
-  }
-}
-
-async function cropReceiptImage(file: File): Promise<File> {
-  const image = await decodeImage(file)
-  const scale = Math.min(1, 2200 / Math.max(image.width, image.height))
-  const width = Math.max(1, Math.round(image.width * scale))
-  const height = Math.max(1, Math.round(image.height * scale))
-  const sourceCanvas = document.createElement('canvas')
-  sourceCanvas.width = width
-  sourceCanvas.height = height
-  const sourceContext = sourceCanvas.getContext('2d', { willReadFrequently: true })
-  if (!sourceContext) {
-    image.close()
-    throw new Error('Image processing is not available in this browser')
-  }
-  sourceContext.drawImage(image, 0, 0, width, height)
-  image.close()
-
-  const cv = await getOpenCv()
-  const source = cv.imread(sourceCanvas)
-  const corners = detectReceiptCorners(cv, source)
-  const output = document.createElement('canvas')
-
-  try {
-    if (corners) {
-      const [topLeft, topRight, bottomRight, bottomLeft] = orderCorners(corners)
-      const outputWidth = Math.round(Math.max(
-        Math.hypot(topRight.x - topLeft.x, topRight.y - topLeft.y),
-        Math.hypot(bottomRight.x - bottomLeft.x, bottomRight.y - bottomLeft.y),
-      ))
-      const outputHeight = Math.round(Math.max(
-        Math.hypot(bottomLeft.x - topLeft.x, bottomLeft.y - topLeft.y),
-        Math.hypot(bottomRight.x - topRight.x, bottomRight.y - topRight.y),
-      ))
-      const sourcePoints = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        topLeft.x, topLeft.y, topRight.x, topRight.y,
-        bottomRight.x, bottomRight.y, bottomLeft.x, bottomLeft.y,
-      ])
-      const destinationPoints = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        0, 0, outputWidth - 1, 0,
-        outputWidth - 1, outputHeight - 1, 0, outputHeight - 1,
-      ])
-      const transform = cv.getPerspectiveTransform(sourcePoints, destinationPoints)
-      const flattened = new cv.Mat()
-      try {
-        cv.warpPerspective(
-          source,
-          flattened,
-          transform,
-          new cv.Size(outputWidth, outputHeight),
-          cv.INTER_CUBIC,
-          cv.BORDER_REPLICATE,
-        )
-        output.width = flattened.cols
-        output.height = flattened.rows
-        cv.imshow(output, flattened)
-      } finally {
-        sourcePoints.delete()
-        destinationPoints.delete()
-        transform.delete()
-        flattened.delete()
-      }
-    } else {
-      const bounds = findFallbackBounds(sourceContext.getImageData(0, 0, width, height))
-      if (bounds) {
-        output.width = bounds.width
-        output.height = bounds.height
-        output.getContext('2d')!.drawImage(
-          sourceCanvas,
-          bounds.x,
-          bounds.y,
-          bounds.width,
-          bounds.height,
-          0,
-          0,
-          bounds.width,
-          bounds.height,
-        )
-      } else {
-        output.width = width
-        output.height = height
-        output.getContext('2d')!.drawImage(sourceCanvas, 0, 0)
-      }
-    }
+    // HTML images and canvas drawImage both honor EXIF orientation. Geometry always
+    // refers to this oriented view, never the unrotated JPEG sensor coordinates.
+    image.src = url
+    await image.decode()
+    if (!image.naturalWidth || !image.naturalHeight) throw new Error('Could not decode this receipt image.')
+    const size = boundedSize(image.naturalWidth, image.naturalHeight)
+    const canvas = document.createElement('canvas')
+    canvas.width = size.width
+    canvas.height = size.height
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Image processing is not available in this browser.')
+    context.drawImage(image, 0, 0, canvas.width, canvas.height)
+    return canvas
   } finally {
-    source.delete()
+    image.src = ''
+    URL.revokeObjectURL(url)
   }
+}
 
-  const croppedBlob = await toJpeg(output)
-  const fileName = `${file.name.replace(/\.[^.]+$/, '') || 'receipt'}.jpg`
-  return new File([croppedBlob], fileName, { type: 'image/jpeg', lastModified: Date.now() })
+export async function flattenReceiptImage(blob: Blob, geometry: ReceiptImageGeometry): Promise<Blob> {
+  const source = await prepareReceiptCanvas(blob)
+  const output = document.createElement('canvas')
+  try {
+    const context = source.getContext('2d', { willReadFrequently: true })
+    if (!context) throw new Error('Image processing is not available in this browser.')
+    const pixels = flattenPixels(context.getImageData(0, 0, source.width, source.height), geometry)
+    output.width = pixels.width
+    output.height = pixels.height
+    const destination = output.getContext('2d')
+    if (!destination) throw new Error('Image processing is not available in this browser.')
+    destination.putImageData(new ImageData(pixels.data, pixels.width, pixels.height), 0, 0)
+    destination.globalCompositeOperation = 'destination-over'
+    destination.fillStyle = '#fff'
+    destination.fillRect(0, 0, output.width, output.height)
+    return await new Promise<Blob>((resolve, reject) => {
+      output.toBlob(result => result ? resolve(result) : reject(new Error('Could not build the flat receipt.')), 'image/jpeg', 0.92)
+    })
+  } finally {
+    source.width = source.height = output.width = output.height = 0
+  }
 }

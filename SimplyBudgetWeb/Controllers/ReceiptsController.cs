@@ -119,7 +119,8 @@ public class ReceiptsController(
     [RequestSizeLimit(MaximumImageBytes + 1024 * 1024)]
     public async Task<ActionResult<ReceiptDto>> Upload(
         [FromForm] IFormFile? image,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromForm] string? imageGeometry = null)
     {
         if (image is null || image.Length == 0)
             return BadRequest("An image is required.");
@@ -135,6 +136,10 @@ public class ReceiptsController(
         {
             return BadRequest("Upload a JPEG, PNG, or WebP receipt image.");
         }
+
+        ReceiptImageGeometry? geometry = null;
+        if (imageGeometry is not null && !ReceiptImageGeometry.TryParse(imageGeometry, out geometry))
+            return BadRequest("Invalid receipt corners. Use four clockwise, convex corners within the image.");
 
         await using var buffer = new MemoryStream((int)image.Length);
         await image.CopyToAsync(buffer, cancellationToken);
@@ -172,6 +177,7 @@ public class ReceiptsController(
             BlobName = blobName,
             FileName = fileName,
             ContentType = contentType,
+            ImageGeometryJson = geometry?.ToJson(),
             ProcessingStatus = "processing",
         };
         context.Receipts.Add(receipt);

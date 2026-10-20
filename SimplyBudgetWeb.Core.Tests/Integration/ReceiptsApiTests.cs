@@ -16,6 +16,7 @@ namespace SimplyBudgetWeb.Core.Tests.Integration;
 
 public class ReceiptsApiTests
 {
+    private const string GeometryJson = """{"version":1,"corners":[{"x":0.15,"y":0.1},{"x":0.9,"y":0.2},{"x":0.8,"y":0.95},{"x":0.05,"y":0.85}]}""";
     private static readonly byte[] JpegBytes = [0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46];
     private static readonly byte[] PngBytes = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00];
 
@@ -40,6 +41,7 @@ public class ReceiptsApiTests
         using var _ = factory;
 
         using var form = ImageForm(JpegBytes, "receipt.jpg", "image/jpeg");
+        form.Add(new StringContent(GeometryJson), "imageGeometry");
         var response = await client.PostAsync("/api/receipts", form);
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
@@ -50,10 +52,14 @@ public class ReceiptsApiTests
         await Assert.That(created.ProcessingStatus).IsEqualTo("needs-review");
         await Assert.That(created.ProcessingMessage).IsNull();
         await Assert.That(created.LineItems.Length).IsEqualTo(2);
+        await Assert.That(created.ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
         await Assert.That(factory.ImageStore.Blobs.Single().Value).IsEquivalentTo(JpegBytes);
 
         var list = await client.GetFromJsonAsync<ReceiptDto[]>("/api/receipts");
         await Assert.That(list!.Single().Id).IsEqualTo(created.Id);
+        await Assert.That(list!.Single().ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
+        var reloaded = await client.GetFromJsonAsync<ReceiptDto>($"/api/receipts/{created.Id}");
+        await Assert.That(reloaded!.ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
 
         var image = await client.GetAsync($"/api/receipts/{created.Id}/image");
         await Assert.That(image.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -66,6 +72,10 @@ public class ReceiptsApiTests
         var updated = await update.Content.ReadFromJsonAsync<ReceiptDto>();
         await Assert.That(updated!.MerchantName).IsEqualTo("Fixed Cafe");
         await Assert.That(updated.LineItems.Length).IsEqualTo(0);
+        await Assert.That(updated.ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
+        var persisted = await client.GetFromJsonAsync<ReceiptDto>($"/api/receipts/{created.Id}");
+        await Assert.That(persisted!.ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
+        await Assert.That(factory.ImageStore.Blobs.Single().Value).IsEquivalentTo(JpegBytes);
     }
 
     [Test]
@@ -78,6 +88,35 @@ public class ReceiptsApiTests
         var response = await client.PostAsync("/api/receipts", form);
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
+        var receipt = await response.Content.ReadFromJsonAsync<ReceiptDto>();
+        await Assert.That(receipt!.ImageGeometry).IsNull();
+    }
+
+    [Test]
+    [Arguments("""{"version":1,"corners":null}""")]
+    [Arguments("""{"version":1,"corners":[null,null,null,null]}""")]
+    [Arguments("""{"version":1,"corners":[]}""")]
+    [Arguments("""{"version":2,"corners":[{"x":0,"y":0},{"x":1,"y":0},{"x":1,"y":1},{"x":0,"y":1}]}""")]
+    [Arguments("""{"version":1,"corners":[{},{"x":1,"y":0},{"x":1,"y":1},{"x":0,"y":1}]}""")]
+    [Arguments("""{"version":1,"corners":[{"x":0,"y":0},{"x":1,"y":1},{"x":1,"y":0},{"x":0,"y":1}]}""")]
+    [Arguments("""{"version":1,"corners":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":1},{"x":1,"y":0}]}""")]
+    [Arguments("""{"version":1,"corners":[{"x":0,"y":0},{"x":1,"y":0},{"x":0.2,"y":0.1},{"x":1,"y":1}]}""")]
+    [Arguments("""{"version":1,"corners":[{"x":0,"y":0},{"x":0.001,"y":0},{"x":0.001,"y":1},{"x":0,"y":1}]}""")]
+    [Arguments("""{"version":1,"corners":[{"x":-0.1,"y":0},{"x":1,"y":0},{"x":1,"y":1},{"x":0,"y":1}]}""")]
+    [Arguments("""{"version":1,"corners":[{"x":1e999,"y":0},{"x":1,"y":0},{"x":1,"y":1},{"x":0,"y":1}]}""")]
+    [Arguments("""{"version":1,"corners":[{"x":"NaN","y":0},{"x":1,"y":0},{"x":1,"y":1},{"x":0,"y":1}]}""")]
+    [Arguments("{")]
+    [Arguments("null")]
+    public async Task Upload_RejectsMalformedGeometryBeforeStoringOriginal(string json)
+    {
+        var (factory, client) = await CreateAsync();
+        using var _ = factory;
+        using var form = ImageForm(JpegBytes, "receipt.jpg", "image/jpeg");
+        form.Add(new StringContent(json), "imageGeometry");
+        var response = await client.PostAsync("/api/receipts", form);
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+        await Assert.That(factory.ImageStore.Blobs.Count).IsEqualTo(0);
+        await Assert.That((await client.GetFromJsonAsync<ReceiptDto[]>("/api/receipts"))!.Length).IsEqualTo(0);
     }
 
     [Test]
@@ -488,6 +527,7 @@ public class ReceiptsApiTests
         var (factory, client) = await CreateAsync();
         using var _ = factory;
         using var form = ImageForm(JpegBytes, "receipt.jpg", "image/jpeg");
+        form.Add(new StringContent(GeometryJson), "imageGeometry");
         var upload = await client.PostAsync("/api/receipts", form);
         var receipt = (await upload.Content.ReadFromJsonAsync<ReceiptDto>())!;
         var corrected = await client.PutAsJsonAsync($"/api/receipts/{receipt.Id}", new ReceiptUpdateRequest(
@@ -513,6 +553,7 @@ public class ReceiptsApiTests
         var matches = await client.GetFromJsonAsync<ReceiptDto[]>("/api/receipts/matches?amount=1300&date=2026-03-04");
         await Assert.That(matches!.Single().Id).IsEqualTo(receipt.Id);
         await Assert.That(matches!.Single().IsLinked).IsFalse();
+        await Assert.That(matches!.Single().ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
         var conversion = await client.PostAsJsonAsync($"/api/pending-expenses/{pendingId}/convert", new ConvertPendingExpenseRequest(
             "My expense description", new DateTime(2026, 4, 6), [new ConvertPendingExpenseItemRequest(categoryId, 1300)], version,
             Notes: "My expense note", ReceiptId: receipt.Id));
@@ -525,6 +566,7 @@ public class ReceiptsApiTests
         await Assert.That(expense.Receipt!.Id).IsEqualTo(receipt.Id);
         await Assert.That(expense.Receipt.MerchantName).IsEqualTo("Corrected merchant");
         await Assert.That(expense.Receipt.IsLinked).IsTrue();
+        await Assert.That(expense.Receipt.ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
         await Assert.That((await client.GetFromJsonAsync<ReceiptDto[]>("/api/receipts"))!.Single().IsLinked).IsTrue();
         await Assert.That((await client.GetFromJsonAsync<ReceiptDto[]>("/api/receipts/matches?amount=1300&date=2026-03-04"))!.Length).IsEqualTo(0);
         factory.MonthNotifier.Months.Clear();

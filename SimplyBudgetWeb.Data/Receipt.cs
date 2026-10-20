@@ -16,6 +16,9 @@ public class Receipt
     [MaxLength(100)]
     public string ContentType { get; set; } = "image/jpeg";
 
+    [MaxLength(1024)]
+    public string? ImageGeometryJson { get; set; }
+
     [MaxLength(300)]
     public string? MerchantName { get; set; }
 

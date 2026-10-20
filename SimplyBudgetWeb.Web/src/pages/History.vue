@@ -383,7 +383,7 @@ function onDialogSuccess() {
             {{ receiptToView.transactionDate ? new Date(receiptToView.transactionDate).toLocaleDateString() : 'Date not set' }}
             · {{ receiptToView.totalAmountCents == null ? 'Total not set' : formatCents(receiptToView.totalAmountCents) }}
           </div>
-          <ReceiptPreview v-if="receiptToView && receiptDialogOpen" :receipt-id="receiptToView.id" :title="receiptToView.merchantName || 'Linked receipt'" />
+          <ReceiptPreview v-if="receiptToView && receiptDialogOpen" :receipt-id="receiptToView.id" :image-geometry="receiptToView.imageGeometry" :title="receiptToView.merchantName || 'Linked receipt'" />
           <div v-if="receiptToView?.notes" class="mt-3 text-body-2">{{ receiptToView.notes }}</div>
           <div v-if="receiptToView?.lineItems.length" class="mt-2">
             <div v-for="line in receiptToView.lineItems" :key="line.id" class="d-flex justify-space-between ga-3 text-body-2">

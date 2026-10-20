@@ -2,10 +2,10 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
-import type { ReceiptDto, ReceiptUpdateRequest } from '@/types'
+import type { ReceiptDto, ReceiptUpdateRequest, ReceiptImageGeometry } from '@/types'
 import { centsToDollars, dollarsToCents, formatCents } from '@/utils/currency'
-import { flattenReceiptImage } from '@/utils/receiptImage'
 import ReceiptPreview from '@/components/ReceiptPreview.vue'
+import ReceiptImageAdjustment from '@/components/ReceiptImageAdjustment.vue'
 
 interface EditableLine {
   description: string
@@ -20,6 +20,7 @@ const selectedId = ref<number | null>(null)
 const selectedReceipt = computed(() => receipts.value.find(receipt => receipt.id === selectedId.value) ?? null)
 const imageFile = ref<File | null>(null)
 const imagePreviewUrl = ref('')
+const imageGeometry = ref<ReceiptImageGeometry | null>(null)
 const view = ref('pending')
 const visibleReceipts = computed(() => receipts.value.filter(receipt => Boolean(receipt.isLinked) === (view.value === 'categorized')))
 const pendingCount = computed(() => receipts.value.filter(receipt => !receipt.isLinked).length)
@@ -95,15 +96,16 @@ watch(selectedReceipt, receipt => {
 
 watch(view, () => { selectedId.value = visibleReceipts.value[0]?.id ?? null })
 
-async function selectImage(event: Event) {
+function selectImage(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
   input.value = ''
-  preparingImage.value = true
+  preparingImage.value = false
   releaseUrl(imagePreviewUrl.value)
   imagePreviewUrl.value = ''
   imageFile.value = null
+  imageGeometry.value = null
   uploadOverrides.value = { merchant: '', date: '', total: '' }
   try {
     const types: Record<string, RegExp> = {
@@ -111,26 +113,21 @@ async function selectImage(event: Event) {
     }
     if (!types[file.type]?.test(file.name)) throw new Error('Choose a JPEG, PNG, or WebP image. PDFs are not supported for upload.')
     if (file.size === 0 || file.size > 15 * 1024 * 1024) throw new Error('Receipt images must be between 1 byte and 15 MB.')
-    imageFile.value = await flattenReceiptImage(file)
-    if (imageFile.value.size > 15 * 1024 * 1024) {
-      imageFile.value = null
-      throw new Error('The prepared image is larger than 15 MB. Choose a smaller photo.')
-    }
+    imageFile.value = file
     imagePreviewUrl.value = URL.createObjectURL(imageFile.value)
   } catch (error: unknown) {
-    snackbar.enqueueSnackbar(error instanceof Error ? error.message : 'Could not crop the receipt image', { variant: 'error' })
-  } finally {
-    preparingImage.value = false
+    snackbar.enqueueSnackbar(error instanceof Error ? error.message : 'Could not read the receipt file', { variant: 'error' })
   }
 }
 
 async function uploadReceipt() {
-  if (!imageFile.value) return
+  if (!imageFile.value || preparingImage.value || uploading.value) return
   uploading.value = true
   actionError.value = ''
   try {
     const formData = new FormData()
     formData.append('image', imageFile.value)
+    if (imageGeometry.value) formData.append('imageGeometry', JSON.stringify(imageGeometry.value))
     const receipt = await apiClient.upload<ReceiptDto>('/api/receipts', formData)
     const overrides = uploadOverrides.value
     if (overrides.merchant || overrides.date || overrides.total) {
@@ -146,6 +143,7 @@ async function uploadReceipt() {
     receipts.value = [receipt, ...receipts.value.filter(existing => existing.id !== receipt.id)]
     selectedId.value = receipt.id
     imageFile.value = null
+    imageGeometry.value = null
     releaseUrl(imagePreviewUrl.value)
     imagePreviewUrl.value = ''
     uploadOverrides.value = { merchant: '', date: '', total: '' }
@@ -239,13 +237,12 @@ onBeforeUnmount(() => {
       <div class="text-subtitle-1 font-weight-medium mb-1">Add a receipt</div>
       <div class="text-body-2 text-medium-emphasis mb-3">
         Take a photo or choose a file. AI suggests the merchant, total, and date; you can always correct them.
-        JPEG, PNG, or WebP · up to 15 MB.
+        JPEG, PNG, or WebP · up to 15 MB. Originals are saved unchanged.
       </div>
       <div class="d-flex flex-wrap align-center ga-3">
         <v-btn
           prepend-icon="mdi-camera-plus"
           variant="outlined"
-          :loading="preparingImage"
           :disabled="uploading"
           @click="takePhoto"
         >
@@ -254,7 +251,6 @@ onBeforeUnmount(() => {
         <v-btn
           prepend-icon="mdi-image-multiple"
           variant="outlined"
-          :loading="preparingImage"
           :disabled="uploading"
           @click="chooseImage"
         >
@@ -293,13 +289,13 @@ onBeforeUnmount(() => {
         <v-text-field v-model="uploadOverrides.date" label="Date override (optional)" type="date" />
         <v-text-field v-model="uploadOverrides.total" label="Total override (optional)" prefix="$" type="number" min="0.01" step="0.01" />
       </div>
-      <v-img
-        v-if="imagePreviewUrl"
-        :src="imagePreviewUrl"
-        alt="Automatically cropped receipt preview"
-        max-height="360"
-        class="mt-4 rounded"
-        contain
+      <ReceiptImageAdjustment
+        v-if="imageFile && imagePreviewUrl"
+        :file="imageFile"
+        :original-url="imagePreviewUrl"
+        :disabled="uploading"
+        @geometry="imageGeometry = $event"
+        @busy="preparingImage = $event"
       />
     </v-card>
 
@@ -353,7 +349,7 @@ onBeforeUnmount(() => {
         >
           {{ selectedReceipt.processingMessage }}
         </v-alert>
-        <ReceiptPreview :receipt-id="selectedReceipt.id" :title="`Receipt from ${selectedReceipt.merchantName || selectedReceipt.fileName}`" class="mb-4" />
+        <ReceiptPreview :receipt-id="selectedReceipt.id" :image-geometry="selectedReceipt.imageGeometry" :title="`Receipt from ${selectedReceipt.merchantName || selectedReceipt.fileName}`" class="mb-4" />
         <v-alert v-if="selectedReceipt.processingStatus === 'processing'" type="info" variant="tonal" class="mb-3">
           AI is still analyzing. You can enter and save corrections now; saved corrections take priority over AI.
         </v-alert>
