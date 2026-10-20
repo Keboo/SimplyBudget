@@ -124,8 +124,27 @@ aspire run
 ```
 
 Receipt photos are perspective-corrected in the browser before upload. The detected merchant,
-transaction date, total, and available line items can be edited on the Receipts page; attaching a
-receipt during pending-expense conversion requires an exact total and a date within five days.
+transaction date, total, and available line items can be edited on the Receipts page. Suggested
+conversion matches have an exact total and a date within five days; these are suggestions, not
+requirements for attaching a receipt.
+
+The Receipts page opens to **Pending** (unattached) receipts; **Categorized** holds receipts already
+attached to expenses. Upload JPEG, PNG, or WebP images up to 15 MB (PDF upload is not supported).
+While upload and AI analysis run, optional merchant/date/total overrides can be entered; these take
+priority over the returned AI suggestions. Review the details and select **Save corrections** to
+persist them. Unsaved drafts survive switching receipts or refreshing the list, but not leaving
+the page or reloading the browser. Extraction failures keep the image available for manual entry.
+
+When processing a pending debit, select one suggested receipt, **Browse all pending receipts**
+to choose one with incorrect or missing AI details, or select **No receipt**. Previewing or
+attaching it does not change the editable expense description, date, notes, or category amounts.
+After conversion, **View receipt** in Expenses opens the original document. Receipt previews show
+loading/error/retry states and offer an **Open original receipt** link (including for existing PDFs).
+Deleting any receipt requires confirmation and permanently deletes its original image, receipt,
+and attachment links. For categorized receipts, all expense data (amounts, categories, descriptions)
+is kept. Missing receipts return 404; receipts still processing return 409. A storage failure returns
+503 and keeps the receipt and its links for retry. Deleting an expense instead returns its receipt
+to Pending.
 
 If an upload succeeds but automatic extraction fails with `401 PermissionDenied`, check the
 backend managed identity's role on the Document Intelligence resource. `Cognitive Services Data

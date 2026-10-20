@@ -1,10 +1,12 @@
 using Azure;
 using Azure.Identity;
+using System.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SimplyBudgetWeb.Data;
 using SimplyBudgetWeb.Services;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
 
 namespace SimplyBudgetWeb.Controllers;
 
@@ -36,7 +38,8 @@ public class ReceiptsController(
             .Include(x => x.LineItems)
             .OrderByDescending(x => x.UploadedAtUtc)
             .ToListAsync();
-        return receipts.Select(ReceiptMapper.ToDto).ToArray();
+        var linkedIds = await context.ReceiptExpenseLinks.Select(x => x.ReceiptId).ToHashSetAsync();
+        return receipts.Select(receipt => ReceiptMapper.ToDto(receipt) with { IsLinked = linkedIds.Contains(receipt.Id) }).ToArray();
     }
 
     [HttpGet("matches")]
@@ -70,7 +73,10 @@ public class ReceiptsController(
         var receipt = await context.Receipts
             .Include(x => x.LineItems)
             .FirstOrDefaultAsync(x => x.Id == id);
-        return receipt is null ? NotFound() : ReceiptMapper.ToDto(receipt);
+        return receipt is null ? NotFound() : ReceiptMapper.ToDto(receipt) with
+        {
+            IsLinked = await context.ReceiptExpenseLinks.AnyAsync(x => x.ReceiptId == id),
+        };
     }
 
     [HttpGet("{id:int}/image")]
@@ -171,54 +177,69 @@ public class ReceiptsController(
         context.Receipts.Add(receipt);
         await context.SaveChangesAsync(cancellationToken);
 
+        ReceiptExtraction? extraction = null;
+        string? processingMessage = null;
         try
         {
-            var extraction = await analyzer.AnalyzeAsync(bytes, cancellationToken);
-            receipt.MerchantName = extraction.MerchantName;
-            receipt.TransactionDate = extraction.TransactionDate?.Date;
-            receipt.TotalAmountCents = extraction.TotalAmountCents;
-            receipt.LineItems = extraction.LineItems
-                .Select(x => new ReceiptLineItem
-                {
-                    Description = x.Description,
-                    AmountCents = x.AmountCents,
-                })
-                .ToList();
-            receipt.ProcessingStatus = "needs-review";
-            receipt.ProcessingMessage = extraction.TotalAmountCents is null
+            extraction = await analyzer.AnalyzeAsync(bytes, cancellationToken);
+            processingMessage = extraction.TotalAmountCents is null
                 ? "Review the receipt details; the total was not recognized."
                 : null;
-            await context.SaveChangesAsync(cancellationToken);
         }
         catch (ReceiptIntegrationNotConfiguredException exception)
         {
-            receipt.ProcessingStatus = "needs-review";
-            receipt.ProcessingMessage = exception.Message;
-            await context.SaveChangesAsync(cancellationToken);
+            processingMessage = exception.Message;
         }
         catch (RequestFailedException exception)
         {
             logger.LogWarning(exception, "Receipt extraction failed for receipt {ReceiptId}.", receipt.Id);
-            receipt.ProcessingStatus = "needs-review";
-            receipt.ProcessingMessage = "Automatic extraction failed. Enter or correct the receipt details.";
-            await context.SaveChangesAsync(cancellationToken);
+            processingMessage = "Automatic extraction failed. Enter or correct the receipt details.";
         }
         catch (AuthenticationFailedException exception)
         {
             logger.LogWarning(exception, "Receipt extraction could not authenticate for receipt {ReceiptId}.", receipt.Id);
-            receipt.ProcessingStatus = "needs-review";
-            receipt.ProcessingMessage = "Automatic extraction is unavailable. Enter or correct the receipt details.";
-            await context.SaveChangesAsync(cancellationToken);
+            processingMessage = "Automatic extraction is unavailable. Enter or correct the receipt details.";
         }
         catch (InvalidDataException exception)
         {
             logger.LogWarning(exception, "Receipt extraction returned invalid amounts for receipt {ReceiptId}.", receipt.Id);
-            receipt.ProcessingStatus = "needs-review";
-            receipt.ProcessingMessage = "Automatic extraction returned invalid values. Enter or correct the receipt details.";
-            await context.SaveChangesAsync(cancellationToken);
+            processingMessage = "Automatic extraction returned invalid values. Enter or correct the receipt details.";
         }
 
-        return CreatedAtAction(nameof(GetById), new { id = receipt.Id }, ReceiptMapper.ToDto(receipt));
+        return await context.Database.CreateExecutionStrategy().ExecuteAsync<ActionResult<ReceiptDto>>(async () =>
+        {
+            // Serialize the status check and extraction save with manual corrections and deletion.
+            await using var transaction = await context.Database.BeginTransactionAsync(
+                IsolationLevel.Serializable, cancellationToken);
+            context.ChangeTracker.Clear();
+            var analyzedReceipt = await context.Receipts
+                .AsTracking()
+                .Include(x => x.LineItems)
+                .FirstOrDefaultAsync(x => x.Id == receipt.Id, cancellationToken);
+            if (analyzedReceipt is null)
+                return NotFound("The receipt was deleted while analysis was running.");
+            if (analyzedReceipt.ProcessingStatus == "processing")
+            {
+                if (extraction is not null)
+                {
+                    analyzedReceipt.MerchantName = extraction.MerchantName;
+                    analyzedReceipt.TransactionDate = extraction.TransactionDate?.Date;
+                    analyzedReceipt.TotalAmountCents = extraction.TotalAmountCents;
+                    analyzedReceipt.LineItems = extraction.LineItems
+                        .Select(x => new ReceiptLineItem { Description = x.Description, AmountCents = x.AmountCents })
+                        .ToList();
+                }
+                analyzedReceipt.ProcessingStatus = "needs-review";
+                analyzedReceipt.ProcessingMessage = processingMessage;
+                await context.SaveChangesAsync(cancellationToken);
+            }
+            var isLinked = await context.ReceiptExpenseLinks.AnyAsync(x => x.ReceiptId == receipt.Id, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id = receipt.Id }, ReceiptMapper.ToDto(analyzedReceipt) with
+            {
+                IsLinked = isLinked,
+            });
+        });
     }
 
     [HttpPut("{id:int}")]
@@ -271,7 +292,70 @@ public class ReceiptsController(
             monthDataCache.InvalidateMonth(linkedExpenseDate.Value);
             await monthUpdates.NotifyMonthUpdated(linkedExpenseDate.Value);
         }
-        return ReceiptMapper.ToDto(receipt);
+        return ReceiptMapper.ToDto(receipt) with { IsLinked = linkedExpenseDate.HasValue };
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        var receipt = await context.Receipts.AsTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (receipt is null)
+            return NotFound();
+        if (receipt.ProcessingStatus == "processing")
+            return Conflict("This receipt is still being analyzed. Try deleting it again when analysis finishes.");
+
+        try
+        {
+            await imageStore.DeleteAsync(receipt.BlobName, cancellationToken);
+        }
+        catch (ReceiptIntegrationNotConfiguredException exception)
+        {
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable, detail: exception.Message);
+        }
+        catch (RequestFailedException exception)
+        {
+            logger.LogWarning(exception, "Receipt image deletion failed for receipt {ReceiptId}.", id);
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable, detail: "Receipt storage is unavailable. The receipt was not deleted.");
+        }
+        catch (AuthenticationFailedException exception)
+        {
+            logger.LogWarning(exception, "Receipt image deletion could not authenticate for receipt {ReceiptId}.", id);
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable, detail: "Receipt storage access is unavailable. The receipt was not deleted.");
+        }
+
+        // Once storage deletion succeeds, finish even if the request is canceled. Read links
+        // inside the transaction so links added during storage deletion are also invalidated.
+        DateTime[]? changedMonths = null;
+        await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(
+                IsolationLevel.Serializable, CancellationToken.None);
+            context.ChangeTracker.Clear();
+            var currentReceipt = await context.Receipts.AsTracking()
+                .FirstOrDefaultAsync(x => x.Id == id, CancellationToken.None);
+            if (currentReceipt is null)
+                return;
+
+            var expenseDates = await context.ReceiptExpenseLinks
+                .Where(x => x.ReceiptId == id)
+                .Select(x => x.ExpenseCategoryItem!.Date)
+                .ToListAsync(CancellationToken.None);
+            changedMonths = expenseDates
+                .Concat(currentReceipt.TransactionDate.HasValue ? [currentReceipt.TransactionDate.Value] : [])
+                .Select(x => x.StartOfMonth())
+                .Distinct()
+                .ToArray();
+
+            // The receipt's dependents cascade; expense items and their details are principals.
+            context.Receipts.Remove(currentReceipt);
+            await context.SaveChangesAsync(CancellationToken.None);
+            await transaction.CommitAsync(CancellationToken.None);
+        });
+        if (changedMonths is null)
+            return NotFound();
+        monthDataCache.InvalidateMonths(changedMonths);
+        await monthUpdates.NotifyMonthsUpdated(changedMonths, CancellationToken.None);
+        return NoContent();
     }
 
     private static bool HasExpectedImageSignature(byte[] bytes, string contentType)

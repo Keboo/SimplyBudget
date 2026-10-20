@@ -260,12 +260,6 @@ public class PendingExpensesController(
                 .FirstOrDefaultAsync(x => x.Id == request.ReceiptId.Value);
             if (receipt is null)
                 return BadRequest("The selected receipt was not found.");
-            if (receipt.TotalAmountCents != pending.Amount ||
-                !receipt.TransactionDate.HasValue ||
-                Math.Abs((receipt.TransactionDate.Value.Date - pending.Date.Date).Days) > 5)
-            {
-                return BadRequest("The selected receipt does not match this pending expense.");
-            }
             if (await context.ReceiptExpenseLinks.AnyAsync(x => x.ReceiptId == receipt.Id))
                 return Conflict("The selected receipt is already linked to an expense.");
         }

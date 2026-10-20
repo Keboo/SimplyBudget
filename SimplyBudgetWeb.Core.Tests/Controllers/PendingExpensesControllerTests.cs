@@ -794,7 +794,11 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
-    public async Task Convert_WithReceipt_LinksReceiptToHistoryExpense()
+    [Arguments("matching")]
+    [Arguments("wrong-total")]
+    [Arguments("missing-date")]
+    [Arguments("far-away-date")]
+    public async Task Convert_WithExplicitReceipt_LinksToHistoryWithoutChangingExpenseFields(string receiptData)
     {
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
@@ -815,9 +819,14 @@ public class PendingExpensesControllerTests
             {
                 FileName = "receipt.jpg",
                 BlobName = "receipt.jpg",
-                MerchantName = "Store",
-                TransactionDate = new DateTime(2026, 1, 8),
-                TotalAmountCents = 45_00,
+                MerchantName = "Extracted merchant",
+                TransactionDate = receiptData switch
+                {
+                    "missing-date" => null,
+                    "far-away-date" => new DateTime(2025, 6, 1),
+                    _ => new DateTime(2026, 1, 8),
+                },
+                TotalAmountCents = receiptData == "wrong-total" ? 99_00 : 45_00,
             };
             context.PendingExpenses.Add(pending);
             context.Receipts.Add(receipt);
@@ -826,9 +835,9 @@ public class PendingExpensesControllerTests
 
             var controller = new PendingExpensesController(context);
             var result = await controller.Convert(pending.ID, new ConvertPendingExpenseRequest(
-                "Store",
-                new DateTime(2026, 1, 5),
-                [new ConvertPendingExpenseItemRequest(category.ID, 45_00)],
+                "My edited description",
+                new DateTime(2026, 2, 6),
+                [new ConvertPendingExpenseItemRequest(category.ID, 46_00)],
                 System.Convert.ToBase64String(pending.Version),
                 ReceiptId: receiptId));
 
@@ -838,16 +847,22 @@ public class PendingExpensesControllerTests
 
         await mocker.InDbScopeAsync(async context =>
         {
+            await Assert.That(await context.PendingExpenses.CountAsync()).IsEqualTo(0);
             var link = await context.ReceiptExpenseLinks.SingleAsync();
             await Assert.That(link.ReceiptId).IsEqualTo(receiptId);
 
             var historyController = new HistoryController(context);
             var history = await historyController.GetAll(
-                month: new DateTime(2026, 1, 1),
+                month: new DateTime(2026, 2, 1),
                 search: null,
                 categoryId: null,
                 accountId: null);
-            await Assert.That(history.Single().Receipt?.Id).IsEqualTo(receiptId);
+            var expense = history.Single();
+            await Assert.That(expense.Id).IsEqualTo(link.ExpenseCategoryItemId);
+            await Assert.That(expense.Receipt?.Id).IsEqualTo(receiptId);
+            await Assert.That(expense.Description).IsEqualTo("My edited description");
+            await Assert.That(expense.Date).IsEqualTo(new DateTime(2026, 2, 6));
+            await Assert.That(expense.Details.Single().Amount).IsEqualTo(-46_00);
         });
     }
 
