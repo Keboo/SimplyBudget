@@ -18,11 +18,16 @@ const api = vi.hoisted(() => ({
 const flatten = vi.hoisted(() => vi.fn())
 
 vi.mock('@/services/apiClient', () => ({ apiClient: api }))
-vi.mock('@/utils/receiptImage', () => ({ flattenReceiptImage: flatten }))
+vi.mock('@/utils/receiptImage', async importOriginal => ({
+  ...await importOriginal<typeof import('@/utils/receiptImage')>(),
+  flattenReceiptImage: flatten,
+}))
 
 import Receipts from './Receipts.vue'
 import ConvertPendingExpenseDialog from '@/components/ConvertPendingExpenseDialog.vue'
 import ReceiptPreview from '@/components/ReceiptPreview.vue'
+import ReceiptImageAdjustment from '@/components/ReceiptImageAdjustment.vue'
+import { imageBoundary } from '@/utils/receiptImage'
 
 enableAutoUnmount(afterEach)
 
@@ -91,8 +96,7 @@ describe('Receipts page', () => {
     api.delete.mockReset().mockResolvedValue(undefined)
     api.post.mockReset().mockResolvedValue(undefined)
     api.download.mockReset().mockResolvedValue({ blob: new Blob(['img']), fileName: null })
-    flatten.mockReset().mockImplementation(async (file: File) =>
-      new File([file], 'photo.jpg', { type: 'image/jpeg' }))
+    flatten.mockReset().mockResolvedValue(new Blob(['flat'], { type: 'image/jpeg' }))
     URL.createObjectURL = vi.fn(() => 'blob:preview')
     URL.revokeObjectURL = vi.fn()
   })
@@ -104,24 +108,28 @@ describe('Receipts page', () => {
     expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
   })
 
-  it('flattens the chosen photo and enables upload', async () => {
+  it('defaults to the original photo without processing and enables upload', async () => {
     const wrapper = await mountPage()
 
     await chooseFile(wrapper)
 
-    expect(flatten).toHaveBeenCalledOnce()
+    expect(flatten).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Optionally crop and straighten')
     expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
   })
 
-  it('reports image processing failures and keeps upload disabled', async () => {
+  it('reports adjustment failures and permits skipping back to an original upload', async () => {
     flatten.mockRejectedValue(new Error('Image processing did not initialize'))
     const wrapper = await mountPage()
 
     await chooseFile(wrapper)
-
-    const snackbar = useSnackbarStore()
-    expect(snackbar.messages.slice(-1)[0]).toMatchObject({ text: 'Image processing did not initialize', variant: 'error' })
+    await wrapper.findAll('button').find(button => button.text() === 'Adjust corners')!.trigger('click')
+    await wrapper.findAll('button').find(button => button.text() === 'Apply flat view')!.trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Image processing did not initialize')
     expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
+    await wrapper.findAll('button').find(button => button.text() === 'Skip — use original')!.trigger('click')
+    expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
   })
 
   it('uploads the image as multipart form data and selects the new receipt', async () => {
@@ -136,8 +144,10 @@ describe('Receipts page', () => {
     const [url, form] = api.upload.mock.calls[0] as [string, FormData]
     expect(url).toBe('/api/receipts')
     const image = form.get('image') as File
-    expect(image.name).toBe('photo.jpg')
+    expect(image.name).toBe('photo.heic.jpg')
     expect(image.type).toBe('image/jpeg')
+    expect(image.size).toBe(3)
+    expect(form.get('imageGeometry')).toBeNull()
     expect(wrapper.text()).toContain('Review receipt')
     expect(wrapper.text()).toContain('Corner Cafe')
     expect(useSnackbarStore().messages.slice(-1)[0]).toMatchObject({
@@ -145,6 +155,29 @@ describe('Receipts page', () => {
       variant: 'success',
     })
     expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
+  })
+
+  it('applies manually positioned corners, previews flat output, and uploads geometry alongside the untouched file', async () => {
+    api.upload.mockResolvedValue(receipt({ imageGeometry: imageBoundary() }))
+    const wrapper = await mountPage()
+    await chooseFile(wrapper)
+    await wrapper.findAll('button').find(button => button.text() === 'Adjust corners')!.trigger('click')
+    expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
+    const corner = wrapper.get('button[aria-label^="Top-left corner"]')
+    await corner.trigger('keydown', { key: 'ArrowRight' })
+    await corner.trigger('keydown', { key: 'ArrowDown' })
+    await wrapper.findAll('button').find(button => button.text() === 'Apply flat view')!.trigger('click')
+    await flushPromises()
+    expect(wrapper.find('img[alt="Flattened receipt preview"]').exists()).toBe(true)
+    expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
+    await uploadButton(wrapper).trigger('click')
+    await flushPromises()
+    const form = api.upload.mock.calls[0]![1] as FormData
+    expect(JSON.parse(form.get('imageGeometry') as string)).toMatchObject({
+      version: 1, corners: [{ x: 0.005, y: 0.005 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }],
+    })
+    expect((form.get('image') as File).name).toBe('photo.heic.jpg')
+    expect((form.get('image') as File).size).toBe(3)
   })
 
   it('selects the new upload from Categorized and retains drafts when switching back', async () => {
@@ -278,6 +311,51 @@ describe('Receipts page', () => {
     expect(flatten).not.toHaveBeenCalled()
     expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
     expect(useSnackbarStore().messages.slice(-1)[0]?.text).toContain('JPEG, PNG, or WebP')
+  })
+
+  it('resets manual corners, rotates via corner order, and drops applied geometry when skipping', async () => {
+    api.upload.mockResolvedValue(receipt())
+    const wrapper = await mountPage()
+    await chooseFile(wrapper)
+    const button = (text: string) => wrapper.findAll('button').find(item => item.text() === text)!
+    await button('Adjust corners').trigger('click')
+    await wrapper.get('input[aria-label="Top-left X percent"]').setValue('15')
+    await button('Reset corners').trigger('click')
+    expect((wrapper.get('input[aria-label="Top-left X percent"]').element as HTMLInputElement).value).toBe('0')
+    await button('Rotate flat view 90° clockwise').trigger('click')
+    await button('Apply flat view').trigger('click')
+    await flushPromises()
+    const [a, b, c, d] = imageBoundary().corners
+    expect(flatten).toHaveBeenCalledWith(expect.any(File), { version: 1, corners: [d, a, b, c] })
+    await button('Skip — use original').trigger('click')
+    expect(wrapper.find('img[alt="Flattened receipt preview"]').exists()).toBe(false)
+    await uploadButton(wrapper).trigger('click')
+    await flushPromises()
+    expect((api.upload.mock.calls[0]![1] as FormData).get('imageGeometry')).toBeNull()
+  })
+
+  it('discards a late adjustment after choosing a different original and on unmount', async () => {
+    let finish!: (value: Blob) => void
+    flatten.mockImplementationOnce(() => new Promise<Blob>(resolve => { finish = resolve }))
+    const wrapper = mount(ReceiptImageAdjustment, {
+      props: { file: new File(['one'], 'one.jpg'), originalUrl: 'blob:one' },
+      global: { plugins: [createVuetify({ components, directives })] },
+    })
+    await wrapper.findAll('button').find(button => button.text() === 'Adjust corners')!.trigger('click')
+    await wrapper.findAll('button').find(button => button.text() === 'Apply flat view')!.trigger('click')
+    await wrapper.setProps({ file: new File(['two'], 'two.jpg'), originalUrl: 'blob:two' })
+    finish(new Blob(['stale']))
+    await flushPromises()
+    expect(URL.createObjectURL).not.toHaveBeenCalled()
+    expect(wrapper.get('img').attributes('src')).toBe('blob:two')
+    expect(wrapper.emitted('geometry')?.slice(-1)[0]).toEqual([null])
+    flatten.mockImplementationOnce(() => new Promise<Blob>(resolve => { finish = resolve }))
+    await wrapper.findAll('button').find(button => button.text() === 'Adjust corners')!.trigger('click')
+    await wrapper.findAll('button').find(button => button.text() === 'Apply flat view')!.trigger('click')
+    wrapper.unmount()
+    finish(new Blob(['stale unmounted']))
+    await flushPromises()
+    expect(URL.createObjectURL).not.toHaveBeenCalled()
   })
 
   it('confirms deletion and keeps the receipt and explicit error when the API rejects it', async () => {
@@ -491,5 +569,65 @@ describe('Receipts page', () => {
     expect(URL.createObjectURL).toHaveBeenCalledOnce()
     expect(wrapper.find('iframe[title="Receipt PDF"]').exists()).toBe(true)
     expect(wrapper.get('a').text()).toContain('Open original receipt')
+  })
+
+  it('defaults shared previews to flat output, toggles original view, and keeps the original link and URL lifecycle', async () => {
+    vi.mocked(URL.createObjectURL).mockReturnValueOnce('blob:original').mockReturnValueOnce('blob:flat')
+    const geometry = imageBoundary()
+    const wrapper = mount(ReceiptPreview, {
+      props: { receiptId: 1, imageGeometry: geometry },
+      global: { plugins: [createVuetify({ components, directives })] },
+    })
+    await flushPromises()
+    expect(flatten).toHaveBeenCalledWith(expect.any(Blob), geometry)
+    expect(wrapper.getComponent({ name: 'VImg' }).props('src')).toBe('blob:flat')
+    expect(wrapper.get('a').attributes('href')).toBe('blob:original')
+    await wrapper.findAll('button').find(button => button.text() === 'Show original')!.trigger('click')
+    expect(wrapper.getComponent({ name: 'VImg' }).props('src')).toBe('blob:original')
+    await wrapper.findAll('button').find(button => button.text() === 'Show flat view')!.trigger('click')
+    expect(wrapper.getComponent({ name: 'VImg' }).props('src')).toBe('blob:flat')
+    wrapper.unmount()
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:original')
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:flat')
+  })
+
+  it('ignores stale flattened results after a geometry change on the same receipt', async () => {
+    let finish!: (value: Blob) => void
+    flatten.mockImplementationOnce(() => new Promise<Blob>(resolve => { finish = resolve }))
+    vi.mocked(URL.createObjectURL).mockReturnValueOnce('blob:first-original').mockReturnValueOnce('blob:second-original').mockReturnValueOnce('blob:second-flat')
+    const wrapper = mount(ReceiptPreview, {
+      props: { receiptId: 1, imageGeometry: imageBoundary() },
+      global: { plugins: [createVuetify({ components, directives })] },
+    })
+    await flushPromises()
+    const changed = imageBoundary()
+    changed.corners[0] = { x: 0.1, y: 0.1 }
+    await wrapper.setProps({ imageGeometry: changed })
+    await flushPromises()
+    finish(new Blob(['stale flat']))
+    await flushPromises()
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(3)
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:first-original')
+    expect(flatten).toHaveBeenLastCalledWith(expect.any(Blob), changed)
+    expect(wrapper.getComponent({ name: 'VImg' }).props('src')).toBe('blob:second-flat')
+  })
+
+  it('falls back to the original when correction fails and never processes legacy receipts or PDFs', async () => {
+    flatten.mockRejectedValueOnce(new Error('Decode failed'))
+    const wrapper = mount(ReceiptPreview, {
+      props: { receiptId: 1, imageGeometry: imageBoundary() },
+      global: { plugins: [createVuetify({ components, directives })] },
+    })
+    await flushPromises()
+    expect(wrapper.text()).toContain('Showing the original')
+    expect(wrapper.getComponent({ name: 'VImg' }).props('alt')).toBe('Original: receipt')
+    await wrapper.setProps({ imageGeometry: null })
+    await flushPromises()
+    expect(flatten).toHaveBeenCalledOnce()
+    api.download.mockResolvedValue({ blob: new Blob(['pdf'], { type: 'application/pdf' }) })
+    await wrapper.setProps({ receiptId: 2, imageGeometry: imageBoundary() })
+    await flushPromises()
+    expect(wrapper.find('iframe').exists()).toBe(true)
+    expect(flatten).toHaveBeenCalledOnce()
   })
 })

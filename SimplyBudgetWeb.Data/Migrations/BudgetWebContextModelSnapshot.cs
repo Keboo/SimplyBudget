@@ -321,6 +321,10 @@ namespace SimplyBudgetWeb.Data.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<string>("ImageGeometryJson")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
                     b.Property<string>("MerchantName")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");

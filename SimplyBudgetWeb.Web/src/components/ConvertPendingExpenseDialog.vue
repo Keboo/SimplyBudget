@@ -456,7 +456,7 @@ async function saveNote() {
             >
               {{ previewReceiptId ? 'Hide receipt' : 'View receipt' }}
             </v-btn>
-            <ReceiptPreview v-if="previewReceiptId !== null" :receipt-id="previewReceiptId" />
+            <ReceiptPreview v-if="previewReceiptId !== null" :receipt-id="previewReceiptId" :image-geometry="availableReceipts.find(receipt => receipt.id === previewReceiptId)?.imageGeometry" />
           </v-card>
 
           <template v-if="pendingExpense.isDebit">

@@ -182,7 +182,18 @@ export interface ReceiptLineItemDto {
   amountCents: number
 }
 
+export interface ReceiptImagePoint {
+  x: number
+  y: number
+}
+
+export interface ReceiptImageGeometry {
+  version: 1
+  corners: [ReceiptImagePoint, ReceiptImagePoint, ReceiptImagePoint, ReceiptImagePoint]
+}
+
 export interface ReceiptDto {
+  imageGeometry?: ReceiptImageGeometry | null
   id: number
   isLinked: boolean
   merchantName: string | null
