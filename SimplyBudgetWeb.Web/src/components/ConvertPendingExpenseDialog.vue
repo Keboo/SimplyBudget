@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type {
@@ -14,6 +14,7 @@ import { formatCents, dollarsToCents, centsToDollars, parseLocalDate } from '@/u
 import IncomeAllocationList from '@/components/IncomeAllocationList.vue'
 import CategorySelector from '@/components/CategorySelector.vue'
 import AmountField from '@/components/AmountField.vue'
+import ReceiptPreview from '@/components/ReceiptPreview.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -47,9 +48,22 @@ const submitting = ref(false)
 const savingNote = ref(false)
 const receiptMatches = ref<ReceiptDto[]>([])
 const receiptId = ref<number | null>(null)
-const receiptPreviewUrl = ref('')
+const previewReceiptId = ref<number | null>(null)
 const loadingReceiptMatches = ref(false)
-const loadingReceiptPreview = ref(false)
+const receiptMatchError = ref('')
+const pendingReceipts = ref<ReceiptDto[]>([])
+const browsingReceipts = ref(false)
+const loadingPendingReceipts = ref(false)
+const pendingReceiptError = ref('')
+let receiptRequest = 0
+let matchRequest = 0
+let browseRequest = 0
+const uniqueUnlinked = (receipts: ReceiptDto[]) =>
+  [...new Map(receipts.filter(receipt => !receipt.isLinked).map(receipt => [receipt.id, receipt])).values()]
+const otherPendingReceipts = computed(() =>
+  pendingReceipts.value.filter(receipt => !receiptMatches.value.some(match => match.id === receipt.id)),
+)
+const availableReceipts = computed(() => uniqueUnlinked([...receiptMatches.value, ...pendingReceipts.value]))
 const calculatorOpen = ref(false)
 const calculatorLineIndex = ref<number | null>(null)
 const calculatorInput = ref('')
@@ -74,9 +88,20 @@ function isCompleteLine(line: LineItem): line is LineItem & { expenseCategoryId:
 // full amount, ready for the user to edit or split across categories. Income
 // (credit) items instead use the allocation list, seeded empty.
 watch(
-  () => props.pendingExpense,
-  pe => {
-    if (!pe) return
+  [() => props.modelValue, () => props.pendingExpense?.id],
+  () => {
+    receiptRequest++
+    receiptId.value = null
+    receiptMatches.value = []
+    pendingReceipts.value = []
+    browsingReceipts.value = false
+    loadingPendingReceipts.value = false
+    pendingReceiptError.value = ''
+    previewReceiptId.value = null
+    receiptMatchError.value = ''
+    loadingReceiptMatches.value = false
+    const pe = props.pendingExpense
+    if (!props.modelValue || !pe) return
     description.value = pe.description ?? ''
     date.value = pe.date.split('T')[0]
     notes.value = pe.notes ?? ''
@@ -87,58 +112,56 @@ watch(
       amount: centsToDollars(pe.amount),
     }]
     incomeAllocations.value = {}
-    receiptId.value = null
-    receiptMatches.value = []
-    releaseReceiptPreview()
+    void loadReceiptMatches()
   },
   { immediate: true },
 )
 
-function releaseReceiptPreview() {
-  if (receiptPreviewUrl.value) URL.revokeObjectURL(receiptPreviewUrl.value)
-  receiptPreviewUrl.value = ''
-}
-
-watch(receiptId, releaseReceiptPreview)
-
 async function loadReceiptMatches() {
   if (!props.modelValue || !props.pendingExpense?.isDebit || !date.value) return
+  const session = receiptRequest
+  const request = ++matchRequest
+  const pending = props.pendingExpense
+  receiptMatchError.value = ''
   loadingReceiptMatches.value = true
   try {
     const params = new URLSearchParams({
-      amount: String(props.pendingExpense.amount),
-      date: props.pendingExpense.date.split('T')[0]!,
+      amount: String(pending.amount),
+      date: pending.date.split('T')[0]!,
     })
-    receiptMatches.value = await apiClient.get<ReceiptDto[]>(`/api/receipts/matches?${params}`)
-    if (!receiptMatches.value.some(receipt => receipt.id === receiptId.value))
-      receiptId.value = null
-    releaseReceiptPreview()
+    const matches = await apiClient.get<ReceiptDto[]>(`/api/receipts/matches?${params}`)
+    if (session !== receiptRequest || request !== matchRequest) return
+    receiptMatches.value = uniqueUnlinked(matches ?? [])
   } catch (e: unknown) {
+    if (session !== receiptRequest || request !== matchRequest) return
+    receiptMatchError.value = e instanceof Error ? e.message : 'Failed to find matching receipts'
     snackbar.enqueueSnackbar(e instanceof Error ? e.message : 'Failed to find matching receipts', { variant: 'error' })
   } finally {
-    loadingReceiptMatches.value = false
+    if (session === receiptRequest && request === matchRequest) loadingReceiptMatches.value = false
   }
 }
 
-async function toggleReceiptPreview(id: number) {
-  if (receiptId.value === id && receiptPreviewUrl.value) {
-    releaseReceiptPreview()
-    return
-  }
-  receiptId.value = id
-  releaseReceiptPreview()
-  loadingReceiptPreview.value = true
+async function browsePendingReceipts() {
+  if (!props.modelValue || !props.pendingExpense?.isDebit) return
+  const session = receiptRequest
+  const request = ++browseRequest
+  browsingReceipts.value = true
+  loadingPendingReceipts.value = true
+  pendingReceiptError.value = ''
   try {
-    const { blob } = await apiClient.download(`/api/receipts/${id}/image`)
-    receiptPreviewUrl.value = URL.createObjectURL(blob)
-  } catch (e: unknown) {
-    snackbar.enqueueSnackbar(e instanceof Error ? e.message : 'Failed to load receipt image', { variant: 'error' })
+    const receipts = await apiClient.get<ReceiptDto[]>('/api/receipts')
+    if (session !== receiptRequest || request !== browseRequest) return
+    pendingReceipts.value = uniqueUnlinked(receipts ?? [])
+  } catch (error: unknown) {
+    if (session !== receiptRequest || request !== browseRequest) return
+    pendingReceiptError.value = error instanceof Error ? error.message : 'Failed to load pending receipts'
   } finally {
-    loadingReceiptPreview.value = false
+    if (session === receiptRequest && request === browseRequest) loadingPendingReceipts.value = false
   }
 }
 
-watch([() => props.modelValue, () => props.pendingExpense?.id], () => void loadReceiptMatches())
+watch(receiptId, () => { previewReceiptId.value = null })
+onBeforeUnmount(() => { receiptRequest++ })
 
 const sortedCategories = computed(() =>
   [...props.categories].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '')),
@@ -279,12 +302,19 @@ function applyCalculator() {
 
 function close() {
   closeCalculator()
-  releaseReceiptPreview()
+  receiptRequest++
+  receiptId.value = null
+  previewReceiptId.value = null
   emit('update:modelValue', false)
 }
 
 async function submit() {
   if (!props.pendingExpense || !canSubmit.value) return
+  if (receiptId.value !== null && !availableReceipts.value.some(receipt => receipt.id === receiptId.value)) {
+    receiptId.value = null
+    snackbar.enqueueSnackbar('That receipt is no longer available. Select another receipt or apply without one.', { variant: 'error' })
+    return
+  }
   submitting.value = true
   try {
     const items = props.pendingExpense.isDebit
@@ -316,6 +346,8 @@ async function submit() {
     close()
   } catch (e: unknown) {
     snackbar.enqueueSnackbar(e instanceof Error ? e.message : 'Failed to convert pending expense', { variant: 'error' })
+    if (receiptId.value !== null) void loadReceiptMatches()
+    if (browsingReceipts.value) void browsePendingReceipts()
   } finally {
     submitting.value = false
   }
@@ -347,7 +379,7 @@ async function saveNote() {
 <template>
   <v-dialog :model-value="props.modelValue" max-width="600" @update:model-value="(val: boolean) => !val && close()">
     <v-card v-if="pendingExpense">
-      <v-card-title>Convert Pending Expense</v-card-title>
+      <v-card-title class="text-wrap">Process pending expense</v-card-title>
       <v-card-text class="dialog-scroll-area">
         <div class="d-flex flex-column ga-3">
           <v-text-field label="Description" v-model="description" hide-details />
@@ -364,46 +396,67 @@ async function saveNote() {
             />
           </div>
 
-          <v-card v-if="receiptMatches.length || loadingReceiptMatches" variant="tonal" class="pa-3">
-            <div class="d-flex align-center justify-space-between">
-              <span class="text-subtitle-2">Matching receipts (optional)</span>
+          <v-card v-if="pendingExpense.isDebit" variant="tonal" class="pa-3">
+            <div class="d-flex flex-wrap align-center justify-space-between ga-2">
+              <span class="text-subtitle-2">Attach a receipt (optional)</span>
               <v-progress-circular v-if="loadingReceiptMatches" size="18" width="2" indeterminate />
             </div>
-            <v-radio-group v-if="receiptMatches.length" v-model="receiptId" hide-details>
+            <p class="text-body-2 mt-2">
+              Suggested matches have the same total and a date within five days of the original transaction.
+              If AI missed the details, browse all pending receipts instead. Your description, date, and category amounts will not change.
+            </p>
+            <v-alert v-if="receiptMatchError" type="error" variant="tonal" class="mt-2">
+              {{ receiptMatchError }}
+              <v-btn variant="text" @click="loadReceiptMatches">Retry matches</v-btn>
+            </v-alert>
+            <v-radio-group v-model="receiptId" hide-details>
+              <v-radio :value="null" label="No receipt" />
+              <div class="text-subtitle-2">Suggested matches</div>
               <v-radio
                 v-for="receipt in receiptMatches"
                 :key="receipt.id"
                 :value="receipt.id"
-                density="compact"
               >
                 <template #label>
-                  <span>
+                  <span class="receipt-label">
                     {{ receipt.merchantName || receipt.fileName }}
                     · {{ receipt.transactionDate ? new Date(receipt.transactionDate).toLocaleDateString() : 'Date not set' }}
                     · {{ receipt.totalAmountCents == null ? 'Total not set' : formatCents(receipt.totalAmountCents) }}
                   </span>
                 </template>
               </v-radio>
+              <div v-if="!receiptMatches.length && !loadingReceiptMatches && !receiptMatchError" class="text-body-2 text-medium-emphasis mt-2">
+                No matching pending receipts. Browse all pending receipts to choose one with missing or incorrect AI details.
+              </div>
+              <template v-if="browsingReceipts">
+                <div class="text-subtitle-2 mt-3">Other pending receipts</div>
+                <v-radio v-for="receipt in otherPendingReceipts" :key="receipt.id" :value="receipt.id">
+                  <template #label>
+                    <span class="receipt-label">
+                      {{ receipt.merchantName || receipt.fileName }}
+                      · {{ receipt.transactionDate ? new Date(receipt.transactionDate).toLocaleDateString() : 'Date not set' }}
+                      · {{ receipt.totalAmountCents == null ? 'Total not set' : formatCents(receipt.totalAmountCents) }}
+                    </span>
+                  </template>
+                </v-radio>
+                <div v-if="!otherPendingReceipts.length && !loadingPendingReceipts && !pendingReceiptError" class="text-body-2 text-medium-emphasis mt-2">
+                  No other pending receipts.
+                </div>
+              </template>
             </v-radio-group>
-            <div v-else-if="!loadingReceiptMatches" class="text-body-2 text-medium-emphasis mt-2">
-              No exact amount matches within five days.
-            </div>
+            <v-alert v-if="pendingReceiptError" type="error" variant="tonal" class="mt-2">{{ pendingReceiptError }}</v-alert>
+            <v-btn variant="text" :disabled="loadingReceiptMatches" @click="loadReceiptMatches">Refresh matches</v-btn>
+            <v-btn variant="text" :loading="loadingPendingReceipts" :disabled="loadingPendingReceipts" @click="browsePendingReceipts">
+              {{ browsingReceipts ? 'Refresh all pending receipts' : 'Browse all pending receipts' }}
+            </v-btn>
             <v-btn
               v-if="receiptId !== null"
-              size="small"
               variant="text"
-              :loading="loadingReceiptPreview"
-              @click="toggleReceiptPreview(receiptId)"
+              @click="previewReceiptId = previewReceiptId === receiptId ? null : receiptId"
             >
-              {{ receiptPreviewUrl ? 'Hide receipt' : 'View receipt' }}
+              {{ previewReceiptId ? 'Hide receipt' : 'View receipt' }}
             </v-btn>
-            <v-img
-              v-if="receiptPreviewUrl"
-              :src="receiptPreviewUrl"
-              alt="Selected receipt"
-              max-height="240"
-              contain
-            />
+            <ReceiptPreview v-if="previewReceiptId !== null" :receipt-id="previewReceiptId" />
           </v-card>
 
           <template v-if="pendingExpense.isDebit">
@@ -472,7 +525,7 @@ async function saveNote() {
           class="mt-2"
         />
       </div>
-      <v-card-actions>
+      <v-card-actions class="flex-wrap">
         <v-spacer />
         <v-btn @click="close">Cancel</v-btn>
         <v-btn :loading="savingNote" :disabled="submitting || !hasNoteChanges" @click="saveNote">Save Note</v-btn>
@@ -545,9 +598,17 @@ async function saveNote() {
 
 .category-field {
   flex: 2 1 0;
+  min-width: 0;
 }
 
 .amount-field {
   flex: 1 1 180px;
+  min-width: 0;
+}
+.receipt-label { overflow-wrap: anywhere; }
+@media (max-width: 500px) {
+  .allocation-line { flex-wrap: wrap; }
+  .category-field { flex-basis: 100%; }
+  .amount-field { flex: 1 1 160px; }
 }
 </style>

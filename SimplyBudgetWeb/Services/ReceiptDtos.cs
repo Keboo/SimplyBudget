@@ -14,7 +14,8 @@ public record ReceiptDto(
     string? ProcessingMessage,
     string FileName,
     DateTime UploadedAtUtc,
-    ReceiptLineItemDto[] LineItems);
+    ReceiptLineItemDto[] LineItems,
+    bool IsLinked = false);
 
 public static class ReceiptMapper
 {

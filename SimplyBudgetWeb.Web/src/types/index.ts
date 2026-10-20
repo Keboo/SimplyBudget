@@ -184,6 +184,7 @@ export interface ReceiptLineItemDto {
 
 export interface ReceiptDto {
   id: number
+  isLinked: boolean
   merchantName: string | null
   transactionDate: string | null
   totalAmountCents: number | null

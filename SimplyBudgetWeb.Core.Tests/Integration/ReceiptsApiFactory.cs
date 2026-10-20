@@ -29,6 +29,7 @@ public sealed class ReceiptsApiFactory : WebApplicationFactory<Program>
 
     public FakeReceiptImageStore ImageStore { get; } = new();
     public FakeReceiptAnalyzer Analyzer { get; } = new();
+    public RecordingReceiptMonthNotifier MonthNotifier { get; } = new();
     public bool Authenticated { get; set; } = true;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -65,6 +66,8 @@ public sealed class ReceiptsApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IReceiptAnalyzer>();
             services.AddSingleton<IReceiptImageStore>(ImageStore);
             services.AddSingleton<IReceiptAnalyzer>(Analyzer);
+            services.RemoveAll<IBudgetMonthUpdateNotifier>();
+            services.AddSingleton<IBudgetMonthUpdateNotifier>(MonthNotifier);
 
             services.AddSingleton(this);
             services.AddAuthentication(TestAuthHandler.Scheme)
@@ -123,6 +126,8 @@ public sealed class FakeReceiptImageStore : IReceiptImageStore
     private readonly Dictionary<string, byte[]> blobs = [];
 
     public Exception? UploadException { get; set; }
+    public Exception? DeleteException { get; set; }
+    public Func<Task>? AfterDelete { get; set; }
 
     public IReadOnlyDictionary<string, byte[]> Blobs => blobs;
 
@@ -140,11 +145,38 @@ public sealed class FakeReceiptImageStore : IReceiptImageStore
 
     public Task<Stream> OpenReadAsync(string blobName, CancellationToken cancellationToken)
         => Task.FromResult<Stream>(new MemoryStream(blobs[blobName]));
+
+    public async Task DeleteAsync(string blobName, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (DeleteException is not null)
+            throw DeleteException;
+        blobs.Remove(blobName);
+        if (AfterDelete is not null)
+            await AfterDelete();
+    }
+}
+
+public sealed class RecordingReceiptMonthNotifier : IBudgetMonthUpdateNotifier
+{
+    public List<DateTime> Months { get; } = [];
+
+    public Task NotifyMonthUpdated(DateTime date, CancellationToken cancellationToken = default)
+        => NotifyMonthsUpdated([date], cancellationToken);
+
+    public Task NotifyMonthsUpdated(IEnumerable<DateTime> dates, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        Months.AddRange(dates.Select(x => new DateTime(x.Year, x.Month, 1)).Distinct());
+        return Task.CompletedTask;
+    }
 }
 
 public sealed class FakeReceiptAnalyzer : IReceiptAnalyzer
 {
     public Exception? Exception { get; set; }
+    public TaskCompletionSource<ReceiptExtraction>? Completion { get; set; }
+    public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public ReceiptExtraction Result { get; set; } = new(
         "Corner Cafe",
@@ -153,5 +185,8 @@ public sealed class FakeReceiptAnalyzer : IReceiptAnalyzer
         [new ExtractedReceiptLine("Latte", 450), new ExtractedReceiptLine("Sandwich", 800)]);
 
     public Task<ReceiptExtraction> AnalyzeAsync(byte[] image, CancellationToken cancellationToken)
-        => Exception is null ? Task.FromResult(Result) : Task.FromException<ReceiptExtraction>(Exception);
+    {
+        Started.TrySetResult();
+        return Completion?.Task ?? (Exception is null ? Task.FromResult(Result) : Task.FromException<ReceiptExtraction>(Exception));
+    }
 }

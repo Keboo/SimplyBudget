@@ -21,6 +21,7 @@ public interface IReceiptImageStore
 {
     Task<string> UploadAsync(string fileName, string contentType, Stream content, CancellationToken cancellationToken);
     Task<Stream> OpenReadAsync(string blobName, CancellationToken cancellationToken);
+    Task DeleteAsync(string blobName, CancellationToken cancellationToken);
 }
 
 public interface IReceiptAnalyzer
@@ -65,6 +66,9 @@ public sealed class AzureReceiptImageStore : IReceiptImageStore
         var blob = container.Value.GetBlobClient(blobName);
         return await blob.OpenReadAsync(cancellationToken: cancellationToken);
     }
+
+    public async Task DeleteAsync(string blobName, CancellationToken cancellationToken)
+        => await container.Value.GetBlobClient(blobName).DeleteIfExistsAsync(cancellationToken: cancellationToken);
 
     private BlobContainerClient CreateContainerClient()
     {

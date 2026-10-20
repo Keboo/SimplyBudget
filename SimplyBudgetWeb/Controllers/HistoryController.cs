@@ -74,7 +74,7 @@ public class HistoryController(
                     .Include(x => x.Receipt!)
                         .ThenInclude(x => x.LineItems)
                     .Where(x => itemIds.Contains(x.ExpenseCategoryItemId))
-                    .ToDictionaryAsync(x => x.ExpenseCategoryItemId, x => ReceiptMapper.ToDto(x.Receipt!));
+                    .ToDictionaryAsync(x => x.ExpenseCategoryItemId, x => ReceiptMapper.ToDto(x.Receipt!) with { IsLinked = true });
 
                 return items.Select(item => ToDto(
                     item,
@@ -101,7 +101,7 @@ public class HistoryController(
             .Where(x => x.ExpenseCategoryItemId == item.ID)
             .Select(x => x.Receipt)
             .FirstOrDefaultAsync();
-        return ToDto(item, receipt is null ? null : ReceiptMapper.ToDto(receipt));
+        return ToDto(item, receipt is null ? null : ReceiptMapper.ToDto(receipt) with { IsLinked = true });
     }
 
     [HttpDelete("{id}")]
