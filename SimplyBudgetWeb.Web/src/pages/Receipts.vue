@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
+import { VDialog } from 'vuetify/components'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { ReceiptDto, ReceiptUpdateRequest, ReceiptImageGeometry } from '@/types'
@@ -13,6 +15,38 @@ interface EditableLine {
 }
 
 const snackbar = useSnackbarStore()
+const { xs: phone } = useDisplay()
+const reviewOpen = ref(false)
+let listScrollY = 0
+let listReceiptId: number | null = null
+
+function openReceipt(id: number) {
+  listScrollY = window.scrollY
+  listReceiptId = id
+  selectedId.value = id
+  reviewOpen.value = true
+}
+
+function backToList() {
+  reviewOpen.value = false
+}
+
+function restoreList() {
+  if (!phone.value) return
+  window.scrollTo({ top: listScrollY })
+  document.querySelector<HTMLElement>(`[data-receipt-id="${listReceiptId}"]`)?.focus({ preventScroll: true })
+}
+
+function focusReview() {
+  document.querySelector<HTMLInputElement>('.receipt-editor input')?.focus()
+}
+
+function cancelImage() {
+  releaseUrl(imagePreviewUrl.value)
+  imageFile.value = null
+  imagePreviewUrl.value = ''
+  imageGeometry.value = null
+}
 const receiptInput = ref<HTMLInputElement | null>(null)
 const cameraInput = ref<HTMLInputElement | null>(null)
 const receipts = ref<ReceiptDto[]>([])
@@ -40,6 +74,11 @@ const loadingReceipts = ref(false)
 const preparingImage = ref(false)
 const uploading = ref(false)
 const saving = ref(false)
+watch(actionError, async error => {
+  if (!error || !phone.value || !reviewOpen.value) return
+  await nextTick()
+  document.querySelector<HTMLElement>('.receipt-editor .receipt-action-error')?.focus()
+})
 
 function releaseUrl(url: string) {
   if (url) URL.revokeObjectURL(url)
@@ -147,6 +186,10 @@ async function uploadReceipt() {
     releaseUrl(imagePreviewUrl.value)
     imagePreviewUrl.value = ''
     uploadOverrides.value = { merchant: '', date: '', total: '' }
+    if (phone.value) {
+      await nextTick()
+      openReceipt(receipt.id)
+    }
     snackbar.enqueueSnackbar(
       receipt.processingMessage ?? 'Receipt uploaded. Review the extracted details.',
       { variant: receipt.processingMessage ? 'warning' : 'success' },
@@ -233,7 +276,7 @@ onBeforeUnmount(() => {
   <div>
     <h5 class="text-h5 mb-4">Receipts</h5>
 
-    <v-card class="pa-4 mb-4">
+    <v-card class="pa-4 mb-4 receipt-capture">
       <div class="text-subtitle-1 font-weight-medium mb-1">Add a receipt</div>
       <div class="text-body-2 text-medium-emphasis mb-3">
         Take a photo or choose a file. AI suggests the merchant, total, and date; you can always correct them.
@@ -271,15 +314,6 @@ onBeforeUnmount(() => {
           class="d-none"
           @change="selectImage"
         >
-        <v-btn
-          color="primary"
-          prepend-icon="mdi-cloud-upload"
-          :disabled="!imageFile || preparingImage || uploading"
-          :loading="uploading"
-          @click="uploadReceipt"
-        >
-          Upload receipt
-        </v-btn>
       </div>
       <div v-if="imageFile || uploading" class="mt-4">
         <div class="text-body-2 mb-2" role="status">
@@ -297,23 +331,27 @@ onBeforeUnmount(() => {
         @geometry="imageGeometry = $event"
         @busy="preparingImage = $event"
       />
+      <div class="receipt-capture-actions d-flex flex-wrap ga-2 mt-3">
+        <v-btn v-if="phone && imageFile" :disabled="uploading" @click="cancelImage">Cancel photo</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-cloud-upload" :disabled="!imageFile || preparingImage || uploading" :loading="uploading" @click="uploadReceipt">Upload receipt</v-btn>
+      </div>
     </v-card>
 
     <v-alert v-if="loadError" type="error" variant="tonal" class="mb-4">
       {{ loadError }}
       <v-btn variant="text" @click="loadReceipts">Retry loading</v-btn>
     </v-alert>
-    <v-alert v-if="actionError && !selectedReceipt && !deleteOpen" type="error" variant="tonal" class="mb-4">{{ actionError }}</v-alert>
-    <div class="d-flex flex-wrap ga-2 mb-3" aria-label="Receipt views">
+    <v-alert v-if="actionError && (!selectedReceipt || (phone && !reviewOpen)) && !deleteOpen" type="error" variant="tonal" class="mb-4">{{ actionError }}</v-alert>
+    <div v-show="!phone || (!imageFile && !uploading)" class="d-flex flex-wrap ga-2 mb-3" aria-label="Receipt views">
       <v-btn :variant="view === 'pending' ? 'tonal' : 'text'" :aria-pressed="view === 'pending'" @click="view = 'pending'">Pending ({{ pendingCount }})</v-btn>
       <v-btn :variant="view === 'categorized' ? 'tonal' : 'text'" :aria-pressed="view === 'categorized'" @click="view = 'categorized'">Categorized ({{ receipts.length - pendingCount }})</v-btn>
       <v-btn variant="text" icon="mdi-refresh" aria-label="Refresh receipts" :disabled="loadingReceipts || saving || deleting" @click="loadReceipts" />
     </div>
-    <p class="text-body-2 text-medium-emphasis mb-4">
+    <p v-show="!phone || (!imageFile && !uploading)" class="text-body-2 text-medium-emphasis mb-4">
       {{ view === 'pending' ? 'Unattached receipts, ready to match when you process pending expenses.' : 'Receipts attached to expenses. You can also review them from Expenses.' }}
     </p>
     <div class="receipt-layout">
-      <v-card class="pa-2">
+      <v-card v-show="!phone || (!imageFile && !uploading)" class="pa-2">
         <div class="text-subtitle-2 px-3 pt-2">{{ view === 'pending' ? 'Pending receipts' : 'Categorized receipts' }}</div>
         <div v-if="loadingReceipts" class="d-flex justify-center pa-6">
           <v-progress-circular indeterminate aria-label="Loading receipts" />
@@ -322,12 +360,13 @@ onBeforeUnmount(() => {
           <v-list-item
             v-for="receipt in visibleReceipts"
             :key="receipt.id"
+            :data-receipt-id="receipt.id"
             :active="receipt.id === selectedId"
             :disabled="saving || deleting"
             :title="receipt.merchantName || receipt.fileName"
             :subtitle="`${receipt.transactionDate ? new Date(receipt.transactionDate).toLocaleDateString() : 'Date not set'} · ${receipt.totalAmountCents == null ? 'Total not set' : formatCents(receipt.totalAmountCents)}`"
             prepend-icon="mdi-receipt-text"
-            @click="selectedId = receipt.id"
+            @click="openReceipt(receipt.id)"
           />
         </v-list>
         <div v-else-if="!loadError" class="text-body-2 text-medium-emphasis pa-4">
@@ -335,11 +374,17 @@ onBeforeUnmount(() => {
         </div>
       </v-card>
 
-      <v-card v-if="selectedReceipt" class="pa-4">
+      <component :is="phone ? VDialog : 'div'" v-if="selectedReceipt" :model-value="phone && reviewOpen" :fullscreen="phone" @update:model-value="(value: boolean) => !value && backToList()" @after-enter="focusReview" @after-leave="restoreList">
+      <v-card class="pa-4 receipt-editor" :class="{ 'receipt-editor-phone': phone }">
+        <div v-if="phone" class="d-flex justify-space-between ga-2 mb-2">
+          <v-btn variant="text" prepend-icon="mdi-arrow-left" :disabled="saving || deleting" @click="backToList">Back to list</v-btn>
+          <v-btn variant="text" :disabled="saving || deleting" @click="backToList">Done</v-btn>
+        </div>
         <div class="d-flex flex-wrap justify-space-between align-center ga-2 mb-2">
           <div class="text-h6">Review receipt</div>
           <v-chip size="small" variant="outlined">{{ selectedReceipt.isLinked ? 'Attached to expense' : selectedReceipt.processingStatus === 'reviewed' ? 'Reviewed · ready to attach' : selectedReceipt.processingStatus === 'processing' ? 'AI analyzing' : 'Check AI details' }}</v-chip>
         </div>
+        <div class="receipt-review-scroll">
         <v-alert
           v-if="selectedReceipt.processingMessage"
           type="warning"
@@ -349,12 +394,19 @@ onBeforeUnmount(() => {
         >
           {{ selectedReceipt.processingMessage }}
         </v-alert>
-        <ReceiptPreview :receipt-id="selectedReceipt.id" :image-geometry="selectedReceipt.imageGeometry" :title="`Receipt from ${selectedReceipt.merchantName || selectedReceipt.fileName}`" class="mb-4" />
+        <v-expansion-panels v-if="phone" class="mb-4">
+          <v-expansion-panel title="Preview receipt image">
+            <v-expansion-panel-text>
+              <ReceiptPreview :receipt-id="selectedReceipt.id" :image-geometry="selectedReceipt.imageGeometry" :title="`Receipt from ${selectedReceipt.merchantName || selectedReceipt.fileName}`" />
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
+        <ReceiptPreview v-else :receipt-id="selectedReceipt.id" :image-geometry="selectedReceipt.imageGeometry" :title="`Receipt from ${selectedReceipt.merchantName || selectedReceipt.fileName}`" class="mb-4" />
         <v-alert v-if="selectedReceipt.processingStatus === 'processing'" type="info" variant="tonal" class="mb-3">
           AI is still analyzing. You can enter and save corrections now; saved corrections take priority over AI.
         </v-alert>
-        <div class="text-body-2 mb-3">Review AI suggestions below. Corrections are saved only when you select Save corrections. Drafts stay here while switching receipts.</div>
-        <v-alert v-if="actionError && !deleteOpen" type="error" variant="tonal" class="mb-3">{{ actionError }}</v-alert>
+        <div class="text-body-2 mb-3">Review AI suggestions below. Corrections are saved only when you select Save corrections. {{ phone ? 'Back and Done keep unsaved drafts on this page, including while switching receipts.' : 'Drafts stay here while switching receipts.' }}</div>
+        <v-alert v-if="actionError && !deleteOpen" type="error" variant="tonal" tabindex="-1" class="receipt-action-error mb-3">{{ actionError }}</v-alert>
         <div class="d-flex flex-column ga-2">
           <v-text-field v-model="merchantName" label="Location / merchant" maxlength="300" hide-details />
           <v-text-field v-model="transactionDate" label="Date" type="date" hide-details />
@@ -386,7 +438,9 @@ onBeforeUnmount(() => {
             />
           </div>
           <v-textarea v-model="notes" label="Custom note" maxlength="10000" rows="2" auto-grow />
-          <div class="d-flex flex-wrap justify-space-between ga-2">
+        </div>
+        </div>
+          <div class="receipt-save-actions d-flex flex-wrap justify-space-between ga-2">
             <v-btn color="error" variant="text" :disabled="saving || deleting" @click="actionError = ''; deleteOpen = true">Delete receipt</v-btn>
             <v-btn color="primary" :loading="saving" @click="saveReceipt">Save corrections</v-btn>
           </div>
@@ -405,8 +459,8 @@ onBeforeUnmount(() => {
               </v-card-actions>
             </v-card>
           </v-dialog>
-        </div>
       </v-card>
+      </component>
     </div>
   </div>
 </template>
@@ -421,6 +475,37 @@ onBeforeUnmount(() => {
 .receipt-list { max-height: 50vh; overflow-y: auto; }
 .receipt-line { display: grid; grid-template-columns: minmax(0, 1fr) minmax(85px, 110px) 44px; gap: 8px; align-items: center; }
 .receipt-line :deep(.v-btn) { min-width: 44px; min-height: 44px; }
+.receipt-editor-phone {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-top: max(16px, env(safe-area-inset-top)) !important;
+}
+.receipt-editor-phone .receipt-review-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-block: 8px;
+}
+.receipt-editor-phone :deep(.v-btn), .receipt-capture :deep(.v-btn) {
+  min-height: 44px;
+  min-width: 44px;
+}
+.receipt-editor-phone .receipt-save-actions {
+  padding-block: 12px max(0px, env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+@media (max-width: 599px) {
+  .receipt-list { max-height: none; }
+  .receipt-list :deep(.v-list-item-title) { white-space: normal; overflow-wrap: anywhere; }
+  .receipt-capture-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: rgb(var(--v-theme-surface));
+    padding-block: 12px max(12px, env(safe-area-inset-bottom));
+  }
+}
 @media (max-width: 450px) {
   .receipt-line { grid-template-columns: minmax(0, 1fr) 44px; }
   .receipt-line > :first-child { grid-column: 1 / -1; }
