@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { useAuthStore } from '@/stores/auth'
@@ -17,6 +18,11 @@ import CategorySelector from '@/components/CategorySelector.vue'
 
 const snackbar = useSnackbarStore()
 const authStore = useAuthStore()
+const { xs: phone } = useDisplay()
+let editorOrigin = ''
+function restoreEditorFocus() {
+  document.querySelector<HTMLElement>(editorOrigin)?.focus()
+}
 
 const PANEL_PROFILE = 0
 const PANEL_TAX_OPTIONS = 1
@@ -312,6 +318,7 @@ async function fetchAccounts() {
 }
 
 function startEditAccount(account: AccountDto) {
+  if (phone.value) editorOrigin = `[data-account-actions="${account.id}"]`
   accountEditId.value = account.id
   accountEditName.value = account.name ?? ''
 }
@@ -539,6 +546,7 @@ async function fetchManageCategories() {
 }
 
 function startEditCategory(category: ExpenseCategoryDto) {
+  if (phone.value) editorOrigin = `[data-category-actions="${category.id}"]`
   editCategoryId.value = category.id
   editCategoryForm.value = {
     name: category.name ?? '',
@@ -588,6 +596,11 @@ async function handleSaveCategoryEdit(category: ExpenseCategoryDto) {
   } catch {
     snackbar.enqueueSnackbar('Failed to update category', { variant: 'error' })
   }
+}
+
+function savePhoneCategory() {
+  const category = manageCategories.value.find(category => category.id === editCategoryId.value)
+  if (category) void handleSaveCategoryEdit(category)
 }
 
 async function handleToggleHideCategory(category: ExpenseCategoryDto) {
@@ -856,7 +869,7 @@ watch(openPanel, (panel) => {
           </div>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <div class="d-flex justify-space-between align-center mb-4">
+          <div class="management-toolbar d-flex justify-space-between align-center mb-4">
             <h5 class="text-h5">Accounts</h5>
             <v-btn color="primary" @click="accountAddOpen = true">Add Account</v-btn>
           </div>
@@ -869,7 +882,24 @@ watch(openPanel, (panel) => {
               <v-list-item-title>No accounts found.</v-list-item-title>
             </v-list-item>
             <v-card v-for="account in accounts" :key="account.id" class="mb-2">
-              <v-list-item>
+              <v-card-text v-if="phone" class="management-row">
+                <div class="management-copy">
+                  <div class="text-body-1 font-weight-medium">{{ account.name }}</div>
+                  <v-chip v-if="account.isDefault" size="small" color="primary">Default</v-chip>
+                  <div>Balance: {{ formatCents(account.currentAmount) }}</div>
+                  <div class="text-caption">Validated: {{ new Date(account.validatedDate).toLocaleDateString() }}</div>
+                </div>
+                <v-menu>
+                  <template #activator="{ props }">
+                    <v-btn v-bind="props" :data-account-actions="account.id" icon="mdi-dots-vertical" variant="text" min-width="44" min-height="44" :aria-label="`Actions for account ${account.name}`" />
+                  </template>
+                  <v-list>
+                    <v-list-item title="Edit account name" @click="startEditAccount(account)" />
+                    <v-list-item v-if="!account.isDefault" title="Set Default" @click="handleSetDefaultAccount(account.id)" />
+                  </v-list>
+                </v-menu>
+              </v-card-text>
+              <v-list-item v-else>
                 <v-list-item-title>
                   <div class="d-flex align-center" style="gap: 8px;">
                     <v-text-field
@@ -988,9 +1018,9 @@ watch(openPanel, (panel) => {
           </div>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <div class="d-flex justify-space-between align-center mb-4">
+          <div class="management-toolbar d-flex justify-space-between align-center mb-4">
             <h5 class="text-h5">Expense Categories</h5>
-            <div class="d-flex align-center" style="gap: 16px;">
+            <div class="management-toolbar-actions d-flex align-center" style="gap: 16px;">
               <v-switch
                 v-model="showHiddenCategories"
                 label="Show hidden"
@@ -1010,7 +1040,27 @@ watch(openPanel, (panel) => {
               <v-list-item-title>No expense categories defined.</v-list-item-title>
             </v-list-item>
             <v-card v-for="category in manageCategories" :key="category.id" class="mb-2">
-              <v-list-item>
+              <v-card-text v-if="phone" class="management-row">
+                <div class="management-copy">
+                  <div class="text-body-1 font-weight-medium">{{ category.name }}</div>
+                  <v-chip v-if="category.isHidden" size="small">Hidden</v-chip>
+                  <div>{{ category.categoryName ?? 'No group' }}</div>
+                  <div v-if="category.description" class="text-caption">{{ category.description }}</div>
+                  <div>Budget: {{ category.usePercentage ? `${category.budgetedPercentage}%` : formatCents(category.budgetedAmount) }}</div>
+                  <div v-if="category.cap !== null">Cap: {{ formatCents(category.cap) }}</div>
+                </div>
+                <v-menu>
+                  <template #activator="{ props }">
+                    <v-btn v-bind="props" :data-category-actions="category.id" icon="mdi-dots-vertical" variant="text" min-width="44" min-height="44" :aria-label="`Actions for category ${category.name}`" />
+                  </template>
+                  <v-list>
+                    <v-list-item title="Edit category" @click="startEditCategory(category)" />
+                    <v-list-item :title="category.isHidden ? 'Restore category' : 'Hide category'" @click="handleToggleHideCategory(category)" />
+                    <v-list-item title="Delete category" :subtitle="category.hasItems ? 'Categories with items cannot be deleted' : undefined" :disabled="category.hasItems" @click="deleteCategory = category" />
+                  </v-list>
+                </v-menu>
+              </v-card-text>
+              <v-list-item v-else>
                 <v-list-item-title>
                   <div v-if="editCategoryId === category.id" class="d-flex flex-wrap align-center" style="gap: 8px;">
                     <v-text-field
@@ -1134,8 +1184,38 @@ watch(openPanel, (panel) => {
       </v-expansion-panel>
     </v-expansion-panels>
 
-    <v-dialog v-model="accountAddOpen" max-width="480">
-      <v-card>
+    <v-dialog :model-value="phone && accountEditId !== null" fullscreen @update:model-value="(value: boolean) => !value && (accountEditId = null)" @after-leave="restoreEditorFocus">
+      <v-card class="phone-settings-editor" title="Edit account">
+        <v-card-text>
+          <v-text-field v-model="accountEditName" label="Account Name" autofocus @keydown.enter="accountEditId !== null && handleSaveAccountEdit(accountEditId)" />
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="accountEditId = null">Cancel</v-btn>
+          <v-btn color="primary" @click="accountEditId !== null && handleSaveAccountEdit(accountEditId)">Save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog :model-value="phone && editCategoryId !== null" fullscreen @update:model-value="(value: boolean) => !value && (editCategoryId = null)" @after-leave="restoreEditorFocus">
+      <v-card class="phone-settings-editor" title="Edit category">
+        <v-card-text class="d-flex flex-column ga-4">
+          <v-text-field v-model="editCategoryForm.name" label="Name" hide-details autofocus />
+          <v-text-field v-model="editCategoryForm.categoryName" label="Group" hide-details />
+          <v-textarea v-model="editCategoryForm.description" label="Description" rows="2" auto-grow hide-details />
+          <v-select v-model="editCategoryForm.budgetType" label="Budget type" :items="[{ title: 'Fixed', value: 'fixed' }, { title: 'Percentage', value: 'percentage' }]" hide-details />
+          <v-text-field v-if="editCategoryForm.budgetType === 'fixed'" v-model="editCategoryForm.budgetedAmount" label="Budget" type="number" step="0.01" min="0" prefix="$" hide-details />
+          <v-text-field v-else v-model="editCategoryForm.budgetedPercentage" label="Budget" type="number" step="1" min="1" max="100" suffix="%" hide-details />
+          <v-text-field v-model="editCategoryForm.cap" label="Cap" type="number" step="0.01" min="0" prefix="$" :disabled="editCategoryForm.budgetType !== 'fixed'" hint="Optional maximum running balance for fixed-budget categories." persistent-hint />
+        </v-card-text>
+        <v-card-actions>
+          <v-btn @click="editCategoryId = null">Cancel</v-btn>
+          <v-btn color="primary" @click="savePhoneCategory">Save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="accountAddOpen" :fullscreen="phone" max-width="480">
+      <v-card :class="{ 'phone-settings-editor': phone }">
         <v-card-title>Add Account</v-card-title>
         <v-card-text>
           <v-text-field label="Account Name" v-model="accountNewName" autofocus @keydown.enter="handleAddAccount" />
@@ -1300,8 +1380,8 @@ watch(openPanel, (panel) => {
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="addCategoryOpen" max-width="520">
-      <v-card>
+    <v-dialog v-model="addCategoryOpen" :fullscreen="phone" max-width="520">
+      <v-card :class="{ 'phone-settings-editor': phone }">
         <v-card-title>Add Expense Category</v-card-title>
         <v-card-text class="d-flex flex-column" style="gap: 16px;">
           <v-text-field
@@ -1332,7 +1412,8 @@ watch(openPanel, (panel) => {
             hint="Leave blank to use the default account."
             persistent-hint
           />
-          <v-btn-toggle v-model="newCategoryForm.budgetType" mandatory density="compact" divided>
+          <v-select v-if="phone" v-model="newCategoryForm.budgetType" label="Budget type" :items="[{ title: 'Fixed', value: 'fixed' }, { title: 'Percentage', value: 'percentage' }]" />
+          <v-btn-toggle v-else v-model="newCategoryForm.budgetType" mandatory density="compact" divided>
             <v-btn value="fixed" size="small">Fixed</v-btn>
             <v-btn value="percentage" size="small">Percentage</v-btn>
           </v-btn-toggle>
@@ -1391,3 +1472,47 @@ watch(openPanel, (panel) => {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.management-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.management-copy {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.phone-settings-editor {
+  height: 100dvh;
+}
+.phone-settings-editor :deep(.v-card-text) {
+  min-height: 0;
+  overflow-y: auto;
+}
+.phone-settings-editor :deep(.v-btn) {
+  min-height: 44px;
+  min-width: 44px;
+}
+.phone-settings-editor :deep(.v-card-actions) {
+  flex-shrink: 0;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+@media (max-width: 599px) {
+  .management-toolbar, .management-toolbar-actions {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .management-toolbar :deep(.v-label) {
+    white-space: nowrap;
+  }
+  .management-toolbar :deep(.v-btn) {
+    min-height: 44px;
+  }
+  :deep(.v-expansion-panel-text__wrapper) {
+    padding-inline: 12px;
+  }
+}
+</style>
