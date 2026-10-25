@@ -64,6 +64,12 @@ export interface AccountDto {
   currentAmount: number
 }
 
+export interface AccountBalanceSnapshotDto {
+  id: number
+  name: string | null
+  currentAmount: number
+}
+
 export interface HistoryItemDto {
   id: number
   date: string

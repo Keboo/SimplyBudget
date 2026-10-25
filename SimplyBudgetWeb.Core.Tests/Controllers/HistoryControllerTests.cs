@@ -179,6 +179,96 @@ public class HistoryControllerTests
     }
 
     [Test]
+    public async Task GetAccountBalancesAtItem_ReturnsBalancesImmediatelyAfterItemAcrossAllAccounts()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        var itemId = await mocker.InDbScopeAsync(async context =>
+        {
+            var checking = new Account { Name = "Checking" };
+            var savings = new Account { Name = "Savings" };
+            var unused = new Account { Name = "Unused" };
+            context.Accounts.AddRange(checking, savings, unused);
+            await context.SaveChangesAsync();
+
+            var checkingCategory = new ExpenseCategory { Name = "Checking", AccountID = checking.ID };
+            var savingsCategory = new ExpenseCategory { Name = "Savings", AccountID = savings.ID };
+            context.ExpenseCategories.AddRange(checkingCategory, savingsCategory);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryItems.Add(new ExpenseCategoryItem
+            {
+                Date = new DateTime(2026, 1, 5),
+                Details =
+                [
+                    new ExpenseCategoryItemDetail { ExpenseCategoryId = checkingCategory.ID, Amount = 1000 },
+                    new ExpenseCategoryItemDetail { ExpenseCategoryId = savingsCategory.ID, Amount = 300 },
+                ],
+            });
+            await context.SaveChangesAsync();
+
+            var item = new ExpenseCategoryItem
+            {
+                Date = new DateTime(2026, 1, 10),
+                Description = "Shared expense",
+                Details =
+                [
+                    new ExpenseCategoryItemDetail { ExpenseCategoryId = checkingCategory.ID, Amount = -200 },
+                    new ExpenseCategoryItemDetail { ExpenseCategoryId = savingsCategory.ID, Amount = 50 },
+                ],
+            };
+            context.ExpenseCategoryItems.Add(item);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryItems.AddRange(
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 1, 10),
+                    Details = [new ExpenseCategoryItemDetail { ExpenseCategoryId = checkingCategory.ID, Amount = -100 }],
+                },
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 1, 12),
+                    Details =
+                    [
+                        new ExpenseCategoryItemDetail { ExpenseCategoryId = checkingCategory.ID, Amount = 70 },
+                        new ExpenseCategoryItemDetail { ExpenseCategoryId = savingsCategory.ID, Amount = -50 },
+                    ],
+                });
+            await context.SaveChangesAsync();
+
+            return item.ID;
+        });
+
+        using var testContext = mocker.Get<BudgetWebContext>();
+        var controller = new HistoryController(testContext);
+
+        var result = await controller.GetAccountBalancesAtItem(itemId);
+
+        var balances = (result.Value as AccountBalanceSnapshotDto[])
+            ?? ((OkObjectResult?)result.Result)?.Value as AccountBalanceSnapshotDto[];
+        await Assert.That(balances).IsNotNull();
+        await Assert.That(balances!.Single(x => x.Name == "Checking").CurrentAmount).IsEqualTo(800);
+        await Assert.That(balances.Single(x => x.Name == "Savings").CurrentAmount).IsEqualTo(350);
+        await Assert.That(balances.Single(x => x.Name == "Unused").CurrentAmount).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task GetAccountBalancesAtItem_WithUnknownId_ReturnsNotFound()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new HistoryController(context);
+
+        var result = await controller.GetAccountBalancesAtItem(999);
+
+        await Assert.That(result.Result).IsTypeOf<NotFoundResult>();
+    }
+
+    [Test]
     public async Task GetAll_ReturnsAndSearchesNotes()
     {
         AutoMocker mocker = new();
