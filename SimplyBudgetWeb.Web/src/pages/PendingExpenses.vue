@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { PendingExpenseDto, AssigneeDto, ExpenseCategoryDto } from '@/types'
@@ -12,6 +13,8 @@ import MonthPickerNav from '@/components/MonthPickerNav.vue'
 import AddRuleDialog from '@/components/AddRuleDialog.vue'
 
 const snackbar = useSnackbarStore()
+const { xs: phone } = useDisplay()
+const reapplyConfirmOpen = ref(false)
 const { loadExternalLinkRules, externalLinksFor } = useExternalLinkRules()
 
 const { currentMonth } = useMonthQueryParam()
@@ -274,7 +277,17 @@ onMounted(() => {
 
       <v-spacer />
 
+      <v-menu v-if="phone" location="bottom end">
+        <template #activator="{ props }">
+          <v-btn v-bind="props" variant="outlined" min-height="44" append-icon="mdi-menu-down">Manage</v-btn>
+        </template>
+        <v-list>
+          <v-list-item title="Re-run Rules" :disabled="reapplyingRules" @click="reapplyConfirmOpen = true" />
+          <v-list-item title="Delete All" :disabled="filteredItems.length === 0" @click="deleteAllOpen = true" />
+        </v-list>
+      </v-menu>
       <v-btn
+        v-if="!phone"
         variant="outlined"
         size="small"
         prepend-icon="mdi-refresh"
@@ -286,6 +299,7 @@ onMounted(() => {
       </v-btn>
 
       <v-btn
+        v-if="!phone"
         variant="outlined"
         size="small"
         color="error"
@@ -309,7 +323,44 @@ onMounted(() => {
           {{ monthGroupLabel(item.date) }}
         </v-list-subheader>
         <v-card class="mb-2">
-          <v-list-item density="compact" style="cursor: pointer;" @click="openConvert(item)">
+          <v-card-text v-if="phone" class="pending-phone">
+            <div class="pending-merchant-amount">
+              <div class="pending-description font-weight-medium">{{ item.description }}</div>
+              <strong class="pending-amount" :class="item.isDebit ? 'text-debit' : 'text-credit'">
+                {{ item.isDebit ? '' : '+' }}{{ formatCents(item.amount) }}
+              </strong>
+            </div>
+            <div class="pending-context text-body-2">
+              <span>{{ new Date(item.date).toLocaleDateString() }}</span>
+              <span v-if="item.suggestedCategoryName">Suggested: {{ item.suggestedCategoryName }}</span>
+            </div>
+            <v-menu location="bottom">
+              <template #activator="{ props }">
+                <v-btn v-bind="props" variant="tonal" class="pending-assignment text-none" min-height="44" prepend-icon="mdi-account-outline">
+                  <span>Assigned to: {{ item.assigneeName ?? 'Unassigned' }}</span>
+                </v-btn>
+              </template>
+              <v-list aria-label="Assign pending expense">
+                <v-list-item title="Unassign" :disabled="item.assigneeId === null" @click="updateAssignee(item, null)" />
+                <v-list-item v-for="assignee in assignees" :key="assignee.id" :title="assignee.name ?? 'Unnamed'" @click="updateAssignee(item, assignee.id)" />
+              </v-list>
+            </v-menu>
+            <div class="d-flex flex-wrap ga-2">
+              <v-btn color="primary" variant="flat" min-height="44" @click="openConvert(item)">Review / Apply</v-btn>
+              <v-menu location="bottom end">
+                <template #activator="{ props }">
+                  <v-btn v-bind="props" variant="text" min-height="44" aria-label="Pending expense actions" append-icon="mdi-menu-down">More</v-btn>
+                </template>
+                <v-list>
+                  <v-list-item title="Edit note" @click="startEditingNote(item)" />
+                  <v-list-item title="Create rule" @click="openAddRule(item)" />
+                  <v-list-item title="Discard pending expense" base-color="error" @click="discardItem = item" />
+                </v-list>
+              </v-menu>
+              <v-btn v-for="link in externalLinksFor(item.description)" :key="link.url" icon="mdi-open-in-new" variant="text" min-height="44" min-width="44" :href="link.url" target="_blank" rel="noopener noreferrer" :aria-label="`Open ${link.name} link`" />
+            </div>
+          </v-card-text>
+          <v-list-item v-else density="compact" style="cursor: pointer;" @click="openConvert(item)">
             <v-list-item-title>
               <div class="pending-row">
                 <span class="pending-main">
@@ -412,7 +463,7 @@ onMounted(() => {
             </template>
           </v-list-item>
           <v-expand-transition>
-            <div v-if="isEditingNote(item.id) || hasNote(item)" class="px-4 pb-3 pt-1" @click.stop>
+            <div v-if="isEditingNote(item.id) || hasNote(item)" class="pending-note px-4 pb-3 pt-1" @click.stop>
               <div v-if="isEditingNote(item.id)" class="d-flex flex-wrap align-center" style="gap: 8px;">
                 <v-text-field
                   :model-value="noteDrafts[item.id]"
@@ -473,6 +524,15 @@ onMounted(() => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+    <v-dialog v-model="reapplyConfirmOpen" max-width="480">
+      <v-card title="Re-run pending expense rules?">
+        <v-card-text>Reapply your current rules to pending expenses. Suggested categories and notes may change.</v-card-text>
+        <v-card-actions>
+          <v-btn min-height="44" @click="reapplyConfirmOpen = false">Cancel</v-btn>
+          <v-btn min-height="44" color="primary" @click="reapplyConfirmOpen = false; handleReapplyRules()">Re-run Rules</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -516,6 +576,41 @@ onMounted(() => {
   flex: 0 0 auto;
 }
 
+.pending-phone {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pending-merchant-amount {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+.pending-amount {
+  white-space: nowrap;
+}
+.pending-context {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+.pending-assignment {
+  width: 100%;
+  height: auto !important;
+  padding-block: 10px;
+}
+.pending-assignment :deep(.v-btn__content) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.pending-phone :deep(.v-btn:focus-visible) {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 @media (max-width: 720px) {
   .pending-row {
     align-items: center;
@@ -530,6 +625,17 @@ onMounted(() => {
 
   .pending-description {
     grid-column: 1;
+  }
+}
+
+@media (max-width: 599px) {
+  .pending-note :deep(.v-input) {
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+  .pending-note :deep(.v-btn) {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 </style>
