@@ -52,11 +52,6 @@ function amountCentsFor(categoryId: number): number {
   return dollarsToCents(amountFor(categoryId))
 }
 
-function currentAmountFor(category: ExpenseCategoryDto): number {
-  if (category.usePercentage) return amountCentsFor(category.id)
-  return remainingBudgetByCategory.value[category.id]?.currentAmount ?? 0
-}
-
 function remainingBudgetFor(category: ExpenseCategoryDto): number {
   return remainingBudgetByCategory.value[category.id]?.remainingAmount ?? 0
 }
@@ -125,7 +120,7 @@ function applyPercentage(category: ExpenseCategoryDto) {
           </span>
         </div>
         <div class="text-caption text-medium-emphasis">
-          Current: {{ formatCents(currentAmountFor(category)) }} &middot; Remaining:
+          Current: {{ formatCents(category.currentBalance) }} &middot; Remaining:
           <template v-if="category.usePercentage">
             <a href="#" class="allocation-link" @click.prevent="applyPercentage(category)">
               {{ category.budgetedPercentage }}%
