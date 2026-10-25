@@ -108,6 +108,11 @@ function selectMonth(optionDate: Date) {
   gap: 4px;
 }
 
+.month-picker-nav :deep(.v-btn) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 .month-picker-nav__label {
   min-width: 0;
   padding-inline: 4px;
