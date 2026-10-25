@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "756df899-f5bd-4bbe-a46a-99bb60df97f6",
+    "class": "POLICY",
+    "loadGuidance": "ALWAYS",
+    "title": "Mobile usability is a first-class product requirement",
+    "path": ".squad\\memory\\policy-inbox\\kevin-bost-via-copilot-mobile-usability-is-a-first-class-product-requirement-756df899.md",
+    "status": "active",
+    "createdAt": "2026-10-25T23:03:43.317Z",
+    "updatedAt": "2026-10-25T23:03:43.317Z"
+  }
+]
