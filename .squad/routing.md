@@ -8,9 +8,9 @@ How to decide who handles what.
 |-----------|----------|----------|
 | Architecture and cross-cutting technical decisions | Leia | System design, tradeoffs, technical direction |
 | Vue frontend and user experience | Threepio | Views, components, accessibility, client-side state |
-| .NET application logic and APIs | Artoo | Business rules, services, endpoints |
+| .NET application logic and APIs | Hans | Business rules, services, endpoints |
 | Persistence and data access | Lando | Storage models, schema changes, queries |
-| Automated quality and test coverage | Ackbar | Unit, integration, and UI tests |
+| Automated quality and test coverage | Luke | Unit, integration, and UI tests |
 
 ## Issue Routing
 

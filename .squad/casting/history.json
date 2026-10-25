@@ -7,6 +7,10 @@
     {
       "universe": "Star Wars",
       "used_at": "2026-10-25T12:25:30.195-07:00"
+    },
+    {
+      "universe": "Star Wars",
+      "used_at": "2026-10-25T12:49:12.577-07:00"
     }
   ],
   "assignment_cast_snapshots": {
@@ -31,8 +35,19 @@
         "ackbar"
       ],
       "created_at": "2026-10-25T12:25:30.195-07:00"
+    },
+    "261f8f5e-8cb3-4e9b-996a-499feb4ff3e3": {
+      "universe": "Star Wars",
+      "agents": [
+        "leia",
+        "threepio",
+        "hans",
+        "lando",
+        "luke"
+      ],
+      "created_at": "2026-10-25T12:49:12.577-07:00"
     }
   },
-  "transaction_id": "6484e686-4360-4d32-a8b7-78efbd4b7d98",
-  "registry_revision": 3
+  "transaction_id": "261f8f5e-8cb3-4e9b-996a-499feb4ff3e3",
+  "registry_revision": 4
 }

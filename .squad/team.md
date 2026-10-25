@@ -14,9 +14,9 @@
 |------|------|---------|--------|
 | Leia | Technical Lead | `.squad/agents/leia/charter.md` | Active |
 | Threepio | Frontend Engineer | `.squad/agents/threepio/charter.md` | Active |
-| Artoo | Backend Engineer | `.squad/agents/artoo/charter.md` | Active |
+| Hans | Backend Engineer | `.squad/agents/hans/charter.md` | Active |
 | Lando | Data Engineer | `.squad/agents/lando/charter.md` | Active |
-| Ackbar | Quality Engineer | `.squad/agents/ackbar/charter.md` | Active |
+| Luke | Quality Engineer | `.squad/agents/luke/charter.md` | Active |
 | Scribe | Decision Merger | `.squad/agents/scribe/charter.md` | Built-in |
 | Ralph | Work Monitor | `.squad/agents/ralph/charter.md` | Built-in |
 | Rai | RAI Reviewer | `.squad/agents/rai/charter.md` | Built-in |

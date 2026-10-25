@@ -61,9 +61,9 @@ Generated from `.squad/team.md`, `.squad/routing.md`, the casting registry, and 
 | --- | --- | --- | --- |
 | Leia | Technical Lead | review | Application architecture, cross-cutting design, technical planning |
 | Threepio | Frontend Engineer | edit | Vue, TypeScript, accessible UI, client-side state |
-| Artoo | Backend Engineer | edit | C#, .NET application services, APIs, business rules |
+| Hans | Backend Engineer | edit | C#, .NET application services, APIs, business rules |
 | Lando | Data Engineer | edit | Data modeling, persistence, schema evolution, query behavior |
-| Ackbar | Quality Engineer | review, edit | Unit and integration testing, UI tests, edge-case analysis |
+| Luke | Quality Engineer | review, edit | Unit and integration testing, UI tests, edge-case analysis |
 | Rai | RAI Reviewer | review | RAI review, content safety, bias detection, credential scanning, and ethical patterns. |
 | Fact Checker | Verification & Devil's Advocate | review | Verification, fact-checking, counter-hypotheses, hallucination detection, and |
 
@@ -77,9 +77,9 @@ Architecture and cross-cutting technical decisi…, Vue frontend and user experi
 | --- | --- |
 | Architecture and cross-cutting technical decisi… | Leia |
 | Vue frontend and user experience | Threepio |
-| .NET application logic and APIs | Artoo |
+| .NET application logic and APIs | Hans |
 | Persistence and data access | Lando |
-| Automated quality and test coverage | Ackbar |
+| Automated quality and test coverage | Luke |
 
 ### Capability boundaries
 

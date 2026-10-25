@@ -1,8 +1,8 @@
 {
   "schema": "squad-agent-provenance/v1",
   "schema_version": 1,
-  "revision": 3,
-  "generated_at": "2026-10-25T12:25:30.195-07:00",
+  "revision": 4,
+  "generated_at": "2026-10-25T12:49:12.577-07:00",
   "agents": {
     "lead": {
       "display_name": "Lead",
@@ -64,8 +64,8 @@
       "persistent_name": "Leia",
       "role": "Technical Lead",
       "universe": "Star Wars",
-      "created_at": "2026-10-25T12:25:30.195-07:00",
-      "updated_at": "2026-10-25T12:25:30.195-07:00",
+      "created_at": "2026-10-25T12:49:12.577-07:00",
+      "updated_at": "2026-10-25T12:49:12.577-07:00",
       "legacy_named": false,
       "status": "active"
     },
@@ -74,8 +74,8 @@
       "persistent_name": "Threepio",
       "role": "Frontend Engineer",
       "universe": "Star Wars",
-      "created_at": "2026-10-25T12:25:30.195-07:00",
-      "updated_at": "2026-10-25T12:25:30.195-07:00",
+      "created_at": "2026-10-25T12:49:12.577-07:00",
+      "updated_at": "2026-10-25T12:49:12.577-07:00",
       "legacy_named": false,
       "status": "active"
     },
@@ -85,17 +85,18 @@
       "role": "Backend Engineer",
       "universe": "Star Wars",
       "created_at": "2026-10-25T12:25:30.195-07:00",
-      "updated_at": "2026-10-25T12:25:30.195-07:00",
+      "updated_at": "2026-10-25T12:49:12.577-07:00",
       "legacy_named": false,
-      "status": "active"
+      "status": "retired",
+      "retired_at": "2026-10-25T12:49:12.577-07:00"
     },
     "lando": {
       "display_name": "Lando",
       "persistent_name": "Lando",
       "role": "Data Engineer",
       "universe": "Star Wars",
-      "created_at": "2026-10-25T12:25:30.195-07:00",
-      "updated_at": "2026-10-25T12:25:30.195-07:00",
+      "created_at": "2026-10-25T12:49:12.577-07:00",
+      "updated_at": "2026-10-25T12:49:12.577-07:00",
       "legacy_named": false,
       "status": "active"
     },
@@ -105,10 +106,31 @@
       "role": "Quality Engineer",
       "universe": "Star Wars",
       "created_at": "2026-10-25T12:25:30.195-07:00",
-      "updated_at": "2026-10-25T12:25:30.195-07:00",
+      "updated_at": "2026-10-25T12:49:12.577-07:00",
+      "legacy_named": false,
+      "status": "retired",
+      "retired_at": "2026-10-25T12:49:12.577-07:00"
+    },
+    "hans": {
+      "display_name": "Hans",
+      "persistent_name": "Hans",
+      "role": "Backend Engineer",
+      "universe": "Star Wars",
+      "created_at": "2026-10-25T12:49:12.577-07:00",
+      "updated_at": "2026-10-25T12:49:12.577-07:00",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "luke": {
+      "display_name": "Luke",
+      "persistent_name": "Luke",
+      "role": "Quality Engineer",
+      "universe": "Star Wars",
+      "created_at": "2026-10-25T12:49:12.577-07:00",
+      "updated_at": "2026-10-25T12:49:12.577-07:00",
       "legacy_named": false,
       "status": "active"
     }
   },
-  "transaction_id": "6484e686-4360-4d32-a8b7-78efbd4b7d98"
+  "transaction_id": "261f8f5e-8cb3-4e9b-996a-499feb4ff3e3"
 }
