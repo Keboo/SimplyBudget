@@ -1,8 +1,8 @@
 {
   "schema": "squad-agent-provenance/v1",
   "schema_version": 1,
-  "revision": 2,
-  "generated_at": "2026-10-18T23:22:18.977-07:00",
+  "revision": 3,
+  "generated_at": "2026-10-25T12:25:30.195-07:00",
   "agents": {
     "lead": {
       "display_name": "Lead",
@@ -10,9 +10,10 @@
       "role": "Technical Lead",
       "universe": "descriptive",
       "created_at": "2026-10-18T23:22:18.977-07:00",
-      "updated_at": "2026-10-18T23:22:18.977-07:00",
+      "updated_at": "2026-10-25T12:25:30.195-07:00",
       "legacy_named": false,
-      "status": "active"
+      "status": "retired",
+      "retired_at": "2026-10-25T12:25:30.195-07:00"
     },
     "frontend": {
       "display_name": "Frontend",
@@ -20,9 +21,10 @@
       "role": "Frontend Engineer",
       "universe": "descriptive",
       "created_at": "2026-10-18T23:22:18.977-07:00",
-      "updated_at": "2026-10-18T23:22:18.977-07:00",
+      "updated_at": "2026-10-25T12:25:30.195-07:00",
       "legacy_named": false,
-      "status": "active"
+      "status": "retired",
+      "retired_at": "2026-10-25T12:25:30.195-07:00"
     },
     "backend": {
       "display_name": "Backend",
@@ -30,9 +32,10 @@
       "role": "Backend Engineer",
       "universe": "descriptive",
       "created_at": "2026-10-18T23:22:18.977-07:00",
-      "updated_at": "2026-10-18T23:22:18.977-07:00",
+      "updated_at": "2026-10-25T12:25:30.195-07:00",
       "legacy_named": false,
-      "status": "active"
+      "status": "retired",
+      "retired_at": "2026-10-25T12:25:30.195-07:00"
     },
     "data": {
       "display_name": "Data",
@@ -40,9 +43,10 @@
       "role": "Data Engineer",
       "universe": "descriptive",
       "created_at": "2026-10-18T23:22:18.977-07:00",
-      "updated_at": "2026-10-18T23:22:18.977-07:00",
+      "updated_at": "2026-10-25T12:25:30.195-07:00",
       "legacy_named": false,
-      "status": "active"
+      "status": "retired",
+      "retired_at": "2026-10-25T12:25:30.195-07:00"
     },
     "tester": {
       "display_name": "Tester",
@@ -50,10 +54,61 @@
       "role": "Quality Engineer",
       "universe": "descriptive",
       "created_at": "2026-10-18T23:22:18.977-07:00",
-      "updated_at": "2026-10-18T23:22:18.977-07:00",
+      "updated_at": "2026-10-25T12:25:30.195-07:00",
+      "legacy_named": false,
+      "status": "retired",
+      "retired_at": "2026-10-25T12:25:30.195-07:00"
+    },
+    "leia": {
+      "display_name": "Leia",
+      "persistent_name": "Leia",
+      "role": "Technical Lead",
+      "universe": "Star Wars",
+      "created_at": "2026-10-25T12:25:30.195-07:00",
+      "updated_at": "2026-10-25T12:25:30.195-07:00",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "threepio": {
+      "display_name": "Threepio",
+      "persistent_name": "Threepio",
+      "role": "Frontend Engineer",
+      "universe": "Star Wars",
+      "created_at": "2026-10-25T12:25:30.195-07:00",
+      "updated_at": "2026-10-25T12:25:30.195-07:00",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "artoo": {
+      "display_name": "Artoo",
+      "persistent_name": "Artoo",
+      "role": "Backend Engineer",
+      "universe": "Star Wars",
+      "created_at": "2026-10-25T12:25:30.195-07:00",
+      "updated_at": "2026-10-25T12:25:30.195-07:00",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "lando": {
+      "display_name": "Lando",
+      "persistent_name": "Lando",
+      "role": "Data Engineer",
+      "universe": "Star Wars",
+      "created_at": "2026-10-25T12:25:30.195-07:00",
+      "updated_at": "2026-10-25T12:25:30.195-07:00",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "ackbar": {
+      "display_name": "Ackbar",
+      "persistent_name": "Ackbar",
+      "role": "Quality Engineer",
+      "universe": "Star Wars",
+      "created_at": "2026-10-25T12:25:30.195-07:00",
+      "updated_at": "2026-10-25T12:25:30.195-07:00",
       "legacy_named": false,
       "status": "active"
     }
   },
-  "transaction_id": "99015134-f70a-495d-b081-5a2c0aa395ae"
+  "transaction_id": "6484e686-4360-4d32-a8b7-78efbd4b7d98"
 }

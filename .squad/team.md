@@ -12,11 +12,11 @@
 
 | Name | Role | Charter | Status |
 |------|------|---------|--------|
-| Lead | Technical Lead | `.squad/agents/lead/charter.md` | Active |
-| Frontend | Frontend Engineer | `.squad/agents/frontend/charter.md` | Active |
-| Backend | Backend Engineer | `.squad/agents/backend/charter.md` | Active |
-| Data | Data Engineer | `.squad/agents/data/charter.md` | Active |
-| Tester | Quality Engineer | `.squad/agents/tester/charter.md` | Active |
+| Leia | Technical Lead | `.squad/agents/leia/charter.md` | Active |
+| Threepio | Frontend Engineer | `.squad/agents/threepio/charter.md` | Active |
+| Artoo | Backend Engineer | `.squad/agents/artoo/charter.md` | Active |
+| Lando | Data Engineer | `.squad/agents/lando/charter.md` | Active |
+| Ackbar | Quality Engineer | `.squad/agents/ackbar/charter.md` | Active |
 | Scribe | Decision Merger | `.squad/agents/scribe/charter.md` | Built-in |
 | Ralph | Work Monitor | `.squad/agents/ralph/charter.md` | Built-in |
 | Rai | RAI Reviewer | `.squad/agents/rai/charter.md` | Built-in |
