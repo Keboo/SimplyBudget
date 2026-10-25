@@ -47,6 +47,8 @@ const ignoreBudget = ref(false)
 const submitting = ref(false)
 const savingNote = ref(false)
 const receiptMatches = ref<ReceiptDto[]>([])
+const receiptPanel = ref<number>()
+const receiptPanelTouched = ref(false)
 const receiptId = ref<number | null>(null)
 const previewReceiptId = ref<number | null>(null)
 const loadingReceiptMatches = ref(false)
@@ -64,6 +66,14 @@ const otherPendingReceipts = computed(() =>
   pendingReceipts.value.filter(receipt => !receiptMatches.value.some(match => match.id === receipt.id)),
 )
 const availableReceipts = computed(() => uniqueUnlinked([...receiptMatches.value, ...pendingReceipts.value]))
+const receiptSummary = computed(() => {
+  const selected = availableReceipts.value.find(receipt => receipt.id === receiptId.value)
+  if (selected) return selected.merchantName || selected.fileName
+  if (receiptMatchError.value) return 'Could not check matches'
+  if (loadingReceiptMatches.value) return 'Checking matches...'
+  const count = receiptMatches.value.length
+  return count ? `${count} suggested ${count === 1 ? 'match' : 'matches'}` : 'No matches'
+})
 const calculatorOpen = ref(false)
 const calculatorLineIndex = ref<number | null>(null)
 const calculatorInput = ref('')
@@ -93,6 +103,8 @@ watch(
     receiptRequest++
     receiptId.value = null
     receiptMatches.value = []
+    receiptPanel.value = undefined
+    receiptPanelTouched.value = false
     pendingReceipts.value = []
     browsingReceipts.value = false
     loadingPendingReceipts.value = false
@@ -132,9 +144,11 @@ async function loadReceiptMatches() {
     const matches = await apiClient.get<ReceiptDto[]>(`/api/receipts/matches?${params}`)
     if (session !== receiptRequest || request !== matchRequest) return
     receiptMatches.value = uniqueUnlinked(matches ?? [])
+    if (!receiptPanelTouched.value) receiptPanel.value = receiptMatches.value.length ? 0 : undefined
   } catch (e: unknown) {
     if (session !== receiptRequest || request !== matchRequest) return
     receiptMatchError.value = e instanceof Error ? e.message : 'Failed to find matching receipts'
+    if (!receiptPanelTouched.value) receiptPanel.value = 0
     snackbar.enqueueSnackbar(e instanceof Error ? e.message : 'Failed to find matching receipts', { variant: 'error' })
   } finally {
     if (session === receiptRequest && request === matchRequest) loadingReceiptMatches.value = false
@@ -396,68 +410,83 @@ async function saveNote() {
             />
           </div>
 
-          <v-card v-if="pendingExpense.isDebit" variant="tonal" class="pa-3">
-            <div class="d-flex flex-wrap align-center justify-space-between ga-2">
-              <span class="text-subtitle-2">Attach a receipt (optional)</span>
-              <v-progress-circular v-if="loadingReceiptMatches" size="18" width="2" indeterminate />
-            </div>
-            <p class="text-body-2 mt-2">
-              Suggested matches have the same total and a date within five days of the original transaction.
-              If AI missed the details, browse all pending receipts instead. Your description, date, and category amounts will not change.
-            </p>
-            <v-alert v-if="receiptMatchError" type="error" variant="tonal" class="mt-2">
-              {{ receiptMatchError }}
-              <v-btn variant="text" @click="loadReceiptMatches">Retry matches</v-btn>
-            </v-alert>
-            <v-radio-group v-model="receiptId" hide-details>
-              <v-radio :value="null" label="No receipt" />
-              <div class="text-subtitle-2">Suggested matches</div>
-              <v-radio
-                v-for="receipt in receiptMatches"
-                :key="receipt.id"
-                :value="receipt.id"
-              >
-                <template #label>
-                  <span class="receipt-label">
-                    {{ receipt.merchantName || receipt.fileName }}
-                    · {{ receipt.transactionDate ? new Date(receipt.transactionDate).toLocaleDateString() : 'Date not set' }}
-                    · {{ receipt.totalAmountCents == null ? 'Total not set' : formatCents(receipt.totalAmountCents) }}
-                  </span>
-                </template>
-              </v-radio>
-              <div v-if="!receiptMatches.length && !loadingReceiptMatches && !receiptMatchError" class="text-body-2 text-medium-emphasis mt-2">
-                No matching pending receipts. Browse all pending receipts to choose one with missing or incorrect AI details.
-              </div>
-              <template v-if="browsingReceipts">
-                <div class="text-subtitle-2 mt-3">Other pending receipts</div>
-                <v-radio v-for="receipt in otherPendingReceipts" :key="receipt.id" :value="receipt.id">
-                  <template #label>
-                    <span class="receipt-label">
-                      {{ receipt.merchantName || receipt.fileName }}
-                      · {{ receipt.transactionDate ? new Date(receipt.transactionDate).toLocaleDateString() : 'Date not set' }}
-                      · {{ receipt.totalAmountCents == null ? 'Total not set' : formatCents(receipt.totalAmountCents) }}
-                    </span>
-                  </template>
-                </v-radio>
-                <div v-if="!otherPendingReceipts.length && !loadingPendingReceipts && !pendingReceiptError" class="text-body-2 text-medium-emphasis mt-2">
-                  No other pending receipts.
+          <v-expansion-panels
+            v-if="pendingExpense.isDebit"
+            v-model="receiptPanel"
+            variant="accordion"
+            @update:model-value="receiptPanelTouched = true"
+          >
+            <v-expansion-panel elevation="0" border>
+              <v-expansion-panel-title min-height="40" class="px-3 py-2">
+                <div class="d-flex flex-wrap align-center ga-2">
+                  <span class="text-body-2">Receipt (optional)</span>
+                  <span class="text-caption text-medium-emphasis">{{ receiptSummary }}</span>
+                  <v-progress-circular v-if="loadingReceiptMatches" size="16" width="2" indeterminate />
                 </div>
-              </template>
-            </v-radio-group>
-            <v-alert v-if="pendingReceiptError" type="error" variant="tonal" class="mt-2">{{ pendingReceiptError }}</v-alert>
-            <v-btn variant="text" :disabled="loadingReceiptMatches" @click="loadReceiptMatches">Refresh matches</v-btn>
-            <v-btn variant="text" :loading="loadingPendingReceipts" :disabled="loadingPendingReceipts" @click="browsePendingReceipts">
-              {{ browsingReceipts ? 'Refresh all pending receipts' : 'Browse all pending receipts' }}
-            </v-btn>
-            <v-btn
-              v-if="receiptId !== null"
-              variant="text"
-              @click="previewReceiptId = previewReceiptId === receiptId ? null : receiptId"
-            >
-              {{ previewReceiptId ? 'Hide receipt' : 'View receipt' }}
-            </v-btn>
-            <ReceiptPreview v-if="previewReceiptId !== null" :receipt-id="previewReceiptId" :image-geometry="availableReceipts.find(receipt => receipt.id === previewReceiptId)?.imageGeometry" />
-          </v-card>
+              </v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <p class="text-caption text-medium-emphasis">
+                  Suggestions match the total and are within five days. Browse all receipts if AI missed the details.
+                </p>
+                <v-alert v-if="receiptMatchError" type="error" variant="tonal" class="mt-2">
+                  {{ receiptMatchError }}
+                  <v-btn variant="text" @click="loadReceiptMatches">Retry matches</v-btn>
+                </v-alert>
+                <v-radio-group v-model="receiptId" density="compact" hide-details>
+                  <v-radio :value="null" label="No receipt" density="compact" />
+                  <div v-if="receiptMatches.length" class="text-caption">Suggested matches</div>
+                  <v-radio
+                    v-for="receipt in receiptMatches"
+                    :key="receipt.id"
+                    :value="receipt.id"
+                    density="compact"
+                  >
+                    <template #label>
+                      <span class="receipt-label">
+                        {{ receipt.merchantName || receipt.fileName }}
+                        · {{ receipt.transactionDate ? new Date(receipt.transactionDate).toLocaleDateString() : 'Date not set' }}
+                        · {{ receipt.totalAmountCents == null ? 'Total not set' : formatCents(receipt.totalAmountCents) }}
+                      </span>
+                    </template>
+                  </v-radio>
+                  <div v-if="!receiptMatches.length && !loadingReceiptMatches && !receiptMatchError" class="text-body-2 text-medium-emphasis mt-2">
+                    No matching pending receipts.
+                  </div>
+                  <template v-if="browsingReceipts">
+                    <div class="text-subtitle-2 mt-3">Other pending receipts</div>
+                    <v-radio v-for="receipt in otherPendingReceipts" :key="receipt.id" :value="receipt.id" density="compact">
+                      <template #label>
+                        <span class="receipt-label">
+                          {{ receipt.merchantName || receipt.fileName }}
+                          · {{ receipt.transactionDate ? new Date(receipt.transactionDate).toLocaleDateString() : 'Date not set' }}
+                          · {{ receipt.totalAmountCents == null ? 'Total not set' : formatCents(receipt.totalAmountCents) }}
+                        </span>
+                      </template>
+                    </v-radio>
+                    <div v-if="!otherPendingReceipts.length && !loadingPendingReceipts && !pendingReceiptError" class="text-body-2 text-medium-emphasis mt-2">
+                      No other pending receipts.
+                    </div>
+                  </template>
+                </v-radio-group>
+                <v-alert v-if="pendingReceiptError" type="error" variant="tonal" class="mt-2">{{ pendingReceiptError }}</v-alert>
+                <div class="d-flex flex-wrap ga-1">
+                  <v-btn variant="text" size="small" :disabled="loadingReceiptMatches" @click="loadReceiptMatches">Refresh matches</v-btn>
+                  <v-btn variant="text" size="small" :loading="loadingPendingReceipts" :disabled="loadingPendingReceipts" @click="browsePendingReceipts">
+                    {{ browsingReceipts ? 'Refresh all pending receipts' : 'Browse all pending receipts' }}
+                  </v-btn>
+                  <v-btn
+                    v-if="receiptId !== null"
+                    variant="text"
+                    size="small"
+                    @click="previewReceiptId = previewReceiptId === receiptId ? null : receiptId"
+                  >
+                    {{ previewReceiptId ? 'Hide receipt' : 'View receipt' }}
+                  </v-btn>
+                </div>
+                <ReceiptPreview v-if="previewReceiptId !== null" :receipt-id="previewReceiptId" :image-geometry="availableReceipts.find(receipt => receipt.id === previewReceiptId)?.imageGeometry" />
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
 
           <template v-if="pendingExpense.isDebit">
             <span class="text-subtitle-2">Split expense across categories</span>

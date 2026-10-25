@@ -135,7 +135,9 @@ priority over the returned AI suggestions. Review the details and select **Save 
 persist them. Unsaved drafts survive switching receipts or refreshing the list, but not leaving
 the page or reloading the browser. Extraction failures keep the image available for manual entry.
 
-When processing a pending debit, select one suggested receipt, **Browse all pending receipts**
+When processing a pending debit, the compact **Receipt (optional)** section is collapsed by default
+when there are no matches and opens automatically when suggestions are found. Expand it to
+select one suggested receipt, **Browse all pending receipts**
 to choose one with incorrect or missing AI details, or select **No receipt**. Previewing or
 attaching it does not change the editable expense description, date, notes, or category amounts.
 After conversion, **View receipt** in Expenses opens the original document. Receipt previews show

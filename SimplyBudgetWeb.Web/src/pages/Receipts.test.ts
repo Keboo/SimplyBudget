@@ -85,6 +85,15 @@ async function selectReceipt(value: string) {
   await flushPromises()
 }
 
+function receiptToggle() {
+  return document.querySelector<HTMLButtonElement>('.v-overlay--active .v-expansion-panel-title')!
+}
+
+async function toggleReceipts() {
+  receiptToggle().click()
+  await flushPromises()
+}
+
 describe('Receipts page', () => {
   afterEach(() => { document.body.innerHTML = '' })
   beforeEach(() => {
@@ -490,6 +499,7 @@ describe('Receipts page', () => {
       ? Promise.resolve([receipt({ id: 7, merchantName: 'Manual choice', totalAmountCents: null })])
       : new Promise<ReceiptDto[]>(resolve => { finish = resolve }))
     await conversionDialog()
+    await toggleReceipts()
     await clickDialogButton('Browse all pending receipts')
     await selectReceipt('7')
     await clickDialogButton('View receipt')
@@ -548,10 +558,72 @@ describe('Receipts page', () => {
     expect(document.body.textContent).not.toContain('Stale match')
   })
 
-  it('shows an actionable empty matching state without hiding the receipt section', async () => {
+  it('collapses receipts without matches and keeps browsing available on expansion', async () => {
     await conversionDialog()
+    expect(receiptToggle().getAttribute('aria-expanded')).toBe('false')
+    expect(receiptToggle().textContent).toContain('Receipt (optional)')
+    expect(receiptToggle().textContent).toContain('No matches')
+    expect(document.body.textContent).not.toContain('No matching pending receipts')
+    expect(document.querySelector('.v-overlay--active input[type="radio"]')).toBeNull()
+    await toggleReceipts()
+    expect(receiptToggle().getAttribute('aria-expanded')).toBe('true')
     expect(document.body.textContent).toContain('No matching pending receipts')
-    expect([...document.querySelectorAll('button')].some(button => button.textContent?.includes('Refresh matches'))).toBe(true)
+    api.get.mockResolvedValue([receipt({ id: 7, merchantName: 'Manual receipt', totalAmountCents: null })])
+    await clickDialogButton('Browse all pending receipts')
+    await selectReceipt('7')
+    await toggleReceipts()
+    expect(receiptToggle().getAttribute('aria-expanded')).toBe('false')
+    expect(receiptToggle().textContent).toContain('Manual receipt')
+    await clickDialogButton('Apply')
+    expect(api.post).toHaveBeenCalledWith('/api/pending-expenses/10/convert', expect.objectContaining({ receiptId: 7 }))
+  })
+
+  it('opens matching receipts by default but preserves a manual collapse during refresh', async () => {
+    api.get.mockResolvedValue([receipt()])
+    const wrapper = await conversionDialog()
+    expect(receiptToggle().getAttribute('aria-expanded')).toBe('true')
+    expect(receiptToggle().textContent).toContain('1 suggested match')
+    let finish!: (value: ReceiptDto[]) => void
+    api.get.mockImplementationOnce(() => new Promise<ReceiptDto[]>(resolve => { finish = resolve }))
+    await clickDialogButton('Refresh matches')
+    await toggleReceipts()
+    expect(receiptToggle().getAttribute('aria-expanded')).toBe('false')
+    finish([receipt(), receipt({ id: 2 })])
+    await flushPromises()
+    expect(receiptToggle().getAttribute('aria-expanded')).toBe('false')
+    expect(receiptToggle().textContent).toContain('2 suggested matches')
+    await wrapper.setProps({ modelValue: false })
+    api.get.mockResolvedValue([])
+    await wrapper.setProps({ modelValue: true })
+    await flushPromises()
+    expect(receiptToggle().getAttribute('aria-expanded')).toBe('false')
+    expect(receiptToggle().textContent).toContain('No matches')
+  })
+
+  it('keeps an explicitly opened empty section open when matches refresh', async () => {
+    await conversionDialog()
+    await toggleReceipts()
+    await clickDialogButton('Refresh matches')
+    expect(receiptToggle().getAttribute('aria-expanded')).toBe('true')
+    expect(document.body.textContent).toContain('No matching pending receipts')
+  })
+
+  it('opens receipt lookup failures with a retry and allows conversion without a receipt', async () => {
+    api.get.mockRejectedValueOnce(new Error('Matching unavailable'))
+    await conversionDialog()
+    expect(receiptToggle().getAttribute('aria-expanded')).toBe('true')
+    expect(document.body.textContent).toContain('Matching unavailable')
+    await clickDialogButton('Retry matches')
+    expect(receiptToggle().getAttribute('aria-expanded')).toBe('false')
+    expect(receiptToggle().textContent).toContain('No matches')
+    await clickDialogButton('Apply')
+    expect(api.post).toHaveBeenCalledWith('/api/pending-expenses/10/convert', expect.objectContaining({ receiptId: null }))
+  })
+
+  it('does not show receipt controls for income', async () => {
+    await conversionDialog({ isDebit: false })
+    expect(receiptToggle()).toBeNull()
+    expect(api.get).not.toHaveBeenCalledWith(expect.stringContaining('/api/receipts'))
   })
 
   it('ignores stale preview downloads and supports PDFs with an original-document link', async () => {
