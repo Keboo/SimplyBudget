@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type {
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 }>()
 
 const snackbar = useSnackbarStore()
+const { xs: phone } = useDisplay()
 
 interface LineItem {
   expenseCategoryId: number | string | null
@@ -248,11 +250,19 @@ async function submit() {
 </script>
 
 <template>
-  <v-dialog :model-value="props.modelValue" max-width="600" @update:model-value="(val: boolean) => !val && close()">
-    <v-card>
+  <v-dialog :model-value="props.modelValue" :fullscreen="phone" max-width="600" @update:model-value="(val: boolean) => !val && close()">
+    <v-card class="transaction-editor">
       <v-card-title>Add Transaction</v-card-title>
       <v-card-text class="dialog-scroll-area">
-        <v-tabs v-model="tab" class="mb-4">
+        <v-select
+          v-if="phone"
+          v-model="tab"
+          label="Transaction type"
+          :items="[{ title: 'Expense', value: 'transaction' }, { title: 'Income', value: 'income' }, { title: 'Transfer', value: 'transfer' }]"
+          hide-details
+          class="mb-4"
+        />
+        <v-tabs v-else v-model="tab" class="mb-4">
           <v-tab value="transaction">Transaction</v-tab>
           <v-tab value="income">Income</v-tab>
           <v-tab value="transfer">Transfer</v-tab>
@@ -280,6 +290,9 @@ async function submit() {
                 :allow-custom="true"
                 class="category-field"
               />
+              <span v-if="phone && isValidCategoryId(item.expenseCategoryId)" class="selected-category text-body-2">
+                {{ props.categories.find(category => category.id === item.expenseCategoryId)?.name }}
+              </span>
               <div class="amount-field d-flex align-center ga-1">
                 <AmountField v-model="item.amount" />
                 <v-btn
@@ -425,8 +438,50 @@ async function submit() {
 .category-field {
   flex: 2 1 0;
 }
+.selected-category {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
 
 .amount-field {
   flex: 1 1 180px;
+}
+
+@media (max-width: 599px) {
+  .transaction-editor {
+    height: 100dvh;
+  }
+  .dialog-scroll-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+  }
+  .allocation-line {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: 8px !important;
+    padding-block: 12px;
+    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  }
+  .category-field {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  .amount-field {
+    min-width: 0;
+  }
+  .amount-field :deep(.v-input) {
+    min-width: 0;
+  }
+  .transaction-editor :deep(.v-btn) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .transaction-editor :deep(.v-card-actions) {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .transaction-editor :deep(input) {
+    scroll-margin-block: 24px;
+  }
 }
 </style>

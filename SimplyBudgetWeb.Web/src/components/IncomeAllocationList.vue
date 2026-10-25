@@ -147,6 +147,7 @@ function applyPercentage(category: ExpenseCategoryDto) {
         </div>
       </div>
       <AmountField
+        :label="`Amount for ${category.name} ($)`"
         :model-value="amountFor(category.id)"
         @update:model-value="(val: string) => setAmount(category.id, val)"
         class="amount-field"
@@ -175,5 +176,26 @@ function applyPercentage(category: ExpenseCategoryDto) {
 .allocation-link-disabled {
   text-decoration: underline;
   opacity: 0.5;
+}
+
+@media (max-width: 599px) {
+  .income-allocation-row {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 12px !important;
+    padding-block: 12px;
+    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  }
+  .category-info, .amount-field {
+    flex: none;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .allocation-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 </style>
