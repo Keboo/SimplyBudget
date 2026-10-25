@@ -463,7 +463,7 @@ onMounted(() => {
             </template>
           </v-list-item>
           <v-expand-transition>
-            <div v-if="isEditingNote(item.id) || hasNote(item)" class="px-4 pb-3 pt-1" @click.stop>
+            <div v-if="isEditingNote(item.id) || hasNote(item)" class="pending-note px-4 pb-3 pt-1" @click.stop>
               <div v-if="isEditingNote(item.id)" class="d-flex flex-wrap align-center" style="gap: 8px;">
                 <v-text-field
                   :model-value="noteDrafts[item.id]"
@@ -625,6 +625,17 @@ onMounted(() => {
 
   .pending-description {
     grid-column: 1;
+  }
+}
+
+@media (max-width: 599px) {
+  .pending-note :deep(.v-input) {
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+  }
+  .pending-note :deep(.v-btn) {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 </style>
