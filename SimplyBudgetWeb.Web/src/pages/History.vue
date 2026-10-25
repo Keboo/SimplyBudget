@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import type { HistoryItemDto, HistoryItemUpdateRequest, ExpenseCategoryDto, AccountDto, ReceiptDto } from '@/types'
@@ -19,6 +20,8 @@ import ReceiptPreview from '@/components/ReceiptPreview.vue'
 const snackbar = useSnackbarStore()
 const route = useRoute()
 const authStore = useAuthStore()
+const { xs: phone } = useDisplay()
+const filtersOpen = ref(false)
 const { loadExternalLinkRules, externalLinksFor } = useExternalLinkRules()
 
 function parseCategoryIdQuery(value: unknown): number | null {
@@ -240,12 +243,13 @@ function onDialogSuccess() {
   <div>
     <h5 class="text-h5 mb-4">Expenses</h5>
 
-    <v-card class="pa-4 mb-4 d-flex flex-wrap align-center" style="gap: 16px;">
+    <v-card class="history-toolbar pa-4 mb-4 d-flex flex-wrap align-center" style="gap: 16px;">
       <MonthPickerNav v-model="currentMonth" />
 
       <v-text-field label="Search" v-model="search" density="compact" style="max-width: 200px;" hide-details />
 
       <CategorySelector
+        v-if="!phone"
         label="Category"
         :categories="categories"
         null-option-label="All"
@@ -253,10 +257,28 @@ function onDialogSuccess() {
         v-model="categoryId"
         style="max-width: 200px;"
       />
+      <v-btn v-if="phone" variant="outlined" min-height="44" prepend-icon="mdi-filter" @click="filtersOpen = true">Filters</v-btn>
     </v-card>
+    <div v-if="search || categoryId !== null" class="active-filters d-flex flex-wrap align-center ga-2 mb-3" role="status">
+      <span v-if="search">Search: {{ search }}</span>
+      <span v-if="categoryId !== null">Category: {{ categories.find(category => category.id === categoryId)?.name ?? categoryId }}</span>
+      <v-btn min-height="44" variant="text" @click="search = ''; categoryId = null">Clear filters</v-btn>
+    </div>
+    <v-dialog v-model="filtersOpen" max-width="440">
+      <v-card title="Filter expenses">
+        <v-card-text>
+          <CategorySelector label="Category" :categories="categories" null-option-label="All" :clearable="false" v-model="categoryId" />
+        </v-card-text>
+        <v-card-actions>
+          <v-btn min-height="44" @click="categoryId = null; search = ''">Clear filters</v-btn>
+          <v-btn min-height="44" color="primary" @click="filtersOpen = false">Done</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-card class="pa-4 mb-4">
-      <div class="text-subtitle-2 mb-2">Account balances through {{ monthLabel }}</div>
+      <details :open="!phone" class="account-details">
+      <summary class="text-subtitle-2">Account balances through {{ monthLabel }}</summary>
       <div v-if="accountLoading" class="d-flex justify-center py-2">
         <v-progress-circular size="20" indeterminate aria-label="Loading account balances" />
       </div>
@@ -266,6 +288,7 @@ function onDialogSuccess() {
           {{ account.name ?? 'Unnamed account' }}: {{ formatCents(account.currentAmount) }}
         </v-chip>
       </div>
+      </details>
     </v-card>
 
     <div v-if="loading" class="d-flex justify-center pa-8">
@@ -437,6 +460,37 @@ function onDialogSuccess() {
 </template>
 
 <style scoped>
+.account-details > summary {
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+}
+.account-details :deep(.v-chip) {
+  max-width: 100%;
+  height: auto;
+  min-height: 24px;
+}
+.account-details :deep(.v-chip__content) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.active-filters {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 599px) {
+  .history-toolbar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px !important;
+  }
+  .history-toolbar > :first-child {
+    grid-column: 1 / -1;
+  }
+  .history-toolbar :deep(.v-input) {
+    min-width: 0;
+    max-width: none !important;
+  }
+}
 .expense-month-group-header {
   min-height: 22px;
   font-size: 0.75rem;

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useRouter } from 'vue-router'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
@@ -12,6 +13,7 @@ import { formatCents, formatMonth } from '@/utils/currency'
 
 const snackbar = useSnackbarStore()
 const router = useRouter()
+const { xs: phone } = useDisplay()
 
 const csvFile = ref<File | null>(null)
 const csvFileInput = ref<HTMLInputElement | null>(null)
@@ -148,7 +150,9 @@ async function handleImportAllData() {
   <div>
     <h5 class="text-h5 mb-4">Import Transactions</h5>
 
-    <v-card class="pa-4 mb-4">
+    <details class="data-management mb-4">
+      <summary>Data management · backup and restore</summary>
+      <v-card class="pa-4">
       <h6 class="text-h6 mb-2">Full Data Transfer</h6>
       <p class="text-body-2 mb-4">
         Export all accounts, categories, transactions, rules, and metadata into a JSON file, or import a previous export.
@@ -175,6 +179,7 @@ async function handleImportAllData() {
       </div>
       <p v-if="importFile" class="text-body-2 mt-3 mb-0">Selected file: {{ importFile.name }}</p>
     </v-card>
+    </details>
 
     <v-card class="pa-4 mb-4">
       <h6 class="text-h6 mb-2">Import CSV Transactions</h6>
@@ -203,7 +208,24 @@ async function handleImportAllData() {
           :label="duplicateCount > 0 ? `Show possible duplicates (${duplicateCount})` : 'Show possible duplicates'"
         />
       </div>
-      <v-card class="mb-4" style="overflow: auto;">
+      <div v-if="phone" class="csv-cards mb-4">
+        <v-card v-for="(item, index) in visibleItems" :key="index" class="mb-3">
+          <v-card-text class="csv-card">
+            <v-checkbox v-model="item.isChecked" :aria-label="`Select ${item.description}`" hide-details />
+            <div class="csv-card-copy">
+              <div class="csv-description-amount">
+                <strong class="csv-description">{{ item.description }}</strong>
+                <strong :class="item.isDebit ? 'text-debit' : 'text-credit'" class="csv-amount">
+                  {{ item.isDebit ? '−' : '+' }}{{ formatCents(Math.abs(item.amount)) }}
+                </strong>
+              </div>
+              <div class="text-body-2">{{ new Date(item.date).toLocaleDateString() }} · {{ item.isDebit ? 'Debit' : 'Credit' }}</div>
+              <div v-if="item.isDuplicate" class="text-warning font-weight-medium mt-1">Possible duplicate</div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </div>
+      <v-card v-else class="mb-4" style="overflow: auto;">
         <v-table density="compact">
           <thead>
             <tr>
@@ -230,7 +252,58 @@ async function handleImportAllData() {
           </tbody>
         </v-table>
       </v-card>
-      <v-btn color="primary" :loading="submitting" :disabled="submitting" @click="handleImport">Import {{ checkedCount }} Items</v-btn>
+      <div class="import-actions d-flex flex-wrap align-center justify-space-between ga-2">
+        <span role="status">{{ checkedCount }} selected</span>
+        <v-btn color="primary" min-height="44" :loading="submitting" :disabled="submitting" @click="handleImport">Import {{ checkedCount }} Items</v-btn>
+      </div>
     </template>
+
   </div>
 </template>
+
+<style scoped>
+.data-management > summary {
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+}
+.csv-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 8px;
+  padding: 12px;
+}
+.csv-card :deep(.v-selection-control__wrapper) {
+  min-width: 44px;
+  min-height: 44px;
+}
+.csv-card :deep(.v-checkbox) {
+  align-self: start;
+}
+.csv-card-copy, .csv-description {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.csv-description-amount {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.csv-amount {
+  grid-row: 1;
+  white-space: nowrap;
+}
+input[type="file"] {
+  max-width: 100%;
+}
+@media (max-width: 599px) {
+  .import-actions {
+    position: sticky;
+    bottom: calc(var(--v-layout-bottom, 0px) + env(safe-area-inset-bottom));
+    z-index: 2;
+    background: rgb(var(--v-theme-surface));
+    padding: 12px;
+    border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  }
+}
+</style>
