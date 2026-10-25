@@ -483,7 +483,7 @@ function onDialogSuccess() {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 12px !important;
   }
-  .history-toolbar > :first-child {
+  .history-toolbar > .month-picker-nav {
     grid-column: 1 / -1;
   }
   .history-toolbar :deep(.v-input) {
