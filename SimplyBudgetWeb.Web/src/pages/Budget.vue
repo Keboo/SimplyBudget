@@ -11,6 +11,8 @@ import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import { createMonthUpdatesHubClient } from '@/services/monthUpdatesHub'
+import { useContextualLoad } from '@/composables/useContextualLoad'
+import LoadFeedback from '@/components/LoadFeedback.vue'
 
 const snackbar = useSnackbarStore()
 const router = useRouter()
@@ -18,12 +20,10 @@ const authStore = useAuthStore()
 const { xs: phone } = useDisplay()
 
 const { currentMonth } = useMonthQueryParam()
-const budget = ref<BudgetResponse | null>(null)
-const accounts = ref<AccountDto[]>([])
-const loading = ref(false)
-const accountLoading = ref(false)
+const { data: budget, loading, error: loadError, hasLoaded, load: loadBudget } = useContextualLoad<BudgetResponse | null>(null, 'Failed to load budget')
+const { data: accounts, loading: accountLoading, error: accountError, hasLoaded: accountsLoaded, load: loadAccounts } = useContextualLoad<AccountDto[]>([], 'Failed to load account balances')
 const dialogOpen = ref(false)
-const categories = ref<ExpenseCategoryDto[]>([])
+const { data: categories, loading: categoriesLoading, error: categoriesError, hasLoaded: categoriesLoaded, load: loadCategories } = useContextualLoad<ExpenseCategoryDto[]>([], 'Failed to load categories')
 const categoryChartDialogOpen = ref(false)
 const categoryChartLoading = ref(false)
 const categoryChart = ref<ExpenseCategoryMonthlyExpensesDto | null>(null)
@@ -82,35 +82,19 @@ const chartThreeMonthAverage = computed(() => getCategoryChartAverage(3))
 const chartSixMonthAverage = computed(() => getCategoryChartAverage(6))
 const chartTwelveMonthAverage = computed(() => getCategoryChartAverage(12))
 
-async function fetchBudget(background = false) {
-  if (!background) loading.value = true
-  try {
-    const month = formatMonth(currentMonth.value)
-    budget.value = await apiClient.get<BudgetResponse>(`/api/budget?month=${month}-01`)
-  } catch {
-    snackbar.enqueueSnackbar('Failed to load budget', { variant: 'error' })
-  } finally {
-    if (!background) loading.value = false
-  }
+async function fetchBudget() {
+  const month = formatMonth(currentMonth.value)
+  await loadBudget(month, () => apiClient.get<BudgetResponse>(`/api/budget?month=${month}-01`))
 }
 
-async function fetchAccountBalances(background = false) {
-  if (!background) accountLoading.value = true
-  try {
-    const month = `${formatMonth(currentMonth.value)}-01`
-    const params = new URLSearchParams({ month })
-    accounts.value = await apiClient.get<AccountDto[]>(`/api/accounts?${params}`) ?? []
-  } catch {
-    snackbar.enqueueSnackbar('Failed to load account balances', { variant: 'error' })
-  } finally {
-    if (!background) accountLoading.value = false
-  }
+async function fetchAccountBalances() {
+  const month = `${formatMonth(currentMonth.value)}-01`
+  const params = new URLSearchParams({ month })
+  await loadAccounts(month, async () => await apiClient.get<AccountDto[]>(`/api/accounts?${params}`) ?? [])
 }
 
 async function fetchCategories() {
-  try {
-    categories.value = await apiClient.get<ExpenseCategoryDto[]>('/api/expense-categories')
-  } catch { /* ignore */ }
+  await loadCategories('categories', () => apiClient.get<ExpenseCategoryDto[]>('/api/expense-categories'))
 }
 
 async function refreshMonthInBackground() {
@@ -123,7 +107,7 @@ async function refreshMonthInBackground() {
   try {
     do {
       realtimeRefreshQueued = false
-      await Promise.all([fetchBudget(true), fetchAccountBalances(true)])
+      await Promise.all([fetchBudget(), fetchAccountBalances()])
     } while (realtimeRefreshQueued)
   } finally {
     realtimeRefreshInFlight = false
@@ -216,6 +200,8 @@ function openCategoryHistory(category: BudgetCategoryDto) {
       <MonthPickerNav v-model="currentMonth" />
     </v-card>
 
+    <LoadFeedback label="budget" :error="loadError" :loading="loading" :stale="hasLoaded" @retry="fetchBudget" />
+    <LoadFeedback label="categories" :error="categoriesError" :loading="categoriesLoading" :stale="categoriesLoaded" @retry="fetchCategories" />
     <v-card v-if="budget" class="pa-4 mb-4">
       <div v-if="phone">
         <div class="text-body-2">Total budget for {{ monthLabel }}</div>
@@ -234,14 +220,15 @@ function openCategoryHistory(category: BudgetCategoryDto) {
       </div>
     </v-card>
 
+    <LoadFeedback label="account balances" :error="accountError" :loading="accountLoading" :stale="accountsLoaded" @retry="fetchAccountBalances" />
     <v-card class="pa-4 mb-4">
       <details :open="!phone" class="budget-details">
       <summary class="text-subtitle-2">Account balances through {{ monthLabel }}</summary>
       <div v-if="accountLoading" class="d-flex justify-center py-2">
         <v-progress-circular size="20" indeterminate aria-label="Loading account balances" />
       </div>
-      <div v-else-if="accounts.length === 0" class="text-medium-emphasis">No accounts found.</div>
-      <div v-else class="d-flex flex-wrap" style="gap: 8px;">
+      <div v-if="accountsLoaded && !accountError && accounts.length === 0" class="text-medium-emphasis">No accounts found.</div>
+      <div v-else-if="accountsLoaded && accounts.length > 0" class="d-flex flex-wrap" style="gap: 8px;">
         <v-chip v-for="account in accounts" :key="account.id" size="small" variant="outlined">
           {{ account.name ?? 'Unnamed account' }}: {{ formatCents(account.currentAmount) }}
         </v-chip>
@@ -249,10 +236,13 @@ function openCategoryHistory(category: BudgetCategoryDto) {
       </details>
     </v-card>
 
-    <div v-if="loading" class="d-flex justify-center pa-8">
+    <div v-if="loading && !hasLoaded" class="d-flex justify-center pa-8">
       <v-progress-circular indeterminate aria-label="Loading budget" />
     </div>
     <div v-else>
+      <v-alert v-if="hasLoaded && !loadError && budget?.categories.length === 0" type="info" variant="tonal" class="mb-4">
+        No budget categories yet. <v-btn to="/settings" variant="text" min-height="44">Manage categories</v-btn>
+      </v-alert>
       <v-expansion-panels v-for="group in grouped" :key="group.groupName" :model-value="0" class="mb-2">
         <v-expansion-panel>
           <v-expansion-panel-title>

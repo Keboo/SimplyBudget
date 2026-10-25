@@ -16,6 +16,8 @@ import CategorySelector from '@/components/CategorySelector.vue'
 import AddRuleDialog from '@/components/AddRuleDialog.vue'
 import { createMonthUpdatesHubClient } from '@/services/monthUpdatesHub'
 import ReceiptPreview from '@/components/ReceiptPreview.vue'
+import { useContextualLoad } from '@/composables/useContextualLoad'
+import LoadFeedback from '@/components/LoadFeedback.vue'
 
 const snackbar = useSnackbarStore()
 const route = useRoute()
@@ -33,11 +35,9 @@ function parseCategoryIdQuery(value: unknown): number | null {
 const { currentMonth } = useMonthQueryParam()
 const search = ref('')
 const categoryId = ref<number | null>(parseCategoryIdQuery(route.query.categoryId))
-const items = ref<HistoryItemDto[]>([])
-const categories = ref<ExpenseCategoryDto[]>([])
-const accounts = ref<AccountDto[]>([])
-const loading = ref(false)
-const accountLoading = ref(false)
+const { data: items, loading, error: loadError, hasLoaded, load: loadHistory } = useContextualLoad<HistoryItemDto[]>([], 'Failed to load history')
+const { data: categories, loading: categoriesLoading, error: categoriesError, hasLoaded: categoriesLoaded, load: loadCategories } = useContextualLoad<ExpenseCategoryDto[]>([], 'Failed to load categories')
+const { data: accounts, loading: accountLoading, error: accountError, hasLoaded: accountsLoaded, load: loadAccounts } = useContextualLoad<AccountDto[]>([], 'Failed to load account balances')
 const editNotesItem = ref<HistoryItemDto | null>(null)
 const editNotesDraft = ref('')
 const savingNotes = ref(false)
@@ -87,36 +87,20 @@ function isNewMonth(index: number) {
 }
 
 async function fetchCategories() {
-  try {
-    categories.value = await apiClient.get<ExpenseCategoryDto[]>('/api/expense-categories')
-  } catch { /* ignore */ }
+  await loadCategories('categories', () => apiClient.get<ExpenseCategoryDto[]>('/api/expense-categories'))
 }
 
-async function fetchHistory(background = false) {
-  if (!background) loading.value = true
-  try {
-    const month = `${formatMonth(currentMonth.value)}-01`
-    const params = new URLSearchParams({ month })
-    if (categoryId.value !== null) params.set('categoryId', String(categoryId.value))
-    items.value = await apiClient.get<HistoryItemDto[]>(`/api/history?${params}`) ?? []
-  } catch {
-    snackbar.enqueueSnackbar('Failed to load history', { variant: 'error' })
-  } finally {
-    if (!background) loading.value = false
-  }
+async function fetchHistory() {
+  const month = `${formatMonth(currentMonth.value)}-01`
+  const params = new URLSearchParams({ month })
+  if (categoryId.value !== null) params.set('categoryId', String(categoryId.value))
+  await loadHistory(params.toString(), async () => await apiClient.get<HistoryItemDto[]>(`/api/history?${params}`) ?? [])
 }
 
-async function fetchAccountBalances(background = false) {
-  if (!background) accountLoading.value = true
-  try {
-    const month = `${formatMonth(currentMonth.value)}-01`
-    const params = new URLSearchParams({ month })
-    accounts.value = await apiClient.get<AccountDto[]>(`/api/accounts?${params}`) ?? []
-  } catch {
-    snackbar.enqueueSnackbar('Failed to load account balances', { variant: 'error' })
-  } finally {
-    if (!background) accountLoading.value = false
-  }
+async function fetchAccountBalances() {
+  const month = `${formatMonth(currentMonth.value)}-01`
+  const params = new URLSearchParams({ month })
+  await loadAccounts(month, async () => await apiClient.get<AccountDto[]>(`/api/accounts?${params}`) ?? [])
 }
 
 async function refreshMonthInBackground() {
@@ -129,7 +113,7 @@ async function refreshMonthInBackground() {
   try {
     do {
       realtimeRefreshQueued = false
-      await Promise.all([fetchHistory(true), fetchAccountBalances(true)])
+      await Promise.all([fetchHistory(), fetchAccountBalances()])
     } while (realtimeRefreshQueued)
   } finally {
     realtimeRefreshInFlight = false
@@ -307,14 +291,15 @@ function onDialogSuccess() {
       </v-card>
     </v-dialog>
 
+    <LoadFeedback label="account balances" :error="accountError" :loading="accountLoading" :stale="accountsLoaded" @retry="fetchAccountBalances" />
     <v-card class="pa-4 mb-4">
       <details :open="!phone" class="account-details">
       <summary class="text-subtitle-2">Account balances through {{ monthLabel }}</summary>
       <div v-if="accountLoading" class="d-flex justify-center py-2">
         <v-progress-circular size="20" indeterminate aria-label="Loading account balances" />
       </div>
-      <div v-else-if="accounts.length === 0" class="text-medium-emphasis">No accounts found.</div>
-      <div v-else class="d-flex flex-wrap" style="gap: 8px;">
+      <div v-if="accountsLoaded && !accountError && accounts.length === 0" class="text-medium-emphasis">No accounts found.</div>
+      <div v-else-if="accountsLoaded && accounts.length > 0" class="d-flex flex-wrap" style="gap: 8px;">
         <v-chip v-for="account in accounts" :key="account.id" size="small" variant="outlined">
           {{ account.name ?? 'Unnamed account' }}: {{ formatCents(account.currentAmount) }}
         </v-chip>
@@ -322,12 +307,21 @@ function onDialogSuccess() {
       </details>
     </v-card>
 
-    <div v-if="loading" class="d-flex justify-center pa-8">
+    <LoadFeedback label="expenses" :error="loadError" :loading="loading" :stale="hasLoaded" @retry="fetchHistory" />
+    <LoadFeedback label="categories" :error="categoriesError" :loading="categoriesLoading" :stale="categoriesLoaded" @retry="fetchCategories" />
+    <div v-if="loading && !hasLoaded" class="d-flex justify-center pa-8">
       <v-progress-circular indeterminate aria-label="Loading history" />
     </div>
     <v-list v-else>
-      <v-list-item v-if="filteredItems.length === 0">
-        <v-list-item-title>No transactions found.</v-list-item-title>
+      <v-list-item v-if="hasLoaded && !loadError && filteredItems.length === 0">
+        <div v-if="search || categoryId !== null">
+          <p>No transactions match your filters.</p>
+          <v-btn min-height="44" variant="text" @click="search = ''; categoryId = null">Clear filters</v-btn>
+        </div>
+        <div v-else>
+          <p>No transactions for this month yet.</p>
+          <v-btn min-height="44" variant="text" @click="dialogOpen = true">Add transaction</v-btn>
+        </div>
       </v-list-item>
       <template v-for="(item, index) in filteredItems" :key="item.id">
         <v-list-subheader v-if="isNewMonth(index)" class="expense-month-group-header">
