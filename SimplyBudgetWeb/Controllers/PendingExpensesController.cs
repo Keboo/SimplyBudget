@@ -347,11 +347,16 @@ public class PendingExpensesController(
         var searchText = search.Trim();
         var hasSearchAmount = SearchAmountParser.TryParseAmountInCents(searchText, out var searchAmountInCents);
         var searchAmountAbs = Math.Abs(searchAmountInCents);
+        var searchAmountDigits = string.Concat(searchText.Where(char.IsDigit));
 
         return query.Where(x =>
             (x.Description != null && x.Description.Contains(searchText)) ||
             (x.SuggestedCategory != null && x.SuggestedCategory.Description != null && x.SuggestedCategory.Description.Contains(searchText)) ||
-            (hasSearchAmount && Math.Abs(x.Amount) == searchAmountAbs));
+            (hasSearchAmount && searchAmountDigits.Length > 0 &&
+             (Math.Abs(x.Amount) == searchAmountAbs ||
+              ((Math.Abs(x.Amount) / 100).ToString() +
+               (Math.Abs(x.Amount) % 100 < 10 ? "0" : string.Empty) +
+               (Math.Abs(x.Amount) % 100).ToString()).Contains(searchAmountDigits))));
     }
 }
 

@@ -48,14 +48,22 @@ public class HistoryController(
                 {
                     var hasSearchAmount = SearchAmountParser.TryParseAmountInCents(searchText, out var searchAmountInCents);
                     var searchAmountAbs = Math.Abs(searchAmountInCents);
+                    var searchAmountDigits = string.Concat(searchText.Where(char.IsDigit));
 
                     query = query.Where(x =>
                         (x.Description != null && x.Description.Contains(searchText)) ||
                         (x.Notes != null && x.Notes.Contains(searchText)) ||
                         x.Details!.Any(d => d.ExpenseCategory!.Description != null && d.ExpenseCategory.Description.Contains(searchText)) ||
-                        (hasSearchAmount &&
-                         (x.Details!.Any(d => Math.Abs(d.Amount) == searchAmountAbs) ||
-                          Math.Abs(x.Details!.Sum(d => d.Amount)) == searchAmountAbs)));
+                        (hasSearchAmount && searchAmountDigits.Length > 0 &&
+                         (x.Details!.Any(d =>
+                              Math.Abs(d.Amount) == searchAmountAbs ||
+                              ((Math.Abs(d.Amount) / 100).ToString() +
+                               (Math.Abs(d.Amount) % 100 < 10 ? "0" : string.Empty) +
+                               (Math.Abs(d.Amount) % 100).ToString()).Contains(searchAmountDigits)) ||
+                          Math.Abs(x.Details!.Sum(d => d.Amount)) == searchAmountAbs ||
+                          ((Math.Abs(x.Details!.Sum(d => d.Amount)) / 100).ToString() +
+                           (Math.Abs(x.Details!.Sum(d => d.Amount)) % 100 < 10 ? "0" : string.Empty) +
+                           (Math.Abs(x.Details!.Sum(d => d.Amount)) % 100).ToString()).Contains(searchAmountDigits))));
                 }
 
                 if (categoryId.HasValue)

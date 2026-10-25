@@ -53,6 +53,65 @@ public class HistoryControllerTests
     }
 
     [Test]
+    public async Task GetAll_FiltersByPartialAmount()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Groceries" };
+            context.ExpenseCategories.Add(category);
+            await context.SaveChangesAsync();
+
+            context.ExpenseCategoryItems.AddRange(
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 1, 10),
+                    Description = "Target purchase",
+                    Details = [new ExpenseCategoryItemDetail { Amount = -37997, ExpenseCategoryId = category.ID }],
+                },
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 1, 12),
+                    Description = "Other purchase",
+                    Details = [new ExpenseCategoryItemDetail { Amount = -2500, ExpenseCategoryId = category.ID }],
+                },
+                new ExpenseCategoryItem
+                {
+                    Date = new DateTime(2026, 1, 14),
+                    Description = "Small purchase",
+                    Details = [new ExpenseCategoryItemDetail { Amount = -5, ExpenseCategoryId = category.ID }],
+                });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new HistoryController(context);
+
+        foreach (var search in new[] { "379", ".79", "3" })
+        {
+            var result = await controller.GetAll(
+                month: new DateTime(2026, 1, 1),
+                search: search,
+                categoryId: null,
+                accountId: null);
+
+            await Assert.That(result.Length).IsEqualTo(1);
+            await Assert.That(result[0].Description).IsEqualTo("Target purchase");
+        }
+
+        var smallAmountResult = await controller.GetAll(
+            month: new DateTime(2026, 1, 1),
+            search: ".05",
+            categoryId: null,
+            accountId: null);
+
+        await Assert.That(smallAmountResult.Length).IsEqualTo(1);
+        await Assert.That(smallAmountResult[0].Description).IsEqualTo("Small purchase");
+    }
+
+    [Test]
     public async Task GetAll_ReturnsSelectedMonthItemsOrderedByOldestDateFirst()
     {
         AutoMocker mocker = new();
