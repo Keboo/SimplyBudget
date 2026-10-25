@@ -97,6 +97,7 @@ async function toggleReceipts() {
 describe('Receipts page', () => {
   afterEach(() => { document.body.innerHTML = '' })
   beforeEach(() => {
+    vi.stubGlobal('innerWidth', 1024)
     vi.stubGlobal('visualViewport', { addEventListener: vi.fn(), removeEventListener: vi.fn(), width: 375, height: 812, offsetTop: 0, offsetLeft: 0 })
     setActivePinia(createPinia())
     api.get.mockReset().mockResolvedValue([])
@@ -108,6 +109,35 @@ describe('Receipts page', () => {
     flatten.mockReset().mockResolvedValue(new Blob(['flat'], { type: 'image/jpeg' }))
     URL.createObjectURL = vi.fn(() => 'blob:preview')
     URL.revokeObjectURL = vi.fn()
+  })
+
+  it('drills into phone review and preserves drafts when returning to the list and switching receipts', async () => {
+    vi.stubGlobal('innerWidth', 390)
+    api.get.mockResolvedValue([receipt(), receipt({ id: 2, merchantName: 'Second shop' })])
+    const wrapper = await mountPage()
+    expect(document.querySelector('.v-dialog.v-overlay--active')).toBeNull()
+    await wrapper.get('[data-receipt-id="1"]').trigger('click')
+    const merchant = document.querySelector<HTMLInputElement>('.receipt-editor input')!
+    merchant.value = 'Draft cafe'
+    merchant.dispatchEvent(new Event('input', { bubbles: true }))
+    await clickDialogButton('Back to list')
+    await wrapper.get('[data-receipt-id="2"]').trigger('click')
+    expect(document.querySelector<HTMLInputElement>('.receipt-editor input')!.value).toBe('Second shop')
+    await clickDialogButton('Back to list')
+    await wrapper.get('[data-receipt-id="1"]').trigger('click')
+    expect(document.querySelector<HTMLInputElement>('.receipt-editor input')!.value).toBe('Draft cafe')
+    expect(api.put).not.toHaveBeenCalled()
+  })
+
+  it('opens focused phone review after upload succeeds', async () => {
+    vi.stubGlobal('innerWidth', 390)
+    api.upload.mockResolvedValue(receipt({ id: 7 }))
+    const wrapper = await mountPage()
+    await chooseFile(wrapper)
+    await uploadButton(wrapper).trigger('click')
+    await flushPromises()
+    expect(document.querySelector('.v-dialog.v-overlay--active')?.textContent).toContain('Save corrections')
+    expect(document.querySelector<HTMLInputElement>('.receipt-editor input')!.value).toBe('Corner Cafe')
   })
 
   it('shows an empty state and keeps upload disabled until an image is chosen', async () => {
