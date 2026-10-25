@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
-import type { HistoryItemDto, HistoryItemUpdateRequest, ExpenseCategoryDto, AccountDto, ReceiptDto } from '@/types'
+import type { HistoryItemDto, HistoryItemUpdateRequest, ExpenseCategoryDto, AccountDto, AccountBalanceSnapshotDto, ReceiptDto } from '@/types'
 import { useAuthStore } from '@/stores/auth'
 import { formatCents, formatMonth } from '@/utils/currency'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
@@ -39,6 +39,10 @@ const editNotesItem = ref<HistoryItemDto | null>(null)
 const editNotesDraft = ref('')
 const savingNotes = ref(false)
 const deleteItem = ref<HistoryItemDto | null>(null)
+const accountBalanceItem = ref<HistoryItemDto | null>(null)
+const itemAccountBalances = ref<AccountBalanceSnapshotDto[]>([])
+const itemAccountBalancesLoading = ref(false)
+const itemAccountBalancesError = ref(false)
 const dialogOpen = ref(false)
 const addRuleOpen = ref(false)
 const ruleSourceItem = ref<HistoryItemDto | null>(null)
@@ -46,6 +50,7 @@ const receiptDialogOpen = ref(false)
 const receiptToView = ref<ReceiptDto | null>(null)
 let realtimeRefreshInFlight = false
 let realtimeRefreshQueued = false
+let accountBalanceRequestId = 0
 
 const monthLabel = computed(() =>
   currentMonth.value.toLocaleString('default', { month: 'long', year: 'numeric' }),
@@ -151,6 +156,32 @@ async function handleDelete() {
 
 function totalForItem(item: HistoryItemDto) {
   return item.details.reduce((sum, d) => sum + d.amount, 0)
+}
+
+async function openAccountBalances(item: HistoryItemDto) {
+  const requestId = ++accountBalanceRequestId
+  accountBalanceItem.value = item
+  itemAccountBalances.value = []
+  itemAccountBalancesError.value = false
+  itemAccountBalancesLoading.value = true
+
+  try {
+    const balances = await apiClient.get<AccountBalanceSnapshotDto[]>(
+      `/api/history/${item.id}/account-balances`,
+    ) ?? []
+    if (requestId === accountBalanceRequestId) {
+      itemAccountBalances.value = balances
+    }
+  } catch {
+    if (requestId === accountBalanceRequestId) {
+      itemAccountBalancesError.value = true
+      snackbar.enqueueSnackbar('Failed to load account balances for this transaction', { variant: 'error' })
+    }
+  } finally {
+    if (requestId === accountBalanceRequestId) {
+      itemAccountBalancesLoading.value = false
+    }
+  }
 }
 
 function openAddRule(item: HistoryItemDto) {
@@ -280,7 +311,7 @@ function onDialogSuccess() {
           {{ monthGroupLabel(item.date) }}
         </v-list-subheader>
         <v-card class="mb-2">
-        <v-list-item>
+        <v-list-item class="history-item-clickable" @click="openAccountBalances(item)">
           <v-list-item-title>
             <div class="expense-row">
               <span class="expense-main">
@@ -299,6 +330,7 @@ function onDialogSuccess() {
                   rel="noopener noreferrer"
                   :aria-label="`Open ${link.name} link`"
                   :title="link.name"
+                  @click.stop
                 />
               </span>
               <span class="font-weight-bold expense-amount">{{ formatCents(totalForItem(item)) }}</span>
@@ -330,6 +362,7 @@ function onDialogSuccess() {
                   variant="text"
                   size="small"
                   aria-label="Transaction actions"
+                  @click.stop
                 />
               </template>
               <v-list density="compact">
@@ -366,6 +399,41 @@ function onDialogSuccess() {
     />
 
     <AddTransactionDialog v-model="dialogOpen" :categories="categories" @success="onDialogSuccess" />
+
+    <v-dialog
+      :model-value="!!accountBalanceItem"
+      max-width="480"
+      @update:model-value="(open: boolean) => !open && (accountBalanceItem = null)"
+    >
+      <v-card>
+        <v-card-title>Account balances after transaction</v-card-title>
+        <v-card-subtitle>
+          {{ accountBalanceItem?.description ?? '(No description)' }}
+          · {{ accountBalanceItem ? new Date(accountBalanceItem.date).toLocaleDateString() : '' }}
+        </v-card-subtitle>
+        <v-card-text>
+          <div v-if="itemAccountBalancesLoading" class="d-flex justify-center py-2">
+            <v-progress-circular size="20" indeterminate aria-label="Loading transaction account balances" />
+          </div>
+          <div v-else-if="itemAccountBalancesError" class="text-error">
+            Could not load account balances.
+          </div>
+          <div v-else-if="itemAccountBalances.length === 0" class="text-medium-emphasis">
+            No accounts found.
+          </div>
+          <v-list v-else density="compact">
+            <v-list-item v-for="account in itemAccountBalances" :key="account.id">
+              <v-list-item-title>{{ account.name ?? 'Unnamed account' }}</v-list-item-title>
+              <template #append>{{ formatCents(account.currentAmount) }}</template>
+            </v-list-item>
+          </v-list>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="accountBalanceItem = null">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <AddRuleDialog
       v-model="addRuleOpen"
@@ -443,6 +511,10 @@ function onDialogSuccess() {
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.65);
   padding-inline: 8px;
+}
+
+.history-item-clickable {
+  cursor: pointer;
 }
 
 .expense-row {

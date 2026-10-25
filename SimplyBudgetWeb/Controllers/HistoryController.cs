@@ -90,6 +90,43 @@ public class HistoryController(
             });
     }
 
+    [HttpGet("{id}/account-balances")]
+    public async Task<ActionResult<AccountBalanceSnapshotDto[]>> GetAccountBalancesAtItem(int id)
+    {
+        var item = await context.ExpenseCategoryItems
+            .Where(x => x.ID == id)
+            .Select(x => new { x.ID, x.Date })
+            .FirstOrDefaultAsync();
+        if (item is null) return NotFound();
+
+        var balances = await context.Accounts
+            .Select(account => new AccountBalanceSnapshotDto(
+                account.ID,
+                account.Name,
+                account.ExpenseCategories!.Sum(category => (int?)category.CurrentBalance) ?? 0))
+            .ToListAsync();
+
+        var laterAmountsByAccount = await context.ExpenseCategoryItemDetails
+            .Where(detail => detail.ExpenseCategory!.AccountID != null)
+            .Where(detail =>
+                detail.ExpenseCategoryItem!.Date > item.Date ||
+                (detail.ExpenseCategoryItem.Date == item.Date && detail.ExpenseCategoryItemId > item.ID))
+            .GroupBy(detail => detail.ExpenseCategory!.AccountID!.Value)
+            .Select(group => new
+            {
+                AccountId = group.Key,
+                Amount = group.Sum(detail => detail.Amount),
+            })
+            .ToDictionaryAsync(x => x.AccountId, x => x.Amount);
+
+        return balances
+            .Select(balance => balance with
+            {
+                CurrentAmount = balance.CurrentAmount - laterAmountsByAccount.GetValueOrDefault(balance.Id),
+            })
+            .ToArray();
+    }
+
     [HttpPut("{id}")]
     public async Task<ActionResult<HistoryItemDto>> Update(int id, [FromBody] HistoryItemUpdateRequest request)
     {
@@ -171,3 +208,9 @@ public record HistoryDetailDto(
 );
 
 public record HistoryItemUpdateRequest(string? Notes);
+
+public record AccountBalanceSnapshotDto(
+    int Id,
+    string? Name,
+    int CurrentAmount
+);
