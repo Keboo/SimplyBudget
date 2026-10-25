@@ -76,3 +76,71 @@ describe.each(cases)('$label recovery surface', entry => {
     expect(wrapper.text()).toContain(entry.path === '/api/budget' ? 'Manage categories' : entry.path === '/api/history' ? 'Add transaction' : 'Import transactions')
   })
 })
+
+describe.each(cases.filter(entry => entry.path !== '/api/pending-expenses'))('$label account feedback', entry => {
+  it.each([390, 1440])('keeps account recovery outside collapsed disclosures at %ipx', async width => {
+    const originalWidth = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
+    let accountRequest: Promise<unknown> = Promise.reject(new Error('Synthetic accounts offline'))
+    api.get.mockImplementation((url: string) => {
+      if (url.startsWith('/api/accounts?')) return accountRequest
+      return Promise.resolve(url.startsWith(entry.path + '?') ? entry.response : [])
+    })
+    const wrapper = mount(entry.component, { attachTo: document.body, global: { plugins: [createPinia(), createVuetify({ components, directives })], stubs: { RouterLink: true, AddTransactionDialog: true, AddRuleDialog: true } } })
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth })
+    await flushPromises()
+
+    const disclosure = wrapper.findAll('details').find(details => details.text().includes('Account balances through'))
+    if (disclosure) expect(disclosure.element.open).toBe(width >= 600)
+    const retry = wrapper.get('[aria-label="Retry account balances"]')
+    expect(retry.element.closest('details')).toBeNull()
+    expect(wrapper.text()).toContain('Synthetic accounts offline')
+    expect(wrapper.text()).not.toContain('No accounts found.')
+
+    let completeAccounts!: (value: unknown) => void
+    accountRequest = new Promise(resolve => { completeAccounts = resolve })
+    const requestsBefore = api.get.mock.calls.filter(([url]) => String(url).startsWith('/api/accounts?')).length
+    await retry.trigger('click')
+    expect(wrapper.find('[aria-label="Loading account balances"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('No accounts found.')
+    completeAccounts([{ id: 1, name: 'Synthetic checking', currentAmount: 12345 }])
+    await flushPromises()
+    expect(api.get.mock.calls.filter(([url]) => String(url).startsWith('/api/accounts?'))).toHaveLength(requestsBefore + 1)
+    expect(wrapper.text()).toContain('Synthetic checking')
+    expect(wrapper.text()).not.toContain('Synthetic accounts offline')
+    expect(wrapper.find('[aria-label="Loading account balances"]').exists()).toBe(false)
+
+    accountRequest = new Promise(resolve => { completeAccounts = resolve })
+    wrapper.getComponent(MonthPickerNav).vm.$emit('update:modelValue', new Date(2026, 9, 1))
+    await flushPromises()
+    const refreshing = wrapper.findAll('[role="status"]').find(status => status.text().includes('Refreshing account balances'))
+    expect(refreshing).toBeDefined()
+    expect(refreshing!.element.closest('details')).toBeNull()
+    expect(wrapper.text()).toContain('Synthetic checking')
+    completeAccounts([{ id: 1, name: 'Synthetic checking', currentAmount: 12345 }])
+    await flushPromises()
+
+    accountRequest = Promise.reject(new Error('Synthetic accounts offline'))
+    wrapper.getComponent(MonthPickerNav).vm.$emit('update:modelValue', new Date(2026, 9, 1))
+    await flushPromises()
+    const staleFeedback = wrapper.findAll('[role="alert"]').find(alert => alert.text().includes('Could not load account balances'))!
+    expect(staleFeedback.text()).toContain('Showing last loaded data; it may be out of date.')
+    expect(staleFeedback.element.closest('details')).toBeNull()
+    expect(wrapper.text()).toContain('Synthetic checking')
+
+    accountRequest = Promise.reject(new Error('Synthetic accounts offline'))
+    wrapper.getComponent(MonthPickerNav).vm.$emit('update:modelValue', new Date(2026, 10, 1))
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Synthetic checking')
+    expect(wrapper.text()).not.toContain('Showing last loaded data')
+    expect(wrapper.text()).not.toContain('No accounts found.')
+    expect(wrapper.get('[aria-label="Retry account balances"]').element.closest('details')).toBeNull()
+
+    accountRequest = Promise.resolve([])
+    await wrapper.get('[aria-label="Retry account balances"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('No accounts found.')
+    expect(wrapper.text()).not.toContain('Synthetic accounts offline')
+    expect(wrapper.find('[aria-label="Retry account balances"]').exists()).toBe(false)
+  })
+})

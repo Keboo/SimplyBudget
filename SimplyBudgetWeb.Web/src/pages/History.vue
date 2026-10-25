@@ -239,14 +239,14 @@ function onDialogSuccess() {
       />
     </v-card>
 
+    <LoadFeedback label="account balances" :error="accountError" :loading="accountLoading" :stale="accountsLoaded" @retry="fetchAccountBalances" />
     <v-card class="pa-4 mb-4">
       <div class="text-subtitle-2 mb-2">Account balances through {{ monthLabel }}</div>
-      <LoadFeedback label="account balances" :error="accountError" :loading="accountLoading" :stale="accountsLoaded" @retry="fetchAccountBalances" />
-      <div v-if="accountLoading && !accountsLoaded" class="d-flex justify-center py-2">
+      <div v-if="accountLoading" class="d-flex justify-center py-2">
         <v-progress-circular size="20" indeterminate aria-label="Loading account balances" />
       </div>
-      <div v-else-if="accountsLoaded && !accountError && accounts.length === 0" class="text-medium-emphasis">No accounts found.</div>
-      <div v-else class="d-flex flex-wrap" style="gap: 8px;">
+      <div v-if="accountsLoaded && !accountError && accounts.length === 0" class="text-medium-emphasis">No accounts found.</div>
+      <div v-else-if="accountsLoaded && accounts.length > 0" class="d-flex flex-wrap" style="gap: 8px;">
         <v-chip v-for="account in accounts" :key="account.id" size="small" variant="outlined">
           {{ account.name ?? 'Unnamed account' }}: {{ formatCents(account.currentAmount) }}
         </v-chip>
