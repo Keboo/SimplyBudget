@@ -197,6 +197,38 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
+    public async Task GetAll_FiltersByPartialAmount()
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+
+        await mocker.InDbScopeAsync(async context =>
+        {
+            context.PendingExpenses.AddRange(
+                new PendingExpense { Date = new DateTime(2026, 1, 1), Description = "Target purchase", Amount = 37997 },
+                new PendingExpense { Date = new DateTime(2026, 1, 2), Description = "Other purchase", Amount = 2500 },
+                new PendingExpense { Date = new DateTime(2026, 1, 3), Description = "Small purchase", Amount = 5 });
+            await context.SaveChangesAsync();
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var controller = new PendingExpensesController(context);
+
+        foreach (var search in new[] { "379", ".79", "3" })
+        {
+            var result = await controller.GetAll(search: search, assigneeId: null);
+
+            await Assert.That(result.Length).IsEqualTo(1);
+            await Assert.That(result[0].Description).IsEqualTo("Target purchase");
+        }
+
+        var smallAmountResult = await controller.GetAll(search: ".05", assigneeId: null);
+
+        await Assert.That(smallAmountResult.Length).IsEqualTo(1);
+        await Assert.That(smallAmountResult[0].Description).IsEqualTo("Small purchase");
+    }
+
+    [Test]
     public async Task GetAll_FiltersByAssignee()
     {
         AutoMocker mocker = new();
@@ -511,7 +543,7 @@ public class PendingExpensesControllerTests
     }
 
     [Test]
-    public async Task DeleteAll_WithAmountSearch_OnlyRemovesMatchingPendingExpenses()
+    public async Task DeleteAll_WithPartialAmountSearch_OnlyRemovesMatchingPendingExpenses()
     {
         AutoMocker mocker = new();
         mocker.WithDbContext<BudgetWebContext>();
@@ -527,7 +559,7 @@ public class PendingExpensesControllerTests
         using (var context = mocker.Get<BudgetWebContext>())
         {
             var controller = new PendingExpensesController(context);
-            await controller.DeleteAll(search: "12.34", assigneeId: null);
+            await controller.DeleteAll(search: "12", assigneeId: null);
         }
 
         await mocker.InDbScopeAsync(async context =>
