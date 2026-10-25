@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { useAuthStore } from '@/stores/auth'
@@ -14,6 +15,7 @@ import { createMonthUpdatesHubClient } from '@/services/monthUpdatesHub'
 const snackbar = useSnackbarStore()
 const router = useRouter()
 const authStore = useAuthStore()
+const { xs: phone } = useDisplay()
 
 const { currentMonth } = useMonthQueryParam()
 const budget = ref<BudgetResponse | null>(null)
@@ -215,7 +217,17 @@ function openCategoryHistory(category: BudgetCategoryDto) {
     </v-card>
 
     <v-card v-if="budget" class="pa-4 mb-4">
-      <div class="d-flex flex-wrap" style="gap: 16px;">
+      <div v-if="phone">
+        <div class="text-body-2">Total budget for {{ monthLabel }}</div>
+        <strong class="text-h5">{{ formatCents(budget.totalBudget) }}</strong>
+        <div class="text-body-2">{{ budget.categories.filter(category => category.currentBalance < 0).length }} categories over budget</div>
+        <details class="budget-details">
+          <summary>Income and account totals</summary>
+          <div>Estimated Monthly Income: {{ formatCents(budget.estimatedMonthlyIncome) }}</div>
+          <div>Total In Accounts: {{ formatCents(budget.totalAccountAmount) }}</div>
+        </details>
+      </div>
+      <div v-else class="d-flex flex-wrap" style="gap: 16px;">
         <span class="text-h5">Total Budget: <strong>{{ formatCents(budget.totalBudget) }}</strong></span>
         <span class="text-h5">Estimated Monthly Income: <strong>{{ formatCents(budget.estimatedMonthlyIncome) }}</strong></span>
         <span class="text-h5">Total In Accounts: <strong>{{ formatCents(budget.totalAccountAmount) }}</strong></span>
@@ -223,7 +235,8 @@ function openCategoryHistory(category: BudgetCategoryDto) {
     </v-card>
 
     <v-card class="pa-4 mb-4">
-      <div class="text-subtitle-2 mb-2">Account balances through {{ monthLabel }}</div>
+      <details :open="!phone" class="budget-details">
+      <summary class="text-subtitle-2">Account balances through {{ monthLabel }}</summary>
       <div v-if="accountLoading" class="d-flex justify-center py-2">
         <v-progress-circular size="20" indeterminate aria-label="Loading account balances" />
       </div>
@@ -233,6 +246,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
           {{ account.name ?? 'Unnamed account' }}: {{ formatCents(account.currentAmount) }}
         </v-chip>
       </div>
+      </details>
     </v-card>
 
     <div v-if="loading" class="d-flex justify-center pa-8">
@@ -260,6 +274,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                     <v-chip size="small" color="error" variant="outlined">Spent: {{ formatCents(cat.monthlyExpenses) }}</v-chip>
                     <v-chip size="small" :color="cat.currentBalance >= 0 ? 'success' : 'error'">Balance: {{ formatCents(cat.currentBalance) }}</v-chip>
                     <v-chip
+                      v-if="!phone"
                       size="small"
                       variant="outlined"
                       class="avg-spend-chip"
@@ -268,6 +283,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                       3mo avg: {{ formatCents(cat.threeMonthAverage) }}
                     </v-chip>
                     <v-chip
+                      v-if="!phone"
                       size="small"
                       variant="outlined"
                       class="avg-spend-chip"
@@ -276,6 +292,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                       6mo avg: {{ formatCents(cat.sixMonthAverage) }}
                     </v-chip>
                     <v-chip
+                      v-if="!phone"
                       size="small"
                       variant="outlined"
                       class="avg-spend-chip"
@@ -284,6 +301,12 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                       12mo avg: {{ formatCents(cat.twelveMonthAverage) }}
                     </v-chip>
                   </div>
+                  <details v-if="phone" class="budget-details" @click.stop @keydown.stop>
+                    <summary>Spending averages</summary>
+                    <div>3 months: {{ formatCents(cat.threeMonthAverage) }}</div>
+                    <div>6 months: {{ formatCents(cat.sixMonthAverage) }}</div>
+                    <div>12 months: {{ formatCents(cat.twelveMonthAverage) }}</div>
+                  </details>
                 </div>
                 <template #append>
                   <v-btn
@@ -389,6 +412,22 @@ function openCategoryHistory(category: BudgetCategoryDto) {
 </template>
 
 <style scoped>
+.budget-details > summary {
+  min-height: 44px;
+  display: list-item;
+  align-content: center;
+  cursor: pointer;
+  white-space: normal;
+}
+.budget-details :deep(.v-chip) {
+  max-width: 100%;
+  height: auto;
+  min-height: 24px;
+}
+.budget-details :deep(.v-chip__content) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .category-clickable-row {
   cursor: pointer;
 }
