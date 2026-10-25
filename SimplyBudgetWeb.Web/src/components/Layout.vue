@@ -44,9 +44,10 @@ function toggleTheme() {
 </script>
 
 <template>
-  <v-app-bar :height="phone ? 56 : 64">
+  <v-app-bar :height="phone ? 56 : 64" :class="{ 'phone-task-header': phone }">
     <v-toolbar-title :aria-live="phone ? 'polite' : undefined">
-      {{ phone ? taskTitle : 'Simply Budget' }}
+      <span v-if="phone">{{ taskTitle }}</span>
+      <v-btn v-else to="/budget" variant="text" class="text-h6 text-none">Simply Budget</v-btn>
     </v-toolbar-title>
 
     <template v-if="!phone">
@@ -130,6 +131,10 @@ function toggleTheme() {
 </template>
 
 <style scoped>
+.phone-task-header {
+  padding-top: env(safe-area-inset-top);
+  height: calc(56px + env(safe-area-inset-top)) !important;
+}
 .phone-navigation {
   padding-bottom: env(safe-area-inset-bottom);
   height: calc(64px + env(safe-area-inset-bottom)) !important;
@@ -139,7 +144,12 @@ function toggleTheme() {
   min-height: 44px;
 }
 .phone-content {
+  padding-top: calc(12px + env(safe-area-inset-top));
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+.phone-content :deep([aria-label="Add Transaction"]) {
+  bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+  right: 16px !important;
 }
 :deep(.v-btn:focus-visible), :deep(.v-list-item:focus-visible) {
   outline: 2px solid currentColor;
