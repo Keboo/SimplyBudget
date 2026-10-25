@@ -10,6 +10,8 @@ import { includesSearchText, tryParseSearchAmountInCents } from '@/utils/search'
 import ConvertPendingExpenseDialog from '@/components/ConvertPendingExpenseDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
 import AddRuleDialog from '@/components/AddRuleDialog.vue'
+import { useContextualLoad } from '@/composables/useContextualLoad'
+import LoadFeedback from '@/components/LoadFeedback.vue'
 
 const snackbar = useSnackbarStore()
 const { loadExternalLinkRules, externalLinksFor } = useExternalLinkRules()
@@ -17,10 +19,9 @@ const { loadExternalLinkRules, externalLinksFor } = useExternalLinkRules()
 const { currentMonth } = useMonthQueryParam()
 const search = ref('')
 const assigneeId = ref<number | null>(null)
-const items = ref<PendingExpenseDto[]>([])
-const assignees = ref<AssigneeDto[]>([])
-const categories = ref<ExpenseCategoryDto[]>([])
-const loading = ref(false)
+const { data: items, loading, error: loadError, hasLoaded, load: loadPending } = useContextualLoad<PendingExpenseDto[]>([], 'Failed to load pending expenses')
+const { data: assignees, loading: assigneesLoading, error: assigneesError, hasLoaded: assigneesLoaded, load: loadAssignees } = useContextualLoad<AssigneeDto[]>([], 'Failed to load assignees')
+const { data: categories, loading: categoriesLoading, error: categoriesError, hasLoaded: categoriesLoaded, load: loadCategories } = useContextualLoad<ExpenseCategoryDto[]>([], 'Failed to load categories')
 const discardItem = ref<PendingExpenseDto | null>(null)
 const convertItem = ref<PendingExpenseDto | null>(null)
 const convertDialogOpen = ref(false)
@@ -69,27 +70,16 @@ function buildFilters() {
 }
 
 async function fetchAssignees() {
-  try {
-    assignees.value = await apiClient.get<AssigneeDto[]>('/api/assignees') ?? []
-  } catch { /* ignore */ }
+  await loadAssignees('assignees', async () => await apiClient.get<AssigneeDto[]>('/api/assignees') ?? [])
 }
 
 async function fetchCategories() {
-  try {
-    categories.value = await apiClient.get<ExpenseCategoryDto[]>('/api/expense-categories') ?? []
-  } catch { /* ignore */ }
+  await loadCategories('categories', async () => await apiClient.get<ExpenseCategoryDto[]>('/api/expense-categories') ?? [])
 }
 
 async function fetchPendingExpenses() {
-  loading.value = true
-  try {
-    const query = buildFilters().toString()
-    items.value = await apiClient.get<PendingExpenseDto[]>(`/api/pending-expenses${query ? `?${query}` : ''}`) ?? []
-  } catch {
-    snackbar.enqueueSnackbar('Failed to load pending expenses', { variant: 'error' })
-  } finally {
-    loading.value = false
-  }
+  const query = buildFilters().toString()
+  await loadPending(query, async () => await apiClient.get<PendingExpenseDto[]>(`/api/pending-expenses${query ? `?${query}` : ''}`) ?? [])
 }
 
 async function updateAssignee(item: PendingExpenseDto, newAssigneeId: number | null) {
@@ -297,12 +287,22 @@ onMounted(() => {
       </v-btn>
     </v-card>
 
-    <div v-if="loading" class="d-flex justify-center pa-8">
+    <LoadFeedback label="pending expenses" :error="loadError" :loading="loading" :stale="hasLoaded" @retry="fetchPendingExpenses" />
+    <LoadFeedback label="assignees" :error="assigneesError" :loading="assigneesLoading" :stale="assigneesLoaded" @retry="fetchAssignees" />
+    <LoadFeedback label="categories" :error="categoriesError" :loading="categoriesLoading" :stale="categoriesLoaded" @retry="fetchCategories" />
+    <div v-if="loading && !hasLoaded" class="d-flex justify-center pa-8">
       <v-progress-circular indeterminate aria-label="Loading pending expenses" />
     </div>
     <v-list v-else>
-      <v-list-item v-if="filteredItems.length === 0">
-        <v-list-item-title>No pending expenses found.</v-list-item-title>
+      <v-list-item v-if="hasLoaded && !loadError && filteredItems.length === 0">
+        <div v-if="search || assigneeId !== null">
+          <p>No pending expenses match your filters.</p>
+          <v-btn min-height="44" variant="text" @click="search = ''; assigneeId = null">Clear filters</v-btn>
+        </div>
+        <div v-else>
+          <p>No pending expenses for this month.</p>
+          <v-btn to="/import" min-height="44" variant="text">Import transactions</v-btn>
+        </div>
       </v-list-item>
       <template v-for="(item, index) in filteredItems" :key="item.id">
         <v-list-subheader v-if="isNewMonth(index)" class="pending-month-group-header">
