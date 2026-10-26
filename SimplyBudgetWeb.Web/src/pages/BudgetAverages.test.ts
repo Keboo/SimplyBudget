@@ -71,16 +71,11 @@ describe('budget spending averages', () => {
     await flushPromises()
 
     const expectedAmounts = ['$48.98', '$37.82', '$33.91']
-    if (width < 600) {
-      const averages = wrapper.findAll('details').find(details => details.text().includes('Spending averages'))!
-      expect(averages.findAll('div').map(div => div.text())).toEqual(
-        expectedAmounts.map((amount, index) => `${[3, 6, 12][index]} months: ${amount}`),
-      )
-    } else {
-      expect(wrapper.findAll('.avg-spend-chip').map(chip => chip.text())).toEqual(
-        expectedAmounts.map((amount, index) => `${[3, 6, 12][index]}mo avg: ${amount}`),
-      )
-    }
+    const averages = wrapper.get<HTMLDetailsElement>('.category-clickable-row details')
+    expect(averages.element.open).toBe(false)
+    expect(averages.findAll('.v-chip').map(chip => chip.text())).toEqual(
+      expectedAmounts.map((amount, index) => `${[3, 6, 12][index]}mo avg: ${amount}`),
+    )
 
     await wrapper.get('[aria-label="Open category chart"]').trigger('click')
     await flushPromises()
