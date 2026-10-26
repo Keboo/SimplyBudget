@@ -307,8 +307,6 @@ public class ReceiptsController(
         var receipt = await context.Receipts.AsTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (receipt is null)
             return NotFound();
-        if (receipt.ProcessingStatus == "processing")
-            return Conflict("This receipt is still being analyzed. Try deleting it again when analysis finishes.");
 
         try
         {
