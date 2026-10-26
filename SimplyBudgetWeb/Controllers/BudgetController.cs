@@ -53,7 +53,7 @@ public class BudgetController(
 
         foreach (var category in categories)
         {
-            var items = await context.GetCategoryItemDetails(category);
+            var history = await CategorySpendingHistory.GetMonthlyExpenses(context, category.ID, monthDate, 12);
             var monthItems = await context.GetCategoryItemDetails(category, start, end);
 
             int monthlyExpenses = monthItems
@@ -79,9 +79,9 @@ public class BudgetController(
                 UsePercentage: category.UsePercentage,
                 MonthlyExpenses: monthlyExpenses,
                 MonthlyAllocations: monthlyAllocations,
-                ThreeMonthAverage: CalculateAverage(items, monthDate, 3),
-                SixMonthAverage: CalculateAverage(items, monthDate, 6),
-                TwelveMonthAverage: CalculateAverage(items, monthDate, 12)
+                ThreeMonthAverage: history.TakeLast(3).Average(point => point.Amount),
+                SixMonthAverage: history.TakeLast(6).Average(point => point.Amount),
+                TwelveMonthAverage: history.Average(point => point.Amount)
             ));
         }
 
@@ -115,18 +115,6 @@ public class BudgetController(
 
         return totalIncome / 3;
     }
-
-    private static int CalculateAverage(IList<ExpenseCategoryItemDetail> categoryItems, DateTime month, int numMonths)
-    {
-        var rangeStart = month.AddMonths(-numMonths);
-        int totalSpend = categoryItems
-            .Where(x => !x.IgnoreBudget && x.Amount < 0 &&
-                x.ExpenseCategoryItem?.Date >= rangeStart &&
-                x.ExpenseCategoryItem?.Date < month)
-            .Sum(x => -x.Amount);
-
-        return totalSpend / numMonths;
-    }
 }
 
 public record BudgetResponse(
@@ -150,7 +138,7 @@ public record BudgetCategoryDto(
     bool UsePercentage,
     int MonthlyExpenses,
     int MonthlyAllocations,
-    int ThreeMonthAverage,
-    int SixMonthAverage,
-    int TwelveMonthAverage
+    double ThreeMonthAverage,
+    double SixMonthAverage,
+    double TwelveMonthAverage
 );
