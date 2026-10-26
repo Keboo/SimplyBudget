@@ -548,6 +548,7 @@ describe('Receipts page', () => {
     await flushPromises()
     expect(api.post).toHaveBeenCalledWith('/api/pending-expenses/10/convert', expect.objectContaining({ receiptId: 1 }))
     await wrapper.setProps({ modelValue: false })
+    api.get.mockResolvedValue([])
     await wrapper.setProps({ modelValue: true })
     await flushPromises()
     expect(wrapper.getComponent({ name: 'VRadioGroup' }).props('modelValue')).toBe(null)
@@ -611,7 +612,7 @@ describe('Receipts page', () => {
     let finish!: (value: ReceiptDto[]) => void
     api.get.mockImplementation((url: string) => url === '/api/receipts'
       ? new Promise<ReceiptDto[]>(resolve => { finish = resolve })
-      : Promise.resolve([receipt()]))
+      : Promise.resolve([receipt(), receipt({ id: 2 })]))
     const wrapper = await conversionDialog()
     await clickDialogButton('Browse all pending receipts')
     if (action === 'switch') {
@@ -669,20 +670,55 @@ describe('Receipts page', () => {
     expect(api.post).toHaveBeenCalledWith('/api/pending-expenses/10/convert', expect.objectContaining({ receiptId: 7 }))
   })
 
-  it('opens matching receipts by default but preserves a manual collapse during refresh', async () => {
+  it('automatically selects the closest matching receipt and submits it', async () => {
+    api.get.mockResolvedValue([
+      receipt({ id: 3, merchantName: 'Two days off', transactionDate: '2026-03-06T00:00:00' }),
+      receipt({ id: 4, merchantName: 'Same day', transactionDate: '2026-03-04T00:00:00' }),
+    ])
+    await conversionDialog()
+    expect(dialogRadio('4').checked).toBe(true)
+    expect(receiptToggle().textContent).toContain('Same day')
+    await clickDialogButton('Apply')
+    expect(api.post).toHaveBeenCalledWith('/api/pending-expenses/10/convert', expect.objectContaining({ receiptId: 4 }))
+  })
+
+  it('does not guess between equally close matches', async () => {
+    api.get.mockResolvedValue([
+      receipt({ id: 3, transactionDate: '2026-03-03T00:00:00' }),
+      receipt({ id: 4, transactionDate: '2026-03-05T00:00:00' }),
+    ])
+    await conversionDialog()
+    expect(receiptToggle().textContent).toContain('2 suggested matches')
+    await clickDialogButton('Apply')
+    expect(api.post).toHaveBeenCalledWith('/api/pending-expenses/10/convert', expect.objectContaining({ receiptId: null }))
+  })
+
+  it('keeps an explicit "No receipt" choice when matches refresh', async () => {
     api.get.mockResolvedValue([receipt()])
     const wrapper = await conversionDialog()
+    expect(dialogRadio('1').checked).toBe(true)
+    wrapper.getComponent({ name: 'VRadioGroup' }).vm.$emit('update:modelValue', null)
+    await flushPromises()
+    await clickDialogButton('Refresh matches')
+    expect(dialogRadio('1').checked).toBe(false)
+    await clickDialogButton('Apply')
+    expect(api.post).toHaveBeenCalledWith('/api/pending-expenses/10/convert', expect.objectContaining({ receiptId: null }))
+  })
+
+  it('opens matching receipts by default but preserves a manual collapse during refresh', async () => {
+    api.get.mockResolvedValue([receipt(), receipt({ id: 2 })])
+    const wrapper = await conversionDialog()
     expect(receiptToggle().getAttribute('aria-expanded')).toBe('true')
-    expect(receiptToggle().textContent).toContain('1 suggested match')
+    expect(receiptToggle().textContent).toContain('2 suggested matches')
     let finish!: (value: ReceiptDto[]) => void
     api.get.mockImplementationOnce(() => new Promise<ReceiptDto[]>(resolve => { finish = resolve }))
     await clickDialogButton('Refresh matches')
     await toggleReceipts()
     expect(receiptToggle().getAttribute('aria-expanded')).toBe('false')
-    finish([receipt(), receipt({ id: 2 })])
+    finish([receipt(), receipt({ id: 2 }), receipt({ id: 3 })])
     await flushPromises()
     expect(receiptToggle().getAttribute('aria-expanded')).toBe('false')
-    expect(receiptToggle().textContent).toContain('2 suggested matches')
+    expect(receiptToggle().textContent).toContain('3 suggested matches')
     await wrapper.setProps({ modelValue: false })
     api.get.mockResolvedValue([])
     await wrapper.setProps({ modelValue: true })

@@ -50,6 +50,7 @@ const receiptMatches = ref<ReceiptDto[]>([])
 const receiptPanel = ref<number>()
 const receiptPanelTouched = ref(false)
 const receiptId = ref<number | null>(null)
+const receiptChosen = ref(false)
 const previewReceiptId = ref<number | null>(null)
 const loadingReceiptMatches = ref(false)
 const receiptMatchError = ref('')
@@ -102,6 +103,7 @@ watch(
   () => {
     receiptRequest++
     receiptId.value = null
+    receiptChosen.value = false
     receiptMatches.value = []
     receiptPanel.value = undefined
     receiptPanelTouched.value = false
@@ -144,6 +146,7 @@ async function loadReceiptMatches() {
     const matches = await apiClient.get<ReceiptDto[]>(`/api/receipts/matches?${params}`)
     if (session !== receiptRequest || request !== matchRequest) return
     receiptMatches.value = uniqueUnlinked(matches ?? [])
+    if (!receiptChosen.value && receiptId.value === null) receiptId.value = bestMatchId(receiptMatches.value, pending.date)
     if (!receiptPanelTouched.value) receiptPanel.value = receiptMatches.value.length ? 0 : undefined
   } catch (e: unknown) {
     if (session !== receiptRequest || request !== matchRequest) return
@@ -153,6 +156,18 @@ async function loadReceiptMatches() {
   } finally {
     if (session === receiptRequest && request === matchRequest) loadingReceiptMatches.value = false
   }
+}
+
+// Matches already share the expense total; pre-select the one closest in date, unless another
+// match is just as close and the choice would be a guess.
+function bestMatchId(matches: ReceiptDto[], expenseDate: string): number | null {
+  const day = (value: string) => Date.parse(value.split('T')[0]!) / 86_400_000
+  const ranked = matches
+    .filter(receipt => receipt.transactionDate)
+    .map(receipt => ({ id: receipt.id, distance: Math.abs(day(receipt.transactionDate!) - day(expenseDate)) }))
+    .sort((a, b) => a.distance - b.distance)
+  const [best, next] = ranked
+  return best && (!next || next.distance > best.distance) ? best.id : null
 }
 
 async function browsePendingReceipts() {
@@ -432,7 +447,7 @@ async function saveNote() {
                   {{ receiptMatchError }}
                   <v-btn variant="text" @click="loadReceiptMatches">Retry matches</v-btn>
                 </v-alert>
-                <v-radio-group v-model="receiptId" density="compact" hide-details>
+                <v-radio-group v-model="receiptId" density="compact" hide-details @update:model-value="receiptChosen = true">
                   <v-radio :value="null" label="No receipt" density="compact" />
                   <div v-if="receiptMatches.length" class="text-caption">Suggested matches</div>
                   <v-radio
