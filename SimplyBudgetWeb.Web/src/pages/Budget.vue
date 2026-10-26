@@ -248,7 +248,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
           <v-expansion-panel-title>
             <span class="font-weight-bold">{{ group.groupName }}</span>
           </v-expansion-panel-title>
-          <v-expansion-panel-text class="pa-0">
+          <v-expansion-panel-text class="pa-0 budget-category-panel">
             <v-list density="compact">
               <v-list-item
                 v-for="cat in group.items"
@@ -257,45 +257,43 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                 @click="openCategoryHistory(cat)"
               >
                 <div class="budget-category-content">
-                  <div class="budget-category-name mb-1">{{ cat.name ?? '(unnamed)' }}</div>
+                  <div class="budget-category-heading mb-1">
+                    <span class="budget-category-name">{{ cat.name ?? '(unnamed)' }}</span>
+                    <v-chip size="small" :color="cat.currentBalance >= 0 ? 'success' : 'error'">
+                      Balance: {{ formatCents(cat.currentBalance) }}
+                    </v-chip>
+                  </div>
                   <div v-if="cat.description" class="budget-category-description mb-1">{{ cat.description }}</div>
                   <div class="budget-chip-row d-flex flex-wrap mt-1" style="gap: 4px;">
                     <v-chip size="small">Budget: {{ cat.usePercentage ? `${cat.budgetedPercentage}%` : formatCents(cat.budgetedAmount) }}</v-chip>
+                    <v-chip size="small" variant="outlined" :title="`Allocated in ${monthLabel}`">Allocated: {{ formatCents(cat.monthlyAllocations) }}</v-chip>
                     <v-chip size="small" color="error" variant="outlined">Spent: {{ formatCents(cat.monthlyExpenses) }}</v-chip>
-                    <v-chip size="small" :color="cat.currentBalance >= 0 ? 'success' : 'error'">Balance: {{ formatCents(cat.currentBalance) }}</v-chip>
-                    <v-chip
-                      v-if="!phone"
-                      size="small"
-                      variant="outlined"
-                      class="avg-spend-chip"
-                      :color="getAverageChipColor(cat.usePercentage, cat.budgetedAmount, cat.threeMonthAverage)"
-                    >
-                      3mo avg: {{ formatCents(cat.threeMonthAverage) }}
-                    </v-chip>
-                    <v-chip
-                      v-if="!phone"
-                      size="small"
-                      variant="outlined"
-                      class="avg-spend-chip"
-                      :color="getAverageChipColor(cat.usePercentage, cat.budgetedAmount, cat.sixMonthAverage)"
-                    >
-                      6mo avg: {{ formatCents(cat.sixMonthAverage) }}
-                    </v-chip>
-                    <v-chip
-                      v-if="!phone"
-                      size="small"
-                      variant="outlined"
-                      class="avg-spend-chip"
-                      :color="getAverageChipColor(cat.usePercentage, cat.budgetedAmount, cat.twelveMonthAverage)"
-                    >
-                      12mo avg: {{ formatCents(cat.twelveMonthAverage) }}
-                    </v-chip>
                   </div>
-                  <details v-if="phone" class="budget-details" @click.stop @keydown.stop>
+                  <details class="budget-details" @click.stop @keydown.stop>
                     <summary>Spending averages</summary>
-                    <div>3 months: {{ formatCents(cat.threeMonthAverage) }}</div>
-                    <div>6 months: {{ formatCents(cat.sixMonthAverage) }}</div>
-                    <div>12 months: {{ formatCents(cat.twelveMonthAverage) }}</div>
+                    <div class="budget-chip-row d-flex flex-wrap" style="gap: 4px;">
+                      <v-chip
+                        size="small"
+                        variant="outlined"
+                        :color="getAverageChipColor(cat.usePercentage, cat.budgetedAmount, cat.threeMonthAverage)"
+                      >
+                        3mo avg: {{ formatCents(cat.threeMonthAverage) }}
+                      </v-chip>
+                      <v-chip
+                        size="small"
+                        variant="outlined"
+                        :color="getAverageChipColor(cat.usePercentage, cat.budgetedAmount, cat.sixMonthAverage)"
+                      >
+                        6mo avg: {{ formatCents(cat.sixMonthAverage) }}
+                      </v-chip>
+                      <v-chip
+                        size="small"
+                        variant="outlined"
+                        :color="getAverageChipColor(cat.usePercentage, cat.budgetedAmount, cat.twelveMonthAverage)"
+                      >
+                        12mo avg: {{ formatCents(cat.twelveMonthAverage) }}
+                      </v-chip>
+                    </div>
                   </details>
                 </div>
                 <template #append>
@@ -303,6 +301,8 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                     icon="mdi-chart-bar"
                     variant="text"
                     size="small"
+                    min-width="44"
+                    min-height="44"
                     aria-label="Open category chart"
                     @click.stop="openCategoryChart(cat)"
                   />
@@ -422,9 +422,32 @@ function openCategoryHistory(category: BudgetCategoryDto) {
   cursor: pointer;
 }
 
+.budget-category-panel :deep(.v-expansion-panel-text__wrapper) {
+  padding-inline: 8px;
+}
+
 .budget-category-content {
   white-space: normal;
   overflow: visible;
+  overflow-wrap: anywhere;
+}
+
+.budget-category-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.budget-category-content :deep(.v-chip) {
+  max-width: 100%;
+  height: auto;
+  min-height: 24px;
+}
+
+.budget-category-content :deep(.v-chip__content) {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .budget-category-name {
@@ -516,12 +539,5 @@ function openCategoryHistory(category: BudgetCategoryDto) {
   text-align: center;
   font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.75);
-}
-</style>
-<style scoped>
-@media (max-width: 720px) {
-  .avg-spend-chip {
-    display: none;
-  }
 }
 </style>
