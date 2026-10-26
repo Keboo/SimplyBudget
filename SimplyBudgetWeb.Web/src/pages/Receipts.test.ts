@@ -147,6 +147,16 @@ describe('Receipts page', () => {
     expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
   })
 
+  it('shows the most recently uploaded receipts first', async () => {
+    api.get.mockResolvedValue([
+      receipt({ id: 1, uploadedAtUtc: '2026-03-04T10:00:00Z' }),
+      receipt({ id: 2, uploadedAtUtc: '2026-03-06T10:00:00Z' }),
+    ])
+    const wrapper = await mountPage()
+
+    expect(wrapper.findAll('.v-list-item').map(item => item.attributes('data-receipt-id'))).toEqual(['2', '1'])
+  })
+
   it('defaults to the original photo without processing and enables upload', async () => {
     const wrapper = await mountPage()
 
@@ -316,7 +326,10 @@ describe('Receipts page', () => {
   })
 
   it('retains unsaved corrections across refreshes and receipt switches', async () => {
-    api.get.mockResolvedValue([receipt(), receipt({ id: 2, merchantName: 'Other store' })])
+    api.get.mockResolvedValue([
+      receipt(),
+      receipt({ id: 2, merchantName: 'Other store', uploadedAtUtc: '2026-03-03T10:00:00Z' }),
+    ])
     const wrapper = await mountPage()
     await wrapper.findAll('input').find(input => (input.element as HTMLInputElement).value === 'Corner Cafe')!.setValue('My correction')
     await wrapper.get('button[aria-label="Refresh receipts"]').trigger('click')
