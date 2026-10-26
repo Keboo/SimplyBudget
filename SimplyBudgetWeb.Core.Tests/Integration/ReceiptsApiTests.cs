@@ -258,7 +258,7 @@ public class ReceiptsApiTests
     }
 
     [Test]
-    public async Task Delete_RejectsProcessingReceiptsWithoutTouchingStorage()
+    public async Task Delete_RemovesProcessingReceiptAndLateAnalysisDoesNotRecreateIt()
     {
         var (factory, client) = await CreateAsync();
         using var _ = factory;
@@ -270,15 +270,17 @@ public class ReceiptsApiTests
         try
         {
             var response = await client.DeleteAsync($"/api/receipts/{receipt.Id}");
-            await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Conflict);
-            await Assert.That(factory.ImageStore.Blobs.Count).IsEqualTo(1);
-            await Assert.That((await client.GetFromJsonAsync<ReceiptDto>($"/api/receipts/{receipt.Id}"))!.ProcessingStatus).IsEqualTo("processing");
+            await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NoContent);
+            await Assert.That(factory.ImageStore.Blobs.Count).IsEqualTo(0);
+            await Assert.That((await client.GetFromJsonAsync<ReceiptDto[]>("/api/receipts"))!.Length).IsEqualTo(0);
         }
         finally
         {
             factory.Analyzer.Completion.TrySetResult(factory.Analyzer.Result);
-            await uploading;
         }
+        await Assert.That((await uploading).StatusCode).IsEqualTo(HttpStatusCode.NotFound);
+        await Assert.That((await client.GetFromJsonAsync<ReceiptDto[]>("/api/receipts"))!.Length).IsEqualTo(0);
+        await Assert.That(factory.ImageStore.Blobs.Count).IsEqualTo(0);
     }
 
     [Test]
