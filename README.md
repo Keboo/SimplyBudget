@@ -36,6 +36,13 @@ This template uses a `global.json` file to specify the required .NET SDK version
 
 ## Key Features
 
+### Budget spending averages
+
+Budget spending averages cover 3, 6, or 12 calendar months ending with the selected month
+(including that month), matching the category spending graph. Months without spending count as
+zero; transfers, credits, and items marked Ignore Budget are excluded. Averages retain fractional
+cents until currency formatting.
+
 ### Progressive Web App (PWA) Support
 Both the SimplyBudgetWeb.Web includes full PWA support with:
 - Service worker for offline functionality

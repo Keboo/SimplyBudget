@@ -1,4 +1,4 @@
-// All amounts are integer cents (divide by 100 for display)
+// All amounts are cents (divide by 100 for display); spending averages may include fractional cents.
 
 export interface BudgetCategoryDto {
   id: number

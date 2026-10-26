@@ -98,47 +98,8 @@ public class ExpenseCategoriesController(
         var category = await context.ExpenseCategories.FindAsync(id);
         if (category is null) return NotFound();
 
-        var monthDate = (month ?? DateTime.Today).StartOfMonth();
-        var rangeStart = monthDate.AddMonths(-(months - 1)).StartOfMonth();
-        var rangeEnd = monthDate.EndOfMonth();
-
-        var transferItemIds = await context.ExpenseCategoryItems
-            .Where(x => x.Date >= rangeStart && x.Date <= rangeEnd)
-            .Where(x => x.Details!.Count == 2 && x.Details.Sum(d => d.Amount) == 0)
-            .Select(x => x.ID)
-            .ToListAsync();
-
-        var monthlyExpenses = await context.ExpenseCategoryItemDetails
-            .Where(x => x.ExpenseCategoryId == id)
-            .Where(x => !x.IgnoreBudget && x.Amount < 0)
-            .Where(x => x.ExpenseCategoryItem!.Date >= rangeStart && x.ExpenseCategoryItem.Date <= rangeEnd)
-            .Where(x => !transferItemIds.Contains(x.ExpenseCategoryItemId))
-            .GroupBy(x => new
-            {
-                x.ExpenseCategoryItem!.Date.Year,
-                x.ExpenseCategoryItem.Date.Month,
-            })
-            .Select(g => new
-            {
-                g.Key.Year,
-                g.Key.Month,
-                Amount = g.Sum(x => -x.Amount),
-            })
-            .ToListAsync();
-
-        var monthlyTotals = monthlyExpenses.ToDictionary(
-            x => new DateTime(x.Year, x.Month, 1),
-            x => x.Amount);
-
-        var history = Enumerable.Range(0, months)
-            .Select(offset =>
-            {
-                var date = rangeStart.AddMonths(offset);
-                return new ExpenseCategoryMonthlyExpensePointDto(
-                    Month: date.ToString("yyyy-MM"),
-                    Amount: monthlyTotals.GetValueOrDefault(date, 0));
-            })
-            .ToArray();
+        var history = await CategorySpendingHistory.GetMonthlyExpenses(
+            context, id, month ?? DateTime.Today, months);
 
         return new ExpenseCategoryMonthlyExpensesDto(
             ExpenseCategoryId: category.ID,

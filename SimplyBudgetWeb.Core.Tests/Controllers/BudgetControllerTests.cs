@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Moq.AutoMock;
 using SimplyBudgetShared.Data;
+using SimplyBudgetShared.Utilities;
 using SimplyBudgetWeb.Controllers;
 using SimplyBudgetWeb.Data;
 
@@ -249,8 +250,89 @@ public class BudgetControllerTests
         var aprilBudget = await controller.Get(new DateTime(2026, 4, 1));
         var category = aprilBudget.Categories.Single();
 
-        await Assert.That(category.ThreeMonthAverage).IsEqualTo(0);
-        await Assert.That(category.SixMonthAverage).IsEqualTo(1000);
-        await Assert.That(category.TwelveMonthAverage).IsEqualTo(500);
+        await Assert.That(category.ThreeMonthAverage).IsEqualTo(0d);
+        await Assert.That(category.SixMonthAverage).IsEqualTo(500d);
+        await Assert.That(category.TwelveMonthAverage).IsEqualTo(500d);
+    }
+
+    [Test]
+    [Arguments(2026, 1)]
+    [Arguments(2026, 10)]
+    public async Task Get_CategoryAverages_MatchChartSpendingForSelectedMonth(int year, int month)
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+        var selectedMonth = new DateTime(year, month, 1);
+
+        int categoryId = await mocker.InDbScopeAsync(async context =>
+        {
+            var category = new ExpenseCategory { Name = "Car Insurance", BudgetedAmount = 14000 };
+            var other = new ExpenseCategory { Name = "Savings" };
+            context.ExpenseCategories.AddRange(category, other);
+            await context.SaveChangesAsync();
+
+            void AddExpense(DateTime date, int amount, bool ignored = false)
+            {
+                context.ExpenseCategoryItems.Add(new ExpenseCategoryItem
+                {
+                    Date = date,
+                    Details = [new ExpenseCategoryItemDetail
+                    {
+                        ExpenseCategoryId = category.ID, Amount = amount, IgnoreBudget = ignored,
+                    }],
+                });
+            }
+
+            AddExpense(selectedMonth.AddMonths(-12), -90000); // Outside the chart.
+            AddExpense(selectedMonth.AddMonths(-11), -12000);
+            AddExpense(selectedMonth.AddMonths(-6), -6000);
+            AddExpense(selectedMonth.AddMonths(-5), -5000);
+            AddExpense(selectedMonth.AddMonths(-3), -3000);
+            AddExpense(selectedMonth.AddMonths(-2), -2000);
+            AddExpense(selectedMonth, -12692);
+            AddExpense(selectedMonth.EndOfMonth(), -1);
+            AddExpense(selectedMonth.AddMonths(1), -80000);
+            AddExpense(selectedMonth, -70000, ignored: true);
+            AddExpense(selectedMonth, 40000);
+            context.ExpenseCategoryItems.Add(new ExpenseCategoryItem
+            {
+                Date = selectedMonth.AddMonths(-1),
+                Details =
+                [
+                    new ExpenseCategoryItemDetail { ExpenseCategoryId = category.ID, Amount = -50000 },
+                    new ExpenseCategoryItemDetail { ExpenseCategoryId = other.ID, Amount = 50000 },
+                ],
+            });
+            await context.SaveChangesAsync();
+            return category.ID;
+        });
+
+        using var context = mocker.Get<BudgetWebContext>();
+        context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
+        var budget = await new BudgetController(context).Get(selectedMonth.AddDays(14));
+        var chartResult = await new ExpenseCategoriesController(context)
+            .GetMonthlyExpenses(categoryId, selectedMonth.AddDays(14));
+        var chart = chartResult.Value!;
+        var category = budget.Categories.Single(c => c.Id == categoryId);
+
+        int[] expectedAmounts = [12000, 0, 0, 0, 0, 6000, 5000, 0, 3000, 2000, 0, 12693];
+        await Assert.That(chart.Months.Length).IsEqualTo(12);
+        for (int index = 0; index < expectedAmounts.Length; index++)
+        {
+            await Assert.That(chart.Months[index].Month)
+                .IsEqualTo(selectedMonth.AddMonths(index - 11).ToString("yyyy-MM"));
+            await Assert.That(chart.Months[index].Amount).IsEqualTo(expectedAmounts[index]);
+        }
+        await Assert.That(category.MonthlyExpenses).IsEqualTo(12693);
+        await Assert.That(category.ThreeMonthAverage).IsEqualTo(14693d / 3);
+        await Assert.That(category.SixMonthAverage).IsEqualTo(22693d / 6);
+        await Assert.That(category.TwelveMonthAverage).IsEqualTo(40693d / 12);
+        await Assert.That(category.ThreeMonthAverage).IsEqualTo(chart.Months.TakeLast(3).Average(p => p.Amount));
+        await Assert.That(category.SixMonthAverage).IsEqualTo(chart.Months.TakeLast(6).Average(p => p.Amount));
+        await Assert.That(category.TwelveMonthAverage).IsEqualTo(chart.Months.Average(p => p.Amount));
+        var emptyCategory = budget.Categories.Single(c => c.Id != categoryId);
+        await Assert.That(emptyCategory.ThreeMonthAverage).IsEqualTo(0d);
+        await Assert.That(emptyCategory.SixMonthAverage).IsEqualTo(0d);
+        await Assert.That(emptyCategory.TwelveMonthAverage).IsEqualTo(0d);
     }
 }
