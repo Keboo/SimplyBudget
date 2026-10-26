@@ -62,6 +62,12 @@ function maxSuggestedAmountFor(category: ExpenseCategoryDto): number {
   return Math.max(0, Math.min(budgetRemaining, availableToAllocate))
 }
 
+function negativeBalanceSuggestionFor(category: ExpenseCategoryDto): number {
+  const amountToCover = -Math.min(0, category.currentBalance)
+  const availableToAllocate = remainingCents.value + amountCentsFor(category.id)
+  return Math.max(0, Math.min(amountToCover, availableToAllocate))
+}
+
 function percentageAmountFor(category: ExpenseCategoryDto): number {
   return Math.round((category.budgetedPercentage / 100) * props.totalCents)
 }
@@ -90,6 +96,12 @@ defineExpose({ remainingCents })
 
 function applyRemainingBudget(category: ExpenseCategoryDto) {
   const amount = maxSuggestedAmountFor(category)
+  if (amount <= 0) return
+  setAmount(category.id, centsToDollars(amount))
+}
+
+function applyNegativeBalanceSuggestion(category: ExpenseCategoryDto) {
+  const amount = negativeBalanceSuggestionFor(category)
   if (amount <= 0) return
   setAmount(category.id, centsToDollars(amount))
 }
@@ -139,6 +151,21 @@ function applyPercentage(category: ExpenseCategoryDto) {
               {{ formatCents(remainingBudgetFor(category)) }}
             </span>
           </template>
+        </div>
+        <div v-if="category.currentBalance < 0" class="text-caption text-warning">
+          Suggested allocation:
+          <a
+            v-if="negativeBalanceSuggestionFor(category) > 0"
+            href="#"
+            class="allocation-link"
+            :aria-label="`Allocate ${formatCents(negativeBalanceSuggestionFor(category))} toward the negative balance for ${category.name}`"
+            @click.prevent="applyNegativeBalanceSuggestion(category)"
+          >
+            {{ formatCents(negativeBalanceSuggestionFor(category)) }}
+          </a>
+          <span v-else>
+            {{ totalCents > 0 ? 'No income remains to allocate.' : 'Enter an income amount to see a suggestion.' }}
+          </span>
         </div>
       </div>
       <AmountField
