@@ -70,25 +70,48 @@ describe('budget expense rows', () => {
     expect(row.get('.budget-chip-row').text()).toContain('Spent: $175.00')
   })
 
-  it.each([390, 1440])('keeps all averages in a closed disclosure at %ipx without navigating on interaction', async width => {
+  it.each([390, 1440])('reveals averages inline from an icon toggle at %ipx without navigating', async width => {
     vi.stubGlobal('innerWidth', width)
     const wrapper = await setup()
     const row = wrapper.get('.category-clickable-row')
-    const details = row.get('details')
-    expect(details.element.open).toBe(false)
-    expect(details.get('summary').text()).toBe('Spending averages')
-    expect(details.text()).toContain('3mo avg: $350.00')
-    expect(details.text()).toContain('6mo avg: $280.00')
-    expect(details.text()).toContain('12mo avg: $260.00')
+    expect(row.find('details').exists()).toBe(false)
+    const toggle = row.get('.budget-averages-toggle')
+    const averages = row.get('#budget-averages-1')
+    expect(toggle.attributes('aria-label')).toBe('Show spending averages')
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    expect(toggle.attributes('aria-controls')).toBe('budget-averages-1')
+    expect(averages.isVisible()).toBe(false)
+    expect(averages.element.parentElement).toBe(row.get('.budget-chip-row').element)
     expect(row.findAll('.v-chip').filter(chip => chip.text().includes('avg:'))
-      .every(chip => details.element.contains(chip.element))).toBe(true)
-    expect(details.findAll('.v-chip').map(chip => chip.classes().includes('text-error'))).toEqual([true, false, false])
-    await details.get('summary').trigger('click')
-    await details.get('summary').trigger('keydown', { key: 'Enter' })
+      .every(chip => averages.element.contains(chip.element))).toBe(true)
+
+    await toggle.trigger('click')
+    expect(averages.isVisible()).toBe(true)
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    expect(toggle.attributes('aria-label')).toBe('Hide spending averages')
+    expect(averages.findAll('.v-chip').map(chip => chip.text())).toEqual(['3mo avg: $350.00', '6mo avg: $280.00', '12mo avg: $260.00'])
+    expect(averages.findAll('.v-chip').map(chip => chip.classes().includes('text-error'))).toEqual([true, false, false])
+    await toggle.trigger('keydown', { key: 'Enter' })
+    await toggle.trigger('click')
+    expect(averages.isVisible()).toBe(false)
     expect(mocks.push).not.toHaveBeenCalled()
 
     await row.get('.budget-category-name').trigger('click')
     expect(mocks.push).toHaveBeenCalledExactlyOnceWith({ name: 'history', query: { categoryId: '1' } })
+  })
+
+  it('expands averages independently per category', async () => {
+    mocks.get.mockImplementation(async (url: string) => url.startsWith('/api/budget?')
+      ? { totalBudget: 30000, totalAccountAmount: 50000, estimatedMonthlyIncome: 40000, month: '2026-10', categories: [category, { ...category, id: 2, name: 'Gas' }] }
+      : [])
+    const wrapper = mount(Budget, {
+      attachTo: document.body,
+      global: { plugins: [createPinia(), createVuetify({ components, directives })], stubs: { AddTransactionDialog: true } },
+    })
+    await flushPromises()
+    await wrapper.get('[aria-controls="budget-averages-2"]').trigger('click')
+    expect(wrapper.get('#budget-averages-1').isVisible()).toBe(false)
+    expect(wrapper.get('#budget-averages-2').isVisible()).toBe(true)
   })
 
   it('refreshes the allocation and its month context when the selected month changes', async () => {

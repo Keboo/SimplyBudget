@@ -172,6 +172,18 @@ function getAverageChipColor(usePercentage: boolean, budgetedAmount: number, ave
   return !usePercentage && average > budgetedAmount ? 'error' : undefined
 }
 
+const expandedAverages = ref(new Set<number>())
+
+function isAveragesExpanded(categoryId: number): boolean {
+  return expandedAverages.value.has(categoryId)
+}
+
+function toggleAverages(categoryId: number) {
+  const next = new Set(expandedAverages.value)
+  if (!next.delete(categoryId)) next.add(categoryId)
+  expandedAverages.value = next
+}
+
 async function openCategoryChart(category: BudgetCategoryDto) {
   categoryChartDialogOpen.value = true
   categoryChartLoading.value = true
@@ -268,10 +280,25 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                     <v-chip size="small">Budget: {{ cat.usePercentage ? `${cat.budgetedPercentage}%` : formatCents(cat.budgetedAmount) }}</v-chip>
                     <v-chip size="small" variant="outlined" :title="`Allocated in ${monthLabel}`">Allocated: {{ formatCents(cat.monthlyAllocations) }}</v-chip>
                     <v-chip size="small" color="error" variant="outlined">Spent: {{ formatCents(cat.monthlyExpenses) }}</v-chip>
-                  </div>
-                  <details class="budget-details" @click.stop @keydown.stop>
-                    <summary>Spending averages</summary>
-                    <div class="budget-chip-row d-flex flex-wrap" style="gap: 4px;">
+                    <v-btn
+                      :icon="isAveragesExpanded(cat.id) ? 'mdi-chevron-left' : 'mdi-chart-timeline-variant'"
+                      :variant="isAveragesExpanded(cat.id) ? 'tonal' : 'text'"
+                      :aria-label="isAveragesExpanded(cat.id) ? 'Hide spending averages' : 'Show spending averages'"
+                      :title="isAveragesExpanded(cat.id) ? 'Hide spending averages' : 'Show spending averages'"
+                      :aria-expanded="isAveragesExpanded(cat.id) ? 'true' : 'false'"
+                      :aria-controls="`budget-averages-${cat.id}`"
+                      width="24"
+                      height="24"
+                      size="x-small"
+                      class="budget-averages-toggle"
+                      @click.stop="toggleAverages(cat.id)"
+                      @keydown.stop
+                    />
+                    <span
+                      v-show="isAveragesExpanded(cat.id)"
+                      :id="`budget-averages-${cat.id}`"
+                      class="budget-averages"
+                    >
                       <v-chip
                         size="small"
                         variant="outlined"
@@ -293,8 +320,8 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                       >
                         12mo avg: {{ formatCents(cat.twelveMonthAverage) }}
                       </v-chip>
-                    </div>
-                  </details>
+                    </span>
+                  </div>
                 </div>
                 <template #append>
                   <v-btn
@@ -426,6 +453,10 @@ function openCategoryHistory(category: BudgetCategoryDto) {
   padding-inline: 8px;
 }
 
+.budget-category-panel :deep(.v-list-item__content) {
+  overflow: visible;
+}
+
 .budget-category-content {
   white-space: normal;
   overflow: visible;
@@ -461,6 +492,28 @@ function openCategoryHistory(category: BudgetCategoryDto) {
   font-size: 0.875rem;
   line-height: 1.25rem;
   color: rgba(var(--v-theme-on-surface), 0.6);
+}
+
+.budget-chip-row {
+  align-items: center;
+}
+
+.budget-averages {
+  display: contents;
+}
+
+/* Visually matches chip height; the pseudo-element keeps a 44px touch target without growing the row. */
+.budget-averages-toggle {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+  margin-inline: 6px;
+}
+
+.budget-averages-toggle::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
 }
 
 .expense-chart {
