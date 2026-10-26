@@ -71,6 +71,50 @@ describe('IncomeAllocationList', () => {
     expect(wrapper.text()).toContain('Current: $133.83')
   })
 
+  it('suggests an allocation to cover a negative balance', async () => {
+    const wrapper = mountList([category({ currentBalance: -27734 })])
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Suggested allocation:')
+    const suggestion = wrapper.get(
+      '[aria-label="Allocate $277.34 toward the negative balance for Groceries"]',
+    )
+    expect(suggestion.text()).toBe('$277.34')
+
+    await suggestion.trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[{ 1: '277.34' }]])
+  })
+
+  it('limits a negative-balance suggestion to the income still available', async () => {
+    const wrapper = mountList(
+      [category({ currentBalance: -27734 }), category({ id: 2, name: 'Rent' })],
+      { 2: '400.00' },
+    )
+    await flushPromises()
+
+    const suggestion = wrapper.get(
+      '[aria-label="Allocate $100.00 toward the negative balance for Groceries"]',
+    )
+    expect(suggestion.text()).toBe('$100.00')
+
+    await suggestion.trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[
+      { 2: '400.00', 1: '100.00' },
+    ]])
+  })
+
+  it('prompts for an income amount when a negative balance has no available suggestion', async () => {
+    const wrapper = mountList([category({ currentBalance: -27734 })])
+    await flushPromises()
+    await wrapper.setProps({ totalCents: 0 })
+
+    expect(wrapper.text()).toContain('Suggested allocation:')
+    expect(wrapper.text()).toContain('Enter an income amount to see a suggestion.')
+    expect(wrapper.find('[aria-label^="Allocate "]').exists()).toBe(false)
+  })
+
   it('updates Current when the category balance changes, not when draft allocations change', async () => {
     const wrapper = mountList([category({ usePercentage: true, budgetedPercentage: 10 })])
     await flushPromises()
