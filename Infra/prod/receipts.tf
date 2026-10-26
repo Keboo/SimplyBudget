@@ -71,13 +71,14 @@ resource "azurerm_role_assignment" "app_identity_receipt_document_intelligence" 
 
 # Microsoft Foundry resource hosting a vision-capable model that locates the four corners of
 # the receipt paper. The app crops/perspective-corrects locally from those corners.
+# It has its own region because OpenAI model access and quota differ per region.
 resource "azurerm_cognitive_account" "receipt_foundry" {
-  name                  = "simplybudget-${lower(local.environment)}-foundry-${random_string.receipt_storage_suffix.result}"
-  location              = azurerm_resource_group.app.location
+  name                  = "simplybudget-${lower(local.environment)}-foundry-${var.receipt_foundry_location}-${random_string.receipt_storage_suffix.result}"
+  location              = var.receipt_foundry_location
   resource_group_name   = azurerm_resource_group.app.name
   kind                  = "AIServices"
   sku_name              = "S0"
-  custom_subdomain_name = "simplybudget-${lower(local.environment)}-foundry-${random_string.receipt_storage_suffix.result}"
+  custom_subdomain_name = "simplybudget-${lower(local.environment)}-foundry-${var.receipt_foundry_location}-${random_string.receipt_storage_suffix.result}"
   local_auth_enabled    = false
 
   tags = local.tags
@@ -94,7 +95,7 @@ resource "azurerm_cognitive_deployment" "receipt_corners" {
   }
 
   sku {
-    name     = "GlobalStandard"
+    name     = var.receipt_corner_model_sku
     capacity = var.receipt_corner_model_capacity
   }
 }
