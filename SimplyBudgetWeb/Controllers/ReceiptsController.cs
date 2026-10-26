@@ -114,6 +114,50 @@ public class ReceiptsController(
         }
     }
 
+    [HttpPost("detect-corners")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(MaximumImageBytes + 1024 * 1024)]
+    public async Task<ActionResult<ReceiptCornerDetectionDto>> DetectCorners(
+        [FromForm] IFormFile? image,
+        [FromServices] IReceiptCornerDetector cornerDetector,
+        CancellationToken cancellationToken)
+    {
+        if (image is null || image.Length == 0)
+            return BadRequest("An image is required.");
+        if (image.Length > MaximumImageBytes)
+            return BadRequest("Receipt images must be 15 MB or smaller.");
+        if (!SupportedImageTypes.TryGetValue(Path.GetExtension(image.FileName), out var contentType) ||
+            !string.Equals(image.ContentType, contentType, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest("Upload a JPEG, PNG, or WebP receipt image.");
+        }
+
+        await using var buffer = new MemoryStream((int)image.Length);
+        await image.CopyToAsync(buffer, cancellationToken);
+        var bytes = buffer.ToArray();
+        if (!HasExpectedImageSignature(bytes, contentType))
+            return BadRequest("The uploaded file does not contain a valid image.");
+
+        try
+        {
+            return new ReceiptCornerDetectionDto(await cornerDetector.DetectAsync(bytes, contentType, cancellationToken));
+        }
+        catch (ReceiptIntegrationNotConfiguredException exception)
+        {
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable, detail: exception.Message);
+        }
+        catch (AuthenticationFailedException exception)
+        {
+            logger.LogWarning(exception, "Receipt corner detection could not authenticate.");
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable, detail: "Automatic receipt cropping is unavailable.");
+        }
+        catch (ReceiptCornerDetectionFailedException exception)
+        {
+            logger.LogWarning(exception, "Receipt corner detection failed.");
+            return Problem(statusCode: StatusCodes.Status502BadGateway, detail: "Automatic receipt cropping failed. Adjust the corners manually.");
+        }
+    }
+
     [HttpPost]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(MaximumImageBytes + 1024 * 1024)]
@@ -377,6 +421,8 @@ public class ReceiptsController(
     private static string? Normalize(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
+
+public record ReceiptCornerDetectionDto(ReceiptImageGeometry? Geometry);
 
 public record ReceiptLineItemUpdateRequest(string Description, int AmountCents);
 

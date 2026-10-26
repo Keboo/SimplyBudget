@@ -92,3 +92,21 @@ variable "frontend_custom_domain" {
   type        = string
   default     = ""
 }
+
+variable "receipt_corner_model_name" {
+  description = "Vision-capable Foundry model used to locate receipt corners for automatic cropping."
+  type        = string
+  default     = "gpt-4.1"
+}
+
+variable "receipt_corner_model_version" {
+  description = "Version of the receipt corner detection model."
+  type        = string
+  default     = "2025-04-14"
+}
+
+variable "receipt_corner_model_capacity" {
+  description = "Deployment capacity (thousands of tokens per minute) for the receipt corner detection model."
+  type        = number
+  default     = 10
+}

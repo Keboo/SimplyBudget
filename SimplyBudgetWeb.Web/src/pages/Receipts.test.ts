@@ -16,8 +16,10 @@ const api = vi.hoisted(() => ({
   post: vi.fn(),
 }))
 const flatten = vi.hoisted(() => vi.fn())
+const detect = vi.hoisted(() => vi.fn())
 
 vi.mock('@/services/apiClient', () => ({ apiClient: api }))
+vi.mock('@/services/receiptCornerDetection', () => ({ detectReceiptCorners: detect }))
 vi.mock('@/utils/receiptImage', async importOriginal => ({
   ...await importOriginal<typeof import('@/utils/receiptImage')>(),
   flattenReceiptImage: flatten,
@@ -107,6 +109,7 @@ describe('Receipts page', () => {
     api.post.mockReset().mockResolvedValue(undefined)
     api.download.mockReset().mockResolvedValue({ blob: new Blob(['img']), fileName: null })
     flatten.mockReset().mockResolvedValue(new Blob(['flat'], { type: 'image/jpeg' }))
+    detect.mockReset().mockResolvedValue(null)
     URL.createObjectURL = vi.fn(() => 'blob:preview')
     URL.revokeObjectURL = vi.fn()
   })
@@ -178,6 +181,51 @@ describe('Receipts page', () => {
     expect(wrapper.text()).toContain('Image processing did not initialize')
     expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
     await wrapper.findAll('button').find(button => button.text() === 'Skip — use original')!.trigger('click')
+    expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
+  })
+
+  it('auto-crops to AI-detected receipt corners and uploads that geometry with the untouched original', async () => {
+    const detected = { version: 1, corners: [{ x: 0.2, y: 0.1 }, { x: 0.8, y: 0.12 }, { x: 0.78, y: 0.9 }, { x: 0.22, y: 0.88 }] }
+    detect.mockResolvedValue(detected)
+    api.upload.mockResolvedValue(receipt())
+    const wrapper = await mountPage()
+    await chooseFile(wrapper)
+
+    expect(detect).toHaveBeenCalledWith(expect.any(File))
+    expect(flatten).toHaveBeenCalledWith(expect.any(File), detected)
+    expect(wrapper.find('img[alt="Flattened receipt preview"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Receipt cropped automatically')
+    expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
+    await uploadButton(wrapper).trigger('click')
+    await flushPromises()
+    const form = api.upload.mock.calls[0]![1] as FormData
+    expect(JSON.parse(form.get('imageGeometry') as string)).toEqual(detected)
+    expect((form.get('image') as File).size).toBe(3)
+  })
+
+  it('keeps upload blocked while detecting, and skipping discards a late detection', async () => {
+    let finish!: (value: unknown) => void
+    detect.mockImplementation(() => new Promise(resolve => { finish = resolve }))
+    api.upload.mockResolvedValue(receipt())
+    const wrapper = await mountPage()
+    await chooseFile(wrapper)
+    expect(wrapper.text()).toContain('Finding the receipt edges')
+    expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
+    await wrapper.findAll('button').find(button => button.text() === 'Skip — use original')!.trigger('click')
+    finish({ version: 1, corners: imageBoundary().corners })
+    await flushPromises()
+    expect(flatten).not.toHaveBeenCalled()
+    await uploadButton(wrapper).trigger('click')
+    await flushPromises()
+    expect((api.upload.mock.calls[0]![1] as FormData).get('imageGeometry')).toBeNull()
+  })
+
+  it('falls back to the original with an explanation when automatic cropping fails', async () => {
+    detect.mockRejectedValue(new Error('Automatic receipt cropping is not configured.'))
+    const wrapper = await mountPage()
+    await chooseFile(wrapper)
+    expect(flatten).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Automatic receipt cropping is not configured.')
     expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
   })
 

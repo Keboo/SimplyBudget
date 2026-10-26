@@ -358,6 +358,8 @@ module "backend_container_app" {
       Receipts__StorageAccountUri             = azurerm_storage_account.receipts.primary_blob_endpoint
       Receipts__StorageContainer              = azurerm_storage_container.receipts.name
       Receipts__DocumentIntelligenceEndpoint  = azurerm_cognitive_account.receipt_document_intelligence.endpoint
+      Receipts__FoundryEndpoint               = "https://${azurerm_cognitive_account.receipt_foundry.custom_subdomain_name}.openai.azure.com/"
+      Receipts__FoundryCornerDeployment       = azurerm_cognitive_deployment.receipt_corners.name
     },
     var.frontend_custom_domain != "" ? { AllowedOrigins__1 = var.frontend_custom_domain } : {}
   )
@@ -367,7 +369,8 @@ module "backend_container_app" {
     module.static_web_app,
     terraform_data.setup_database_principal,
     azurerm_role_assignment.app_identity_receipt_storage,
-    azurerm_role_assignment.app_identity_receipt_document_intelligence
+    azurerm_role_assignment.app_identity_receipt_document_intelligence,
+    azurerm_role_assignment.app_identity_receipt_foundry
   ]
 }
 

@@ -103,6 +103,10 @@ builder.Services.AddScoped<IBudgetMonthUpdateNotifier, BudgetMonthUpdateNotifier
 builder.Services.AddSingleton<IBudgetMonthDataCache, BudgetMonthDataCache>();
 builder.Services.AddSingleton<IReceiptImageStore, AzureReceiptImageStore>();
 builder.Services.AddSingleton<IReceiptAnalyzer, AzureReceiptAnalyzer>();
+builder.Services.AddHttpClient(FoundryReceiptCornerDetector.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(90));
+builder.Services.AddSingleton<IReceiptCornerDetector>(services => new FoundryReceiptCornerDetector(
+    services.GetRequiredService<IConfiguration>(),
+    services.GetRequiredService<IHttpClientFactory>()));
 
 var app = builder.Build();
 

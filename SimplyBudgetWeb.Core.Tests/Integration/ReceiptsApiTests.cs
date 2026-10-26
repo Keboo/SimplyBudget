@@ -35,6 +35,54 @@ public class ReceiptsApiTests
     }
 
     [Test]
+    public async Task DetectCorners_ReturnsDetectedGeometryWithoutStoringTheImage()
+    {
+        var (factory, client) = await CreateAsync();
+        using var _ = factory;
+        ReceiptImageGeometry.TryParse(GeometryJson, out var geometry);
+        factory.CornerDetector.Result = geometry;
+
+        using var form = ImageForm(JpegBytes, "receipt.jpg", "image/jpeg");
+        var response = await client.PostAsync("/api/receipts/detect-corners", form);
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<ReceiptCornerDetectionDto>();
+        await Assert.That(result!.Geometry!.ToJson()).IsEqualTo(GeometryJson);
+        await Assert.That(factory.CornerDetector.Calls.Single().Image).IsEquivalentTo(JpegBytes);
+        await Assert.That(factory.CornerDetector.Calls.Single().ContentType).IsEqualTo("image/jpeg");
+        await Assert.That(factory.ImageStore.Blobs.Count).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task DetectCorners_MapsUnconfiguredAndFailedDetectionAndRejectsNonImages()
+    {
+        var (factory, client) = await CreateAsync();
+        using var _ = factory;
+
+        factory.CornerDetector.Exception = new ReceiptIntegrationNotConfiguredException("Automatic receipt cropping is not configured.");
+        using (var form = ImageForm(JpegBytes, "receipt.jpg", "image/jpeg"))
+        {
+            var response = await client.PostAsync("/api/receipts/detect-corners", form);
+            await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.ServiceUnavailable);
+            await Assert.That(await response.Content.ReadAsStringAsync()).Contains("not configured");
+        }
+
+        factory.CornerDetector.Exception = new ReceiptCornerDetectionFailedException("bad output");
+        using (var form = ImageForm(JpegBytes, "receipt.jpg", "image/jpeg"))
+        {
+            var response = await client.PostAsync("/api/receipts/detect-corners", form);
+            await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadGateway);
+        }
+
+        using (var form = ImageForm([1, 2, 3, 4], "receipt.jpg", "image/jpeg"))
+        {
+            var response = await client.PostAsync("/api/receipts/detect-corners", form);
+            await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+        }
+        await Assert.That(factory.CornerDetector.Calls.Count).IsEqualTo(2);
+    }
+
+    [Test]
     public async Task Upload_StoresImageExtractsDetailsAndAllowsReviewFlow()
     {
         var (factory, client) = await CreateAsync();
