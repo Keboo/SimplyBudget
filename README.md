@@ -128,8 +128,22 @@ Document Intelligence endpoint. The local developer identity (for example, the i
 $env:Receipts__StorageAccountUri = "https://<storage-account>.blob.core.windows.net/"
 $env:Receipts__StorageContainer = "receipts"
 $env:Receipts__DocumentIntelligenceEndpoint = "https://<document-intelligence>.cognitiveservices.azure.com/"
+$env:Receipts__FoundryEndpoint = "https://<foundry-resource>.openai.azure.com/"
+$env:Receipts__FoundryCornerDeployment = "gpt-4.1"
 aspire run
 ```
+
+Receipt photos are cropped automatically: when a photo is selected, the browser sends an
+EXIF-oriented, downscaled copy to `POST /api/receipts/detect-corners`, which asks a vision model
+deployed in Microsoft Foundry (`Receipts:FoundryEndpoint` + `Receipts:FoundryCornerDeployment`,
+Terraform default `gpt-4.1`) for the approximate receipt corners and which way its header faces.
+The model only returns coordinates; the browser then snaps them to the paper edges it finds in the
+pixels (a bright receipt on a darker background, keeping the model's outline when the edges are
+unclear) and crops and perspective-corrects the original pixels with those corners.
+The result can be adjusted with **Adjust corners** or discarded with **Skip — use original**, and the
+untouched original is always uploaded alongside the corners. If Foundry is not configured or no
+receipt is found, the photo falls back to manual corner adjustment. The app identity (or your local
+developer identity) needs the **Cognitive Services OpenAI User** role on the Foundry resource.
 
 Receipt photos are perspective-corrected in the browser before upload. The detected merchant,
 transaction date, total, and available line items can be edited on the Receipts page. Suggested

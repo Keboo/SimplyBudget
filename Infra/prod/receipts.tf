@@ -68,3 +68,39 @@ resource "azurerm_role_assignment" "app_identity_receipt_document_intelligence" 
   role_definition_name = "Cognitive Services User"
   principal_id         = azurerm_user_assigned_identity.app_identity.principal_id
 }
+
+# Microsoft Foundry resource hosting a vision-capable model that locates the four corners of
+# the receipt paper. The app crops/perspective-corrects locally from those corners.
+resource "azurerm_cognitive_account" "receipt_foundry" {
+  name                  = "simplybudget-${lower(local.environment)}-foundry-${random_string.receipt_storage_suffix.result}"
+  location              = azurerm_resource_group.app.location
+  resource_group_name   = azurerm_resource_group.app.name
+  kind                  = "AIServices"
+  sku_name              = "S0"
+  custom_subdomain_name = "simplybudget-${lower(local.environment)}-foundry-${random_string.receipt_storage_suffix.result}"
+  local_auth_enabled    = false
+
+  tags = local.tags
+}
+
+resource "azurerm_cognitive_deployment" "receipt_corners" {
+  name                 = var.receipt_corner_model_name
+  cognitive_account_id = azurerm_cognitive_account.receipt_foundry.id
+
+  model {
+    format  = "OpenAI"
+    name    = var.receipt_corner_model_name
+    version = var.receipt_corner_model_version
+  }
+
+  sku {
+    name     = "GlobalStandard"
+    capacity = var.receipt_corner_model_capacity
+  }
+}
+
+resource "azurerm_role_assignment" "app_identity_receipt_foundry" {
+  scope                = azurerm_cognitive_account.receipt_foundry.id
+  role_definition_name = "Cognitive Services OpenAI User"
+  principal_id         = azurerm_user_assigned_identity.app_identity.principal_id
+}

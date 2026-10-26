@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { ReceiptImageGeometry, ReceiptImagePoint } from '@/types'
+import { detectReceiptCorners } from '@/services/receiptCornerDetection'
 import { flattenReceiptImage, imageBoundary, validGeometry } from '@/utils/receiptImage'
 
 const props = defineProps<{ file: File; originalUrl: string; disabled?: boolean }>()
@@ -11,6 +12,9 @@ const emit = defineEmits<{
 const corners = ref(imageBoundary())
 const editing = ref(false)
 const processing = ref(false)
+const detecting = ref(false)
+const autoCropped = ref(false)
+const detectionMessage = ref('')
 const flatUrl = ref('')
 const error = ref('')
 const stage = ref<HTMLElement | null>(null)
@@ -27,7 +31,8 @@ function release() {
 
 function edit() {
   generation++
-  processing.value = false
+  processing.value = detecting.value = autoCropped.value = false
+  detectionMessage.value = ''
   editing.value = true
   error.value = ''
   emit('busy', true)
@@ -48,7 +53,7 @@ function rotate() {
 function skip() {
   generation++
   dragging = null
-  editing.value = processing.value = false
+  editing.value = processing.value = detecting.value = autoCropped.value = false
   release()
   error.value = ''
   emit('geometry', null)
@@ -91,9 +96,7 @@ function numericMove(event: Event, index: number, axis: 'x' | 'y') {
   if (Number.isFinite(value)) move(index, { ...corners.value.corners[index]!, [axis]: value / 100 })
 }
 
-async function apply() {
-  if (!valid.value || processing.value || props.disabled) return
-  const current = ++generation
+async function flatten(current: number): Promise<boolean> {
   const geometry: ReceiptImageGeometry = {
     version: 1,
     corners: corners.value.corners.map(point => ({ ...point })) as ReceiptImageGeometry['corners'],
@@ -102,23 +105,59 @@ async function apply() {
   error.value = ''
   try {
     const blob = await flattenReceiptImage(props.file, geometry)
-    if (current !== generation) return
+    if (current !== generation) return false
     release()
     flatUrl.value = URL.createObjectURL(blob)
     editing.value = false
     emit('geometry', geometry)
     emit('busy', false)
+    return true
   } catch (e: unknown) {
     if (current === generation) error.value = e instanceof Error ? e.message : 'Could not flatten this image. You can still use the original.'
+    return false
   } finally {
     if (current === generation) processing.value = false
+  }
+}
+
+async function apply() {
+  if (!valid.value || processing.value || props.disabled) return
+  await flatten(++generation)
+}
+
+// Ask the Foundry vision model for the receipt's paper corners, then crop locally.
+async function autoDetect() {
+  const current = ++generation
+  detecting.value = true
+  detectionMessage.value = ''
+  emit('busy', true)
+  try {
+    const detected = await detectReceiptCorners(props.file)
+    if (current !== generation) return
+    detecting.value = false
+    if (!detected) {
+      detectionMessage.value = 'The receipt edges were not found automatically. Adjust the corners manually if needed.'
+      emit('busy', false)
+      return
+    }
+    corners.value = detected
+    autoCropped.value = await flatten(current)
+    if (!autoCropped.value && current === generation) emit('busy', false)
+  } catch (e: unknown) {
+    if (current !== generation) return
+    detecting.value = false
+    detectionMessage.value = e instanceof Error && e.message ? e.message : 'Automatic receipt cropping is unavailable.'
+    emit('busy', false)
   }
 }
 
 watch(() => props.file, () => {
   skip()
   corners.value = imageBoundary()
+  detectionMessage.value = ''
+  void autoDetect()
 })
+onMounted(() => void autoDetect())
 onBeforeUnmount(() => {
   generation++
   dragging = null
@@ -128,9 +167,10 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="mt-4" aria-label="Receipt image adjustment">
-    <p class="text-body-2 mb-3">
-      {{ editing ? 'Place corners 1–4 around the receipt, clockwise from the flat view’s top-left. Drag, use arrow keys (Shift for larger steps), or enter coordinates below. Apply to see the flat result, or skip.' : flatUrl ? 'Flat view applied. The original file will still be saved unchanged.' : 'Original file selected. Optionally crop and straighten the receipt before uploading. The original is always saved.' }}
+    <p class="text-body-2 mb-3" role="status">
+      {{ detecting ? 'Finding the receipt edges with AI… You can skip to upload the original or adjust the corners yourself.' : editing ? 'Place corners 1–4 around the receipt, clockwise from the flat view’s top-left. Drag, use arrow keys (Shift for larger steps), or enter coordinates below. Apply to see the flat result, or skip.' : flatUrl && autoCropped ? 'Receipt cropped automatically. Check the result, adjust the corners if needed, or skip. The original file will still be saved unchanged.' : flatUrl ? 'Flat view applied. The original file will still be saved unchanged.' : 'Original file selected. Optionally crop and straighten the receipt before uploading. The original is always saved.' }}
     </p>
+    <p v-if="detectionMessage && !editing" class="text-body-2 text-medium-emphasis mb-3">{{ detectionMessage }}</p>
     <div class="stage-area">
       <div ref="stage" class="corner-stage">
         <img :src="editing ? originalUrl : flatUrl || originalUrl" :alt="flatUrl && !editing ? 'Flattened receipt preview' : 'Original receipt preview'" @error="error = 'Could not preview this image. Try another file or skip adjustment.'">
@@ -170,6 +210,7 @@ onBeforeUnmount(() => {
     <v-alert v-if="error" type="warning" variant="tonal" class="my-3">{{ error }}</v-alert>
     <div class="d-flex flex-wrap ga-2 mt-3">
       <v-btn v-if="!editing" variant="outlined" :disabled="disabled" @click="edit">Adjust corners</v-btn>
+      <v-progress-circular v-if="detecting" indeterminate size="24" aria-label="Detecting receipt edges" class="align-self-center" />
       <template v-else>
         <v-btn color="primary" :disabled="disabled || !valid" :loading="processing" @click="apply">Apply flat view</v-btn>
         <v-btn variant="outlined" :disabled="disabled || processing" @click="reset">Reset corners</v-btn>

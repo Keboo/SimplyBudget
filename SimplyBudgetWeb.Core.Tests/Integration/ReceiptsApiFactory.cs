@@ -29,6 +29,7 @@ public sealed class ReceiptsApiFactory : WebApplicationFactory<Program>
 
     public FakeReceiptImageStore ImageStore { get; } = new();
     public FakeReceiptAnalyzer Analyzer { get; } = new();
+    public FakeReceiptCornerDetector CornerDetector { get; } = new();
     public RecordingReceiptMonthNotifier MonthNotifier { get; } = new();
     public bool Authenticated { get; set; } = true;
 
@@ -66,6 +67,8 @@ public sealed class ReceiptsApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IReceiptAnalyzer>();
             services.AddSingleton<IReceiptImageStore>(ImageStore);
             services.AddSingleton<IReceiptAnalyzer>(Analyzer);
+            services.RemoveAll<IReceiptCornerDetector>();
+            services.AddSingleton<IReceiptCornerDetector>(CornerDetector);
             services.RemoveAll<IBudgetMonthUpdateNotifier>();
             services.AddSingleton<IBudgetMonthUpdateNotifier>(MonthNotifier);
 
@@ -169,6 +172,19 @@ public sealed class RecordingReceiptMonthNotifier : IBudgetMonthUpdateNotifier
         cancellationToken.ThrowIfCancellationRequested();
         Months.AddRange(dates.Select(x => new DateTime(x.Year, x.Month, 1)).Distinct());
         return Task.CompletedTask;
+    }
+}
+
+public sealed class FakeReceiptCornerDetector : IReceiptCornerDetector
+{
+    public Exception? Exception { get; set; }
+    public ReceiptImageGeometry? Result { get; set; }
+    public List<(byte[] Image, string ContentType)> Calls { get; } = [];
+
+    public Task<ReceiptImageGeometry?> DetectAsync(byte[] image, string contentType, CancellationToken cancellationToken)
+    {
+        Calls.Add((image, contentType));
+        return Exception is null ? Task.FromResult(Result) : Task.FromException<ReceiptImageGeometry?>(Exception);
     }
 }
 
