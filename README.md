@@ -129,14 +129,15 @@ $env:Receipts__StorageAccountUri = "https://<storage-account>.blob.core.windows.
 $env:Receipts__StorageContainer = "receipts"
 $env:Receipts__DocumentIntelligenceEndpoint = "https://<document-intelligence>.cognitiveservices.azure.com/"
 $env:Receipts__FoundryEndpoint = "https://<foundry-resource>.openai.azure.com/"
-$env:Receipts__FoundryCornerDeployment = "gpt-4.1"
+$env:Receipts__FoundryCornerDeployment = "gpt-6-luna"
 aspire run
 ```
 
 Receipt photos are cropped automatically: when a photo is selected, the browser sends an
 EXIF-oriented, downscaled copy to `POST /api/receipts/detect-corners`, which asks a vision model
 deployed in Microsoft Foundry (`Receipts:FoundryEndpoint` + `Receipts:FoundryCornerDeployment`,
-Terraform default `gpt-4.1`) for the approximate receipt corners and which way its header faces.
+Terraform default `gpt-6-luna` on DataZoneStandard in eastus2; override `receipt_foundry_location` /
+`receipt_corner_model_*` if your subscription has quota elsewhere) for the approximate receipt corners and which way its header faces.
 The model only returns coordinates; the browser then snaps them to the paper edges it finds in the
 pixels (a bright receipt on a darker background, keeping the model's outline when the edges are
 unclear) and crops and perspective-corrects the original pixels with those corners.

@@ -93,16 +93,28 @@ variable "frontend_custom_domain" {
   default     = ""
 }
 
+variable "receipt_foundry_location" {
+  description = "Azure region for the Foundry resource; must offer the receipt corner model with quota in this subscription."
+  type        = string
+  default     = "eastus2"
+}
+
 variable "receipt_corner_model_name" {
   description = "Vision-capable Foundry model used to locate receipt corners for automatic cropping."
   type        = string
-  default     = "gpt-4.1"
+  default     = "gpt-6-luna"
 }
 
 variable "receipt_corner_model_version" {
   description = "Version of the receipt corner detection model."
   type        = string
-  default     = "2025-04-14"
+  default     = "2026-09-22"
+}
+
+variable "receipt_corner_model_sku" {
+  description = "Deployment SKU for the receipt corner detection model (for example DataZoneStandard or GlobalStandard)."
+  type        = string
+  default     = "DataZoneStandard"
 }
 
 variable "receipt_corner_model_capacity" {
