@@ -41,7 +41,8 @@ This template uses a `global.json` file to specify the required .NET SDK version
 Budget spending averages cover 3, 6, or 12 calendar months ending with the selected month
 (including that month), matching the category spending graph. Months without spending count as
 zero; transfers, credits, and items marked Ignore Budget are excluded. Averages retain fractional
-cents until currency formatting.
+cents until currency formatting. On the Budget page they are hidden by default; select the
+averages icon button beside a category's amounts to show them inline.
 
 ### Progressive Web App (PWA) Support
 Both the SimplyBudgetWeb.Web includes full PWA support with:

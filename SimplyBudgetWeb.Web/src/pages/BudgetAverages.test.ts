@@ -71,8 +71,10 @@ describe('budget spending averages', () => {
     await flushPromises()
 
     const expectedAmounts = ['$48.98', '$37.82', '$33.91']
-    const averages = wrapper.get<HTMLDetailsElement>('.category-clickable-row details')
-    expect(averages.element.open).toBe(false)
+    const averages = wrapper.get('#budget-averages-1')
+    expect(averages.isVisible()).toBe(false)
+    await wrapper.get('.budget-averages-toggle').trigger('click')
+    expect(averages.isVisible()).toBe(true)
     expect(averages.findAll('.v-chip').map(chip => chip.text())).toEqual(
       expectedAmounts.map((amount, index) => `${[3, 6, 12][index]}mo avg: ${amount}`),
     )

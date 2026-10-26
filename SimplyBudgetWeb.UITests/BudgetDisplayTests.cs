@@ -86,23 +86,55 @@ public class BudgetDisplayTests : UITestBase
         await Assert.That(Math.Abs(nameBox.Y + nameBox.Height / 2 - balanceBox.Y - balanceBox.Height / 2) < 2).IsTrue();
 
         var averages = groceries.GetByText("3mo avg: $350.00", new() { Exact = true });
-        var summary = groceries.Locator("summary");
+        var toggle = groceries.GetByRole(AriaRole.Button, new() { Name = "Show spending averages" });
+        await Assertions.Expect(groceries.Locator("details")).ToHaveCountAsync(0);
         await Assertions.Expect(averages).ToBeHiddenAsync();
-        await summary.ClickAsync();
+        await Assertions.Expect(toggle).ToHaveAttributeAsync("aria-expanded", "false");
+
+        // The toggle must not make the row taller than its chips, yet still offer a 44px touch target.
+        var spentChip = groceries.Locator(".v-chip", new() { HasText = "Spent: $175.00" });
+        var spentBox = (await spentChip.BoundingBoxAsync())!;
+        var toggleBox = (await toggle.BoundingBoxAsync())!;
+        await Assert.That(toggleBox.Height <= spentBox.Height + 1).IsTrue();
+        await Assert.That(await toggle.EvaluateAsync<bool>("""
+            button => {
+              const box = button.getBoundingClientRect();
+              const x = box.left + box.width / 2, y = box.top + box.height / 2;
+              return [[x, y - 21], [x, y + 21], [x - 21, y], [x + 21, y]]
+                .every(([px, py]) => button.contains(document.elementFromPoint(px, py)));
+            }
+            """)).IsTrue();
+
+        await toggle.ClickAsync();
+        var hideToggle = groceries.GetByRole(AriaRole.Button, new() { Name = "Hide spending averages" });
+        await Assertions.Expect(hideToggle).ToHaveAttributeAsync("aria-expanded", "true");
         await Assertions.Expect(averages).ToBeVisibleAsync();
         await Assertions.Expect(groceries.GetByText("6mo avg: $280.00", new() { Exact = true })).ToBeVisibleAsync();
         await Assertions.Expect(groceries.GetByText("12mo avg: $260.00", new() { Exact = true })).ToBeVisibleAsync();
         await Assertions.Expect(Page).ToHaveURLAsync(new Regex("/budget\\?month=2026-10$"));
-        await summary.ClickAsync();
+        var averageBox = (await groceries.Locator(".v-chip", new() { HasText = "3mo avg: $350.00" }).BoundingBoxAsync())!;
+        var spentAfterBox = (await spentChip.BoundingBoxAsync())!;
+        if (width >= 1440)
+        {
+            await Assert.That(Math.Abs(averageBox.Y - spentAfterBox.Y) < 2).IsTrue();
+        }
+        else
+        {
+            await Assert.That(averageBox.Y >= spentAfterBox.Y - 1).IsTrue();
+        }
+
+        await hideToggle.ClickAsync();
         await Assertions.Expect(averages).ToBeHiddenAsync();
-        await summary.FocusAsync();
+        await toggle.FocusAsync();
         await Page.Keyboard.PressAsync("Enter");
         await Assertions.Expect(averages).ToBeVisibleAsync();
         await Page.Keyboard.PressAsync("Space");
         await Assertions.Expect(averages).ToBeHiddenAsync();
         await Assertions.Expect(Page).ToHaveURLAsync(new Regex("/budget\\?month=2026-10$"));
 
-        await rows.Nth(1).Locator("summary").ClickAsync();
+        await rows.Nth(1).GetByRole(AriaRole.Button, new() { Name = "Show spending averages" }).ClickAsync();
+        await Assertions.Expect(rows.Nth(1).GetByText("12mo avg: $260.00", new() { Exact = true })).ToBeVisibleAsync();
+        await Assertions.Expect(averages).ToBeHiddenAsync();
         await Assert.That(await Page.EvaluateAsync<bool>("""
             () => document.documentElement.scrollWidth <= innerWidth
               && [...document.querySelectorAll('.budget-category-content, .budget-category-content .v-chip')]
@@ -112,10 +144,9 @@ public class BudgetDisplayTests : UITestBase
                     && element.scrollWidth <= element.clientWidth + 1;
                 })
             """)).IsTrue();
-        var summaryBox = (await summary.BoundingBoxAsync())!;
         var chartButton = groceries.GetByRole(AriaRole.Button, new() { Name = "Open category chart" });
         var chartBox = (await chartButton.BoundingBoxAsync())!;
-        await Assert.That(summaryBox.Height >= 44 && chartBox.Width >= 44 && chartBox.Height >= 44).IsTrue();
+        await Assert.That(chartBox.Width >= 44 && chartBox.Height >= 44).IsTrue();
 
         await chartButton.ClickAsync();
         await Assertions.Expect(Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Groceries spending (last 12 months)");
