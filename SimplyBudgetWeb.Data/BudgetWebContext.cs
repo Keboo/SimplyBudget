@@ -17,7 +17,8 @@ public class BudgetWebContext : BudgetContext
         : this(options, TimeProvider.System)
     { }
 
-    public BudgetWebContext(DbContextOptions<BudgetWebContext> options, TimeProvider timeProvider)
+    // Internal so DbContext pooling/DI sees a single public constructor.
+    internal BudgetWebContext(DbContextOptions<BudgetWebContext> options, TimeProvider timeProvider)
         : base(WeakReferenceMessenger.Default, options, timeProvider)
     { }
 

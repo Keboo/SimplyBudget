@@ -24,6 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="SimplyBudgetWeb.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SimplyBudgetShared\SimplyBudgetShared.csproj" />
   </ItemGroup>
 
