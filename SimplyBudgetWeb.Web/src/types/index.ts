@@ -45,6 +45,8 @@ export interface ExpenseCategoryDto {
 export interface ExpenseCategoryMonthlyExpensePointDto {
   month: string
   amount: number
+  budgetedAmount: number
+  budgetedPercentage: number
 }
 
 export interface ExpenseCategoryMonthlyExpensesDto {

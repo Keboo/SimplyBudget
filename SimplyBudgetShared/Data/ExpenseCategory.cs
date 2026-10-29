@@ -1,4 +1,5 @@
 ﻿using SimplyBudgetShared.Utilities;
+
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SimplyBudgetShared.Data;
@@ -18,6 +19,7 @@ public class ExpenseCategory : BaseItem, IBeforeCreate
     public int CurrentBalance { get; set; }
     public int? Cap { get; set; }
     public bool IsHidden { get; set; }
+    public List<ExpenseCategoryBudget> BudgetHistory { get; set; } = [];
 
     public bool UsePercentage => BudgetedPercentage > 0;
 

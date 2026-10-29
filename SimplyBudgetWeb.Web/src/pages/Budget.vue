@@ -4,7 +4,7 @@ import { useDisplay } from 'vuetify'
 import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { useAuthStore } from '@/stores/auth'
-import type { AccountDto, BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto, ExpenseCategoryMonthlyExpensesDto } from '@/types'
+import type { AccountDto, BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto, ExpenseCategoryMonthlyExpensesDto, ExpenseCategoryMonthlyExpensePointDto } from '@/types'
 import { formatCents, formatMonth, parseMonth } from '@/utils/currency'
 import { useRouter } from 'vue-router'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
@@ -60,14 +60,23 @@ const categoryChartMaxAmount = computed(() => {
   const chart = categoryChart.value
   if (!chart) return 1
 
-  const maxMonthlyExpense = chart.months.reduce((max, month) => Math.max(max, month.amount), 0)
-  return Math.max(maxMonthlyExpense, chart.budgetedAmount, 1)
+  return chart.months.reduce((max, month) =>
+    Math.max(max, month.amount, month.budgetedPercentage > 0 ? 0 : month.budgetedAmount), 1)
 })
 
-const budgetLinePercent = computed(() => {
+const budgetLineSegments = computed(() => {
   const chart = categoryChart.value
-  if (!chart) return 0
-  return Math.min(100, (chart.budgetedAmount / categoryChartMaxAmount.value) * 100)
+  if (!chart) return []
+  const width = 100 / chart.months.length
+  const y = (amount: number) => 100 - amount / categoryChartMaxAmount.value * 100
+  return chart.months.flatMap((point, index) => {
+    if (point.budgetedPercentage > 0) return []
+    const next = chart.months[index + 1]
+    const end = (index + 1) * width
+    let path = `M ${index * width} ${y(point.budgetedAmount)} H ${end}`
+    if (next && next.budgetedPercentage === 0) path += ` V ${y(next.budgetedAmount)}`
+    return [{ month: point.month, path }]
+  })
 })
 
 const budgetLineLabel = computed(() => {
@@ -155,10 +164,13 @@ function formatChartMonth(month: string): string {
   return parseMonth(month).toLocaleString('default', { month: 'short' })
 }
 
-function formatChartTooltip(month: string, amount: number): string {
-  const date = parseMonth(month)
+function formatChartTooltip(point: ExpenseCategoryMonthlyExpensePointDto): string {
+  const date = parseMonth(point.month)
   const label = date.toLocaleString('default', { month: 'long', year: 'numeric' })
-  return `${label}: ${formatCents(amount)}`
+  const budget = point.budgetedPercentage > 0
+    ? `${point.budgetedPercentage}%`
+    : formatCents(point.budgetedAmount)
+  return `${label}: ${formatCents(point.amount)} spent; ${budget} budget`
 }
 
 function getCategoryChartAverage(monthCount: number): number {
@@ -364,8 +376,12 @@ function openCategoryHistory(category: BudgetCategoryDto) {
           </div>
           <div v-else-if="categoryChart">
             <v-chip size="small" color="primary" variant="outlined" class="mb-3">
-              Budget line: {{ budgetLineLabel }}
+              Current budget: {{ budgetLineLabel }}
             </v-chip>
+            <p class="text-caption mb-3">
+              Budget line shows each month's fixed budget. Changes apply to the whole month;
+              the last change that month wins. Percentage budgets are shown in month tooltips, not as dollar amounts.
+            </p>
             <div class="d-flex flex-wrap mb-3" style="gap: 6px;">
               <v-chip
                 size="small"
@@ -391,15 +407,21 @@ function openCategoryHistory(category: BudgetCategoryDto) {
             </div>
             <div class="expense-chart">
               <div class="expense-chart-plot">
-                <div class="expense-chart-budget-line" :style="{ bottom: `${budgetLinePercent}%` }">
-                  <span class="expense-chart-budget-label">{{ budgetLineLabel }}</span>
-                </div>
+                <svg class="expense-chart-budget-line" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Historical monthly budget">
+                  <path
+                    v-for="segment in budgetLineSegments"
+                    :key="segment.month"
+                    :data-month="segment.month"
+                    :d="segment.path"
+                    vector-effect="non-scaling-stroke"
+                  />
+                </svg>
                 <div class="expense-chart-bars">
                   <div
                     v-for="point in categoryChart.months"
                     :key="point.month"
                     class="expense-chart-month"
-                    :title="formatChartTooltip(point.month, point.amount)"
+                    :title="formatChartTooltip(point)"
                   >
                     <div class="expense-chart-bar-wrapper">
                       <div class="expense-chart-bar" :style="{ height: `${getBarHeightPercent(point.amount)}%` }" />
@@ -535,21 +557,15 @@ function openCategoryHistory(category: BudgetCategoryDto) {
 
 .expense-chart-budget-line {
   position: absolute;
-  left: 0;
-  right: 0;
-  border-top: 2px dashed rgb(var(--v-theme-error));
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: rgb(var(--v-theme-error));
+  stroke-width: 2px;
   pointer-events: none;
   z-index: 1;
-}
-
-.expense-chart-budget-label {
-  position: absolute;
-  right: 0;
-  transform: translateY(-100%);
-  color: rgb(var(--v-theme-error));
-  font-size: 0.75rem;
-  padding: 0 4px;
-  background-color: rgba(var(--v-theme-surface), 0.9);
 }
 
 .expense-chart-bars {

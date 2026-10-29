@@ -2,7 +2,7 @@ namespace SimplyBudgetShared.DataTransfer;
 
 public sealed class BudgetDataExportPackage
 {
-    public const int CurrentFormatVersion = 2;
+    public const int CurrentFormatVersion = 3;
 
     public int FormatVersion { get; set; } = CurrentFormatVersion;
 
@@ -40,7 +40,14 @@ public record BudgetDataExportCategory(
     int BudgetedPercentage,
     int CurrentBalance,
     int? Cap,
-    bool IsHidden
+    bool IsHidden,
+    List<BudgetDataExportCategoryBudget>? BudgetHistory = null
+);
+
+public record BudgetDataExportCategoryBudget(
+    DateTime EffectiveMonth,
+    int BudgetedAmount,
+    int BudgetedPercentage
 );
 
 public record BudgetDataExportItem(

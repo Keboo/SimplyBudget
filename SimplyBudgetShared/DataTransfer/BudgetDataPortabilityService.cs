@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+
 using SimplyBudgetShared.Data;
 
 namespace SimplyBudgetShared.DataTransfer;
@@ -35,7 +36,10 @@ public static class BudgetDataPortabilityService
                     x.BudgetedPercentage,
                     x.CurrentBalance,
                     x.Cap,
-                    x.IsHidden))
+                    x.IsHidden,
+                    x.BudgetHistory.OrderBy(b => b.EffectiveMonth)
+                        .Select(b => new BudgetDataExportCategoryBudget(b.EffectiveMonth, b.BudgetedAmount, b.BudgetedPercentage))
+                        .ToList()))
                 .ToListAsync(cancellationToken),
             Items = await context.ExpenseCategoryItems
                 .AsNoTracking()
@@ -146,7 +150,13 @@ public static class BudgetDataPortabilityService
                 BudgetedPercentage = x.BudgetedPercentage,
                 CurrentBalance = 0,
                 Cap = x.Cap,
-                IsHidden = x.IsHidden
+                IsHidden = x.IsHidden,
+                BudgetHistory = (x.BudgetHistory ?? []).Select(b => new ExpenseCategoryBudget
+                {
+                    EffectiveMonth = b.EffectiveMonth,
+                    BudgetedAmount = b.BudgetedAmount,
+                    BudgetedPercentage = b.BudgetedPercentage,
+                }).ToList(),
             }).ToList();
             context.ExpenseCategories.AddRange(importedCategories);
             await context.SaveChangesAsync(cancellationToken);

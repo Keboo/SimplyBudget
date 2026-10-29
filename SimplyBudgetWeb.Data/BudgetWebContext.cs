@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.Messaging;
+
 using Microsoft.EntityFrameworkCore;
+
 using SimplyBudgetShared.Data;
 
 namespace SimplyBudgetWeb.Data;
@@ -9,9 +11,17 @@ namespace SimplyBudgetWeb.Data;
 /// Inherits all entity definitions and balance-adjustment hooks from BudgetContext,
 /// configured for Azure SQL Server with the SimplyBudget schema.
 /// </summary>
-public class BudgetWebContext(DbContextOptions<BudgetWebContext> options)
-    : BudgetContext(WeakReferenceMessenger.Default, options)
+public class BudgetWebContext : BudgetContext
 {
+    public BudgetWebContext(DbContextOptions<BudgetWebContext> options)
+        : this(options, TimeProvider.System)
+    { }
+
+    // Internal so DbContext pooling/DI sees a single public constructor.
+    internal BudgetWebContext(DbContextOptions<BudgetWebContext> options, TimeProvider timeProvider)
+        : base(WeakReferenceMessenger.Default, options, timeProvider)
+    { }
+
     /// <summary>
     /// The database schema used for all tables in this context, including
     /// the EF Core migrations history table (see <see cref="BudgetWebContextDesignTimeFactory"/>

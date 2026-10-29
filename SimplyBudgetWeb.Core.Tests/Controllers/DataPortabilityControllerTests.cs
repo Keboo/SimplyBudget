@@ -1,8 +1,11 @@
 using System.Text.Json;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.DataTransfer;
+
 using SimplyBudgetWeb.Controllers;
 using SimplyBudgetWeb.Data;
 
@@ -32,7 +35,12 @@ public class DataPortabilityControllerTests
                 Description = "Food and household essentials",
                 CategoryName = "Food",
                 AccountID = account.ID,
-                BudgetedAmount = 500_00
+                BudgetedAmount = 500_00,
+                BudgetHistory =
+                [
+                    new ExpenseCategoryBudget { EffectiveMonth = DateTime.MinValue, BudgetedAmount = 400_00 },
+                    new ExpenseCategoryBudget { EffectiveMonth = new DateTime(2026, 6, 1), BudgetedAmount = 500_00 },
+                ]
             };
             context.ExpenseCategories.Add(category);
             await context.SaveChangesAsync();
@@ -86,6 +94,11 @@ public class DataPortabilityControllerTests
         {
             throw new Exception("Export payload did not include all expected data sets.");
         }
+
+        await Assert.That(payload.FormatVersion).IsEqualTo(3);
+        await Assert.That(string.Join(",", payload.Categories.Single().BudgetHistory!
+            .Select(x => $"{x.EffectiveMonth:yyyy-MM-dd}:{x.BudgetedAmount}")))
+            .IsEqualTo("0001-01-01:40000,2026-06-01:50000");
     }
 
     [Test]
@@ -102,6 +115,31 @@ public class DataPortabilityControllerTests
         {
             throw new Exception($"Expected {nameof(BadRequestObjectResult)} but got {actionResult.GetType().Name}.");
         }
+    }
+
+    [Test]
+    [Arguments(1)]
+    [Arguments(2)]
+    public async Task Import_LegacyJsonUsesExistingBudgetAsBaseline(int formatVersion)
+    {
+        AutoMocker mocker = new();
+        mocker.WithDbContext<BudgetWebContext>();
+        var payload = JsonSerializer.Deserialize<BudgetDataExportPackage>(
+            $$"""
+            {
+              "formatVersion": {{formatVersion}},
+              "categories": [{ "id": 77, "name": "Legacy", "budgetedAmount": 12300 }]
+            }
+            """, JsonOptions)!;
+
+        using var context = mocker.Get<BudgetWebContext>();
+        var result = await new DataPortabilityController(context).Import(payload, CancellationToken.None);
+        await Assert.That(result).IsTypeOf<NoContentResult>();
+        var category = await context.ExpenseCategories.SingleAsync();
+        await Assert.That(await context.ExpenseCategoryBudgets.CountAsync()).IsEqualTo(0);
+        var graph = (await new ExpenseCategoriesController(context)
+            .GetMonthlyExpenses(category.ID, new DateTime(2026, 4, 1), 2)).Value!;
+        await Assert.That(graph.Months.All(x => x.BudgetedAmount == 12300)).IsTrue();
     }
 
     [Test]
@@ -126,7 +164,11 @@ public class DataPortabilityControllerTests
             ],
             Categories =
             [
-                new BudgetDataExportCategory(10, "Groceries", "Food and household essentials", "Food", 1, 500_00, 0, 125_00, null, false),
+                new BudgetDataExportCategory(10, "Groceries", "Food and household essentials", "Food", 1, 500_00, 0, 125_00, null, false,
+                [
+                    new BudgetDataExportCategoryBudget(DateTime.MinValue, 400_00, 0),
+                    new BudgetDataExportCategoryBudget(new DateTime(2026, 4, 1), 500_00, 0),
+                ]),
                 new BudgetDataExportCategory(20, "Emergency Fund", "Unexpected expenses", "Savings", 2, 0, 10, 875_00, null, false)
             ],
             Items =
@@ -184,6 +226,16 @@ public class DataPortabilityControllerTests
 
             var groceries = categories.Single(x => x.Name == "Groceries");
             var emergency = categories.Single(x => x.Name == "Emergency Fund");
+            var history = await context.ExpenseCategoryBudgets
+                .Where(x => x.ExpenseCategoryId == groceries.ID)
+                .OrderBy(x => x.EffectiveMonth)
+                .ToListAsync();
+            await Assert.That(string.Join(",", history.Select(x => $"{x.EffectiveMonth:yyyy-MM-dd}:{x.BudgetedAmount}")))
+                .IsEqualTo("0001-01-01:40000,2026-04-01:50000");
+            await Assert.That(await context.ExpenseCategoryBudgets.AnyAsync(x => x.ExpenseCategoryId == emergency.ID)).IsFalse();
+            var legacyGraph = (await new ExpenseCategoriesController(context)
+                .GetMonthlyExpenses(emergency.ID, new DateTime(2026, 4, 1), 2)).Value!;
+            await Assert.That(legacyGraph.Months.All(x => x.BudgetedPercentage == 10)).IsTrue();
             if (groceries.Description != "Food and household essentials" ||
                 emergency.Description != "Unexpected expenses")
             {

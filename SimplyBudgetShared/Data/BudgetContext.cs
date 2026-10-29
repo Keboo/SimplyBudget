@@ -1,7 +1,11 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+
 using SimplyBudgetShared.Events;
+using SimplyBudgetShared.Utilities;
+
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
@@ -16,22 +20,25 @@ public class BudgetContext : DbContext
     public DbSet<ExpenseCategoryItemDetail> ExpenseCategoryItemDetails => Set<ExpenseCategoryItemDetail>();
     public DbSet<Metadata> Metadatas => Set<Metadata>();
     public DbSet<ExpenseCategoryRule> ExpenseCategoryRules => Set<ExpenseCategoryRule>();
+    public DbSet<ExpenseCategoryBudget> ExpenseCategoryBudgets => Set<ExpenseCategoryBudget>();
 
     private IMessenger Messenger { get; }
+    private readonly TimeProvider timeProvider;
 
     public BudgetContext()
         : this("Data Source=data.db")
     { }
 
     public BudgetContext(string connectionString)
-        : this (WeakReferenceMessenger.Default, 
+        : this(WeakReferenceMessenger.Default,
               new DbContextOptionsBuilder<BudgetContext>().UseSqlite(connectionString).Options)
     { }
 
-    public BudgetContext(IMessenger messenger, DbContextOptions options)
+    public BudgetContext(IMessenger messenger, DbContextOptions options, TimeProvider? timeProvider = null)
         : base(options)
     {
         Messenger = messenger ?? throw new ArgumentNullException(nameof(messenger));
+        this.timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public override void Dispose()
@@ -68,10 +75,19 @@ public class BudgetContext : DbContext
 
         modelBuilder.Entity<ExpenseCategory>()
             .HasIndex(x => x.CategoryName);
+
+        modelBuilder.Entity<ExpenseCategoryBudget>()
+            .HasKey(x => new { x.ExpenseCategoryId, x.EffectiveMonth });
+        modelBuilder.Entity<ExpenseCategoryBudget>()
+            .HasOne(x => x.ExpenseCategory)
+            .WithMany(x => x.BudgetHistory)
+            .HasForeignKey(x => x.ExpenseCategoryId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
+        await RecordBudgetChanges(cancellationToken);
         var notifications = new List<Action>();
         var foo = ChangeTracker.Entries().Where(x => x.State != EntityState.Unchanged).ToList();
         foreach (var entity in PumpItems(() => ChangeTracker.Entries().Where(x => x.State != EntityState.Unchanged), EntityComparer.Instance))
@@ -121,6 +137,41 @@ public class BudgetContext : DbContext
         }
 
         return rv;
+    }
+
+    private async Task RecordBudgetChanges(CancellationToken cancellationToken)
+    {
+        var month = timeProvider.GetLocalNow().Date.StartOfMonth();
+        foreach (var entry in ChangeTracker.Entries<ExpenseCategory>()
+            .Where(x => x.State == EntityState.Modified).ToList())
+        {
+            var amount = entry.Property(x => x.BudgetedAmount);
+            var percentage = entry.Property(x => x.BudgetedPercentage);
+            if (amount.OriginalValue == amount.CurrentValue &&
+                percentage.OriginalValue == percentage.CurrentValue)
+                continue;
+
+            await entry.Collection(x => x.BudgetHistory).LoadAsync(cancellationToken);
+            var history = entry.Entity.BudgetHistory;
+            if (history.Count == 0)
+            {
+                history.Add(new ExpenseCategoryBudget
+                {
+                    EffectiveMonth = DateTime.MinValue,
+                    BudgetedAmount = amount.OriginalValue,
+                    BudgetedPercentage = percentage.OriginalValue,
+                });
+            }
+
+            var budget = history.SingleOrDefault(x => x.EffectiveMonth == month);
+            if (budget is null)
+            {
+                budget = new ExpenseCategoryBudget { EffectiveMonth = month };
+                history.Add(budget);
+            }
+            budget.BudgetedAmount = amount.CurrentValue;
+            budget.BudgetedPercentage = percentage.CurrentValue;
+        }
     }
 
     public override int SaveChanges() => throw new InvalidOperationException($"Must use {nameof(SaveChangesAsync)}");

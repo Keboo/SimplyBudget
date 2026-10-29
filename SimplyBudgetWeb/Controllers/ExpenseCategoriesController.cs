@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
+
 using SimplyBudgetWeb.Data;
 using SimplyBudgetWeb.Services;
 using SimplyBudgetWeb.Utilities;
@@ -100,6 +102,21 @@ public class ExpenseCategoriesController(
 
         var history = await CategorySpendingHistory.GetMonthlyExpenses(
             context, id, month ?? DateTime.Today, months);
+
+        var budgets = await context.ExpenseCategoryBudgets
+            .Where(x => x.ExpenseCategoryId == id)
+            .OrderBy(x => x.EffectiveMonth)
+            .ToListAsync();
+        history = history.Select(point =>
+        {
+            var applicable = budgets.LastOrDefault(x =>
+                x.EffectiveMonth <= DateTime.ParseExact(point.Month, "yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
+            return point with
+            {
+                BudgetedAmount = applicable?.BudgetedAmount ?? category.BudgetedAmount,
+                BudgetedPercentage = applicable?.BudgetedPercentage ?? category.BudgetedPercentage,
+            };
+        }).ToArray();
 
         return new ExpenseCategoryMonthlyExpensesDto(
             ExpenseCategoryId: category.ID,
@@ -231,7 +248,8 @@ public class ExpenseCategoriesController(
         return null;
     }
 
-    private async Task<HashSet<int>> GetIdsWithItemsAsync(IEnumerable<int> categoryIds)    {
+    private async Task<HashSet<int>> GetIdsWithItemsAsync(IEnumerable<int> categoryIds)
+    {
         var ids = categoryIds.ToList();
         if (ids.Count == 0) return [];
 
@@ -295,7 +313,9 @@ public record ExpenseCategoryMonthlyExpensesDto(
 
 public record ExpenseCategoryMonthlyExpensePointDto(
     string Month,
-    int Amount
+    int Amount,
+    int BudgetedAmount = 0,
+    int BudgetedPercentage = 0
 );
 
 public record RemainingBudgetDto(
