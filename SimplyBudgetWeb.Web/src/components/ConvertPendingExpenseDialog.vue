@@ -15,6 +15,7 @@ import IncomeAllocationList from '@/components/IncomeAllocationList.vue'
 import CategorySelector from '@/components/CategorySelector.vue'
 import AmountField from '@/components/AmountField.vue'
 import ReceiptPreview from '@/components/ReceiptPreview.vue'
+import ReceiptSplitDialog from '@/components/ReceiptSplitDialog.vue'
 
 const props = defineProps<{
   modelValue: boolean
@@ -67,6 +68,7 @@ const otherPendingReceipts = computed(() =>
   pendingReceipts.value.filter(receipt => !receiptMatches.value.some(match => match.id === receipt.id)),
 )
 const availableReceipts = computed(() => uniqueUnlinked([...receiptMatches.value, ...pendingReceipts.value]))
+const selectedReceipt = computed(() => availableReceipts.value.find(receipt => receipt.id === receiptId.value) ?? null)
 const receiptSummary = computed(() => {
   const selected = availableReceipts.value.find(receipt => receipt.id === receiptId.value)
   if (selected) return selected.merchantName || selected.fileName
@@ -81,6 +83,7 @@ const calculatorInput = ref('')
 const calculatorItems = ref<number[]>([])
 const calculatorTaxOptions = ref<CalculatorTaxOptionDto[]>([])
 const calculatorSelectedTaxKey = ref('none')
+const receiptSplitOpen = ref(false)
 
 function isValidCategoryId(value: LineItem['expenseCategoryId']): value is number {
   return typeof value === 'number' && props.categories.some(category => category.id === value)
@@ -103,6 +106,7 @@ watch(
   () => {
     receiptRequest++
     receiptId.value = null
+    receiptSplitOpen.value = false
     receiptChosen.value = false
     receiptMatches.value = []
     receiptPanel.value = undefined
@@ -331,10 +335,18 @@ function applyCalculator() {
 
 function close() {
   closeCalculator()
+  receiptSplitOpen.value = false
   receiptRequest++
   receiptId.value = null
   previewReceiptId.value = null
   emit('update:modelValue', false)
+}
+
+function applyReceiptSplits(items: Array<{ expenseCategoryId: number; amount: number }>) {
+  lines.value = items.map(item => ({
+    expenseCategoryId: item.expenseCategoryId,
+    amount: centsToDollars(item.amount),
+  }))
 }
 
 async function submit() {
@@ -504,7 +516,17 @@ async function saveNote() {
           </v-expansion-panels>
 
           <template v-if="pendingExpense.isDebit">
-            <span class="text-subtitle-2">Split expense across categories</span>
+            <div class="d-flex flex-wrap justify-space-between align-center ga-2">
+              <span class="text-subtitle-2">Split expense across categories</span>
+              <v-btn
+                v-if="selectedReceipt && selectedReceipt.lineItems.length > 0"
+                variant="tonal"
+                prepend-icon="mdi-receipt-text-check"
+                @click="receiptSplitOpen = true"
+              >
+                Split by receipt ({{ selectedReceipt.lineItems.length }} items)
+              </v-btn>
+            </div>
             <div v-for="(item, index) in lines" :key="index" class="allocation-line d-flex align-center ga-1">
               <CategorySelector
                 label="Category"
@@ -628,6 +650,16 @@ async function saveNote() {
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <ReceiptSplitDialog
+    v-if="selectedReceipt"
+    v-model="receiptSplitOpen"
+    :receipt="selectedReceipt"
+    :categories="sortedCategories"
+    :pending-amount-cents="pendingExpense?.amount ?? 0"
+    :suggested-category-id="pendingExpense?.suggestedCategoryId ?? null"
+    @apply="applyReceiptSplits"
+  />
 </template>
 
 <style scoped>
