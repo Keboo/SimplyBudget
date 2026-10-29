@@ -44,6 +44,21 @@ zero; transfers, credits, and items marked Ignore Budget are excluded. Averages 
 cents until currency formatting. On the Budget page they are hidden by default; select the
 averages icon button beside a category's amounts to show them inline.
 
+### Historical category budgets
+
+The category spending graph uses the fixed budget applicable to each calendar month,
+drawn as steps rather than interpolated changes. Budget edits take effect at the start
+of the current month in the application's local time zone; the last edit within a month
+wins, including changes to zero. Earlier months keep their previous budgets, even when
+they have no spending. Percentage-budget periods appear in month tooltips, not as dollar
+lines. Current budget and allocation behavior elsewhere is unchanged.
+
+Existing categories without history use their existing budget as an undated baseline;
+the first actual budget edit preserves that baseline and starts monthly history. Renames
+and unchanged saves do not create history. History is included in data exports/imports
+(format 3); older exports remain supported. Apply the new database migration before
+deploying the updated application (both SQL Server web and SQLite shared migrations are included).
+
 ### Progressive Web App (PWA) Support
 Both the SimplyBudgetWeb.Web includes full PWA support with:
 - Service worker for offline functionality

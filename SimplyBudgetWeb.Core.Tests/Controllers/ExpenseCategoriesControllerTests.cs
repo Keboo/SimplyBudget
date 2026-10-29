@@ -1,6 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+using CommunityToolkit.Mvvm.Messaging;
+
 using SimplyBudgetShared.Data;
+
 using SimplyBudgetWeb.Controllers;
 using SimplyBudgetWeb.Data;
 using SimplyBudgetWeb.Services;
@@ -9,6 +16,129 @@ namespace SimplyBudgetWeb.Core.Tests.Controllers;
 
 public class ExpenseCategoriesControllerTests
 {
+    [Test]
+    public async Task BudgetChanges_PersistMonthlyHistory_WithoutRewritingEarlierMonths()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<BudgetWebContext>().UseSqlite(connection).Options;
+        var clock = new BudgetClock { Now = new DateTimeOffset(2026, 1, 31, 23, 59, 0, TimeSpan.Zero) };
+        int categoryId;
+        await using (var context = new BudgetWebContext(options, clock))
+        {
+            await context.Database.EnsureCreatedAsync();
+            var controller = new ExpenseCategoriesController(context);
+            var created = await controller.Create(new ExpenseCategoryRequest("Food", null, null, 10000, 0, null, null));
+            categoryId = ((ExpenseCategoryDto)((CreatedAtActionResult)created.Result!).Value!).Id;
+            await controller.Update(categoryId, new ExpenseCategoryRequest("Renamed", null, null, 10000, 0, null, null));
+            await Assert.That(await context.ExpenseCategoryBudgets.CountAsync()).IsEqualTo(0);
+
+            await controller.Update(categoryId, new ExpenseCategoryRequest("Renamed", null, null, 20000, 0, null, null));
+        }
+
+        clock.Now = new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero);
+        await using (var context = new BudgetWebContext(options, clock))
+        {
+            var controller = new ExpenseCategoriesController(context);
+            await controller.Update(categoryId, new ExpenseCategoryRequest("Renamed", null, null, 30000, 0, null, null));
+            await controller.Update(categoryId, new ExpenseCategoryRequest("Renamed", null, null, 0, 0, null, null));
+            await controller.Update(categoryId, new ExpenseCategoryRequest("Still renamed", null, null, 0, 0, null, null));
+            await context.SaveChangesAsync();
+        }
+
+        clock.Now = new DateTimeOffset(2026, 4, 1, 0, 0, 0, TimeSpan.Zero);
+        await using (var context = new BudgetWebContext(options, clock))
+        {
+            await new ExpenseCategoriesController(context).Update(categoryId,
+                new ExpenseCategoryRequest("Still renamed", null, null, 40000, 0, null, null));
+        }
+
+        await using var reloaded = new BudgetWebContext(options, clock);
+        var budgets = await reloaded.ExpenseCategoryBudgets.OrderBy(x => x.EffectiveMonth).ToListAsync();
+        await Assert.That(string.Join(",", budgets.Select(x => $"{x.EffectiveMonth:yyyy-MM-dd}:{x.BudgetedAmount}")))
+            .IsEqualTo("0001-01-01:10000,2026-01-01:20000,2026-02-01:0,2026-04-01:40000");
+
+        var graph = (await new ExpenseCategoriesController(reloaded)
+            .GetMonthlyExpenses(categoryId, new DateTime(2026, 3, 31), 4)).Value!;
+        await Assert.That(string.Join(",", graph.Months.Select(x => $"{x.Month}:{x.BudgetedAmount}")))
+            .IsEqualTo("2025-12:10000,2026-01:20000,2026-02:0,2026-03:0");
+        await Assert.That(graph.Months.All(x => x.Amount == 0)).IsTrue();
+        var laterGraph = (await new ExpenseCategoriesController(reloaded)
+            .GetMonthlyExpenses(categoryId, new DateTime(2026, 3, 1), 1)).Value!;
+        await Assert.That(laterGraph.Months.All(x => x.BudgetedAmount == 0)).IsTrue();
+        await Assert.That(graph.BudgetedAmount).IsEqualTo(40000);
+        await Assert.That(await new ExpenseCategoriesController(reloaded).Delete(categoryId)).IsTypeOf<NoContentResult>();
+        await Assert.That(await reloaded.ExpenseCategoryBudgets.CountAsync()).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task BudgetChanges_PreservePercentagePeriods_AndSharedSavePath()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<BudgetWebContext>().UseSqlite(connection).Options;
+        var clock = new BudgetClock { Now = new DateTimeOffset(2026, 3, 15, 0, 0, 0, TimeSpan.Zero) };
+        await using var context = new BudgetWebContext(options, clock);
+        await context.Database.EnsureCreatedAsync();
+        var category = new ExpenseCategory { Name = "Savings", BudgetedAmount = 5000 };
+        context.Add(category);
+        await context.SaveChangesAsync();
+        category.BudgetedAmount = 0;
+        category.BudgetedPercentage = 10;
+        await context.SaveChangesAsync();
+        clock.Now = clock.Now.AddMonths(1);
+        category.BudgetedPercentage = 20;
+        await context.SaveChangesAsync();
+        clock.Now = clock.Now.AddMonths(1);
+        category.BudgetedPercentage = 0;
+        category.BudgetedAmount = 7000;
+        await context.SaveChangesAsync();
+
+        var graph = (await new ExpenseCategoriesController(context)
+            .GetMonthlyExpenses(category.ID, new DateTime(2026, 5, 1), 4)).Value!;
+        await Assert.That(string.Join(",", graph.Months.Select(x => $"{x.Month}:{x.BudgetedAmount}:{x.BudgetedPercentage}")))
+            .IsEqualTo("2026-02:5000:0,2026-03:0:10,2026-04:0:20,2026-05:7000:0");
+    }
+
+    [Test]
+    public async Task BudgetHistoryMigration_PreservesLegacyCategory_AndCapturesOriginalBaseline()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<BudgetContext>().UseSqlite(connection).Options;
+        int categoryId;
+        await using (var context = new BudgetContext(WeakReferenceMessenger.Default, options))
+        {
+            var migrator = context.GetService<IMigrator>();
+            var previous = context.Database.GetMigrations().Reverse().Skip(1).First();
+            await migrator.MigrateAsync(previous);
+            var category = new ExpenseCategory { Name = "Legacy", BudgetedAmount = 12345 };
+            context.Add(category);
+            await context.SaveChangesAsync();
+            categoryId = category.ID;
+            await migrator.MigrateAsync();
+        }
+
+        var clock = new BudgetClock { Now = new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero) };
+        await using var upgraded = new BudgetContext(WeakReferenceMessenger.Default, options, clock);
+        var stored = await upgraded.ExpenseCategories.FindAsync(categoryId);
+        await Assert.That(stored!.BudgetedAmount).IsEqualTo(12345);
+        await Assert.That(await upgraded.ExpenseCategoryBudgets.CountAsync()).IsEqualTo(0);
+        stored.BudgetedAmount = 54321;
+        await upgraded.SaveChangesAsync();
+        await Assert.That((await upgraded.ExpenseCategoryBudgets.SingleAsync(x => x.EffectiveMonth == DateTime.MinValue)).BudgetedAmount)
+            .IsEqualTo(12345);
+        await Assert.That((await upgraded.ExpenseCategoryBudgets.SingleAsync(x => x.EffectiveMonth == new DateTime(2026, 6, 1))).BudgetedAmount)
+            .IsEqualTo(54321);
+    }
+
+    private sealed class BudgetClock : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; }
+        public override DateTimeOffset GetUtcNow() => Now;
+        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+    }
+
     [Test]
     public async Task GetAll_FiltersByAmount()
     {
@@ -613,6 +743,7 @@ public class ExpenseCategoriesControllerTests
         await Assert.That(result.Value.Months.Length).IsEqualTo(3);
         await Assert.That(result.Value.Months[0].Month).IsEqualTo("2026-01");
         await Assert.That(result.Value.Months[0].Amount).IsEqualTo(8000);
+        await Assert.That(result.Value.Months.All(x => x.BudgetedAmount == 30000)).IsTrue();
         await Assert.That(result.Value.Months[1].Month).IsEqualTo("2026-02");
         await Assert.That(result.Value.Months[1].Amount).IsEqualTo(0);
         await Assert.That(result.Value.Months[2].Month).IsEqualTo("2026-03");

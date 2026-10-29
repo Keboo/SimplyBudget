@@ -46,6 +46,8 @@ describe('budget spending averages', () => {
       months: [12000, 0, 0, 0, 0, 6000, 5000, 0, 3000, 2000, 0, 12693].map((amount, index) => ({
         month: index < 2 ? `2025-${11 + index}` : `2026-${String(index - 1).padStart(2, '0')}`,
         amount,
+        budgetedAmount: index < 6 ? 28000 : index < 10 ? 7000 : 0,
+        budgetedPercentage: index === 11 ? 10 : 0,
       })),
     }
     api.get.mockImplementation(async (url: string) => {
@@ -84,6 +86,17 @@ describe('budget spending averages', () => {
     expect(api.get).toHaveBeenCalledWith('/api/expense-categories/1/monthly-expenses?month=2026-10-01&months=12')
     const dialog = document.querySelector('[role="dialog"]')!
     expect(dialog).not.toBeNull()
+    const segments = dialog.querySelectorAll('.expense-chart-budget-line path')
+    expect(segments).toHaveLength(11)
+    expect(segments[0]!.getAttribute('d')).toMatch(/^M 0 0 H /)
+    expect(segments[5]!.getAttribute('d')).toMatch(/ V 75$/)
+    expect(segments[6]!.getAttribute('d')).toMatch(/^M 50 75 H /)
+    expect(segments[9]!.getAttribute('d')).toMatch(/ V 100$/)
+    expect(segments[10]!.getAttribute('d')).not.toContain(' V ')
+    const months = dialog.querySelectorAll('.expense-chart-month')
+    expect(months[1]!.getAttribute('title')).toContain('$0.00 spent; $280.00 budget')
+    expect(months[10]!.getAttribute('title')).toContain('$0.00 spent; $0.00 budget')
+    expect(months[11]!.getAttribute('title')).toContain('10% budget')
     expect(Array.from(dialog.querySelectorAll('.v-chip'))
       .map(chip => chip.textContent!.trim()).filter(text => text.includes('mo avg:'))).toEqual(
       expectedAmounts.map((amount, index) => `${[3, 6, 12][index]}mo avg: ${amount}`),

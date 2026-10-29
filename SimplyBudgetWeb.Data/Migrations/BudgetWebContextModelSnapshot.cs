@@ -91,6 +91,25 @@ namespace SimplyBudgetWeb.Data.Migrations
                     b.ToTable("ExpenseCategory", "SimplyBudget");
                 });
 
+            modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryBudget", b =>
+                {
+                    b.Property<int>("ExpenseCategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EffectiveMonth")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("BudgetedAmount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("BudgetedPercentage")
+                        .HasColumnType("int");
+
+                    b.HasKey("ExpenseCategoryId", "EffectiveMonth");
+
+                    b.ToTable("ExpenseCategoryBudget", "SimplyBudget");
+                });
+
             modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryItem", b =>
                 {
                     b.Property<int>("ID")
@@ -408,6 +427,17 @@ namespace SimplyBudgetWeb.Data.Migrations
                     b.Navigation("Account");
                 });
 
+            modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryBudget", b =>
+                {
+                    b.HasOne("SimplyBudgetShared.Data.ExpenseCategory", "ExpenseCategory")
+                        .WithMany("BudgetHistory")
+                        .HasForeignKey("ExpenseCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ExpenseCategory");
+                });
+
             modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryItemDetail", b =>
                 {
                     b.HasOne("SimplyBudgetShared.Data.ExpenseCategory", "ExpenseCategory")
@@ -486,6 +516,11 @@ namespace SimplyBudgetWeb.Data.Migrations
             modelBuilder.Entity("SimplyBudgetShared.Data.Account", b =>
                 {
                     b.Navigation("ExpenseCategories");
+                });
+
+            modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategory", b =>
+                {
+                    b.Navigation("BudgetHistory");
                 });
 
             modelBuilder.Entity("SimplyBudgetShared.Data.ExpenseCategoryItem", b =>
