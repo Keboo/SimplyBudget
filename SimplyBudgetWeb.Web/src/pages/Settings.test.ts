@@ -33,8 +33,9 @@ async function setup(panel: string) {
   await flushPromises()
   return wrapper
 }
-describe('focused phone settings editors', () => {
-  it('opens category fields in a focused dialog and preserves all existing save fields', async () => {
+describe('settings editors', () => {
+  it.each([390, 1440])('opens category fields in a dialog at %ipx and preserves all existing save fields', async width => {
+    vi.stubGlobal('innerWidth', width)
     const wrapper = await setup('Expense Categories')
     await wrapper.get('[data-category-actions="1"]').trigger('click')
     await click('Edit category')
@@ -48,6 +49,8 @@ describe('focused phone settings editors', () => {
       name: 'Renamed essentials', description: 'Food and cleaning', categoryName: 'Essentials',
       budgetedAmount: 12000, budgetedPercentage: 0, cap: 20000, accountId: 3,
     })
+    expect(api.get.mock.calls.filter(([url]) => url.startsWith('/api/expense-categories'))).toHaveLength(2)
+    expect(wrapper.find('input[type="number"]').exists()).toBe(false)
   })
   it('keeps account edits out of the list and cancels without a mutation', async () => {
     const wrapper = await setup('Accounts')

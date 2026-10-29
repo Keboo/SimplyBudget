@@ -8,6 +8,7 @@ import type { AccountDto, BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto,
 import { formatCents, formatMonth, parseMonth } from '@/utils/currency'
 import { useRouter } from 'vue-router'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
+import EditExpenseCategoryDialog from '@/components/EditExpenseCategoryDialog.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
 import { useMonthQueryParam } from '@/composables/useMonthQueryParam'
 import { createMonthUpdatesHubClient } from '@/services/monthUpdatesHub'
@@ -23,6 +24,9 @@ const { currentMonth } = useMonthQueryParam()
 const { data: budget, loading, error: loadError, hasLoaded, load: loadBudget } = useContextualLoad<BudgetResponse | null>(null, 'Failed to load budget')
 const { data: accounts, loading: accountLoading, error: accountError, hasLoaded: accountsLoaded, load: loadAccounts } = useContextualLoad<AccountDto[]>([], 'Failed to load account balances')
 const dialogOpen = ref(false)
+const initialTransfer = ref<{ toCategoryId: number; amount: number | null } | null>(null)
+const editCategory = ref<ExpenseCategoryDto | null>(null)
+let categoryEditorId: number | null = null
 const { data: categories, loading: categoriesLoading, error: categoriesError, hasLoaded: categoriesLoaded, load: loadCategories } = useContextualLoad<ExpenseCategoryDto[]>([], 'Failed to load categories')
 const categoryChartDialogOpen = ref(false)
 const categoryChartLoading = ref(false)
@@ -153,6 +157,34 @@ function onDialogSuccess() {
   void fetchBudget()
   void fetchAccountBalances()
   dialogOpen.value = false
+}
+
+function openTransactionDialog() {
+  initialTransfer.value = null
+  dialogOpen.value = true
+}
+
+function openCategoryTransfer(category: BudgetCategoryDto) {
+  initialTransfer.value = {
+    toCategoryId: category.id,
+    amount: category.currentBalance < 0 ? Math.abs(category.currentBalance) : null,
+  }
+  dialogOpen.value = true
+}
+
+function openCategoryEditor(category: BudgetCategoryDto) {
+  const currentCategory = categories.value.find(item => item.id === category.id)
+  if (!currentCategory) return
+  categoryEditorId = category.id
+  editCategory.value = currentCategory
+}
+
+function restoreCategoryEditorFocus() {
+  document.querySelector<HTMLElement>(`[data-category-actions="${categoryEditorId}"]`)?.focus()
+}
+
+async function onCategoryEditSuccess() {
+  await Promise.all([fetchCategories(), fetchBudget()])
 }
 
 function getBarHeightPercent(amount: number): number {
@@ -336,15 +368,28 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                   </div>
                 </div>
                 <template #append>
-                  <v-btn
-                    icon="mdi-chart-bar"
-                    variant="text"
-                    size="small"
-                    min-width="44"
-                    min-height="44"
-                    aria-label="Open category chart"
-                    @click.stop="openCategoryChart(cat)"
-                  />
+                  <v-menu>
+                    <template #activator="{ props }">
+                      <v-btn
+                        v-bind="props"
+                        :data-category-actions="cat.id"
+                        icon="mdi-dots-vertical"
+                        variant="text"
+                        size="small"
+                        min-width="44"
+                        min-height="44"
+                        :aria-label="`Actions for category ${cat.name ?? '(unnamed)'}`"
+                        @click.stop
+                        @keydown.stop
+                      />
+                    </template>
+                    <v-list>
+                      <v-list-item title="Edit category" prepend-icon="mdi-pencil" :disabled="!categories.some(category => category.id === cat.id)" @click="openCategoryEditor(cat)" />
+                      <v-list-item title="Transfer to category" prepend-icon="mdi-bank-transfer" @click="openCategoryTransfer(cat)" />
+                      <v-list-item title="View history" prepend-icon="mdi-history" @click="openCategoryHistory(cat)" />
+                      <v-list-item title="Open category chart" prepend-icon="mdi-chart-bar" @click="openCategoryChart(cat)" />
+                    </v-list>
+                  </v-menu>
                 </template>
               </v-list-item>
             </v-list>
@@ -358,13 +403,22 @@ function openCategoryHistory(category: BudgetCategoryDto) {
       color="primary"
       aria-label="Add Transaction"
       style="position: fixed; bottom: 32px; right: 32px; z-index: 100;"
-      @click="dialogOpen = true"
+      @click="openTransactionDialog"
     />
 
     <AddTransactionDialog
       v-model="dialogOpen"
       :categories="categories"
+      :initial-transfer="initialTransfer"
       @success="onDialogSuccess"
+    />
+
+    <EditExpenseCategoryDialog
+      :model-value="editCategory !== null"
+      :category="editCategory"
+      @update:model-value="(value: boolean) => !value && (editCategory = null)"
+      @success="onCategoryEditSuccess"
+      @after-leave="restoreCategoryEditorFocus"
     />
 
     <v-dialog v-model="categoryChartDialogOpen" max-width="980">

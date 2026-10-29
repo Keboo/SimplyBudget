@@ -18,6 +18,7 @@ import AmountField from '@/components/AmountField.vue'
 const props = defineProps<{
   modelValue: boolean
   categories: ExpenseCategoryDto[]
+  initialTransfer?: { toCategoryId: number; amount: number | null } | null
 }>()
 
 const emit = defineEmits<{
@@ -69,6 +70,16 @@ function resetForm() {
   toCategoryId.value = null
   tab.value = 'transaction'
 }
+
+watch(() => props.modelValue, open => {
+  if (!open) return
+  resetForm()
+  if (props.initialTransfer) {
+    tab.value = 'transfer'
+    toCategoryId.value = props.initialTransfer.toCategoryId
+    transferAmount.value = props.initialTransfer.amount === null ? '' : centsToDollars(props.initialTransfer.amount)
+  }
+}, { immediate: true })
 
 function close() {
   closeCalculator()

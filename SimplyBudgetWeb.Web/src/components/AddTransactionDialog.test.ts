@@ -38,6 +38,31 @@ async function save() {
 }
 
 describe('adaptive transaction editor', () => {
+  it('resets canceled transfer values before reopening with a different destination or a normal expense', async () => {
+    const wrapper = await editor()
+    await wrapper.setProps({ modelValue: false, initialTransfer: { toCategoryId: 1, amount: 12345 } })
+    await wrapper.setProps({ modelValue: true })
+    let selectors = wrapper.findAllComponents(CategorySelector)
+    expect(selectors.map(selector => selector.props('modelValue'))).toEqual([null, 1])
+    const amountField = () => wrapper.findAllComponents(components.VTextField).find(field => field.props('label') === 'Amount ($)')!
+    expect(amountField().props('modelValue')).toBe('123.45')
+    selectors[0]!.vm.$emit('update:modelValue', 2)
+    amountField().vm.$emit('update:modelValue', '99.00')
+    const cancel = [...document.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent?.trim() === 'Cancel')!
+    cancel.click()
+    await flushPromises()
+    expect(api.post).not.toHaveBeenCalled()
+    await wrapper.setProps({ modelValue: false, initialTransfer: { toCategoryId: 2, amount: null } })
+    await wrapper.setProps({ modelValue: true })
+    selectors = wrapper.findAllComponents(CategorySelector)
+    expect(selectors.map(selector => selector.props('modelValue'))).toEqual([null, 2])
+    expect(amountField().props('modelValue')).toBe('')
+    await wrapper.setProps({ modelValue: false, initialTransfer: null })
+    await wrapper.setProps({ modelValue: true })
+    expect(wrapper.findAllComponents(CategorySelector).map(selector => selector.props('modelValue'))).toEqual([null])
+    expect(wrapper.findAllComponents(AmountField)[0]!.props('modelValue')).toBe('')
+  })
+
   it('keeps split categories and committed amounts in the expense request', async () => {
     const wrapper = await editor()
     wrapper.findAllComponents(CategorySelector)[0]!.vm.$emit('update:modelValue', 1)
