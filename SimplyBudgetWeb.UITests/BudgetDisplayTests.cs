@@ -5,6 +5,127 @@ namespace SimplyBudgetWeb.UITests;
 public class BudgetDisplayTests : UITestBase
 {
     [Test]
+    [Arguments(390)]
+    [Arguments(1440)]
+    public async Task CategoryActionsEditAndPrepareTransfersWithoutPostingAutomatically(int width)
+    {
+        await Page.SetViewportSizeAsync(width, 900);
+        await Page.RouteAsync("**/src/stores/auth.ts*", route => route.FulfillAsync(new()
+        {
+            ContentType = "application/javascript",
+            Body = """
+                export const useAuthStore = () => ({
+                  isAuthenticated: true, displayName: 'Budget reviewer',
+                  initialize: async () => {}, getToken: async () => '',
+                  login: () => {}, logout: () => {}
+                });
+                """,
+        }));
+        await Page.RouteAsync("**/src/services/monthUpdatesHub.ts*", route => route.FulfillAsync(new()
+        {
+            ContentType = "application/javascript",
+            Body = """
+                export const createMonthUpdatesHubClient = () => ({
+                  start: async () => {}, stop: async () => {}, setMonth: async () => {}
+                });
+                """,
+        }));
+        var categories = new[]
+        {
+            JsonSerializer.SerializeToNode(Category(1, "Groceries", -1234, 25000, false))!,
+            JsonSerializer.SerializeToNode(Category(2, "Savings", 0, 0, false))!,
+            JsonSerializer.SerializeToNode(Category(3, "Travel", 700, 0, false))!,
+        };
+        var transfers = new List<string>();
+        var edits = new List<string>();
+        await Page.RouteAsync("**/api/**", async route =>
+        {
+            var path = new Uri(route.Request.Url).AbsolutePath;
+            object response = Array.Empty<object>();
+            if (route.Request.Method == "POST")
+            {
+                transfers.Add(route.Request.PostData!);
+                response = new { };
+            }
+            else if (route.Request.Method == "PUT")
+            {
+                edits.Add(route.Request.PostData!);
+                using var edit = JsonDocument.Parse(route.Request.PostData!);
+                categories[0]["name"] = edit.RootElement.GetProperty("name").GetString();
+                response = new { };
+            }
+            else if (path == "/api/budget")
+            {
+                response = new { totalBudget = 30000, totalAccountAmount = 50000, estimatedMonthlyIncome = 40000, month = "2026-10", categories };
+            }
+            else if (path == "/api/expense-categories")
+            {
+                response = categories;
+            }
+            await route.FulfillAsync(new() { ContentType = "application/json", Body = JsonSerializer.Serialize(response) });
+        });
+        await Page.GotoAsync(new Uri(FrontendBaseUri, "budget?month=2026-10").ToString());
+
+        var actions = Page.Locator("[data-category-actions='1']");
+        await actions.FocusAsync();
+        await Page.Keyboard.PressAsync("Enter");
+        await Page.GetByRole(AriaRole.Menuitem, new() { Name = "Create transfer" }).ClickAsync();
+        var dialog = Page.GetByRole(AriaRole.Dialog);
+        await Assertions.Expect(dialog.GetByRole(AriaRole.Combobox, new() { Name = "To Category", Exact = true })).ToHaveValueAsync("Groceries");
+        await Assertions.Expect(dialog.GetByRole(AriaRole.Combobox, new() { Name = "From Category", Exact = true })).ToHaveValueAsync("");
+        await Assertions.Expect(dialog.GetByLabel("Amount ($)", new() { Exact = true })).ToHaveValueAsync("12.34");
+        var save = dialog.GetByRole(AriaRole.Button, new() { Name = "Save", Exact = true });
+        await Assertions.Expect(save).ToBeDisabledAsync();
+        await Assert.That(transfers.Count).IsEqualTo(0);
+        await dialog.GetByRole(AriaRole.Combobox, new() { Name = "From Category", Exact = true }).FillAsync("Travel");
+        await Page.GetByRole(AriaRole.Option, new() { Name = "Travel", Exact = true }).ClickAsync();
+        await Assertions.Expect(save).ToBeEnabledAsync();
+        await Assert.That(transfers.Count).IsEqualTo(0);
+        await save.ClickAsync();
+        await Assertions.Expect(dialog).ToBeHiddenAsync();
+        await Assertions.Expect(actions).ToBeFocusedAsync();
+        await Assert.That(transfers.Count).IsEqualTo(1);
+        using (var transfer = JsonDocument.Parse(transfers[0]))
+        {
+            await Assert.That(transfer.RootElement.GetProperty("amount").GetInt32()).IsEqualTo(1234);
+            await Assert.That(transfer.RootElement.GetProperty("fromCategoryId").GetInt32()).IsEqualTo(3);
+            await Assert.That(transfer.RootElement.GetProperty("toCategoryId").GetInt32()).IsEqualTo(1);
+        }
+
+        foreach (var (id, name) in new[] { (2, "Savings"), (3, "Travel") })
+        {
+            await Page.Locator($"[data-category-actions='{id}']").ClickAsync();
+            await Page.GetByRole(AriaRole.Menuitem, new() { Name = "Create transfer" }).ClickAsync();
+            await Assertions.Expect(dialog.GetByRole(AriaRole.Combobox, new() { Name = "To Category", Exact = true })).ToHaveValueAsync(name);
+            await Assertions.Expect(dialog.GetByRole(AriaRole.Combobox, new() { Name = "From Category", Exact = true })).ToHaveValueAsync("");
+            await Assertions.Expect(dialog.GetByLabel("Amount ($)", new() { Exact = true })).ToHaveValueAsync("");
+            await dialog.GetByLabel("Amount ($)", new() { Exact = true }).FillAsync("88");
+            await dialog.GetByRole(AriaRole.Button, new() { Name = "Cancel", Exact = true }).ClickAsync();
+            await Assertions.Expect(dialog).ToBeHiddenAsync();
+        }
+        await Assert.That(transfers.Count).IsEqualTo(1);
+
+        await actions.ClickAsync();
+        await Page.GetByRole(AriaRole.Menuitem, new() { Name = "Edit category" }).ClickAsync();
+        await Assertions.Expect(dialog).ToHaveAccessibleNameAsync("Edit expense category");
+        await dialog.GetByLabel("Name", new() { Exact = true }).FillAsync("Discard this");
+        await Page.Keyboard.PressAsync("Escape");
+        await Assertions.Expect(dialog).ToBeHiddenAsync();
+        await Assertions.Expect(actions).ToBeFocusedAsync();
+        await Assert.That(edits.Count).IsEqualTo(0);
+        await actions.ClickAsync();
+        await Page.GetByRole(AriaRole.Menuitem, new() { Name = "Edit category" }).ClickAsync();
+        await Assertions.Expect(dialog.GetByLabel("Name", new() { Exact = true })).ToHaveValueAsync("Groceries");
+        await dialog.GetByLabel("Name", new() { Exact = true }).FillAsync("Updated groceries");
+        await dialog.GetByRole(AriaRole.Button, new() { Name = "Save", Exact = true }).ClickAsync();
+        await Assertions.Expect(dialog).ToBeHiddenAsync();
+        await Assertions.Expect(Page.Locator(".budget-category-name").Filter(new() { HasText = "Updated groceries" })).ToBeVisibleAsync();
+        await Assert.That(edits.Count).IsEqualTo(1);
+        await Assertions.Expect(Page).ToHaveURLAsync(new Regex("/budget\\?month=2026-10$"));
+        await Assert.That(await Page.EvaluateAsync<bool>("() => document.documentElement.scrollWidth <= innerWidth")).IsTrue();
+    }
+
+    [Test]
     [Arguments(320, "light")]
     [Arguments(390, "light")]
     [Arguments(768, "light")]
