@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { createVuetify } from 'vuetify'
@@ -7,10 +7,13 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import Budget from './Budget.vue'
 import MonthPickerNav from '@/components/MonthPickerNav.vue'
+import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
+import EditExpenseCategoryDialog from '@/components/EditExpenseCategoryDialog.vue'
+import CategorySelector from '@/components/CategorySelector.vue'
 import type { BudgetCategoryDto } from '@/types'
 
-const mocks = vi.hoisted(() => ({ get: vi.fn(), push: vi.fn() }))
-vi.mock('@/services/apiClient', () => ({ apiClient: { get: mocks.get } }))
+const mocks = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), push: vi.fn() }))
+vi.mock('@/services/apiClient', () => ({ apiClient: { get: mocks.get, post: mocks.post, put: mocks.put } }))
 vi.mock('@/stores/auth', () => ({ useAuthStore: () => ({ getToken: vi.fn() }) }))
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: mocks.push }) }))
 vi.mock('@/composables/useMonthQueryParam', () => ({
@@ -31,27 +34,126 @@ const category: BudgetCategoryDto = {
 enableAutoUnmount(afterEach)
 afterEach(() => {
   document.body.innerHTML = ''
-  vi.unstubAllGlobals()
 })
+afterAll(() => vi.unstubAllGlobals())
 beforeEach(() => {
+  vi.stubGlobal('innerWidth', 1024)
+  vi.stubGlobal('visualViewport', { addEventListener: vi.fn(), removeEventListener: vi.fn(), width: 1440, height: 900, offsetTop: 0, offsetLeft: 0 })
   mocks.get.mockReset()
+  mocks.post.mockReset().mockResolvedValue(undefined)
+  mocks.put.mockReset().mockResolvedValue(undefined)
   mocks.push.mockReset()
 })
 
-async function setup(overrides: Partial<BudgetCategoryDto> = {}) {
+async function setup(overrides: Partial<BudgetCategoryDto> = {}, realDialogs = false, extraCategories: BudgetCategoryDto[] = []) {
+  const categories = [{ ...category, ...overrides }, ...extraCategories]
   mocks.get.mockImplementation(async (url: string) => url.startsWith('/api/budget?')
-    ? { totalBudget: 30000, totalAccountAmount: 50000, estimatedMonthlyIncome: 40000, month: '2026-10', categories: [{ ...category, ...overrides }] }
+    ? { totalBudget: 30000, totalAccountAmount: 50000, estimatedMonthlyIncome: 40000, month: '2026-10', categories }
+    : url === '/api/expense-categories' ? categories.map(category => ({ ...category, hasItems: true }))
     : [])
   const wrapper = mount(Budget, {
     attachTo: document.body,
     global: {
       plugins: [createPinia(), createVuetify({ components, directives })],
-      stubs: { AddTransactionDialog: true },
+      stubs: { AddTransactionDialog: !realDialogs },
     },
   })
   await flushPromises()
   return wrapper
 }
+
+describe('budget category actions', () => {
+  async function chooseAction(wrapper: Awaited<ReturnType<typeof setup>>, categoryId: number, title: string) {
+    const button = wrapper.get(`[data-category-actions="${categoryId}"]`)
+    expect(button.attributes('aria-haspopup')).toBe('menu')
+    await button.trigger('click')
+    await flushPromises()
+    const action = [...document.querySelectorAll<HTMLElement>('.v-overlay--active [role="menuitem"]')].find(item => item.textContent?.trim() === title)!
+    expect(action, title).toBeDefined()
+    action.click()
+    await flushPromises()
+    expect(mocks.push).not.toHaveBeenCalled()
+  }
+
+  async function dialogButton(title: string) {
+    const button = [...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find(button => button.textContent?.trim() === title)!
+    button.click()
+    await flushPromises()
+  }
+
+  it('edits the selected category in a dialog and refreshes budget and category details after saving', async () => {
+    const wrapper = await setup({}, true)
+    await chooseAction(wrapper, 1, 'Edit category')
+    const editor = wrapper.getComponent(EditExpenseCategoryDialog)
+    expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Edit expense category')
+    expect(editor.props('category')?.id).toBe(1)
+    const name = editor.findAllComponents(components.VTextField).find(field => field.props('label') === 'Name')!
+    await name.get('input').setValue('Updated groceries')
+    await dialogButton('Save')
+    expect(mocks.put).toHaveBeenCalledExactlyOnceWith('/api/expense-categories/1', {
+      name: 'Updated groceries', description: 'Household food', categoryName: 'Essentials',
+      budgetedAmount: 30000, budgetedPercentage: 0, cap: null, accountId: null,
+    })
+    expect(editor.props('modelValue')).toBe(false)
+    expect(mocks.get.mock.calls.filter(([url]) => url === '/api/budget?month=2026-10-01')).toHaveLength(2)
+    expect(mocks.get.mock.calls.filter(([url]) => url === '/api/expense-categories')).toHaveLength(2)
+  })
+
+  it('prefills a positive deficit amount and destination but requires a different source and explicit Save', async () => {
+    const wrapper = await setup({ currentBalance: -1234 }, true, [{ ...category, id: 2, name: 'Savings' }])
+    await chooseAction(wrapper, 1, 'Create transfer')
+    const editor = wrapper.getComponent(AddTransactionDialog)
+    const selectors = editor.findAllComponents(CategorySelector)
+    expect(selectors.map(selector => [selector.props('label'), selector.props('modelValue')])).toEqual([
+      ['From Category', null], ['To Category', 1],
+    ])
+    const amount = editor.findAllComponents(components.VTextField).find(field => field.props('label') === 'Amount ($)')!
+    expect(amount.props('modelValue')).toBe('12.34')
+    const save = editor.findAllComponents(components.VBtn).find(button => button.text() === 'Save')!
+    expect(save.props('disabled')).toBe(true)
+    expect(mocks.post).not.toHaveBeenCalled()
+    selectors[0]!.vm.$emit('update:modelValue', 1)
+    await flushPromises()
+    expect(save.props('disabled')).toBe(true)
+    selectors[0]!.vm.$emit('update:modelValue', 2)
+    await flushPromises()
+    expect(save.props('disabled')).toBe(false)
+    expect(mocks.post).not.toHaveBeenCalled()
+    await dialogButton('Save')
+    expect(mocks.post).toHaveBeenCalledExactlyOnceWith('/api/transactions/transfer', {
+      description: '', date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      amount: 1234, fromCategoryId: 2, toCategoryId: 1,
+    })
+    expect(editor.props('modelValue')).toBe(false)
+    expect(mocks.get.mock.calls.filter(([url]) => url === '/api/budget?month=2026-10-01')).toHaveLength(2)
+    expect(mocks.get.mock.calls.filter(([url]) => url.startsWith('/api/accounts?'))).toHaveLength(2)
+  })
+
+  it('clears prior amounts and source when reopening for zero/positive balances and preserves normal entry defaults', async () => {
+    const wrapper = await setup({ currentBalance: -501 }, true, [
+      { ...category, id: 2, name: 'Zero balance', currentBalance: 0 },
+      { ...category, id: 3, name: 'Positive balance', currentBalance: 700 },
+    ])
+    const editor = wrapper.getComponent(AddTransactionDialog)
+    const amount = () => editor.findAllComponents(components.VTextField).find(field => field.props('label') === 'Amount ($)')!
+    await chooseAction(wrapper, 1, 'Create transfer')
+    expect(amount().props('modelValue')).toBe('5.01')
+    editor.findAllComponents(CategorySelector)[0]!.vm.$emit('update:modelValue', 3)
+    await dialogButton('Cancel')
+    for (const id of [2, 3]) {
+      await chooseAction(wrapper, id, 'Create transfer')
+      expect(amount().props('modelValue')).toBe('')
+      expect(editor.findAllComponents(CategorySelector).map(selector => selector.props('modelValue'))).toEqual([null, id])
+      await amount().get('input').setValue('88.00')
+      await dialogButton('Cancel')
+    }
+    await wrapper.get('[aria-label="Add Transaction"]').trigger('click')
+    await flushPromises()
+    expect(editor.findAllComponents(CategorySelector).map(selector => selector.props('label'))).toEqual(['Category'])
+    expect(editor.getComponent(components.VTabs).props('modelValue')).toBe('transaction')
+    expect(mocks.post).not.toHaveBeenCalled()
+  })
+})
 
 describe('budget expense rows', () => {
   it.each([

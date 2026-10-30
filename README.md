@@ -36,6 +36,14 @@ This template uses a `global.json` file to specify the required .NET SDK version
 
 ## Key Features
 
+### Category actions and transfers
+
+Expense categories open in an edit dialog from Settings or the Budget page's right-side
+category actions menu (⋮). Choose **Create transfer** in that menu to select the category
+as the destination. A negative balance prefills the positive amount needed to cover it;
+zero or positive balances leave the amount blank. Choose a different source category and
+review the amount before selecting **Save**; opening the dialog never posts a transfer.
+
 ### Budget spending averages
 
 Budget spending averages cover 3, 6, or 12 calendar months ending with the selected month

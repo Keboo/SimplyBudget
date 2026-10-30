@@ -18,11 +18,13 @@ import AmountField from '@/components/AmountField.vue'
 const props = defineProps<{
   modelValue: boolean
   categories: ExpenseCategoryDto[]
+  transferDefaults?: { toCategoryId: number; amount?: number }
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   success: []
+  closed: []
 }>()
 
 const snackbar = useSnackbarStore()
@@ -70,6 +72,16 @@ function resetForm() {
   tab.value = 'transaction'
 }
 
+watch(() => [props.modelValue, props.transferDefaults] as const, ([open, defaults]) => {
+  if (!open) return
+  resetForm()
+  if (defaults) {
+    tab.value = 'transfer'
+    toCategoryId.value = defaults.toCategoryId
+    transferAmount.value = defaults.amount && defaults.amount > 0 ? centsToDollars(defaults.amount) : ''
+  }
+}, { immediate: true })
+
 function close() {
   closeCalculator()
   resetForm()
@@ -110,6 +122,14 @@ const incomeRemainingCents = computed(() => incomeTotalCents.value - incomeAlloc
 
 const canSubmitIncome = computed(() =>
   incomeTotalCents.value > 0 && incomeRemainingCents.value === 0,
+)
+
+const canSubmitTransfer = computed(() =>
+  Number.isFinite(dollarsToCents(transferAmount.value))
+  && dollarsToCents(transferAmount.value) > 0
+  && isValidCategoryId(fromCategoryId.value)
+  && isValidCategoryId(toCategoryId.value)
+  && fromCategoryId.value !== toCategoryId.value,
 )
 
 const dateAsMonth = computed(() => parseLocalDate(date.value))
@@ -194,6 +214,7 @@ function applyCalculator() {
 }
 
 async function submit() {
+  if (submitting.value) return
   submitting.value = true
   try {
     const normalizedNotes = notes.value.trim().length > 0 ? notes.value.trim() : null
@@ -229,6 +250,7 @@ async function submit() {
       await apiClient.post('/api/transactions/income', payload)
       snackbar.enqueueSnackbar('Income added', { variant: 'success' })
     } else {
+      if (!canSubmitTransfer.value) return
       const payload: TransferRequest = {
         description: description.value,
         date: date.value,
@@ -250,7 +272,7 @@ async function submit() {
 </script>
 
 <template>
-  <v-dialog :model-value="props.modelValue" :fullscreen="phone" max-width="600" @update:model-value="(val: boolean) => !val && close()">
+  <v-dialog :model-value="props.modelValue" :fullscreen="phone" max-width="600" @update:model-value="(val: boolean) => !val && close()" @after-leave="emit('closed')">
     <v-card class="transaction-editor">
       <v-card-title>Add Transaction</v-card-title>
       <v-card-text class="dialog-scroll-area">
@@ -363,7 +385,7 @@ async function submit() {
         <v-btn
           color="primary"
           :loading="submitting"
-          :disabled="(tab === 'transaction' && !canSubmitLines) || (tab === 'income' && !canSubmitIncome)"
+          :disabled="submitting || (tab === 'transaction' && !canSubmitLines) || (tab === 'income' && !canSubmitIncome) || (tab === 'transfer' && !canSubmitTransfer)"
           @click="submit"
         >
           Save

@@ -15,6 +15,7 @@ import type {
 import { formatCents, centsToDollars, dollarsToCents } from '@/utils/currency'
 import { resetExternalLinkRulesCache } from '@/utils/externalLinks'
 import CategorySelector from '@/components/CategorySelector.vue'
+import EditExpenseCategoryDialog from '@/components/EditExpenseCategoryDialog.vue'
 
 const snackbar = useSnackbarStore()
 const authStore = useAuthStore()
@@ -147,16 +148,8 @@ const categoriesLoaded = ref(false)
 const categoriesLoading = ref(false)
 const showHiddenCategories = ref(false)
 const manageCategories = ref<ExpenseCategoryDto[]>([])
-const editCategoryId = ref<number | null>(null)
-const editCategoryForm = ref({
-  name: '',
-  description: '',
-  categoryName: '',
-  budgetType: 'fixed' as 'fixed' | 'percentage',
-  budgetedAmount: '0.00',
-  budgetedPercentage: '0',
-  cap: '',
-})
+const editCategory = ref<ExpenseCategoryDto | null>(null)
+const categoryEditOpen = ref(false)
 const deleteCategory = ref<ExpenseCategoryDto | null>(null)
 const addCategoryOpen = ref(false)
 const addCategorySaving = ref(false)
@@ -546,61 +539,14 @@ async function fetchManageCategories() {
 }
 
 function startEditCategory(category: ExpenseCategoryDto) {
-  if (phone.value) editorOrigin = `[data-category-actions="${category.id}"]`
-  editCategoryId.value = category.id
-  editCategoryForm.value = {
-    name: category.name ?? '',
-    description: category.description ?? '',
-    categoryName: category.categoryName ?? '',
-    budgetType: category.usePercentage ? 'percentage' : 'fixed',
-    budgetedAmount: centsToDollars(category.budgetedAmount),
-    budgetedPercentage: category.budgetedPercentage.toString(),
-    cap: category.cap === null ? '' : centsToDollars(category.cap),
-  }
+  editorOrigin = phone.value ? `[data-category-actions="${category.id}"]` : `[data-category-edit="${category.id}"]`
+  editCategory.value = category
+  categoryEditOpen.value = true
 }
 
-async function handleSaveCategoryEdit(category: ExpenseCategoryDto) {
-  const budgetType = editCategoryForm.value.budgetType
-  const budgetedAmount = dollarsToCents(editCategoryForm.value.budgetedAmount)
-  const budgetedPercentage = Number.parseInt(editCategoryForm.value.budgetedPercentage, 10)
-  const parsedCap = parseOptionalNonNegativeDollars(editCategoryForm.value.cap)
-
-  if (budgetType === 'fixed' && (Number.isNaN(budgetedAmount) || budgetedAmount < 0)) {
-    snackbar.enqueueSnackbar('Budgeted amount must be 0 or greater', { variant: 'error' })
-    return
-  }
-
-  if (budgetType === 'percentage' && (!Number.isInteger(budgetedPercentage) || budgetedPercentage <= 0 || budgetedPercentage > 100)) {
-    snackbar.enqueueSnackbar('Budgeted percentage must be a whole number between 1 and 100', { variant: 'error' })
-    return
-  }
-
-  if (!parsedCap.valid) {
-    snackbar.enqueueSnackbar('Cap must be a valid amount that is 0 or greater', { variant: 'error' })
-    return
-  }
-
-  try {
-    await apiClient.put(`/api/expense-categories/${category.id}`, {
-      name: editCategoryForm.value.name,
-      description: editCategoryForm.value.description,
-      categoryName: editCategoryForm.value.categoryName,
-      budgetedAmount: budgetType === 'fixed' ? budgetedAmount : 0,
-      budgetedPercentage: budgetType === 'percentage' ? budgetedPercentage : 0,
-      cap: parsedCap.value,
-      accountId: category.accountId,
-    })
-    snackbar.enqueueSnackbar('Category updated', { variant: 'success' })
-    editCategoryId.value = null
-    void fetchManageCategories()
-  } catch {
-    snackbar.enqueueSnackbar('Failed to update category', { variant: 'error' })
-  }
-}
-
-function savePhoneCategory() {
-  const category = manageCategories.value.find(category => category.id === editCategoryId.value)
-  if (category) void handleSaveCategoryEdit(category)
+function onCategoryEditSuccess() {
+  void fetchManageCategories()
+  rulesLoaded.value = false
 }
 
 async function handleToggleHideCategory(category: ExpenseCategoryDto) {
@@ -1062,99 +1008,19 @@ watch(openPanel, (panel) => {
               </v-card-text>
               <v-list-item v-else>
                 <v-list-item-title>
-                  <div v-if="editCategoryId === category.id" class="d-flex flex-wrap align-center" style="gap: 8px;">
-                    <v-text-field
-                      v-model="editCategoryForm.name"
-                      label="Name"
-                      density="compact"
-                      hide-details
-                      autofocus
-                      style="max-width: 220px;"
-                      @keydown.enter="handleSaveCategoryEdit(category)"
-                    />
-                    <v-text-field
-                      v-model="editCategoryForm.categoryName"
-                      label="Group"
-                      density="compact"
-                      hide-details
-                      style="max-width: 220px;"
-                      @keydown.enter="handleSaveCategoryEdit(category)"
-                    />
-                    <v-text-field
-                      v-model="editCategoryForm.description"
-                      label="Description"
-                      density="compact"
-                      hide-details
-                      style="min-width: 260px;"
-                      @keydown.enter="handleSaveCategoryEdit(category)"
-                    />
-                    <v-btn-toggle
-                      v-model="editCategoryForm.budgetType"
-                      mandatory
-                      density="compact"
-                      divided
-                    >
-                      <v-btn value="fixed" size="small">Fixed</v-btn>
-                      <v-btn value="percentage" size="small">Percentage</v-btn>
-                    </v-btn-toggle>
-                    <v-text-field
-                      v-if="editCategoryForm.budgetType === 'fixed'"
-                      v-model="editCategoryForm.budgetedAmount"
-                      label="Budget"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      density="compact"
-                      hide-details
-                      prefix="$"
-                      style="max-width: 160px;"
-                      @keydown.enter="handleSaveCategoryEdit(category)"
-                    />
-                    <v-text-field
-                      v-else
-                      v-model="editCategoryForm.budgetedPercentage"
-                      label="Budget"
-                      type="number"
-                      step="1"
-                      min="1"
-                      max="100"
-                      density="compact"
-                      hide-details
-                      suffix="%"
-                      style="max-width: 160px;"
-                      @keydown.enter="handleSaveCategoryEdit(category)"
-                    />
-                    <v-text-field
-                      v-model="editCategoryForm.cap"
-                      label="Cap"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      density="compact"
-                      hide-details
-                      prefix="$"
-                      :disabled="editCategoryForm.budgetType !== 'fixed'"
-                      style="max-width: 160px;"
-                      @keydown.enter="handleSaveCategoryEdit(category)"
-                    />
-                  </div>
-                  <div v-else class="d-flex align-center" style="gap: 8px;">
+                  <div class="d-flex align-center" style="gap: 8px;">
                     <span>{{ category.name }}</span>
                     <v-chip v-if="category.isHidden" size="small">Hidden</v-chip>
                   </div>
                 </v-list-item-title>
-                <v-list-item-subtitle v-if="editCategoryId !== category.id">
+                <v-list-item-subtitle>
                   <div>{{ category.categoryName ?? 'No group' }}</div>
                   <div v-if="category.description">{{ category.description }}</div>
                   <div v-if="category.cap !== null">Cap: {{ formatCents(category.cap) }}</div>
                 </v-list-item-subtitle>
                 <template #append>
-                  <div v-if="editCategoryId === category.id" class="d-flex" style="gap: 4px;">
-                    <v-btn icon="mdi-content-save" color="primary" variant="text" aria-label="Save" @click="handleSaveCategoryEdit(category)" />
-                    <v-btn icon="mdi-close" variant="text" aria-label="Cancel" @click="editCategoryId = null" />
-                  </div>
-                  <div v-else class="d-flex align-center" style="gap: 4px;">
-                    <v-btn icon="mdi-pencil" variant="text" aria-label="Rename category" @click="startEditCategory(category)" />
+                  <div class="d-flex align-center" style="gap: 4px;">
+                    <v-btn :data-category-edit="category.id" icon="mdi-pencil" variant="text" aria-label="Edit category" @click="startEditCategory(category)" />
                     <v-btn
                       :icon="category.isHidden ? 'mdi-eye' : 'mdi-eye-off'"
                       variant="text"
@@ -1196,23 +1062,12 @@ watch(openPanel, (panel) => {
       </v-card>
     </v-dialog>
 
-    <v-dialog :model-value="phone && editCategoryId !== null" fullscreen @update:model-value="(value: boolean) => !value && (editCategoryId = null)" @after-leave="restoreEditorFocus">
-      <v-card class="phone-settings-editor" title="Edit category">
-        <v-card-text class="d-flex flex-column ga-4">
-          <v-text-field v-model="editCategoryForm.name" label="Name" hide-details autofocus />
-          <v-text-field v-model="editCategoryForm.categoryName" label="Group" hide-details />
-          <v-textarea v-model="editCategoryForm.description" label="Description" rows="2" auto-grow hide-details />
-          <v-select v-model="editCategoryForm.budgetType" label="Budget type" :items="[{ title: 'Fixed', value: 'fixed' }, { title: 'Percentage', value: 'percentage' }]" hide-details />
-          <v-text-field v-if="editCategoryForm.budgetType === 'fixed'" v-model="editCategoryForm.budgetedAmount" label="Budget" type="number" step="0.01" min="0" prefix="$" hide-details />
-          <v-text-field v-else v-model="editCategoryForm.budgetedPercentage" label="Budget" type="number" step="1" min="1" max="100" suffix="%" hide-details />
-          <v-text-field v-model="editCategoryForm.cap" label="Cap" type="number" step="0.01" min="0" prefix="$" :disabled="editCategoryForm.budgetType !== 'fixed'" hint="Optional maximum running balance for fixed-budget categories." persistent-hint />
-        </v-card-text>
-        <v-card-actions>
-          <v-btn @click="editCategoryId = null">Cancel</v-btn>
-          <v-btn color="primary" @click="savePhoneCategory">Save</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <EditExpenseCategoryDialog
+      v-model="categoryEditOpen"
+      :category="editCategory"
+      @success="onCategoryEditSuccess"
+      @closed="restoreEditorFocus"
+    />
 
     <v-dialog v-model="accountAddOpen" :fullscreen="phone" max-width="480">
       <v-card :class="{ 'phone-settings-editor': phone }">
