@@ -14,6 +14,12 @@ interface EditableLine {
   amount: string
 }
 
+interface DuplicateUpload {
+  receipt: ReceiptDto
+  match: ReceiptDto
+  overrides: { merchant: string; date: string; total: string }
+}
+
 const snackbar = useSnackbarStore()
 const { xs: phone } = useDisplay()
 const reviewOpen = ref(false)
@@ -64,6 +70,9 @@ const loadError = ref('')
 const actionError = ref('')
 const deleteOpen = ref(false)
 const deleting = ref(false)
+const duplicateUpload = ref<DuplicateUpload | null>(null)
+const duplicateError = ref('')
+const deletingDuplicate = ref(false)
 const draftReceiptId = ref<number | null>(null)
 const drafts = new Map<number, ReceiptUpdateRequest>()
 const uploadOverrides = ref({ merchant: '', date: '', total: '' })
@@ -170,37 +179,91 @@ async function uploadReceipt() {
     formData.append('image', imageFile.value)
     if (imageGeometry.value) formData.append('imageGeometry', JSON.stringify(imageGeometry.value))
     const receipt = await apiClient.upload<ReceiptDto>('/api/receipts', formData)
-    const overrides = uploadOverrides.value
-    if (overrides.merchant || overrides.date || overrides.total) {
-      drafts.set(receipt.id, {
-        merchantName: overrides.merchant || receipt.merchantName,
-        transactionDate: overrides.date || receipt.transactionDate,
-        totalAmountCents: overrides.total ? dollarsToCents(overrides.total) : receipt.totalAmountCents,
-        notes: receipt.notes,
-        lineItems: receipt.lineItems,
-      })
-    }
-    view.value = 'pending'
-    receipts.value = [receipt, ...receipts.value.filter(existing => existing.id !== receipt.id)]
-    selectedId.value = receipt.id
+    const overrides = { ...uploadOverrides.value }
+    const merchant = normalizeMerchant(overrides.merchant || receipt.merchantName)
+    const date = (overrides.date || receipt.transactionDate)?.split('T')[0]
+    const totalCents = overrides.total.trim()
+      ? dollarsToCents(overrides.total)
+      : receipt.totalAmountCents
+    const match = merchant && date && totalCents != null
+      ? receipts.value.find(existing =>
+        existing.id !== receipt.id &&
+        normalizeMerchant(existing.merchantName) === merchant &&
+        existing.transactionDate?.split('T')[0] === date &&
+        existing.totalAmountCents === totalCents)
+      : undefined
+
     imageFile.value = null
     imageGeometry.value = null
     releaseUrl(imagePreviewUrl.value)
     imagePreviewUrl.value = ''
     uploadOverrides.value = { merchant: '', date: '', total: '' }
-    if (phone.value) {
-      await nextTick()
-      openReceipt(receipt.id)
+    if (match) {
+      duplicateError.value = ''
+      duplicateUpload.value = { receipt, match, overrides }
+      return
     }
-    snackbar.enqueueSnackbar(
-      receipt.processingMessage ?? 'Receipt uploaded. Review the extracted details.',
-      { variant: receipt.processingMessage ? 'warning' : 'success' },
-    )
+
+    await finishUpload(receipt, overrides)
   } catch (error: unknown) {
     actionError.value = error instanceof Error ? error.message : 'Failed to upload receipt'
     snackbar.enqueueSnackbar(error instanceof Error ? error.message : 'Failed to upload receipt', { variant: 'error' })
   } finally {
     uploading.value = false
+  }
+}
+
+function normalizeMerchant(value: string | null) {
+  return value?.toLocaleLowerCase().replace(/[^a-z0-9]/g, '') ?? ''
+}
+
+async function finishUpload(
+  receipt: ReceiptDto,
+  overrides: { merchant: string; date: string; total: string },
+) {
+  if (overrides.merchant || overrides.date || overrides.total) {
+    drafts.set(receipt.id, {
+      merchantName: overrides.merchant || receipt.merchantName,
+      transactionDate: overrides.date || receipt.transactionDate,
+      totalAmountCents: overrides.total ? dollarsToCents(overrides.total) : receipt.totalAmountCents,
+      notes: receipt.notes,
+      lineItems: receipt.lineItems,
+    })
+  }
+  view.value = 'pending'
+  receipts.value = [receipt, ...receipts.value.filter(existing => existing.id !== receipt.id)]
+  selectedId.value = receipt.id
+  if (phone.value) {
+    await nextTick()
+    openReceipt(receipt.id)
+  }
+  snackbar.enqueueSnackbar(
+    receipt.processingMessage ?? 'Receipt uploaded. Review the extracted details.',
+    { variant: receipt.processingMessage ? 'warning' : 'success' },
+  )
+}
+
+async function keepDuplicateUpload() {
+  const pending = duplicateUpload.value
+  if (!pending) return
+  duplicateUpload.value = null
+  await finishUpload(pending.receipt, pending.overrides)
+}
+
+async function deleteDuplicateUpload() {
+  const pending = duplicateUpload.value
+  if (!pending) return
+  deletingDuplicate.value = true
+  duplicateError.value = ''
+  try {
+    await apiClient.delete(`/api/receipts/${pending.receipt.id}`)
+    drafts.delete(pending.receipt.id)
+    duplicateUpload.value = null
+    snackbar.enqueueSnackbar('Duplicate receipt deleted', { variant: 'success' })
+  } catch (error: unknown) {
+    duplicateError.value = error instanceof Error ? error.message : 'Failed to delete duplicate receipt'
+  } finally {
+    deletingDuplicate.value = false
   }
 }
 
@@ -343,6 +406,26 @@ onBeforeUnmount(() => {
       {{ loadError }}
       <v-btn variant="text" @click="loadReceipts">Retry loading</v-btn>
     </v-alert>
+    <v-dialog :model-value="duplicateUpload !== null" max-width="500" persistent>
+      <v-card>
+        <v-card-title class="text-wrap">Possible duplicate receipt</v-card-title>
+        <v-card-text>
+          <p>
+            This upload matches an existing receipt's merchant, date, and total:
+            <strong>{{ duplicateUpload?.match.merchantName || duplicateUpload?.match.fileName }}</strong>
+            · {{ duplicateUpload?.match.transactionDate ? new Date(duplicateUpload.match.transactionDate).toLocaleDateString() : '' }}
+            · {{ duplicateUpload?.match.totalAmountCents == null ? '' : formatCents(duplicateUpload.match.totalAmountCents) }}.
+          </p>
+          <p class="mt-2">Keep both receipts, or delete the new upload if it is a duplicate.</p>
+          <v-alert v-if="duplicateError" type="error" variant="tonal" class="mt-3">{{ duplicateError }}</v-alert>
+        </v-card-text>
+        <v-card-actions class="flex-wrap">
+          <v-spacer />
+          <v-btn :disabled="deletingDuplicate" @click="keepDuplicateUpload">Keep both receipts</v-btn>
+          <v-btn color="error" :loading="deletingDuplicate" @click="deleteDuplicateUpload">Delete this upload</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-alert v-if="actionError && (!selectedReceipt || (phone && !reviewOpen)) && !deleteOpen" type="error" variant="tonal" class="mb-4">{{ actionError }}</v-alert>
     <div v-show="!phone || (!imageFile && !uploading)" class="d-flex flex-wrap ga-2 mb-3" aria-label="Receipt views">
       <v-btn :variant="view === 'pending' ? 'tonal' : 'text'" :aria-pressed="view === 'pending'" @click="view = 'pending'">Pending ({{ pendingCount }})</v-btn>

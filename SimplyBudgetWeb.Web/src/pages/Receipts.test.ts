@@ -143,6 +143,53 @@ describe('Receipts page', () => {
     expect(document.querySelector<HTMLInputElement>('.receipt-editor input')!.value).toBe('Corner Cafe')
   })
 
+  it('asks before keeping an upload matching an existing receipt', async () => {
+    api.get.mockResolvedValue([receipt({ id: 1, merchantName: 'CORNER-CAFE' })])
+    api.upload.mockResolvedValue(receipt({ id: 7 }))
+    const wrapper = await mountPage()
+
+    await chooseFile(wrapper)
+    await uploadButton(wrapper).trigger('click')
+    await flushPromises()
+
+    expect(document.querySelector('.v-overlay--active')?.textContent).toContain('Possible duplicate receipt')
+    expect(document.querySelector('.v-overlay--active')?.textContent).toContain('Keep both receipts')
+    expect(wrapper.find('[data-receipt-id="7"]').exists()).toBe(false)
+
+    await clickDialogButton('Keep both receipts')
+
+    expect(wrapper.find('[data-receipt-id="7"]').exists()).toBe(true)
+    expect(api.delete).not.toHaveBeenCalled()
+  })
+
+  it('deletes the new upload when the user confirms it is a duplicate', async () => {
+    api.get.mockResolvedValue([receipt({ id: 1 })])
+    api.upload.mockResolvedValue(receipt({ id: 7 }))
+    const wrapper = await mountPage()
+
+    await chooseFile(wrapper)
+    await uploadButton(wrapper).trigger('click')
+    await flushPromises()
+    await clickDialogButton('Delete this upload')
+
+    expect(api.delete).toHaveBeenCalledWith('/api/receipts/7')
+    expect(wrapper.find('[data-receipt-id="7"]').exists()).toBe(false)
+    expect(document.querySelector('.v-overlay--active')).toBeNull()
+  })
+
+  it('does not warn when receipt totals differ', async () => {
+    api.get.mockResolvedValue([receipt({ id: 1 })])
+    api.upload.mockResolvedValue(receipt({ id: 7, totalAmountCents: 1251 }))
+    const wrapper = await mountPage()
+
+    await chooseFile(wrapper)
+    await uploadButton(wrapper).trigger('click')
+    await flushPromises()
+
+    expect(document.querySelector('.v-overlay--active')).toBeNull()
+    expect(wrapper.find('[data-receipt-id="7"]').exists()).toBe(true)
+  })
+
   it('shows an empty state and keeps upload disabled until an image is chosen', async () => {
     const wrapper = await mountPage()
 
