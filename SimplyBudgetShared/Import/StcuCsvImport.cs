@@ -1,4 +1,5 @@
-﻿using CsvHelper.Configuration.Attributes;
+﻿using CsvHelper;
+
 using SimplyBudgetShared.Data;
 
 namespace SimplyBudgetShared.Import;
@@ -53,29 +54,30 @@ public class StcuCsvImport : CsvImport<StcuRecord>
             || string.Equals(row.Description?.Trim(), "efund transfer", StringComparison.OrdinalIgnoreCase);
 }
 
-public class StcuRecord
+[CsvRecord]
+public partial class StcuRecord
 {
-    [Name("Posting Date")]
+    [CsvColumn("Posting Date")]
     public DateTime? PostingDate { get; set; }
 
-    [Name("Effective Date")]
+    [CsvColumn("Effective Date")]
     public DateTime? EffectiveDate { get; set; }
 
-    [Name("Transaction Type")]
+    [CsvColumn("Transaction Type")]
     public string? TransactionType { get; set; }
 
-    [Name("Amount")]
+    [CsvColumn("Amount")]
     public decimal? Amount { get; set; }
 
-    [Name("Check Number")]
+    [CsvColumn("Check Number")]
     public string? CheckNumber { get; set; }
 
-    [Name("Description")]
+    [CsvColumn("Description")]
     public string? Description { get; set; }
 
-    [Name("Transaction Category")]
+    [CsvColumn("Transaction Category")]
     public string? TransactionCategory { get; set; }
 
-    [Name("Type")]
+    [CsvColumn("Type")]
     public string? Type { get; set; }
 }
