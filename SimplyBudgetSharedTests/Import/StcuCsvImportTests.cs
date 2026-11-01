@@ -103,6 +103,24 @@ public class StcuCsvImportTests
         Assert.AreEqual(new DateTime(2021, 2, 1), items[0].Date);
     }
 
+    [TestMethod]
+    public async Task Import_WithReorderedColumnsAndEmptyEffectiveDate_UsesPostingDate()
+    {
+        string csv = """
+            "Amount","Description","Type","Transaction Type","Effective Date","Posting Date","Check Number","Transaction Category"
+            "-17.51000","Purchase, with a comma","Debit Card","Debit","","1/31/2021","","Food & Dining"
+            """;
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csv));
+        var csvImport = new StcuCsvImport(stream);
+
+        var items = await csvImport.GetItems().ToListAsync();
+
+        Assert.AreEqual(1, items.Count);
+        Assert.AreEqual(new DateTime(2021, 1, 31), items[0].Date);
+        Assert.AreEqual("Purchase, with a comma", items[0].Description);
+        Assert.AreEqual(-1751, items[0].Details?[0].Amount);
+    }
+
     private const string StcuHeader = @"""Transaction ID"",""Posting Date"",""Effective Date"",""Transaction Type"",""Amount"",""Check Number"",""Reference Number"",""Description"",""Transaction Category"",""Type"",""Balance"",""Memo"",""Extended Description""";
 
     private static MemoryStream AsStream(string csvData)

@@ -1,14 +1,15 @@
 ﻿using CsvHelper;
+
 using SimplyBudgetShared.Data;
+
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 
 namespace SimplyBudgetShared.Import;
 
 public abstract class CsvImport<TRow> : IImport
-    where TRow : new()
+    where TRow : class, new()
 {
     public CsvImport(Stream csvData)
     {
@@ -20,10 +21,10 @@ public abstract class CsvImport<TRow> : IImport
     public async IAsyncEnumerable<ExpenseCategoryItem> GetItems()
     {
         using (var reader = new StreamReader(CsvData))
-        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+        using (var csv = CsvReader.Create(reader))
         {
             TRow item = new();
-            await foreach(var record in csv.EnumerateRecordsAsync(item))
+            await foreach (var record in csv.EnumerateRecordsAsync(item))
             {
                 if (ConvertRow(record) is { } converted)
                 {

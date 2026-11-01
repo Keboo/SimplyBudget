@@ -27,10 +27,10 @@
     <PackageVersion Include="Velopack" Version="1.2.0" />
 
     <!-- CSV -->
-    <PackageVersion Include="CsvHelper" Version="33.1.0" />
+    <PackageVersion Include="CsvHelper" Version="34.0.0" />
 
     <!-- Database -->
-    <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="10.0.14" />
     <!-- Microsoft.EntityFrameworkCore.SqlServer 10.0.9 only requires Microsoft.Data.SqlClient
          >= 6.1.1, which predates the Azure AD provider split and is binary-incompatible with
          Microsoft.Data.SqlClient.Extensions.Azure 7.1.0 (mixing them causes an
@@ -53,9 +53,9 @@
     </PackageVersion>
 
     <!-- ASP.NET Core -->
-    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.14" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
-    <PackageVersion Include="Microsoft.AspNetCore.SpaProxy" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.AspNetCore.SpaProxy" Version="10.0.14" />
 
     <!-- Auth - Entra ID -->
     <PackageVersion Include="Microsoft.Identity.Web" Version="4.16.1" />
@@ -64,7 +64,7 @@
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.11" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.11.0" />
 
@@ -77,7 +77,7 @@
 
     <!-- Playwright / UI Tests -->
     <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.14.0" />
-    <PackageVersion Include="Microsoft.Playwright" Version="1.63.0" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.64.1" />
 
     <!-- TypeScript -->
     <PackageVersion Include="Microsoft.TypeScript.MSBuild" Version="7.0.1">
@@ -95,7 +95,7 @@
     <PackageVersion Include="Moq.AutoMock" Version="4.0.3" />
     <PackageVersion Include="MSTest.TestAdapter" Version="4.3.3" />
     <PackageVersion Include="MSTest.TestFramework" Version="4.3.3" />
-    <PackageVersion Include="TUnit" Version="1.73.19" />
+    <PackageVersion Include="TUnit" Version="1.76.45" />
     <PackageVersion Include="xunit" Version="2.4.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -103,7 +103,7 @@
     </PackageVersion>
 
     <!-- Other -->
-    <PackageVersion Include="Polly.Core" Version="8.8.0" />
+    <PackageVersion Include="Polly.Core" Version="8.9.0" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.3.1" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
     <PackageVersion Include="System.Linq.Async" Version="6.0.3" />
