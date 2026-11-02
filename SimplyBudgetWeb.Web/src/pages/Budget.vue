@@ -5,7 +5,7 @@ import { apiClient } from '@/services/apiClient'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { useAuthStore } from '@/stores/auth'
 import type { AccountDto, BudgetResponse, BudgetCategoryDto, ExpenseCategoryDto, ExpenseCategoryMonthlyExpensesDto, ExpenseCategoryMonthlyExpensePointDto } from '@/types'
-import { formatCents, formatMonth, parseMonth } from '@/utils/currency'
+import { centsToDollars, formatCents, formatMonth, parseMonth } from '@/utils/currency'
 import { useRouter } from 'vue-router'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 import EditExpenseCategoryDialog from '@/components/EditExpenseCategoryDialog.vue'
@@ -175,6 +175,15 @@ function openCategoryTransfer(category: BudgetCategoryDto) {
 function openCategoryEdit(category: BudgetCategoryDto) {
   editCategory.value = category
   categoryEditOpen.value = true
+}
+
+async function copyCurrentAmount(category: BudgetCategoryDto) {
+  try {
+    await navigator.clipboard.writeText(centsToDollars(category.currentBalance))
+    snackbar.enqueueSnackbar('Current amount copied', { variant: 'success' })
+  } catch {
+    snackbar.enqueueSnackbar('Failed to copy current amount', { variant: 'error' })
+  }
 }
 
 function onCategoryEditSuccess() {
@@ -398,6 +407,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                       <v-list role="menu" :aria-label="`Actions for category ${cat.name ?? '(unnamed)'}`">
                         <v-list-item role="menuitem" title="Edit category" prepend-icon="mdi-pencil" @click="openCategoryEdit(cat)" />
                         <v-list-item role="menuitem" title="Create transfer" prepend-icon="mdi-bank-transfer" @click="openCategoryTransfer(cat)" />
+                        <v-list-item role="menuitem" title="Copy Current Amount" prepend-icon="mdi-content-copy" @click.stop="copyCurrentAmount(cat)" />
                       </v-list>
                     </v-menu>
                   </div>
