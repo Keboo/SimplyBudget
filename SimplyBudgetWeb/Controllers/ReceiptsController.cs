@@ -1,12 +1,16 @@
+using System.Data;
+
 using Azure;
 using Azure.Identity;
-using System.Data;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SimplyBudgetWeb.Data;
-using SimplyBudgetWeb.Services;
+
 using SimplyBudgetShared.Data;
 using SimplyBudgetShared.Utilities;
+
+using SimplyBudgetWeb.Data;
+using SimplyBudgetWeb.Services;
 
 namespace SimplyBudgetWeb.Controllers;
 
@@ -316,6 +320,8 @@ public class ReceiptsController(
         }
         if (request.TotalAmountCents is <= 0)
             return BadRequest("Receipt total must be greater than zero.");
+        if (request.UpdateImageGeometry && request.ImageGeometry is { } geometry && !geometry.IsValid())
+            return BadRequest("Invalid receipt corners. Use four clockwise, convex corners within the image.");
 
         var linkedExpenseDate = await context.ReceiptExpenseLinks
             .Where(x => x.ReceiptId == id)
@@ -326,6 +332,8 @@ public class ReceiptsController(
         receipt.TransactionDate = request.TransactionDate?.Date;
         receipt.TotalAmountCents = request.TotalAmountCents;
         receipt.Notes = Normalize(request.Notes);
+        if (request.UpdateImageGeometry)
+            receipt.ImageGeometryJson = request.ImageGeometry?.ToJson();
         receipt.ProcessingStatus = "reviewed";
         receipt.ProcessingMessage = null;
         context.ReceiptLineItems.RemoveRange(receipt.LineItems);
@@ -431,4 +439,6 @@ public record ReceiptUpdateRequest(
     DateTime? TransactionDate,
     int? TotalAmountCents,
     string? Notes,
-    ReceiptLineItemUpdateRequest[] LineItems);
+    ReceiptLineItemUpdateRequest[] LineItems,
+    ReceiptImageGeometry? ImageGeometry = null,
+    bool UpdateImageGeometry = false);

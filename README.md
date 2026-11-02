@@ -164,9 +164,11 @@ Terraform default `gpt-6-luna` on DataZoneStandard in eastus2; override `receipt
 The model only returns coordinates; the browser then snaps them to the paper edges it finds in the
 pixels (a bright receipt on a darker background, keeping the model's outline when the edges are
 unclear) and crops and perspective-corrects the original pixels with those corners.
-The result can be adjusted with **Adjust corners** or discarded with **Skip — use original**, and the
-untouched original is always uploaded alongside the corners. If Foundry is not configured or no
-receipt is found, the photo falls back to manual corner adjustment. The app identity (or your local
+The untouched original is always uploaded alongside the corners. Capture saves automatically
+without a separate upload or review step. If Foundry is not configured, no receipt is found, or
+flattening fails, the original photo is saved instead. Select **Edit receipt** and **Adjust image**
+to change corners or use the original, then **Save corrections** to persist the change.
+The app identity (or your local
 developer identity) needs the **Cognitive Services OpenAI User** role on the Foundry resource.
 
 Receipt photos are perspective-corrected in the browser before upload. The detected merchant,
@@ -176,10 +178,11 @@ requirements for attaching a receipt.
 
 The Receipts page opens to **Pending** (unattached) receipts; **Categorized** holds receipts already
 attached to expenses. Upload JPEG, PNG, or WebP images up to 15 MB (PDF upload is not supported).
-While upload and AI analysis run, optional merchant/date/total overrides can be entered; these take
-priority over the returned AI suggestions. Review the details and select **Save corrections** to
-persist them. Unsaved drafts survive switching receipts or refreshing the list, but not leaving
-the page or reloading the browser. Extraction failures keep the image available for manual entry.
+After capture, only an unrecognized date or total prompts for input; recognized fields and optional
+merchant/line-item details need no confirmation. **Later** keeps the saved photo for completion
+later. Receipt details are read-only until **Edit receipt** is selected; **Save corrections** persists
+edits. Unsaved drafts survive switching receipts or refreshing the list, but not leaving the page
+or reloading the browser. Possible duplicates are kept with a non-blocking warning, not a prompt.
 
 When processing a pending debit, the compact **Receipt (optional)** section is collapsed by default
 when there are no matches and opens automatically when suggestions are found. Expand it to

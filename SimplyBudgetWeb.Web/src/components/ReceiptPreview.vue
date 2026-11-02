@@ -3,8 +3,15 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { apiClient } from '@/services/apiClient'
 import type { ReceiptImageGeometry } from '@/types'
 import { flattenReceiptImage } from '@/utils/receiptImage'
+import ReceiptImageAdjustment from './ReceiptImageAdjustment.vue'
 
-const props = defineProps<{ receiptId: number; title?: string; imageGeometry?: ReceiptImageGeometry | null }>()
+const props = withDefaults(defineProps<{ receiptId: number; title?: string; imageGeometry?: ReceiptImageGeometry | null; controls?: boolean; editable?: boolean; disabled?: boolean }>(), { controls: true })
+const emit = defineEmits<{
+  geometry: [value: ReceiptImageGeometry | null]
+  busy: [value: boolean]
+}>()
+const imageFile = ref<File | null>(null)
+const adjusting = ref(false)
 const originalUrl = ref('')
 const flatUrl = ref('')
 const showOriginal = ref(false)
@@ -25,14 +32,18 @@ async function load() {
   const current = ++request
   const geometry = props.imageGeometry ? JSON.parse(JSON.stringify(props.imageGeometry)) as ReceiptImageGeometry : null
   release()
+  adjusting.value = false
+  imageFile.value = null
+  emit('busy', false)
   showOriginal.value = false
   loading.value = true
   error.value = ''
   correctionError.value = ''
   try {
-    const { blob } = await apiClient.download(`/api/receipts/${props.receiptId}/image`)
+    const { blob, fileName } = await apiClient.download(`/api/receipts/${props.receiptId}/image`)
     if (current !== request) return
     isPdf.value = blob.type === 'application/pdf'
+    if (!isPdf.value) imageFile.value = new File([blob], fileName || 'receipt.jpg', { type: blob.type })
     originalUrl.value = URL.createObjectURL(blob)
     if (!isPdf.value && geometry) {
       try {
@@ -70,12 +81,14 @@ onBeforeUnmount(() => {
     </v-alert>
     <template v-else-if="url">
       <v-alert v-if="correctionError" type="warning" variant="tonal" class="mb-2">{{ correctionError }}</v-alert>
-      <iframe v-if="isPdf" :src="url" :title="title || 'Receipt PDF'" class="receipt-pdf" />
+      <ReceiptImageAdjustment v-if="adjusting && editable && imageFile" :file="imageFile" :original-url="originalUrl" :initial-geometry="imageGeometry" :automatic="false" :disabled="disabled" @geometry="emit('geometry', $event)" @busy="emit('busy', $event)" />
+      <iframe v-else-if="isPdf" :src="url" :title="title || 'Receipt PDF'" class="receipt-pdf" />
       <v-img v-else :src="url" :alt="`${showOriginal || !flatUrl ? 'Original' : 'Flattened'}: ${title || 'receipt'}`" max-height="55vh" contain />
-      <v-btn v-if="flatUrl" variant="outlined" class="mt-2 mr-2" :aria-pressed="showOriginal" @click="showOriginal = !showOriginal">
+      <v-btn v-if="editable && imageFile && !adjusting" variant="outlined" class="mt-2 mr-2" :disabled="disabled" @click="adjusting = true">Adjust image</v-btn>
+      <v-btn v-if="controls && flatUrl && !adjusting" variant="outlined" class="mt-2 mr-2" :aria-pressed="showOriginal" @click="showOriginal = !showOriginal">
         {{ showOriginal ? 'Show flat view' : 'Show original' }}
       </v-btn>
-      <v-btn :href="originalUrl" target="_blank" rel="noopener noreferrer" variant="text" prepend-icon="mdi-open-in-new" class="mt-2">
+      <v-btn v-if="controls" :href="originalUrl" target="_blank" rel="noopener noreferrer" variant="text" prepend-icon="mdi-open-in-new" class="mt-2">
         Open original receipt
       </v-btn>
     </template>

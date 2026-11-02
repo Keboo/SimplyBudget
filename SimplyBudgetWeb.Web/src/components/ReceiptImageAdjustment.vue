@@ -4,10 +4,18 @@ import type { ReceiptImageGeometry, ReceiptImagePoint } from '@/types'
 import { detectReceiptCorners } from '@/services/receiptCornerDetection'
 import { flattenReceiptImage, imageBoundary, validGeometry } from '@/utils/receiptImage'
 
-const props = defineProps<{ file: File; originalUrl: string; disabled?: boolean }>()
+const props = withDefaults(defineProps<{
+  file: File
+  originalUrl: string
+  disabled?: boolean
+  compact?: boolean
+  automatic?: boolean
+  initialGeometry?: ReceiptImageGeometry | null
+}>(), { automatic: true })
 const emit = defineEmits<{
   geometry: [value: ReceiptImageGeometry | null]
   busy: [value: boolean]
+  ready: []
 }>()
 const corners = ref(imageBoundary())
 const editing = ref(false)
@@ -148,16 +156,22 @@ async function autoDetect() {
     detecting.value = false
     detectionMessage.value = e instanceof Error && e.message ? e.message : 'Automatic receipt cropping is unavailable.'
     emit('busy', false)
+  } finally {
+    if (current === generation) emit('ready')
   }
 }
 
-watch(() => props.file, () => {
-  skip()
-  corners.value = imageBoundary()
+function initialize() {
+  if (props.automatic) skip()
+  corners.value = props.initialGeometry
+    ? JSON.parse(JSON.stringify(props.initialGeometry)) as ReceiptImageGeometry : imageBoundary()
   detectionMessage.value = ''
-  void autoDetect()
-})
-onMounted(() => void autoDetect())
+  if (props.automatic) void autoDetect()
+  else edit()
+}
+
+watch(() => props.file, initialize)
+onMounted(initialize)
 onBeforeUnmount(() => {
   generation++
   dragging = null
@@ -167,6 +181,10 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="mt-4" aria-label="Receipt image adjustment">
+    <p v-if="compact" class="text-body-2" role="status">
+      {{ detecting || processing ? 'Scanning receipt...' : 'Saving receipt...' }}
+    </p>
+    <template v-else>
     <p class="text-body-2 mb-3" role="status">
       {{ detecting ? 'Finding the receipt edges with AI… You can skip to upload the original or adjust the corners yourself.' : editing ? 'Place corners 1–4 around the receipt, clockwise from the flat view’s top-left. Drag, use arrow keys (Shift for larger steps), or enter coordinates below. Apply to see the flat result, or skip.' : flatUrl && autoCropped ? 'Receipt cropped automatically. Check the result, adjust the corners if needed, or skip. The original file will still be saved unchanged.' : flatUrl ? 'Flat view applied. The original file will still be saved unchanged.' : 'Original file selected. Optionally crop and straighten the receipt before uploading. The original is always saved.' }}
     </p>
@@ -211,13 +229,14 @@ onBeforeUnmount(() => {
     <div class="d-flex flex-wrap ga-2 mt-3">
       <v-btn v-if="!editing" variant="outlined" :disabled="disabled" @click="edit">Adjust corners</v-btn>
       <v-progress-circular v-if="detecting" indeterminate size="24" aria-label="Detecting receipt edges" class="align-self-center" />
-      <template v-else>
+      <template v-if="editing">
         <v-btn color="primary" :disabled="disabled || !valid" :loading="processing" @click="apply">Apply flat view</v-btn>
         <v-btn variant="outlined" :disabled="disabled || processing" @click="reset">Reset corners</v-btn>
         <v-btn variant="outlined" :disabled="disabled || processing" @click="rotate">Rotate flat view 90° clockwise</v-btn>
       </template>
       <v-btn :disabled="disabled" variant="text" @click="skip">Skip — use original</v-btn>
     </div>
+    </template>
   </section>
 </template>
 
