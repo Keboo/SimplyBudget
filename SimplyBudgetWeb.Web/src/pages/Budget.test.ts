@@ -10,6 +10,7 @@ import MonthPickerNav from '@/components/MonthPickerNav.vue'
 import AddTransactionDialog from '@/components/AddTransactionDialog.vue'
 import EditExpenseCategoryDialog from '@/components/EditExpenseCategoryDialog.vue'
 import CategorySelector from '@/components/CategorySelector.vue'
+import { useSnackbarStore } from '@/stores/snackbar'
 import type { BudgetCategoryDto } from '@/types'
 
 const mocks = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), push: vi.fn() }))
@@ -37,6 +38,7 @@ afterEach(() => {
 })
 afterAll(() => vi.unstubAllGlobals())
 beforeEach(() => {
+  vi.unstubAllGlobals()
   vi.stubGlobal('innerWidth', 1024)
   vi.stubGlobal('visualViewport', { addEventListener: vi.fn(), removeEventListener: vi.fn(), width: 1440, height: 900, offsetTop: 0, offsetLeft: 0 })
   mocks.get.mockReset()
@@ -80,6 +82,39 @@ describe('budget category actions', () => {
     button.click()
     await flushPromises()
   }
+
+  it.each([
+    { balance: 123456, copied: '1234.56' },
+    { balance: -1234, copied: '-12.34' },
+    { balance: 0, copied: '0.00' },
+    { balance: 1, copied: '0.01' },
+  ])('copies the selected category balance as $copied without navigating or editing', async ({ balance, copied }) => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { userAgent: navigator.userAgent, clipboard: { writeText } })
+    const wrapper = await setup({}, false, [{ ...category, id: 2, name: 'Savings', currentBalance: balance }])
+    await chooseAction(wrapper, 2, 'Copy Current Amount')
+    expect(writeText).toHaveBeenCalledExactlyOnceWith(copied)
+    expect(useSnackbarStore().messages).toEqual([
+      expect.objectContaining({ text: 'Current amount copied', variant: 'success' }),
+    ])
+    expect(wrapper.getComponent(AddTransactionDialog).props('modelValue')).toBe(false)
+    expect(wrapper.getComponent(EditExpenseCategoryDialog).props('modelValue')).toBe(false)
+    expect(mocks.post).not.toHaveBeenCalled()
+    expect(mocks.put).not.toHaveBeenCalled()
+  })
+
+  it.each(['denied', 'unavailable'])('reports clipboard access being %s without claiming success', async state => {
+    const writeText = vi.fn().mockRejectedValue(new Error('Permission denied'))
+    vi.stubGlobal('navigator', {
+      userAgent: navigator.userAgent,
+      clipboard: state === 'unavailable' ? undefined : { writeText },
+    })
+    const wrapper = await setup()
+    await chooseAction(wrapper, 1, 'Copy Current Amount')
+    expect(useSnackbarStore().messages).toEqual([
+      expect.objectContaining({ text: 'Failed to copy current amount', variant: 'error' }),
+    ])
+  })
 
   it('edits the selected category in a dialog and refreshes budget and category details after saving', async () => {
     const wrapper = await setup({}, true)
