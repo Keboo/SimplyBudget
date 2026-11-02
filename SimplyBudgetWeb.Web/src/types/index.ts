@@ -216,6 +216,8 @@ export interface ReceiptDto {
 }
 
 export interface ReceiptUpdateRequest {
+  imageGeometry?: ReceiptImageGeometry | null
+  updateImageGeometry?: boolean
   merchantName: string | null
   transactionDate: string | null
   totalAmountCents: number | null

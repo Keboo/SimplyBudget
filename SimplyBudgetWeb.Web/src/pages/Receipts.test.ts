@@ -66,8 +66,8 @@ async function chooseFile(wrapper: Awaited<ReturnType<typeof mountPage>>, file =
   await flushPromises()
 }
 
-function uploadButton(wrapper: Awaited<ReturnType<typeof mountPage>>) {
-  return wrapper.findAll('button').find(button => button.text().includes('Upload receipt'))!
+async function editReceipt(wrapper: Awaited<ReturnType<typeof mountPage>>) {
+  await wrapper.findAll('button').find(button => button.text() === 'Edit receipt')!.trigger('click')
 }
 
 async function clickDialogButton(text: string) {
@@ -120,61 +120,45 @@ describe('Receipts page', () => {
     const wrapper = await mountPage()
     expect(document.querySelector('.v-dialog.v-overlay--active')).toBeNull()
     await wrapper.get('[data-receipt-id="1"]').trigger('click')
+    await clickDialogButton('Edit receipt')
     const merchant = document.querySelector<HTMLInputElement>('.receipt-editor input')!
     merchant.value = 'Draft cafe'
     merchant.dispatchEvent(new Event('input', { bubbles: true }))
     await clickDialogButton('Back to list')
     await wrapper.get('[data-receipt-id="2"]').trigger('click')
+    await clickDialogButton('Edit receipt')
     expect(document.querySelector<HTMLInputElement>('.receipt-editor input')!.value).toBe('Second shop')
     await clickDialogButton('Back to list')
     await wrapper.get('[data-receipt-id="1"]').trigger('click')
+    await clickDialogButton('Edit receipt')
     expect(document.querySelector<HTMLInputElement>('.receipt-editor input')!.value).toBe('Draft cafe')
     expect(api.put).not.toHaveBeenCalled()
   })
 
-  it('opens focused phone review after upload succeeds', async () => {
+  it('saves a phone photo without opening review or asking for recognized details', async () => {
     vi.stubGlobal('innerWidth', 390)
     api.upload.mockResolvedValue(receipt({ id: 7 }))
     const wrapper = await mountPage()
     await chooseFile(wrapper)
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
-    expect(document.querySelector('.v-dialog.v-overlay--active')?.textContent).toContain('Save corrections')
-    expect(document.querySelector<HTMLInputElement>('.receipt-editor input')!.value).toBe('Corner Cafe')
+    expect(api.upload).toHaveBeenCalledOnce()
+    expect(document.querySelector('.v-dialog.v-overlay--active')).toBeNull()
+    expect(wrapper.get('[data-receipt-id="7"]').text()).toContain('$12.50')
+    expect(useSnackbarStore().messages.slice(-1)[0]?.text).toBe('Receipt saved')
   })
 
-  it('asks before keeping an upload matching an existing receipt', async () => {
+  it('keeps a possible duplicate without interrupting capture and warns non-modally', async () => {
     api.get.mockResolvedValue([receipt({ id: 1, merchantName: 'CORNER-CAFE' })])
     api.upload.mockResolvedValue(receipt({ id: 7 }))
     const wrapper = await mountPage()
 
     await chooseFile(wrapper)
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
-
-    expect(document.querySelector('.v-overlay--active')?.textContent).toContain('Possible duplicate receipt')
-    expect(document.querySelector('.v-overlay--active')?.textContent).toContain('Keep both receipts')
-    expect(wrapper.find('[data-receipt-id="7"]').exists()).toBe(false)
-
-    await clickDialogButton('Keep both receipts')
-
     expect(wrapper.find('[data-receipt-id="7"]').exists()).toBe(true)
-    expect(api.delete).not.toHaveBeenCalled()
-  })
-
-  it('deletes the new upload when the user confirms it is a duplicate', async () => {
-    api.get.mockResolvedValue([receipt({ id: 1 })])
-    api.upload.mockResolvedValue(receipt({ id: 7 }))
-    const wrapper = await mountPage()
-
-    await chooseFile(wrapper)
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
-    await clickDialogButton('Delete this upload')
-
-    expect(api.delete).toHaveBeenCalledWith('/api/receipts/7')
-    expect(wrapper.find('[data-receipt-id="7"]').exists()).toBe(false)
     expect(document.querySelector('.v-overlay--active')).toBeNull()
+    expect(useSnackbarStore().messages.slice(-1)[0]).toMatchObject({
+      text: expect.stringContaining('may duplicate'),
+      variant: 'warning',
+    })
+    expect(api.delete).not.toHaveBeenCalled()
   })
 
   it('does not warn when receipt totals differ', async () => {
@@ -183,18 +167,20 @@ describe('Receipts page', () => {
     const wrapper = await mountPage()
 
     await chooseFile(wrapper)
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
 
     expect(document.querySelector('.v-overlay--active')).toBeNull()
     expect(wrapper.find('[data-receipt-id="7"]').exists()).toBe(true)
   })
 
-  it('shows an empty state and keeps upload disabled until an image is chosen', async () => {
+  it('shows only capture actions before a photo is chosen', async () => {
     const wrapper = await mountPage()
 
     expect(wrapper.text()).toContain('No pending receipts.')
-    expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('Take a photo')
+    expect(wrapper.text()).toContain('Choose file')
+    expect(wrapper.find('.receipt-capture input:not([type="file"])').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Upload receipt')
+    expect(wrapper.text()).not.toContain('Adjust corners')
   })
 
   it('shows the most recently uploaded receipts first', async () => {
@@ -207,28 +193,15 @@ describe('Receipts page', () => {
     expect(wrapper.findAll('.v-list-item').map(item => item.attributes('data-receipt-id'))).toEqual(['2', '1'])
   })
 
-  it('defaults to the original photo without processing and enables upload', async () => {
+  it('automatically saves the original when no corners are detected', async () => {
+    api.upload.mockResolvedValue(receipt())
     const wrapper = await mountPage()
 
     await chooseFile(wrapper)
 
     expect(flatten).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Optionally crop and straighten')
-    expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
-  })
-
-  it('reports adjustment failures and permits skipping back to an original upload', async () => {
-    flatten.mockRejectedValue(new Error('Image processing did not initialize'))
-    const wrapper = await mountPage()
-
-    await chooseFile(wrapper)
-    await wrapper.findAll('button').find(button => button.text() === 'Adjust corners')!.trigger('click')
-    await wrapper.findAll('button').find(button => button.text() === 'Apply flat view')!.trigger('click')
-    await flushPromises()
-    expect(wrapper.text()).toContain('Image processing did not initialize')
-    expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
-    await wrapper.findAll('button').find(button => button.text() === 'Skip — use original')!.trigger('click')
-    expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
+    expect((api.upload.mock.calls[0]![1] as FormData).get('imageGeometry')).toBeNull()
+    expect(wrapper.text()).not.toContain('Apply flat view')
   })
 
   it('auto-crops to AI-detected receipt corners and uploads that geometry with the untouched original', async () => {
@@ -240,49 +213,41 @@ describe('Receipts page', () => {
 
     expect(detect).toHaveBeenCalledWith(expect.any(File))
     expect(flatten).toHaveBeenCalledWith(expect.any(File), detected)
-    expect(wrapper.find('img[alt="Flattened receipt preview"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Receipt cropped automatically')
-    expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
     const form = api.upload.mock.calls[0]![1] as FormData
     expect(JSON.parse(form.get('imageGeometry') as string)).toEqual(detected)
     expect((form.get('image') as File).size).toBe(3)
   })
 
-  it('keeps upload blocked while detecting, and skipping discards a late detection', async () => {
+  it('waits for detection before automatically uploading and prevents concurrent captures', async () => {
     let finish!: (value: unknown) => void
     detect.mockImplementation(() => new Promise(resolve => { finish = resolve }))
     api.upload.mockResolvedValue(receipt())
     const wrapper = await mountPage()
     await chooseFile(wrapper)
-    expect(wrapper.text()).toContain('Finding the receipt edges')
-    expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
-    await wrapper.findAll('button').find(button => button.text() === 'Skip — use original')!.trigger('click')
+    expect(wrapper.text()).toContain('Scanning receipt')
+    expect(api.upload).not.toHaveBeenCalled()
+    expect(wrapper.findAll('button').find(button => button.text() === 'Take a photo')!.attributes('disabled')).toBeDefined()
     finish({ version: 1, corners: imageBoundary().corners })
     await flushPromises()
-    expect(flatten).not.toHaveBeenCalled()
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
-    expect((api.upload.mock.calls[0]![1] as FormData).get('imageGeometry')).toBeNull()
+    expect(api.upload).toHaveBeenCalledOnce()
+    expect(JSON.parse((api.upload.mock.calls[0]![1] as FormData).get('imageGeometry') as string)).toEqual(imageBoundary())
   })
 
-  it('falls back to the original with an explanation when automatic cropping fails', async () => {
+  it('silently saves the original when automatic cropping is unavailable', async () => {
+    api.upload.mockResolvedValue(receipt())
     detect.mockRejectedValue(new Error('Automatic receipt cropping is not configured.'))
     const wrapper = await mountPage()
     await chooseFile(wrapper)
     expect(flatten).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Automatic receipt cropping is not configured.')
-    expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
+    expect(api.upload).toHaveBeenCalledOnce()
+    expect((api.upload.mock.calls[0]![1] as FormData).get('imageGeometry')).toBeNull()
+    expect(document.querySelector('.v-overlay--active')).toBeNull()
   })
 
   it('uploads the image as multipart form data and selects the new receipt', async () => {
     api.upload.mockResolvedValue(receipt({ id: 5 }))
     const wrapper = await mountPage()
     await chooseFile(wrapper)
-
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
 
     expect(api.upload).toHaveBeenCalledOnce()
     const [url, form] = api.upload.mock.calls[0] as [string, FormData]
@@ -292,36 +257,13 @@ describe('Receipts page', () => {
     expect(image.type).toBe('image/jpeg')
     expect(image.size).toBe(3)
     expect(form.get('imageGeometry')).toBeNull()
-    expect(wrapper.text()).toContain('Review receipt')
+    expect(wrapper.text()).not.toContain('Save corrections')
     expect(wrapper.text()).toContain('Corner Cafe')
     expect(useSnackbarStore().messages.slice(-1)[0]).toMatchObject({
-      text: 'Receipt uploaded. Review the extracted details.',
+      text: 'Receipt saved',
       variant: 'success',
     })
-    expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
-  })
-
-  it('applies manually positioned corners, previews flat output, and uploads geometry alongside the untouched file', async () => {
-    api.upload.mockResolvedValue(receipt({ imageGeometry: imageBoundary() }))
-    const wrapper = await mountPage()
-    await chooseFile(wrapper)
-    await wrapper.findAll('button').find(button => button.text() === 'Adjust corners')!.trigger('click')
-    expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
-    const corner = wrapper.get('button[aria-label^="Top-left corner"]')
-    await corner.trigger('keydown', { key: 'ArrowRight' })
-    await corner.trigger('keydown', { key: 'ArrowDown' })
-    await wrapper.findAll('button').find(button => button.text() === 'Apply flat view')!.trigger('click')
-    await flushPromises()
-    expect(wrapper.find('img[alt="Flattened receipt preview"]').exists()).toBe(true)
-    expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
-    const form = api.upload.mock.calls[0]![1] as FormData
-    expect(JSON.parse(form.get('imageGeometry') as string)).toMatchObject({
-      version: 1, corners: [{ x: 0.005, y: 0.005 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }],
-    })
-    expect((form.get('image') as File).name).toBe('photo.heic.jpg')
-    expect((form.get('image') as File).size).toBe(3)
+    expect(wrapper.find('.receipt-capture input:not([type="file"])').exists()).toBe(false)
   })
 
   it('selects the new upload from Categorized and retains drafts when switching back', async () => {
@@ -332,36 +274,137 @@ describe('Receipts page', () => {
     api.upload.mockResolvedValue(receipt({ id: 5, merchantName: 'New upload' }))
     const wrapper = await mountPage()
     await wrapper.findAll('button').find(button => button.text() === 'Categorized (1)')!.trigger('click')
+    await editReceipt(wrapper)
     await wrapper.get('input[maxlength="300"]').setValue('Categorized correction')
     await chooseFile(wrapper)
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
-
     expect(wrapper.get('button[aria-pressed="true"]').text()).toBe('Pending (2)')
+    await editReceipt(wrapper)
     expect((wrapper.get('input[maxlength="300"]').element as HTMLInputElement).value).toBe('New upload')
     expect(api.download).toHaveBeenLastCalledWith('/api/receipts/5/image')
     await wrapper.get('input[maxlength="300"]').setValue('New correction')
     await wrapper.findAll('button').find(button => button.text() === 'Categorized (1)')!.trigger('click')
+    await editReceipt(wrapper)
     expect((wrapper.get('input[maxlength="300"]').element as HTMLInputElement).value).toBe('Categorized correction')
     await wrapper.findAll('button').find(button => button.text() === 'Pending (2)')!.trigger('click')
+    await editReceipt(wrapper)
     api.get.mockResolvedValue([receipt({ id: 5, merchantName: 'New upload' }), receipt()])
     await wrapper.get('button[aria-label="Refresh receipts"]').trigger('click')
     await flushPromises()
     expect((wrapper.get('input[maxlength="300"]').element as HTMLInputElement).value).toBe('New correction')
   })
 
-  it('warns when extraction could not run but the receipt was saved', async () => {
-    api.upload.mockResolvedValue(receipt({ processingMessage: 'Receipt extraction is not configured.' }))
+  it('asks for only missing details when extraction could not run', async () => {
+    api.upload.mockResolvedValue(receipt({ transactionDate: null, totalAmountCents: null, processingMessage: 'Receipt extraction is not configured.' }))
     const wrapper = await mountPage()
     await chooseFile(wrapper)
 
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
+    expect(document.querySelector('.v-overlay--active')?.textContent).toContain('Your photo is saved')
+    expect(document.querySelector('.v-overlay--active input[type="date"]')).not.toBeNull()
+    expect(document.querySelector('.v-overlay--active input[type="number"]')).not.toBeNull()
+    expect(document.querySelector('.v-overlay--active')?.textContent).not.toContain('Merchant')
+  })
 
-    expect(useSnackbarStore().messages.slice(-1)[0]).toMatchObject({
-      text: 'Receipt extraction is not configured.',
-      variant: 'warning',
+  it.each([
+    { transactionDate: null, totalAmountCents: 1250, dateMissing: true, totalMissing: false },
+    { transactionDate: '2026-03-04T00:00:00', totalAmountCents: null, dateMissing: false, totalMissing: true },
+  ])('asks only for the unrecognized field: $dateMissing / $totalMissing', async ({ transactionDate, totalAmountCents, dateMissing, totalMissing }) => {
+    api.upload.mockResolvedValue(receipt({ transactionDate, totalAmountCents }))
+    const wrapper = await mountPage()
+    await chooseFile(wrapper)
+    expect(Boolean(document.querySelector('.v-overlay--active input[type="date"]'))).toBe(dateMissing)
+    expect(Boolean(document.querySelector('.v-overlay--active input[type="number"]'))).toBe(totalMissing)
+    await clickDialogButton('Later')
+    expect(document.querySelector('.v-overlay--active')).toBeNull()
+    expect(wrapper.find('[data-receipt-id="1"]').exists()).toBe(true)
+    expect(api.put).not.toHaveBeenCalled()
+  })
+
+  it('persists missing details, preserves extraction, and retries a failed save without reuploading', async () => {
+    api.upload.mockResolvedValue(receipt({ totalAmountCents: null, notes: 'Keep note' }))
+    api.put.mockRejectedValueOnce(new Error('Could not save details'))
+      .mockResolvedValue(receipt({ totalAmountCents: 1575, notes: 'Keep note' }))
+    const wrapper = await mountPage()
+    await chooseFile(wrapper)
+    await clickDialogButton('Save')
+    expect(document.querySelector('.v-overlay--active')?.textContent).toContain('positive total')
+    expect(api.put).not.toHaveBeenCalled()
+    const amount = document.querySelector<HTMLInputElement>('.v-overlay--active input[type="number"]')!
+    amount.value = '15.75'
+    amount.dispatchEvent(new Event('input', { bubbles: true }))
+    await clickDialogButton('Save')
+    expect(document.querySelector('.v-overlay--active')?.textContent).toContain('Could not save details')
+    await clickDialogButton('Save')
+    expect(api.put).toHaveBeenLastCalledWith('/api/receipts/1', {
+      merchantName: 'Corner Cafe',
+      transactionDate: '2026-03-04T00:00:00',
+      totalAmountCents: 1575,
+      notes: 'Keep note',
+      lineItems: [{ description: 'Latte', amountCents: 450 }],
     })
+    expect(api.upload).toHaveBeenCalledOnce()
+    expect(document.querySelector('.v-overlay--active')).toBeNull()
+    expect(wrapper.get('[data-receipt-id="1"]').text()).toContain('$15.75')
+  })
+
+  it('does not ask for merchant or optional line items when date and total were read', async () => {
+    api.upload.mockResolvedValue(receipt({ merchantName: null, lineItems: [], processingMessage: 'Check optional details' }))
+    const wrapper = await mountPage()
+    await chooseFile(wrapper)
+    expect(document.querySelector('.v-overlay--active')).toBeNull()
+    expect(api.put).not.toHaveBeenCalled()
+    expect(useSnackbarStore().messages.slice(-1)[0]?.text).toBe('Receipt saved')
+  })
+
+  it('falls back to the untouched original if flattening the detected corners fails', async () => {
+    detect.mockResolvedValue(imageBoundary())
+    flatten.mockRejectedValue(new Error('Could not flatten'))
+    api.upload.mockResolvedValue(receipt())
+    const wrapper = await mountPage()
+    await chooseFile(wrapper)
+    expect(api.upload).toHaveBeenCalledOnce()
+    const form = api.upload.mock.calls[0]![1] as FormData
+    expect(form.get('imageGeometry')).toBeNull()
+    expect((form.get('image') as File).size).toBe(3)
+    expect(document.querySelector('.v-overlay--active')).toBeNull()
+  })
+
+  it('automatically saves successive camera captures without additional actions', async () => {
+    api.upload.mockResolvedValueOnce(receipt({ id: 7 })).mockResolvedValueOnce(receipt({ id: 8 }))
+    const wrapper = await mountPage()
+    const camera = wrapper.get('input[capture="environment"]')
+    for (const name of ['one.jpg', 'two.jpg']) {
+      Object.defineProperty(camera.element, 'files', { value: [new File(['raw'], name, { type: 'image/jpeg' })], configurable: true })
+      await camera.trigger('change')
+      await flushPromises()
+    }
+    expect(api.upload).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-receipt-id="7"]').exists()).toBe(true)
+    expect(wrapper.find('[data-receipt-id="8"]').exists()).toBe(true)
+    expect(document.querySelector('.v-overlay--active')).toBeNull()
+  })
+
+  it('reveals extra controls only on edit and persists manually adjusted corners', async () => {
+    api.get.mockResolvedValue([receipt({ imageGeometry: imageBoundary() })])
+    api.put.mockResolvedValue(receipt({ imageGeometry: imageBoundary() }))
+    const wrapper = await mountPage()
+    expect(wrapper.text()).not.toContain('Open original receipt')
+    expect(wrapper.text()).not.toContain('Save corrections')
+    expect(wrapper.text()).not.toContain('Adjust image')
+    await editReceipt(wrapper)
+    expect(wrapper.text()).toContain('Open original receipt')
+    await wrapper.findAll('button').find(button => button.text() === 'Adjust image')!.trigger('click')
+    expect(wrapper.findAll('button').find(button => button.text() === 'Save corrections')!.attributes('disabled')).toBeDefined()
+    await wrapper.get('input[aria-label="Top-left X percent"]').setValue('5')
+    await wrapper.get('input[aria-label="Top-left Y percent"]').setValue('5')
+    await wrapper.findAll('button').find(button => button.text() === 'Apply flat view')!.trigger('click')
+    await flushPromises()
+    await wrapper.findAll('button').find(button => button.text() === 'Save corrections')!.trigger('click')
+    await flushPromises()
+    expect(api.put).toHaveBeenCalledWith('/api/receipts/1', expect.objectContaining({
+      updateImageGeometry: true,
+      imageGeometry: { version: 1, corners: [{ x: 0.05, y: 0.05 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }] },
+    }))
+    expect(detect).not.toHaveBeenCalled()
   })
 
   it('shows the server error and allows retrying when the upload fails', async () => {
@@ -369,14 +412,15 @@ describe('Receipts page', () => {
     const wrapper = await mountPage()
     await chooseFile(wrapper)
 
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
-
     expect(useSnackbarStore().messages.slice(-1)[0]).toMatchObject({
       text: 'Receipt storage is not configured.',
       variant: 'error',
     })
-    expect(uploadButton(wrapper).attributes('disabled')).toBeUndefined()
+    api.upload.mockResolvedValue(receipt({ id: 5 }))
+    await wrapper.findAll('button').find(button => button.text() === 'Retry upload')!.trigger('click')
+    await flushPromises()
+    expect(api.upload).toHaveBeenCalledTimes(2)
+    expect(wrapper.find('[data-receipt-id="5"]').exists()).toBe(true)
   })
 
   it('loads saved receipts, shows the first one, and saves corrections', async () => {
@@ -387,6 +431,7 @@ describe('Receipts page', () => {
     expect(wrapper.text()).toContain('Corner Cafe')
     expect(api.download).toHaveBeenCalledWith('/api/receipts/1/image')
 
+    await editReceipt(wrapper)
     const merchant = wrapper.findAll('input').find(input => (input.element as HTMLInputElement).value === 'Corner Cafe')!
     await merchant.setValue('Fixed Cafe')
     const save = wrapper.findAll('button').find(button => button.text().includes('Save corrections'))!
@@ -411,6 +456,7 @@ describe('Receipts page', () => {
   it('defaults to unattached receipts and keeps categorized receipts secondary', async () => {
     api.get.mockResolvedValue([receipt({ id: 2, merchantName: 'Archived store', isLinked: true }), receipt()])
     const wrapper = await mountPage()
+    await editReceipt(wrapper)
     expect(wrapper.text()).toContain('Pending (1)')
     expect(wrapper.text()).toContain('Categorized (1)')
     expect(wrapper.text()).not.toContain('Archived store')
@@ -426,44 +472,45 @@ describe('Receipts page', () => {
       receipt({ id: 2, merchantName: 'Other store', uploadedAtUtc: '2026-03-03T10:00:00Z' }),
     ])
     const wrapper = await mountPage()
+    await editReceipt(wrapper)
     await wrapper.findAll('input').find(input => (input.element as HTMLInputElement).value === 'Corner Cafe')!.setValue('My correction')
     await wrapper.get('button[aria-label="Refresh receipts"]').trigger('click')
     await flushPromises()
     expect(wrapper.findAll('input').some(input => (input.element as HTMLInputElement).value === 'My correction')).toBe(true)
     await wrapper.findAll('.v-list-item').find(item => item.text().includes('Other store'))!.trigger('click')
     await wrapper.findAll('.v-list-item').find(item => item.text().includes('Corner Cafe'))!.trigger('click')
+    await editReceipt(wrapper)
     expect(wrapper.findAll('input').some(input => (input.element as HTMLInputElement).value === 'My correction')).toBe(true)
   })
 
-  it('keeps manual input entered during analysis instead of overwriting it with AI', async () => {
+  it('keeps capture minimal while analysis is running', async () => {
     let finish!: (value: ReceiptDto) => void
     api.upload.mockImplementation(() => new Promise<ReceiptDto>(resolve => { finish = resolve }))
     const wrapper = await mountPage()
     await chooseFile(wrapper)
-    await uploadButton(wrapper).trigger('click')
-    expect(wrapper.text()).toContain('Uploading and analyzing')
-    await wrapper.get('input[maxlength="300"]').setValue('Manual merchant')
+    expect(wrapper.text()).toContain('Saving and reading receipt')
+    expect(wrapper.find('.receipt-capture input:not([type="file"])').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Adjust corners')
     finish(receipt())
     await flushPromises()
-    expect(wrapper.findAll('input').some(input => (input.element as HTMLInputElement).value === 'Manual merchant')).toBe(true)
-    api.put.mockResolvedValue(receipt({ merchantName: 'Manual merchant' }))
-    await wrapper.findAll('button').find(button => button.text() === 'Save corrections')!.trigger('click')
-    await flushPromises()
-    expect(api.put).toHaveBeenCalledWith('/api/receipts/1', expect.objectContaining({ merchantName: 'Manual merchant' }))
+    expect(api.put).not.toHaveBeenCalled()
+    expect(document.querySelector('.v-overlay--active')).toBeNull()
   })
 
   it('rejects unsupported files before image processing', async () => {
     const wrapper = await mountPage()
     await chooseFile(wrapper, new File(['pdf'], 'receipt.pdf', { type: 'application/pdf' }))
     expect(flatten).not.toHaveBeenCalled()
-    expect(uploadButton(wrapper).attributes('disabled')).toBeDefined()
+    expect(api.upload).not.toHaveBeenCalled()
     expect(useSnackbarStore().messages.slice(-1)[0]?.text).toContain('JPEG, PNG, or WebP')
   })
 
   it('resets manual corners, rotates via corner order, and drops applied geometry when skipping', async () => {
-    api.upload.mockResolvedValue(receipt())
-    const wrapper = await mountPage()
-    await chooseFile(wrapper)
+    const wrapper = mount(ReceiptImageAdjustment, {
+      props: { file: new File(['raw'], 'photo.jpg'), originalUrl: 'blob:preview' },
+      global: { plugins: [createVuetify({ components, directives })] },
+    })
+    await flushPromises()
     const button = (text: string) => wrapper.findAll('button').find(item => item.text() === text)!
     await button('Adjust corners').trigger('click')
     await wrapper.get('input[aria-label="Top-left X percent"]').setValue('15')
@@ -476,9 +523,7 @@ describe('Receipts page', () => {
     expect(flatten).toHaveBeenCalledWith(expect.any(File), { version: 1, corners: [d, a, b, c] })
     await button('Skip — use original').trigger('click')
     expect(wrapper.find('img[alt="Flattened receipt preview"]').exists()).toBe(false)
-    await uploadButton(wrapper).trigger('click')
-    await flushPromises()
-    expect((api.upload.mock.calls[0]![1] as FormData).get('imageGeometry')).toBeNull()
+    expect(wrapper.emitted('geometry')?.slice(-1)[0]).toEqual([null])
   })
 
   it('discards a late adjustment after choosing a different original and on unmount', async () => {
@@ -509,6 +554,7 @@ describe('Receipts page', () => {
     api.get.mockResolvedValue([receipt()])
     api.delete.mockRejectedValueOnce(new Error('Receipt storage unavailable'))
     const wrapper = await mountPage()
+    await editReceipt(wrapper)
     await wrapper.findAll('button').find(button => button.text() === 'Delete receipt')!.trigger('click')
     await flushPromises()
     const confirm = [...document.querySelectorAll('button')].find(button => button.textContent?.trim() === 'Delete receipt' && button.closest('.v-overlay'))!
@@ -529,6 +575,7 @@ describe('Receipts page', () => {
     const wrapper = await mountPage()
     await wrapper.findAll('button').find(button => button.text() === 'Categorized (1)')!.trigger('click')
     await flushPromises()
+    await editReceipt(wrapper)
     await wrapper.findAll('button').find(button => button.text() === 'Delete receipt')!.trigger('click')
     await flushPromises()
     expect(document.body.textContent).toContain('Permanently delete Corner Cafe and its original image?')

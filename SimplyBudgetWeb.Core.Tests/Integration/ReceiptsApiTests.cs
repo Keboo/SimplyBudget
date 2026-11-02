@@ -1,15 +1,17 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using SimplyBudgetShared.Data;
-using SimplyBudgetWeb.Data;
 
 using Azure;
 using Azure.Identity;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+using SimplyBudgetShared.Data;
+
 using SimplyBudgetWeb.Controllers;
+using SimplyBudgetWeb.Data;
 using SimplyBudgetWeb.Services;
 
 namespace SimplyBudgetWeb.Core.Tests.Integration;
@@ -123,6 +125,24 @@ public class ReceiptsApiTests
         await Assert.That(updated.ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
         var persisted = await client.GetFromJsonAsync<ReceiptDto>($"/api/receipts/{created.Id}");
         await Assert.That(persisted!.ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
+        await Assert.That(factory.ImageStore.Blobs.Single().Value).IsEquivalentTo(JpegBytes);
+
+        var adjustedGeometry = new ReceiptImageGeometry(1, [
+            new(0.1, 0.1), new(0.9, 0.1), new(0.9, 0.9), new(0.1, 0.9),
+        ]);
+        var adjustment = await client.PutAsJsonAsync($"/api/receipts/{created.Id}", new
+        {
+            merchantName = updated.MerchantName,
+            transactionDate = updated.TransactionDate,
+            totalAmountCents = updated.TotalAmountCents,
+            notes = updated.Notes,
+            lineItems = updated.LineItems,
+            imageGeometry = adjustedGeometry,
+            updateImageGeometry = true,
+        });
+        await Assert.That(adjustment.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        persisted = await client.GetFromJsonAsync<ReceiptDto>($"/api/receipts/{created.Id}");
+        await Assert.That(persisted!.ImageGeometry!.ToJson()).IsEqualTo(adjustedGeometry.ToJson());
         await Assert.That(factory.ImageStore.Blobs.Single().Value).IsEquivalentTo(JpegBytes);
     }
 
@@ -515,13 +535,17 @@ public class ReceiptsApiTests
             var category = new ExpenseCategory { Name = "Food", CurrentBalance = 10000 };
             var pending = new PendingExpense
             {
-                Date = new DateTime(2026, 3, 4), Description = "Bank merchant", Amount = 1250,
+                Date = new DateTime(2026, 3, 4),
+                Description = "Bank merchant",
+                Amount = 1250,
                 IsDebit = invalidLink != "credit",
             };
             var receipt = new Receipt
             {
-                FileName = "receipt.jpg", BlobName = "receipt.jpg",
-                TotalAmountCents = 1250, TransactionDate = pending.Date,
+                FileName = "receipt.jpg",
+                BlobName = "receipt.jpg",
+                TotalAmountCents = 1250,
+                TransactionDate = pending.Date,
             };
             db.ExpenseCategories.Add(category);
             db.PendingExpenses.Add(pending);

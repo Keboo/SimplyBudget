@@ -14,15 +14,18 @@ interface EditableLine {
   amount: string
 }
 
-interface DuplicateUpload {
-  receipt: ReceiptDto
-  match: ReceiptDto
-  overrides: { merchant: string; date: string; total: string }
-}
-
 const snackbar = useSnackbarStore()
 const { xs: phone } = useDisplay()
 const reviewOpen = ref(false)
+const editingReceipt = ref(false)
+const editedGeometry = ref<ReceiptImageGeometry | null>(null)
+const geometryChanged = ref(false)
+const adjustingImage = ref(false)
+const incompleteReceipt = ref<ReceiptDto | null>(null)
+const missingDate = ref('')
+const missingTotal = ref('')
+const completing = ref(false)
+const completionError = ref('')
 let listScrollY = 0
 let listReceiptId: number | null = null
 
@@ -30,6 +33,8 @@ function openReceipt(id: number) {
   listScrollY = window.scrollY
   listReceiptId = id
   selectedId.value = id
+  editingReceipt.value = false
+  adjustingImage.value = false
   reviewOpen.value = true
 }
 
@@ -47,12 +52,6 @@ function focusReview() {
   document.querySelector<HTMLInputElement>('.receipt-editor input')?.focus()
 }
 
-function cancelImage() {
-  releaseUrl(imagePreviewUrl.value)
-  imageFile.value = null
-  imagePreviewUrl.value = ''
-  imageGeometry.value = null
-}
 const receiptInput = ref<HTMLInputElement | null>(null)
 const cameraInput = ref<HTMLInputElement | null>(null)
 const receipts = ref<ReceiptDto[]>([])
@@ -70,12 +69,8 @@ const loadError = ref('')
 const actionError = ref('')
 const deleteOpen = ref(false)
 const deleting = ref(false)
-const duplicateUpload = ref<DuplicateUpload | null>(null)
-const duplicateError = ref('')
-const deletingDuplicate = ref(false)
 const draftReceiptId = ref<number | null>(null)
 const drafts = new Map<number, ReceiptUpdateRequest>()
-const uploadOverrides = ref({ merchant: '', date: '', total: '' })
 const merchantName = ref('')
 const transactionDate = ref('')
 const total = ref('')
@@ -125,12 +120,16 @@ function snapshot(): ReceiptUpdateRequest {
     totalAmountCents: total.value.trim() ? dollarsToCents(total.value) : null,
     notes: notes.value,
     lineItems: lineItems.value.map(line => ({ description: line.description, amountCents: dollarsToCents(line.amount) })),
+    imageGeometry: editedGeometry.value,
+    updateImageGeometry: geometryChanged.value,
   }
 }
 
 watch(selectedReceipt, receipt => {
   if (draftReceiptId.value !== null) drafts.set(draftReceiptId.value, snapshot())
   const draft = receipt ? drafts.get(receipt.id) : undefined
+  editedGeometry.value = draft ? draft.imageGeometry ?? null : receipt?.imageGeometry ?? null
+  geometryChanged.value = draft?.updateImageGeometry ?? false
   merchantName.value = draft?.merchantName ?? receipt?.merchantName ?? ''
   transactionDate.value = (draft?.transactionDate ?? receipt?.transactionDate)?.split('T')[0] ?? ''
   const amount = draft ? draft.totalAmountCents : receipt?.totalAmountCents
@@ -144,19 +143,23 @@ watch(selectedReceipt, receipt => {
   actionError.value = ''
 })
 
-watch(view, () => { selectedId.value = visibleReceipts.value[0]?.id ?? null })
+watch(view, () => {
+  selectedId.value = visibleReceipts.value[0]?.id ?? null
+  editingReceipt.value = false
+  adjustingImage.value = false
+})
 
 function selectImage(event: Event) {
+  if (uploading.value || preparingImage.value || incompleteReceipt.value) return
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
   input.value = ''
-  preparingImage.value = false
+  actionError.value = ''
   releaseUrl(imagePreviewUrl.value)
   imagePreviewUrl.value = ''
   imageFile.value = null
   imageGeometry.value = null
-  uploadOverrides.value = { merchant: '', date: '', total: '' }
   try {
     const types: Record<string, RegExp> = {
       'image/jpeg': /\.jpe?g$/i, 'image/png': /\.png$/i, 'image/webp': /\.webp$/i,
@@ -165,6 +168,7 @@ function selectImage(event: Event) {
     if (file.size === 0 || file.size > 15 * 1024 * 1024) throw new Error('Receipt images must be between 1 byte and 15 MB.')
     imageFile.value = file
     imagePreviewUrl.value = URL.createObjectURL(imageFile.value)
+    preparingImage.value = true
   } catch (error: unknown) {
     snackbar.enqueueSnackbar(error instanceof Error ? error.message : 'Could not read the receipt file', { variant: 'error' })
   }
@@ -179,12 +183,9 @@ async function uploadReceipt() {
     formData.append('image', imageFile.value)
     if (imageGeometry.value) formData.append('imageGeometry', JSON.stringify(imageGeometry.value))
     const receipt = await apiClient.upload<ReceiptDto>('/api/receipts', formData)
-    const overrides = { ...uploadOverrides.value }
-    const merchant = normalizeMerchant(overrides.merchant || receipt.merchantName)
-    const date = (overrides.date || receipt.transactionDate)?.split('T')[0]
-    const totalCents = overrides.total.trim()
-      ? dollarsToCents(overrides.total)
-      : receipt.totalAmountCents
+    const merchant = normalizeMerchant(receipt.merchantName)
+    const date = receipt.transactionDate?.split('T')[0]
+    const totalCents = receipt.totalAmountCents
     const match = merchant && date && totalCents != null
       ? receipts.value.find(existing =>
         existing.id !== receipt.id &&
@@ -197,14 +198,8 @@ async function uploadReceipt() {
     imageGeometry.value = null
     releaseUrl(imagePreviewUrl.value)
     imagePreviewUrl.value = ''
-    uploadOverrides.value = { merchant: '', date: '', total: '' }
-    if (match) {
-      duplicateError.value = ''
-      duplicateUpload.value = { receipt, match, overrides }
-      return
-    }
-
-    await finishUpload(receipt, overrides)
+    finishUpload(receipt)
+    if (match) snackbar.enqueueSnackbar('Receipt saved. It may duplicate an existing receipt; you can edit or delete it from the list.', { variant: 'warning' })
   } catch (error: unknown) {
     actionError.value = error instanceof Error ? error.message : 'Failed to upload receipt'
     snackbar.enqueueSnackbar(error instanceof Error ? error.message : 'Failed to upload receipt', { variant: 'error' })
@@ -217,53 +212,51 @@ function normalizeMerchant(value: string | null) {
   return value?.toLocaleLowerCase().replace(/[^a-z0-9]/g, '') ?? ''
 }
 
-async function finishUpload(
-  receipt: ReceiptDto,
-  overrides: { merchant: string; date: string; total: string },
-) {
-  if (overrides.merchant || overrides.date || overrides.total) {
-    drafts.set(receipt.id, {
-      merchantName: overrides.merchant || receipt.merchantName,
-      transactionDate: overrides.date || receipt.transactionDate,
-      totalAmountCents: overrides.total ? dollarsToCents(overrides.total) : receipt.totalAmountCents,
-      notes: receipt.notes,
-      lineItems: receipt.lineItems,
-    })
-  }
+function finishUpload(receipt: ReceiptDto) {
   view.value = 'pending'
   receipts.value = [receipt, ...receipts.value.filter(existing => existing.id !== receipt.id)]
   selectedId.value = receipt.id
-  if (phone.value) {
-    await nextTick()
-    openReceipt(receipt.id)
+  editingReceipt.value = false
+  reviewOpen.value = false
+  if (!receipt.transactionDate || receipt.totalAmountCents == null || receipt.totalAmountCents <= 0) {
+    missingDate.value = ''
+    missingTotal.value = ''
+    completionError.value = ''
+    incompleteReceipt.value = receipt
+  } else {
+    snackbar.enqueueSnackbar('Receipt saved', { variant: 'success' })
   }
-  snackbar.enqueueSnackbar(
-    receipt.processingMessage ?? 'Receipt uploaded. Review the extracted details.',
-    { variant: receipt.processingMessage ? 'warning' : 'success' },
-  )
 }
 
-async function keepDuplicateUpload() {
-  const pending = duplicateUpload.value
-  if (!pending) return
-  duplicateUpload.value = null
-  await finishUpload(pending.receipt, pending.overrides)
-}
-
-async function deleteDuplicateUpload() {
-  const pending = duplicateUpload.value
-  if (!pending) return
-  deletingDuplicate.value = true
-  duplicateError.value = ''
+async function completeReceipt() {
+  const receipt = incompleteReceipt.value
+  if (!receipt || completing.value) return
+  completionError.value = ''
+  const date = receipt.transactionDate || missingDate.value
+  const amount = receipt.totalAmountCents != null && receipt.totalAmountCents > 0
+    ? receipt.totalAmountCents : dollarsToCents(missingTotal.value)
+  if (!date || !Number.isFinite(Date.parse(date)) || !Number.isFinite(amount) || amount <= 0) {
+    completionError.value = 'Enter the receipt date and a positive total amount.'
+    return
+  }
+  completing.value = true
   try {
-    await apiClient.delete(`/api/receipts/${pending.receipt.id}`)
-    drafts.delete(pending.receipt.id)
-    duplicateUpload.value = null
-    snackbar.enqueueSnackbar('Duplicate receipt deleted', { variant: 'success' })
+    const updated = await apiClient.put<ReceiptDto>(`/api/receipts/${receipt.id}`, {
+      merchantName: receipt.merchantName,
+      transactionDate: date,
+      totalAmountCents: amount,
+      notes: receipt.notes,
+      lineItems: receipt.lineItems.map(line => ({ description: line.description, amountCents: line.amountCents })),
+    } satisfies ReceiptUpdateRequest)
+    incompleteReceipt.value = null
+    drafts.delete(receipt.id)
+    if (draftReceiptId.value === receipt.id) draftReceiptId.value = null
+    receipts.value = receipts.value.map(existing => existing.id === receipt.id ? updated : existing)
+    snackbar.enqueueSnackbar('Receipt saved', { variant: 'success' })
   } catch (error: unknown) {
-    duplicateError.value = error instanceof Error ? error.message : 'Failed to delete duplicate receipt'
+    completionError.value = error instanceof Error ? error.message : 'Failed to save receipt details'
   } finally {
-    deletingDuplicate.value = false
+    completing.value = false
   }
 }
 
@@ -276,7 +269,7 @@ function removeLineItem(index: number) {
 }
 
 async function saveReceipt() {
-  if (!selectedReceipt.value) return
+  if (!selectedReceipt.value || adjustingImage.value || saving.value) return
   const id = selectedReceipt.value.id
   actionError.value = ''
   if ((total.value.trim() && (!Number.isFinite(Number(total.value)) || dollarsToCents(total.value) <= 0))
@@ -292,6 +285,8 @@ async function saveReceipt() {
       transactionDate: transactionDate.value || null,
       totalAmountCents: total.value.trim() ? dollarsToCents(total.value) : null,
       notes: notes.value.trim() || null,
+      imageGeometry: editedGeometry.value,
+      updateImageGeometry: geometryChanged.value,
       lineItems: lineItems.value
         .map(line => ({ description: line.description.trim(), amountCents: dollarsToCents(line.amount) }))
     }
@@ -344,22 +339,21 @@ onBeforeUnmount(() => {
     <v-card class="pa-4 mb-4 receipt-capture">
       <div class="text-subtitle-1 font-weight-medium mb-1">Add a receipt</div>
       <div class="text-body-2 text-medium-emphasis mb-3">
-        Take a photo or choose a file. AI suggests the merchant, total, and date; you can always correct them.
-        JPEG, PNG, or WebP · up to 15 MB. Originals are saved unchanged.
+        Snap a photo and we will crop and save it. We only need your help if the date or total is missing.
       </div>
       <div class="d-flex flex-wrap align-center ga-3">
         <v-btn
           prepend-icon="mdi-camera-plus"
-          variant="outlined"
-          :disabled="uploading"
+          color="primary"
+          :disabled="preparingImage || uploading || incompleteReceipt !== null"
           @click="takePhoto"
         >
           Take a photo
         </v-btn>
         <v-btn
           prepend-icon="mdi-image-multiple"
-          variant="outlined"
-          :disabled="uploading"
+          variant="text"
+          :disabled="preparingImage || uploading || incompleteReceipt !== null"
           @click="chooseImage"
         >
           Choose file
@@ -380,53 +374,51 @@ onBeforeUnmount(() => {
           @change="selectImage"
         >
       </div>
-      <div v-if="imageFile || uploading" class="mt-4">
-        <div class="text-body-2 mb-2" role="status">
-          {{ uploading ? 'Uploading and analyzing… You can enter corrections below while AI works. Save them after upload finishes.' : 'Optional: enter known details now. These take priority over AI suggestions.' }}
-        </div>
-        <v-text-field v-model="uploadOverrides.merchant" label="Merchant override (optional)" maxlength="300" />
-        <v-text-field v-model="uploadOverrides.date" label="Date override (optional)" type="date" />
-        <v-text-field v-model="uploadOverrides.total" label="Total override (optional)" prefix="$" type="number" min="0.01" step="0.01" />
-      </div>
       <ReceiptImageAdjustment
         v-if="imageFile && imagePreviewUrl"
         :file="imageFile"
         :original-url="imagePreviewUrl"
         :disabled="uploading"
+        compact
         @geometry="imageGeometry = $event"
         @busy="preparingImage = $event"
+        @ready="uploadReceipt"
       />
-      <div class="receipt-capture-actions d-flex flex-wrap ga-2 mt-3">
-        <v-btn v-if="phone && imageFile" :disabled="uploading" @click="cancelImage">Cancel photo</v-btn>
-        <v-btn color="primary" prepend-icon="mdi-cloud-upload" :disabled="!imageFile || preparingImage || uploading" :loading="uploading" @click="uploadReceipt">Upload receipt</v-btn>
+      <div v-if="uploading" class="d-flex align-center ga-2 mt-3" role="status">
+        <v-progress-circular indeterminate size="24" />
+        Saving and reading receipt...
       </div>
+      <v-btn v-if="imageFile && actionError && !uploading" color="primary" class="mt-3" :disabled="preparingImage" @click="uploadReceipt">Retry upload</v-btn>
     </v-card>
 
     <v-alert v-if="loadError" type="error" variant="tonal" class="mb-4">
       {{ loadError }}
       <v-btn variant="text" @click="loadReceipts">Retry loading</v-btn>
     </v-alert>
-    <v-dialog :model-value="duplicateUpload !== null" max-width="500" persistent>
+    <v-dialog :model-value="incompleteReceipt !== null" max-width="440" persistent>
       <v-card>
-        <v-card-title class="text-wrap">Possible duplicate receipt</v-card-title>
+        <v-card-title class="text-wrap">Finish receipt</v-card-title>
         <v-card-text>
-          <p>
-            This upload matches an existing receipt's merchant, date, and total:
-            <strong>{{ duplicateUpload?.match.merchantName || duplicateUpload?.match.fileName }}</strong>
-            · {{ duplicateUpload?.match.transactionDate ? new Date(duplicateUpload.match.transactionDate).toLocaleDateString() : '' }}
-            · {{ duplicateUpload?.match.totalAmountCents == null ? '' : formatCents(duplicateUpload.match.totalAmountCents) }}.
-          </p>
-          <p class="mt-2">Keep both receipts, or delete the new upload if it is a duplicate.</p>
-          <v-alert v-if="duplicateError" type="error" variant="tonal" class="mt-3">{{ duplicateError }}</v-alert>
+          <p class="mb-3">Your photo is saved. Fill in only what we could not read.</p>
+          <v-expansion-panels class="mb-3">
+            <v-expansion-panel title="View receipt">
+              <v-expansion-panel-text>
+                <ReceiptPreview v-if="incompleteReceipt" :receipt-id="incompleteReceipt.id" :image-geometry="incompleteReceipt.imageGeometry" :controls="false" />
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
+          <v-text-field v-if="!incompleteReceipt?.transactionDate" v-model="missingDate" label="Receipt date" type="date" :disabled="completing" />
+          <v-text-field v-if="incompleteReceipt?.totalAmountCents == null || incompleteReceipt.totalAmountCents <= 0" v-model="missingTotal" label="Receipt total" prefix="$" type="number" min="0.01" step="0.01" :disabled="completing" />
+          <v-alert v-if="completionError" type="error" variant="tonal">{{ completionError }}</v-alert>
         </v-card-text>
         <v-card-actions class="flex-wrap">
+          <v-btn :disabled="completing" @click="incompleteReceipt = null">Later</v-btn>
           <v-spacer />
-          <v-btn :disabled="deletingDuplicate" @click="keepDuplicateUpload">Keep both receipts</v-btn>
-          <v-btn color="error" :loading="deletingDuplicate" @click="deleteDuplicateUpload">Delete this upload</v-btn>
+          <v-btn color="primary" :loading="completing" @click="completeReceipt">Save</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-alert v-if="actionError && (!selectedReceipt || (phone && !reviewOpen)) && !deleteOpen" type="error" variant="tonal" class="mb-4">{{ actionError }}</v-alert>
+    <v-alert v-if="actionError && (!editingReceipt || (phone && !reviewOpen)) && !deleteOpen" type="error" variant="tonal" class="mb-4">{{ actionError }}</v-alert>
     <div v-show="!phone || (!imageFile && !uploading)" class="d-flex flex-wrap ga-2 mb-3" aria-label="Receipt views">
       <v-btn :variant="view === 'pending' ? 'tonal' : 'text'" :aria-pressed="view === 'pending'" @click="view = 'pending'">Pending ({{ pendingCount }})</v-btn>
       <v-btn :variant="view === 'categorized' ? 'tonal' : 'text'" :aria-pressed="view === 'categorized'" @click="view = 'categorized'">Categorized ({{ receipts.length - pendingCount }})</v-btn>
@@ -466,12 +458,12 @@ onBeforeUnmount(() => {
           <v-btn variant="text" :disabled="saving || deleting" @click="backToList">Done</v-btn>
         </div>
         <div class="d-flex flex-wrap justify-space-between align-center ga-2 mb-2">
-          <div class="text-h6">Review receipt</div>
-          <v-chip size="small" variant="outlined">{{ selectedReceipt.isLinked ? 'Attached to expense' : selectedReceipt.processingStatus === 'reviewed' ? 'Reviewed · ready to attach' : selectedReceipt.processingStatus === 'processing' ? 'AI analyzing' : 'Check AI details' }}</v-chip>
+          <div class="text-h6">{{ editingReceipt ? 'Edit receipt' : selectedReceipt.merchantName || 'Receipt' }}</div>
+          <v-chip size="small" variant="outlined">{{ selectedReceipt.isLinked ? 'Attached to expense' : selectedReceipt.processingStatus === 'processing' ? 'AI analyzing' : !selectedReceipt.transactionDate || selectedReceipt.totalAmountCents == null ? 'Missing details' : 'Ready to attach' }}</v-chip>
         </div>
         <div class="receipt-review-scroll">
         <v-alert
-          v-if="selectedReceipt.processingMessage"
+          v-if="editingReceipt && selectedReceipt.processingMessage"
           type="warning"
           variant="tonal"
           density="compact"
@@ -482,11 +474,12 @@ onBeforeUnmount(() => {
         <v-expansion-panels v-if="phone" class="mb-4">
           <v-expansion-panel title="Preview receipt image">
             <v-expansion-panel-text>
-              <ReceiptPreview :receipt-id="selectedReceipt.id" :image-geometry="selectedReceipt.imageGeometry" :title="`Receipt from ${selectedReceipt.merchantName || selectedReceipt.fileName}`" />
+              <ReceiptPreview :receipt-id="selectedReceipt.id" :image-geometry="selectedReceipt.imageGeometry" :controls="editingReceipt" :editable="editingReceipt" :disabled="saving" :title="`Receipt from ${selectedReceipt.merchantName || selectedReceipt.fileName}`" @geometry="editedGeometry = $event; geometryChanged = true" @busy="adjustingImage = $event" />
             </v-expansion-panel-text>
           </v-expansion-panel>
         </v-expansion-panels>
-        <ReceiptPreview v-else :receipt-id="selectedReceipt.id" :image-geometry="selectedReceipt.imageGeometry" :title="`Receipt from ${selectedReceipt.merchantName || selectedReceipt.fileName}`" class="mb-4" />
+        <ReceiptPreview v-else :receipt-id="selectedReceipt.id" :image-geometry="selectedReceipt.imageGeometry" :controls="editingReceipt" :editable="editingReceipt" :disabled="saving" :title="`Receipt from ${selectedReceipt.merchantName || selectedReceipt.fileName}`" class="mb-4" @geometry="editedGeometry = $event; geometryChanged = true" @busy="adjustingImage = $event" />
+        <template v-if="editingReceipt">
         <v-alert v-if="selectedReceipt.processingStatus === 'processing'" type="info" variant="tonal" class="mb-3">
           AI is still analyzing. You can enter and save corrections now; saved corrections take priority over AI.
         </v-alert>
@@ -524,11 +517,18 @@ onBeforeUnmount(() => {
           </div>
           <v-textarea v-model="notes" label="Custom note" maxlength="10000" rows="2" auto-grow />
         </div>
+        </template>
+        <div v-else class="text-body-1 mb-3">
+          {{ selectedReceipt.transactionDate ? new Date(selectedReceipt.transactionDate).toLocaleDateString() : 'Date not set' }}
+          · {{ selectedReceipt.totalAmountCents == null ? 'Total not set' : formatCents(selectedReceipt.totalAmountCents) }}
         </div>
-          <div class="receipt-save-actions d-flex flex-wrap justify-space-between ga-2">
+        </div>
+          <div v-if="editingReceipt" class="receipt-save-actions d-flex flex-wrap justify-space-between ga-2">
             <v-btn color="error" variant="text" :disabled="saving || deleting" @click="actionError = ''; deleteOpen = true">Delete receipt</v-btn>
-            <v-btn color="primary" :loading="saving" @click="saveReceipt">Save corrections</v-btn>
+            <v-btn :disabled="saving" @click="editingReceipt = false; adjustingImage = false">Done editing</v-btn>
+            <v-btn color="primary" :loading="saving" :disabled="adjustingImage" @click="saveReceipt">Save corrections</v-btn>
           </div>
+          <v-btn v-else variant="text" prepend-icon="mdi-pencil" @click="editingReceipt = true; nextTick(focusReview)">Edit receipt</v-btn>
           <v-dialog v-model="deleteOpen" max-width="460" :persistent="deleting">
             <v-card>
               <v-card-title class="text-wrap">Delete receipt?</v-card-title>
@@ -583,13 +583,6 @@ onBeforeUnmount(() => {
 @media (max-width: 599px) {
   .receipt-list { max-height: none; }
   .receipt-list :deep(.v-list-item-title) { white-space: normal; overflow-wrap: anywhere; }
-  .receipt-capture-actions {
-    position: sticky;
-    bottom: 0;
-    z-index: 1;
-    background: rgb(var(--v-theme-surface));
-    padding-block: 12px max(12px, env(safe-area-inset-bottom));
-  }
 }
 @media (max-width: 450px) {
   .receipt-line { grid-template-columns: minmax(0, 1fr) 44px; }
