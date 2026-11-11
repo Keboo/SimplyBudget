@@ -118,7 +118,7 @@ dotnet test
 1. Install Playwright browsers (first time only):
 ```powershell
 dotnet build
-pwsh bin/Debug/net10.0/playwright.ps1 install
+pwsh bin/Debug/net11.0/playwright.ps1 install
 ```
 
 Or use the Playwright CLI:
@@ -253,7 +253,7 @@ Playwright automatically captures screenshots on test failures. Check the test r
 
 ```yaml
 - name: Install Playwright Browsers
-  run: pwsh SimplyBudgetWeb.UITests/bin/Debug/net10.0/playwright.ps1 install --with-deps
+  run: pwsh SimplyBudgetWeb.UITests/bin/Debug/net11.0/playwright.ps1 install --with-deps
 
 - name: Run UI Tests
   env:
@@ -269,7 +269,7 @@ Playwright automatically captures screenshots on test failures. Check the test r
   inputs:
     targetType: 'inline'
     script: |
-      pwsh SimplyBudgetWeb.UITests/bin/Debug/net10.0/playwright.ps1 install --with-deps
+      pwsh SimplyBudgetWeb.UITests/bin/Debug/net11.0/playwright.ps1 install --with-deps
 
 - task: DotNetCoreCLI@2
   displayName: 'Run UI Tests'
@@ -299,7 +299,7 @@ Playwright automatically captures screenshots on test failures. Check the test r
 ## Troubleshooting
 
 ### "Browser not installed" error
-Run: `pwsh bin/Debug/net10.0/playwright.ps1 install`
+Run: `pwsh bin/Debug/net11.0/playwright.ps1 install`
 
 ### Element not found errors
 - Check if selectors in Page Objects match current UI

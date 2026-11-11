@@ -59,5 +59,5 @@
 
 - **Project:** SimplyBudget
 - **Purpose:** Personal budgeting and expense tracking, including receipt uploads and pending expenses.
-- **Stack:** C#, .NET 10, .NET Aspire, Vue/Vite, TypeScript, and .NET/UI test projects.
+- **Stack:** C#, .NET 11, .NET Aspire, Vue/Vite, TypeScript, and .NET/UI test projects.
 - **Created:** 2026-10-19
