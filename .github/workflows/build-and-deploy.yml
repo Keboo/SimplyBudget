@@ -19,7 +19,7 @@ defaults:
     shell: pwsh
 
 env:
-  DOTNET_VERSION: '10.0.x'
+  DOTNET_VERSION: '11.0.x'
   NODE_VERSION: '22.x'
   FRONTEND_PROJECT_PATH: 'SimplyBudgetWeb.Web'
   WEB_SOLUTION_PATH: 'SimplyBudgetWeb.slnx'
@@ -266,6 +266,19 @@ jobs:
             rm -rf /var/lib/apt/lists/*
           '
 
+      # The matching Playwright image still ships the .NET 10 SDK. Install .NET 11
+      # alongside it rather than changing the browser versions or their OS dependencies.
+      - name: Install .NET SDK
+        if: needs.changes.outputs.app == 'true'
+        run: |
+          docker exec -e DOTNET_CHANNEL="${DOTNET_VERSION%.x}" "$UI_TESTS_CONTAINER" bash -c '
+            set -e
+            curl -fsSL https://dot.net/v1/dotnet-install.sh -o /tmp/dotnet-install.sh
+            bash /tmp/dotnet-install.sh --channel "$DOTNET_CHANNEL" --install-dir /usr/share/dotnet --no-path
+            rm /tmp/dotnet-install.sh
+            dotnet --version
+          '
+
       - name: Restore .NET dependencies
         if: needs.changes.outputs.app == 'true'
         run: docker exec "$UI_TESTS_CONTAINER" dotnet restore "$UITESTS_PROJECT_PATH"
@@ -487,6 +500,24 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: global.json
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: ${{ env.FRONTEND_PROJECT_PATH }}/pnpm-lock.yaml
 
       - name: Azure Login
         uses: azure/login@v3

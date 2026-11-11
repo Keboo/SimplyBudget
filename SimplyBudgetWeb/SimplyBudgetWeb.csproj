@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <SpaRoot>..\SimplyBudgetWeb.Web\</SpaRoot>
     <SpaProxyServerUrl>http://localhost:5173</SpaProxyServerUrl>
     <SpaProxyLaunchCommand>pnpm dev</SpaProxyLaunchCommand>
@@ -41,7 +41,7 @@
     chiseled) because it ships ICU and tzdata - the app still relies on culture-aware parsing and
     formatting, so InvariantGlobalization is intentionally NOT enabled.
     -->
-    <ContainerFamily>noble-chiseled-extra</ContainerFamily>
+    <ContainerFamily>resolute-chiseled-extra</ContainerFamily>
   </PropertyGroup>
 
   <ItemGroup>
