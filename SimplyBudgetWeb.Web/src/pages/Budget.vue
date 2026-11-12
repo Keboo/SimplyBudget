@@ -203,7 +203,8 @@ function getBarHeightPercent(amount: number): number {
 }
 
 function formatChartMonth(month: string): string {
-  return parseMonth(month).toLocaleString('default', { month: 'short' })
+  const date = parseMonth(month)
+  return phone.value ? String(date.getMonth() + 1) : date.toLocaleString('default', { month: 'short' })
 }
 
 function formatChartTooltip(point: ExpenseCategoryMonthlyExpensePointDto): string {
@@ -509,6 +510,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                   v-for="point in categoryChart.months"
                   :key="`${point.month}-label`"
                   class="expense-chart-month-label"
+                  :title="formatChartTooltip(point)"
                 >
                   {{ formatChartMonth(point.month) }}
                 </span>
@@ -614,6 +616,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
 }
 
 .expense-chart {
+  --expense-chart-gap: 8px;
   position: relative;
   height: 320px;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
@@ -648,7 +651,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
   height: 100%;
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--expense-chart-gap);
   align-items: end;
   z-index: 0;
 }
@@ -675,13 +678,20 @@ function openCategoryHistory(category: BudgetCategoryDto) {
 .expense-chart-axis {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--expense-chart-gap);
 }
 
 .expense-chart-month-label {
   display: block;
   text-align: center;
+  white-space: nowrap;
   font-size: 0.75rem;
   color: rgba(var(--v-theme-on-surface), 0.75);
+}
+
+@media (max-width: 599px) {
+  .expense-chart {
+    --expense-chart-gap: 2px;
+  }
 }
 </style>
