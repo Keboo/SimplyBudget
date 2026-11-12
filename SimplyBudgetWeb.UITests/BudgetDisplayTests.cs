@@ -131,6 +131,8 @@ public class BudgetDisplayTests : UITestBase
     [Arguments(599, "light")]
     [Arguments(600, "light")]
     [Arguments(768, "light")]
+    [Arguments(959, "light")]
+    [Arguments(960, "light")]
     [Arguments(1440, "light")]
     [Arguments(390, "dark")]
     [Arguments(1440, "dark")]
@@ -174,8 +176,10 @@ public class BudgetDisplayTests : UITestBase
                     month = november ? "2026-11" : "2026-10",
                     categories = new[]
                     {
-                        Category(1, "Groceries", 12500, november ? 42000 : 25000, false),
+                        Category(1, "Groceries", 12500, november ? 42000 : 25000, false, null),
                         Category(2, new string('W', 90), -123456789, 0, true),
+                        Category(3, "Decor / Replace Furniture", 0, 3000, false, null),
+                        Category(4, "Mortgage", 8599, 380000, false, null),
                     },
                 },
                 "/api/expense-categories/1/monthly-expenses" => new
@@ -200,11 +204,25 @@ public class BudgetDisplayTests : UITestBase
         await Page.GotoAsync(new Uri(FrontendBaseUri, "budget?month=2026-10").ToString());
         var rows = Page.Locator(".category-clickable-row");
         var groceries = rows.Filter(new() { Has = Page.GetByText("Groceries", new() { Exact = true }) });
+        var stressRow = rows.Filter(new() { Has = Page.Locator("[data-category-actions='2']") });
         await Assertions.Expect(groceries.Locator(".budget-category-heading")).ToHaveTextAsync("Groceries Balance: $125.00");
         await Assertions.Expect(groceries.GetByText("Allocated: $250.00", new() { Exact = true })).ToBeVisibleAsync();
-        await Assertions.Expect(rows.Nth(1).GetByText("Allocated: $0.00", new() { Exact = true })).ToBeVisibleAsync();
-        await Assertions.Expect(rows.Nth(1).GetByText("Budget: 15%", new() { Exact = true })).ToBeVisibleAsync();
-        await Assertions.Expect(rows.Nth(1).GetByText("Balance: -$1,234,567.89", new() { Exact = true })).ToBeVisibleAsync();
+        await Assertions.Expect(stressRow.GetByText("Allocated: $0.00", new() { Exact = true })).ToBeVisibleAsync();
+        await Assertions.Expect(stressRow.GetByText("Budget: 15%", new() { Exact = true })).ToBeVisibleAsync();
+        await Assertions.Expect(stressRow.GetByText("Balance: -$1,234,567.89", new() { Exact = true })).ToBeVisibleAsync();
+
+        if (width < 960)
+        {
+            foreach (var index in new[] { 0, 1, 2 })
+            {
+                var rowBox = (await rows.Nth(index).BoundingBoxAsync())!;
+                await Assert.That(rowBox.Height <= 112).IsTrue();
+            }
+            var metrics = await groceries.Locator(".budget-metric").AllAsync();
+            var metricBoxes = await Task.WhenAll(metrics.Select(async metric => (await metric.BoundingBoxAsync())!));
+            await Assert.That(metricBoxes.Length).IsEqualTo(3);
+            await Assert.That(metricBoxes.Max(box => box.Y) - metricBoxes.Min(box => box.Y) < 2).IsTrue();
+        }
 
         var nameBox = (await groceries.Locator(".budget-category-name").BoundingBoxAsync())!;
         var balanceBox = (await groceries.Locator(".budget-category-heading .v-chip").BoundingBoxAsync())!;
@@ -217,7 +235,7 @@ public class BudgetDisplayTests : UITestBase
         await Assertions.Expect(toggle).ToHaveAttributeAsync("aria-expanded", "false");
 
         // The toggle must not make the row taller than its chips, yet still offer a 44px touch target.
-        var spentChip = groceries.Locator(".v-chip", new() { HasText = "Spent: $175.00" });
+        var spentChip = groceries.Locator(".v-chip", new() { HasTextRegex = new Regex(@"Spent:\s*\$175\.00") });
         var spentBox = (await spentChip.BoundingBoxAsync())!;
         var toggleBox = (await toggle.BoundingBoxAsync())!;
         await Assert.That(toggleBox.Height <= spentBox.Height + 1).IsTrue();
@@ -257,23 +275,35 @@ public class BudgetDisplayTests : UITestBase
         await Assertions.Expect(averages).ToBeHiddenAsync();
         await Assertions.Expect(Page).ToHaveURLAsync(new Regex("/budget\\?month=2026-10$"));
 
-        await rows.Nth(1).GetByRole(AriaRole.Button, new() { Name = "Show spending averages" }).ClickAsync();
-        await Assertions.Expect(rows.Nth(1).GetByText("12mo avg: $260.00", new() { Exact = true })).ToBeVisibleAsync();
+        await stressRow.GetByRole(AriaRole.Button, new() { Name = "Show spending averages" }).ClickAsync();
+        await Assertions.Expect(stressRow.GetByText("12mo avg: $260.00", new() { Exact = true })).ToBeVisibleAsync();
         await Assertions.Expect(averages).ToBeHiddenAsync();
-        await Assert.That(await Page.EvaluateAsync<bool>("""
-            () => document.documentElement.scrollWidth <= innerWidth
-              && [...document.querySelectorAll('.budget-category-content, .budget-category-content .v-chip')]
-                .every(element => {
+        await Assert.That(await Page.EvaluateAsync<bool>("() => document.documentElement.scrollWidth <= innerWidth")).IsTrue();
+        await Assert.That(await Page.EvaluateAsync<string[]>("""
+            () => [...document.querySelectorAll('.budget-category-content, .budget-category-content .v-chip')]
+                .flatMap(element => {
                   const box = element.getBoundingClientRect();
                   return box.left >= 0 && box.right <= innerWidth + 1
-                    && element.scrollWidth <= element.clientWidth + 1;
+                    && element.scrollWidth <= element.clientWidth + 1
+                    ? []
+                    : [`${element.textContent.trim()}: bounds ${box.left}..${box.right}, width ${element.scrollWidth}/${element.clientWidth}`];
                 })
-            """)).IsTrue();
-        var chartButton = groceries.GetByRole(AriaRole.Button, new() { Name = "Open category chart" });
-        var chartBox = (await chartButton.BoundingBoxAsync())!;
-        await Assert.That(chartBox.Width >= 44 && chartBox.Height >= 44).IsTrue();
-
-        await chartButton.ClickAsync();
+            """)).IsEmpty();
+        if (width < 960)
+        {
+            var actions = groceries.Locator("[data-category-actions='1']");
+            var actionsBox = (await actions.BoundingBoxAsync())!;
+            await Assert.That(actionsBox.Width >= 44 && actionsBox.Height >= 44).IsTrue();
+            await actions.ClickAsync();
+            await Page.GetByRole(AriaRole.Menuitem, new() { Name = "Open category chart" }).ClickAsync();
+        }
+        else
+        {
+            var chartButton = groceries.GetByRole(AriaRole.Button, new() { Name = "Open category chart" });
+            var chartBox = (await chartButton.BoundingBoxAsync())!;
+            await Assert.That(chartBox.Width >= 44 && chartBox.Height >= 44).IsTrue();
+            await chartButton.ClickAsync();
+        }
         var chartDialog = Page.GetByRole(AriaRole.Dialog);
         await Assertions.Expect(chartDialog).ToContainTextAsync("Groceries spending (last 12 months)");
         var labels = chartDialog.Locator(".expense-chart-month-label");
@@ -302,11 +332,12 @@ public class BudgetDisplayTests : UITestBase
         await Assertions.Expect(Page).ToHaveURLAsync(new Regex("/history\\?.*categoryId=1"));
     }
 
-    private static object Category(int id, string name, int balance, int allocation, bool percentage) => new
+    private static object Category(int id, string name, int balance, int allocation, bool percentage,
+        string? description = "Household essentials with a description that can wrap on narrow screens.") => new
     {
         id,
         name,
-        description = "Household essentials with a description that can wrap on narrow screens.",
+        description,
         categoryName = "Essentials",
         accountId = (int?)null,
         cap = (int?)null,

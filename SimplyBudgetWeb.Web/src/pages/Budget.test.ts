@@ -191,6 +191,32 @@ describe('budget category actions', () => {
 })
 
 describe('budget expense rows', () => {
+  it.each([320, 959, 960])('keeps category charts accessible in the compact menu or desktop button at %ipx', async width => {
+    vi.stubGlobal('innerWidth', width)
+    const wrapper = await setup()
+    const chartButton = wrapper.find('[aria-label="Open category chart"]')
+    expect(chartButton.exists()).toBe(width >= 960)
+    mocks.get.mockResolvedValueOnce({
+      name: 'Groceries', budgetedAmount: 30000, budgetedPercentage: 0, usePercentage: false, months: [],
+    })
+
+    if (width < 960) {
+      await wrapper.get('[data-category-actions="1"]').trigger('click')
+      await flushPromises()
+      const chartAction = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+        .find(item => item.textContent?.trim() === 'Open category chart')!
+      expect(chartAction).toBeDefined()
+      chartAction.click()
+    } else {
+      await chartButton.trigger('click')
+    }
+
+    await flushPromises()
+    expect(mocks.get).toHaveBeenLastCalledWith('/api/expense-categories/1/monthly-expenses?month=2026-10-01&months=12')
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain('Groceries spending (last 12 months)')
+    expect(mocks.push).not.toHaveBeenCalled()
+  })
+
   it.each([
     { balance: 12500, label: '$125.00', color: 'success', allocated: 25000, allocationLabel: '$250.00', usePercentage: false },
     { balance: -12500, label: '-$125.00', color: 'error', allocated: 0, allocationLabel: '$0.00', usePercentage: true },
