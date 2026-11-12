@@ -16,7 +16,7 @@ code {
   box-sizing: border-box;
 }
 
-.v-theme--dark a,
-.v-theme--dark a:visited {
+.v-theme--dark a:not(.v-btn):not(.v-list-item),
+.v-theme--dark a:not(.v-btn):not(.v-list-item):visited {
   color: #90caf9;
 }
