@@ -81,7 +81,16 @@ describe('budget spending averages', () => {
       expectedAmounts.map((amount, index) => `${[3, 6, 12][index]}mo avg: ${amount}`),
     )
 
-    await wrapper.get('[aria-label="Open category chart"]').trigger('click')
+    if (width < 960) {
+      await wrapper.get('[data-category-actions="1"]').trigger('click')
+      await flushPromises()
+      const chartAction = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+        .find(item => item.textContent?.trim() === 'Open category chart')!
+      expect(chartAction).toBeDefined()
+      chartAction.click()
+    } else {
+      await wrapper.get('[aria-label="Open category chart"]').trigger('click')
+    }
     await flushPromises()
     expect(api.get).toHaveBeenCalledWith('/api/expense-categories/1/monthly-expenses?month=2026-10-01&months=12')
     const dialog = document.querySelector('[role="dialog"]')!

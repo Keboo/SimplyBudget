@@ -18,7 +18,8 @@ import LoadFeedback from '@/components/LoadFeedback.vue'
 const snackbar = useSnackbarStore()
 const router = useRouter()
 const authStore = useAuthStore()
-const { xs: phone } = useDisplay()
+const { xs: phone, width } = useDisplay()
+const compact = computed(() => width.value < 960)
 
 const { currentMonth } = useMonthQueryParam()
 const { data: budget, loading, error: loadError, hasLoaded, load: loadBudget } = useContextualLoad<BudgetResponse | null>(null, 'Failed to load budget')
@@ -262,7 +263,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
 </script>
 
 <template>
-  <div>
+  <div class="budget-page">
     <v-card class="pa-4 mb-4 d-flex flex-wrap align-center" style="gap: 16px;">
       <MonthPickerNav v-model="currentMonth" />
     </v-card>
@@ -312,7 +313,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
       </v-alert>
       <v-expansion-panels v-for="group in grouped" :key="group.groupName" :model-value="0" class="mb-2">
         <v-expansion-panel>
-          <v-expansion-panel-title>
+          <v-expansion-panel-title class="budget-category-group">
             <span class="font-weight-bold">{{ group.groupName }}</span>
           </v-expansion-panel-title>
           <v-expansion-panel-text class="pa-0 budget-category-panel">
@@ -331,10 +332,16 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                     </v-chip>
                   </div>
                   <div v-if="cat.description" class="budget-category-description mb-1">{{ cat.description }}</div>
-                  <div class="budget-chip-row d-flex flex-wrap mt-1" style="gap: 4px;">
-                    <v-chip size="small">Budget: {{ cat.usePercentage ? `${cat.budgetedPercentage}%` : formatCents(cat.budgetedAmount) }}</v-chip>
-                    <v-chip size="small" variant="outlined" :title="`Allocated in ${monthLabel}`">Allocated: {{ formatCents(cat.monthlyAllocations) }}</v-chip>
-                    <v-chip size="small" color="error" variant="outlined">Spent: {{ formatCents(cat.monthlyExpenses) }}</v-chip>
+                  <div class="budget-chip-row mt-1">
+                    <v-chip size="small" class="budget-metric">
+                      <span class="budget-metric-label">Budget:</span> <span class="budget-metric-value">{{ cat.usePercentage ? `${cat.budgetedPercentage}%` : formatCents(cat.budgetedAmount) }}</span>
+                    </v-chip>
+                    <v-chip size="small" variant="outlined" class="budget-metric" :title="`Allocated in ${monthLabel}`">
+                      <span class="budget-metric-label">Allocated:</span> <span class="budget-metric-value">{{ formatCents(cat.monthlyAllocations) }}</span>
+                    </v-chip>
+                    <v-chip size="small" color="error" variant="outlined" class="budget-metric">
+                      <span class="budget-metric-label">Spent:</span> <span class="budget-metric-value">{{ formatCents(cat.monthlyExpenses) }}</span>
+                    </v-chip>
                     <v-btn
                       :icon="isAveragesExpanded(cat.id) ? 'mdi-chevron-left' : 'mdi-chart-timeline-variant'"
                       :variant="isAveragesExpanded(cat.id) ? 'tonal' : 'text'"
@@ -381,6 +388,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                 <template #append>
                   <div class="d-flex flex-column flex-sm-row">
                     <v-btn
+                      v-if="!compact"
                       icon="mdi-chart-bar"
                       variant="text"
                       size="small"
@@ -406,6 +414,7 @@ function openCategoryHistory(category: BudgetCategoryDto) {
                         />
                       </template>
                       <v-list role="menu" :aria-label="`Actions for category ${cat.name ?? '(unnamed)'}`">
+                        <v-list-item v-if="compact" role="menuitem" title="Open category chart" prepend-icon="mdi-chart-bar" @click="openCategoryChart(cat)" />
                         <v-list-item role="menuitem" title="Edit category" prepend-icon="mdi-pencil" @click="openCategoryEdit(cat)" />
                         <v-list-item role="menuitem" title="Create transfer" prepend-icon="mdi-bank-transfer" @click="openCategoryTransfer(cat)" />
                         <v-list-item role="menuitem" title="Copy Current Amount" prepend-icon="mdi-content-copy" @click.stop="copyCurrentAmount(cat)" />
@@ -594,7 +603,10 @@ function openCategoryHistory(category: BudgetCategoryDto) {
 }
 
 .budget-chip-row {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 4px;
 }
 
 .budget-averages {
@@ -613,6 +625,95 @@ function openCategoryHistory(category: BudgetCategoryDto) {
   content: '';
   position: absolute;
   inset: -10px;
+}
+
+@media (max-width: 959.98px) {
+  .budget-page {
+    padding-bottom: 64px;
+  }
+
+  .budget-category-group {
+    min-height: 48px;
+    padding: 8px 12px;
+  }
+
+  .budget-category-panel :deep(.v-expansion-panel-text__wrapper) {
+    padding: 0 4px;
+  }
+
+  .category-clickable-row {
+    display: block;
+    padding: 8px;
+  }
+
+  .category-clickable-row :deep(.v-list-item__append) {
+    position: absolute;
+    inset-block-start: 8px;
+    inset-inline-end: 4px;
+  }
+
+  .budget-category-heading {
+    min-height: 44px;
+    padding-inline-end: 44px;
+    flex-wrap: nowrap;
+  }
+
+  .budget-category-name {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .budget-category-heading :deep(.v-chip) {
+    flex-shrink: 0;
+    max-width: 55%;
+    padding-inline: 8px;
+  }
+
+  .budget-chip-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) 44px;
+  }
+
+  .budget-averages-toggle {
+    justify-self: center;
+    margin-inline: 0;
+  }
+
+  .budget-metric {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .budget-metric :deep(.v-chip__underlay) {
+    display: none;
+  }
+
+  .budget-metric :deep(.v-chip__content) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    line-height: 1.125rem;
+  }
+
+  .budget-metric-label {
+    font-size: 0.75rem;
+    color: rgba(var(--v-theme-on-surface), 0.7);
+  }
+
+  .budget-metric-value {
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .budget-averages :deep(.v-chip) {
+    grid-column: span 4;
+    justify-self: start;
+  }
 }
 
 .expense-chart {

@@ -44,6 +44,11 @@ as the destination. A negative balance prefills the positive amount needed to co
 zero or positive balances leave the amount blank. Choose a different source category and
 review the amount before selecting **Save**; opening the dialog never posts a transfer.
 
+On screens narrower than 960px, budget rows use a compact three-column summary for
+Budget, Allocated, and Spent instead of wrapping chips. Balance stays beside the category
+name, and **Open category chart** is available in the category actions menu (⋮).
+Desktop rows retain their chips and dedicated chart button.
+
 ### Budget spending averages
 
 Budget spending averages cover 3, 6, or 12 calendar months ending with the selected month
