@@ -136,14 +136,14 @@ jobs:
         run: dotnet publish ${{ env.BACKEND_PROJECT_PATH }} --configuration Release --no-build
 
       - name: Build Database Bundle
-        if: needs.changes.outputs.app == 'true' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        if: needs.changes.outputs.app == 'true'
         run: |
           dotnet ef migrations bundle `
             --self-contained `
             --no-build `
             --configuration Release `
             --project SimplyBudgetWeb.Data/SimplyBudgetWeb.Data.csproj `
-            --startup-project .\SimplyBudgetWeb.AppHost\SimplyBudgetWeb.AppHost.csproj `
+            --startup-project SimplyBudgetWeb.AppHost/SimplyBudgetWeb.AppHost.csproj `
             --output efbundle
 
       - name: Azure Login
