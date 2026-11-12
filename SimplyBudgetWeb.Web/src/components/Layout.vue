@@ -75,7 +75,7 @@ function toggleTheme() {
     rail
     permanent
   >
-    <v-list density="compact" nav>
+    <v-list density="compact" nav color="primary">
       <v-list-item
         v-for="item in navItems"
         :key="item.to"
@@ -96,7 +96,7 @@ function toggleTheme() {
           <v-icon>mdi-history</v-icon><span>Activity</span>
         </v-btn>
       </template>
-      <v-list aria-label="Activity destinations">
+      <v-list aria-label="Activity destinations" color="primary">
         <v-list-item title="Expenses" :to="monthDestination('/history')" />
         <v-list-item title="Pending Expenses" :to="monthDestination('/pending-expenses')" />
       </v-list>
@@ -104,7 +104,7 @@ function toggleTheme() {
     <v-btn to="/receipts" :active="route.path === '/receipts'" aria-label="Receipts">
       <v-icon>mdi-receipt-text-check</v-icon><span>Receipts</span>
     </v-btn>
-    <v-btn :active="moreActive || moreOpen" aria-label="More" aria-haspopup="dialog" @click="moreOpen = true">
+    <v-btn :active="moreActive" aria-label="More" aria-haspopup="dialog" @click="moreOpen = true">
       <v-icon>mdi-dots-horizontal</v-icon><span>More</span>
     </v-btn>
   </v-bottom-navigation>
@@ -112,7 +112,7 @@ function toggleTheme() {
   <v-dialog v-model="moreOpen" max-width="440">
     <v-card title="More">
       <v-card-text class="text-wrap">{{ authStore.displayName }}</v-card-text>
-      <v-list aria-label="More destinations and account">
+      <v-list aria-label="More destinations and account" color="primary">
         <v-list-item to="/settings" title="Settings" prepend-icon="mdi-cog" />
         <v-list-item to="/import" title="Import" prepend-icon="mdi-file-import" />
         <v-list-item :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'" prepend-icon="mdi-theme-light-dark" @click="toggleTheme" />
@@ -142,6 +142,9 @@ function toggleTheme() {
 .phone-navigation :deep(.v-btn) {
   min-width: 0;
   min-height: 44px;
+}
+.phone-navigation :deep(.v-btn--active) {
+  color: rgb(var(--v-theme-primary));
 }
 .phone-content {
   padding-top: calc(12px + env(safe-area-inset-top));
