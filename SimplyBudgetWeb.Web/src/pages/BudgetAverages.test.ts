@@ -29,7 +29,7 @@ afterEach(() => {
 beforeEach(() => { api.get.mockReset() })
 
 describe('budget spending averages', () => {
-  it.each([390, 1440])('matches graph averages including fractional-cent rounding at %ipx', async width => {
+  it.each([320, 390, 599, 600, 1440])('matches graph averages and responsive month labels at %ipx', async width => {
     const category: BudgetCategoryDto = {
       id: 1, name: 'Car Insurance', description: null, categoryName: 'Transportation',
       accountId: null, budgetedAmount: 14000, budgetedPercentage: 0, currentBalance: 0,
@@ -97,6 +97,12 @@ describe('budget spending averages', () => {
     expect(months[1]!.getAttribute('title')).toContain('$0.00 spent; $280.00 budget')
     expect(months[10]!.getAttribute('title')).toContain('$0.00 spent; $0.00 budget')
     expect(months[11]!.getAttribute('title')).toContain('10% budget')
+    const labels = Array.from(dialog.querySelectorAll('.expense-chart-month-label'))
+    expect(labels.map(label => label.textContent!.trim())).toEqual(width < 600
+      ? ['11', '12', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
+      : ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'])
+    expect(labels[0]!.getAttribute('title')).toBe('November 2025: $120.00 spent; $280.00 budget')
+    expect(labels[2]!.getAttribute('title')).toBe('January 2026: $0.00 spent; $280.00 budget')
     expect(Array.from(dialog.querySelectorAll('.v-chip'))
       .map(chip => chip.textContent!.trim()).filter(text => text.includes('mo avg:'))).toEqual(
       expectedAmounts.map((amount, index) => `${[3, 6, 12][index]}mo avg: ${amount}`),

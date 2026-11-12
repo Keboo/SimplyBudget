@@ -128,6 +128,8 @@ public class BudgetDisplayTests : UITestBase
     [Test]
     [Arguments(320, "light")]
     [Arguments(390, "light")]
+    [Arguments(599, "light")]
+    [Arguments(600, "light")]
     [Arguments(768, "light")]
     [Arguments(1440, "light")]
     [Arguments(390, "dark")]
@@ -186,6 +188,8 @@ public class BudgetDisplayTests : UITestBase
                     {
                         month = new DateTime(2025, 10, 1).AddMonths(index).ToString("yyyy-MM"),
                         amount = 17500,
+                        budgetedAmount = 30000,
+                        budgetedPercentage = 0,
                     }),
                 },
                 _ => Array.Empty<object>(),
@@ -270,7 +274,25 @@ public class BudgetDisplayTests : UITestBase
         await Assert.That(chartBox.Width >= 44 && chartBox.Height >= 44).IsTrue();
 
         await chartButton.ClickAsync();
-        await Assertions.Expect(Page.GetByRole(AriaRole.Dialog)).ToContainTextAsync("Groceries spending (last 12 months)");
+        var chartDialog = Page.GetByRole(AriaRole.Dialog);
+        await Assertions.Expect(chartDialog).ToContainTextAsync("Groceries spending (last 12 months)");
+        var labels = chartDialog.Locator(".expense-chart-month-label");
+        await Assertions.Expect(labels).ToHaveTextAsync(width < 600
+            ? ["10", "11", "12", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+            : ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"]);
+        await Assertions.Expect(labels.First).ToHaveAttributeAsync("title", "October 2025: $175.00 spent; $300.00 budget");
+        await Assertions.Expect(labels.Nth(3)).ToHaveAttributeAsync("title", "January 2026: $175.00 spent; $300.00 budget");
+        await Assert.That(await labels.EvaluateAllAsync<bool>("""
+            labels => labels.every(label => {
+              const range = document.createRange();
+              range.selectNodeContents(label);
+              const lines = [...range.getClientRects()];
+              const cell = label.getBoundingClientRect();
+              return lines.length === 1 && lines[0].left >= cell.left - 1
+                && lines[0].right <= cell.right + 1
+                && cell.left >= 0 && cell.right <= innerWidth;
+            })
+            """)).IsTrue();
         await Assertions.Expect(Page).ToHaveURLAsync(new Regex("/budget\\?month=2026-10$"));
         await Page.GetByRole(AriaRole.Button, new() { Name = "Close", Exact = true }).ClickAsync();
 
