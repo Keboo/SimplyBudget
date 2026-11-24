@@ -92,12 +92,14 @@ public class ReceiptsApiTests
 
         using var form = ImageForm(JpegBytes, "receipt.jpg", "image/jpeg");
         form.Add(new StringContent(GeometryJson), "imageGeometry");
+        form.Add(new StringContent("  Team lunch  "), "description");
         var response = await client.PostAsync("/api/receipts", form);
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
         var created = await response.Content.ReadFromJsonAsync<ReceiptDto>();
         await Assert.That(created).IsNotNull();
         await Assert.That(created!.MerchantName).IsEqualTo("Corner Cafe");
+        await Assert.That(created.Description).IsEqualTo("Team lunch");
         await Assert.That(created.TotalAmountCents).IsEqualTo(1250);
         await Assert.That(created.ProcessingStatus).IsEqualTo("needs-review");
         await Assert.That(created.ProcessingMessage).IsNull();
@@ -107,9 +109,13 @@ public class ReceiptsApiTests
 
         var list = await client.GetFromJsonAsync<ReceiptDto[]>("/api/receipts");
         await Assert.That(list!.Single().Id).IsEqualTo(created.Id);
+        await Assert.That(list!.Single().Description).IsEqualTo("Team lunch");
         await Assert.That(list!.Single().ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
         var reloaded = await client.GetFromJsonAsync<ReceiptDto>($"/api/receipts/{created.Id}");
         await Assert.That(reloaded!.ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
+        await Assert.That(reloaded.Description).IsEqualTo("Team lunch");
+        var matches = await client.GetFromJsonAsync<ReceiptDto[]>("/api/receipts/matches?amount=1250&date=2026-03-04");
+        await Assert.That(matches!.Single().Description).IsEqualTo("Team lunch");
 
         var image = await client.GetAsync($"/api/receipts/{created.Id}/image");
         await Assert.That(image.StatusCode).IsEqualTo(HttpStatusCode.OK);
@@ -117,14 +123,17 @@ public class ReceiptsApiTests
         await Assert.That(await image.Content.ReadAsByteArrayAsync()).IsEquivalentTo(JpegBytes);
 
         var update = await client.PutAsJsonAsync($"/api/receipts/{created.Id}", new ReceiptUpdateRequest(
-            "Fixed Cafe", new DateTime(2026, 3, 5), 1300, "note", []));
+            "Fixed Cafe", new DateTime(2026, 3, 5), 1300, "note", [], Description: "  Updated lunch  "));
         await Assert.That(update.StatusCode).IsEqualTo(HttpStatusCode.OK);
         var updated = await update.Content.ReadFromJsonAsync<ReceiptDto>();
         await Assert.That(updated!.MerchantName).IsEqualTo("Fixed Cafe");
+        await Assert.That(updated.Description).IsEqualTo("Updated lunch");
+        await Assert.That(updated.Notes).IsEqualTo("note");
         await Assert.That(updated.LineItems.Length).IsEqualTo(0);
         await Assert.That(updated.ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
         var persisted = await client.GetFromJsonAsync<ReceiptDto>($"/api/receipts/{created.Id}");
         await Assert.That(persisted!.ImageGeometry!.ToJson()).IsEqualTo(GeometryJson);
+        await Assert.That(persisted.Description).IsEqualTo("Updated lunch");
         await Assert.That(factory.ImageStore.Blobs.Single().Value).IsEquivalentTo(JpegBytes);
 
         var adjustedGeometry = new ReceiptImageGeometry(1, [
@@ -136,6 +145,7 @@ public class ReceiptsApiTests
             transactionDate = updated.TransactionDate,
             totalAmountCents = updated.TotalAmountCents,
             notes = updated.Notes,
+            description = updated.Description,
             lineItems = updated.LineItems,
             imageGeometry = adjustedGeometry,
             updateImageGeometry = true,
@@ -158,6 +168,40 @@ public class ReceiptsApiTests
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
         var receipt = await response.Content.ReadFromJsonAsync<ReceiptDto>();
         await Assert.That(receipt!.ImageGeometry).IsNull();
+        await Assert.That(receipt.Description).IsNull();
+    }
+
+    [Test]
+    [Arguments(0)]
+    [Arguments(500)]
+    [Arguments(501)]
+    public async Task Upload_ValidatesDescriptionBeforeStoringImage(int length)
+    {
+        var (factory, client) = await CreateAsync();
+        using var _ = factory;
+        using var form = ImageForm(JpegBytes, "receipt.jpg", "image/jpeg");
+        var description = length == 0 ? "   " : new string('x', length);
+        form.Add(new StringContent(description), "description");
+        var response = await client.PostAsync("/api/receipts", form);
+        if (length > 500)
+        {
+            await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+            await Assert.That(await response.Content.ReadAsStringAsync()).Contains("500 characters");
+            await Assert.That(factory.ImageStore.Blobs.Count).IsEqualTo(0);
+            await Assert.That((await client.GetFromJsonAsync<ReceiptDto[]>("/api/receipts"))!.Length).IsEqualTo(0);
+        }
+        else
+        {
+            await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
+            var receipt = await response.Content.ReadFromJsonAsync<ReceiptDto>();
+            await Assert.That(receipt!.Description).IsEqualTo(length == 0 ? null : description);
+            var invalidUpdate = await client.PutAsJsonAsync($"/api/receipts/{receipt.Id}", new ReceiptUpdateRequest(
+                receipt.MerchantName, receipt.TransactionDate, receipt.TotalAmountCents, null, [],
+                Description: new string('x', 501)));
+            await Assert.That(invalidUpdate.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+            var reloaded = await client.GetFromJsonAsync<ReceiptDto>($"/api/receipts/{receipt.Id}");
+            await Assert.That(reloaded!.Description).IsEqualTo(receipt.Description);
+        }
     }
 
     [Test]
@@ -265,12 +309,15 @@ public class ReceiptsApiTests
         factory.Analyzer.Exception = new RequestFailedException("boom");
 
         using var form = ImageForm(JpegBytes, "receipt.jpg", "image/jpeg");
+        form.Add(new StringContent("Remember this purchase"), "description");
         var response = await client.PostAsync("/api/receipts", form);
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
         var created = await response.Content.ReadFromJsonAsync<ReceiptDto>();
         await Assert.That(created!.ProcessingStatus).IsEqualTo("needs-review");
         await Assert.That(created.ProcessingMessage).Contains("Automatic extraction failed");
+        var reloaded = await client.GetFromJsonAsync<ReceiptDto>($"/api/receipts/{created.Id}");
+        await Assert.That(reloaded!.Description).IsEqualTo("Remember this purchase");
     }
 
     [Test]

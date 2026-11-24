@@ -39,6 +39,7 @@ interface LineItem {
 const emptyLine = (): LineItem => ({ expenseCategoryId: null, amount: '' })
 
 const description = ref('')
+const descriptionEdited = ref(false)
 const date = ref('')
 const lines = ref<LineItem[]>([emptyLine()])
 const notes = ref('')
@@ -121,6 +122,7 @@ watch(
     const pe = props.pendingExpense
     if (!props.modelValue || !pe) return
     description.value = pe.description ?? ''
+    descriptionEdited.value = false
     date.value = pe.date.split('T')[0]
     notes.value = pe.notes ?? ''
     savedNotes.value = notes.value
@@ -194,6 +196,10 @@ async function browsePendingReceipts() {
 }
 
 watch(receiptId, () => { previewReceiptId.value = null })
+watch(selectedReceipt, receipt => {
+  if (!props.modelValue || descriptionEdited.value) return
+  description.value = receipt?.description?.trim() || props.pendingExpense?.description || ''
+})
 onBeforeUnmount(() => { receiptRequest++ })
 
 const sortedCategories = computed(() =>
@@ -423,7 +429,7 @@ async function saveNote() {
       <v-card-title class="text-wrap">Process pending expense</v-card-title>
       <v-card-text class="dialog-scroll-area">
         <div class="d-flex flex-column ga-3">
-          <v-text-field label="Description" v-model="description" hide-details />
+          <v-text-field label="Description" v-model="description" hide-details @update:model-value="descriptionEdited = true" />
           <v-text-field label="Date" type="date" v-model="date" hide-details />
           <div class="d-flex align-center justify-space-between flex-wrap ga-2">
             <span class="text-subtitle-1 font-weight-medium">

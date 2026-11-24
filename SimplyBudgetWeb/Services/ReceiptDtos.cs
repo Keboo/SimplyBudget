@@ -16,7 +16,8 @@ public record ReceiptDto(
     DateTime UploadedAtUtc,
     ReceiptLineItemDto[] LineItems,
     bool IsLinked = false,
-    ReceiptImageGeometry? ImageGeometry = null);
+    ReceiptImageGeometry? ImageGeometry = null,
+    string? Description = null);
 
 public static class ReceiptMapper
 {
@@ -36,5 +37,6 @@ public static class ReceiptMapper
             .ToArray(),
         ImageGeometry: receipt.ImageGeometryJson is { } json && ReceiptImageGeometry.TryParse(json, out var geometry)
             ? geometry
-            : null);
+            : null,
+        Description: receipt.Description);
 }
