@@ -38,6 +38,7 @@ function receipt(overrides: Partial<ReceiptDto> = {}): ReceiptDto {
     id: 1,
     isLinked: false,
     merchantName: 'Corner Cafe',
+    description: null,
     transactionDate: '2026-03-04T00:00:00',
     totalAmountCents: 1250,
     notes: null,
@@ -172,15 +173,32 @@ describe('Receipts page', () => {
     expect(wrapper.find('[data-receipt-id="7"]').exists()).toBe(true)
   })
 
-  it('shows only capture actions before a photo is chosen', async () => {
+  it('offers an optional description before a photo is chosen', async () => {
     const wrapper = await mountPage()
 
     expect(wrapper.text()).toContain('No pending receipts.')
     expect(wrapper.text()).toContain('Take a photo')
     expect(wrapper.text()).toContain('Choose file')
-    expect(wrapper.find('.receipt-capture input:not([type="file"])').exists()).toBe(false)
+    expect(wrapper.get('.receipt-capture input:not([type="file"])').attributes('maxlength')).toBe('500')
+    expect(wrapper.text()).toContain('Description (optional)')
     expect(wrapper.text()).not.toContain('Upload receipt')
     expect(wrapper.text()).not.toContain('Adjust corners')
+  })
+
+  it.each(['input[capture="environment"]', 'input[type="file"]:not([capture])'])('uploads the description entered before selecting %s and clears it for the next receipt', async selector => {
+    api.upload.mockResolvedValue(receipt({ description: 'Team lunch' }))
+    const wrapper = await mountPage()
+    const description = wrapper.get('.receipt-capture input:not([type="file"])')
+    await description.setValue('  Team lunch  ')
+    const input = wrapper.get(selector)
+    Object.defineProperty(input.element, 'files', { value: [new File(['raw'], 'lunch.jpg', { type: 'image/jpeg' })], configurable: true })
+    await input.trigger('change')
+    await flushPromises()
+
+    expect((api.upload.mock.calls[0]![1] as FormData).get('description')).toBe('Team lunch')
+    expect((description.element as HTMLInputElement).value).toBe('')
+    await chooseFile(wrapper)
+    expect((api.upload.mock.calls[1]![1] as FormData).get('description')).toBeNull()
   })
 
   it('shows the most recently uploaded receipts first', async () => {
@@ -263,7 +281,7 @@ describe('Receipts page', () => {
       text: 'Receipt saved',
       variant: 'success',
     })
-    expect(wrapper.find('.receipt-capture input:not([type="file"])').exists()).toBe(false)
+    expect((wrapper.get('.receipt-capture input:not([type="file"])').element as HTMLInputElement).value).toBe('')
   })
 
   it('selects the new upload from Categorized and retains drafts when switching back', async () => {
@@ -320,7 +338,7 @@ describe('Receipts page', () => {
   })
 
   it('persists missing details, preserves extraction, and retries a failed save without reuploading', async () => {
-    api.upload.mockResolvedValue(receipt({ totalAmountCents: null, notes: 'Keep note' }))
+    api.upload.mockResolvedValue(receipt({ totalAmountCents: null, notes: 'Keep note', description: 'Lunch with Sam' }))
     api.put.mockRejectedValueOnce(new Error('Could not save details'))
       .mockResolvedValue(receipt({ totalAmountCents: 1575, notes: 'Keep note' }))
     const wrapper = await mountPage()
@@ -336,6 +354,7 @@ describe('Receipts page', () => {
     await clickDialogButton('Save')
     expect(api.put).toHaveBeenLastCalledWith('/api/receipts/1', {
       merchantName: 'Corner Cafe',
+      description: 'Lunch with Sam',
       transactionDate: '2026-03-04T00:00:00',
       totalAmountCents: 1575,
       notes: 'Keep note',
@@ -410,21 +429,26 @@ describe('Receipts page', () => {
   it('shows the server error and allows retrying when the upload fails', async () => {
     api.upload.mockRejectedValue(new Error('Receipt storage is not configured.'))
     const wrapper = await mountPage()
+    const description = wrapper.get('.receipt-capture input:not([type="file"])')
+    await description.setValue('Keep for retry')
     await chooseFile(wrapper)
 
     expect(useSnackbarStore().messages.slice(-1)[0]).toMatchObject({
       text: 'Receipt storage is not configured.',
       variant: 'error',
     })
+    expect((description.element as HTMLInputElement).value).toBe('Keep for retry')
     api.upload.mockResolvedValue(receipt({ id: 5 }))
     await wrapper.findAll('button').find(button => button.text() === 'Retry upload')!.trigger('click')
     await flushPromises()
     expect(api.upload).toHaveBeenCalledTimes(2)
+    expect((api.upload.mock.calls[1]![1] as FormData).get('description')).toBe('Keep for retry')
+    expect((description.element as HTMLInputElement).value).toBe('')
     expect(wrapper.find('[data-receipt-id="5"]').exists()).toBe(true)
   })
 
   it('loads saved receipts, shows the first one, and saves corrections', async () => {
-    api.get.mockResolvedValue([receipt()])
+    api.get.mockResolvedValue([receipt({ description: 'Original lunch' })])
     api.put.mockResolvedValue(receipt({ merchantName: 'Fixed Cafe' }))
     const wrapper = await mountPage()
 
@@ -434,12 +458,16 @@ describe('Receipts page', () => {
     await editReceipt(wrapper)
     const merchant = wrapper.findAll('input').find(input => (input.element as HTMLInputElement).value === 'Corner Cafe')!
     await merchant.setValue('Fixed Cafe')
+    const description = wrapper.findAllComponents({ name: 'VTextField' }).find(field => field.props('label') === 'Expense description (optional)')!
+    expect((description.get('input').element as HTMLInputElement).value).toBe('Original lunch')
+    await description.get('input').setValue('Updated lunch')
     const save = wrapper.findAll('button').find(button => button.text().includes('Save corrections'))!
     await save.trigger('click')
     await flushPromises()
 
     expect(api.put).toHaveBeenCalledWith('/api/receipts/1', expect.objectContaining({
       merchantName: 'Fixed Cafe',
+      description: 'Updated lunch',
       totalAmountCents: 1250,
       lineItems: [{ description: 'Latte', amountCents: 450 }],
     }))
@@ -489,7 +517,7 @@ describe('Receipts page', () => {
     const wrapper = await mountPage()
     await chooseFile(wrapper)
     expect(wrapper.text()).toContain('Saving and reading receipt')
-    expect(wrapper.find('.receipt-capture input:not([type="file"])').exists()).toBe(false)
+    expect(wrapper.get('.receipt-capture input:not([type="file"])').attributes('disabled')).toBeDefined()
     expect(wrapper.text()).not.toContain('Adjust corners')
     finish(receipt())
     await flushPromises()
@@ -767,13 +795,61 @@ describe('Receipts page', () => {
   it('automatically selects the closest matching receipt and submits it', async () => {
     api.get.mockResolvedValue([
       receipt({ id: 3, merchantName: 'Two days off', transactionDate: '2026-03-06T00:00:00' }),
-      receipt({ id: 4, merchantName: 'Same day', transactionDate: '2026-03-04T00:00:00' }),
+      receipt({ id: 4, merchantName: 'Same day', transactionDate: '2026-03-04T00:00:00', description: 'Family lunch' }),
     ])
     await conversionDialog()
     expect(dialogRadio('4').checked).toBe(true)
     expect(receiptToggle().textContent).toContain('Same day')
     await clickDialogButton('Apply')
-    expect(api.post).toHaveBeenCalledWith('/api/pending-expenses/10/convert', expect.objectContaining({ receiptId: 4 }))
+    expect(api.post).toHaveBeenCalledWith('/api/pending-expenses/10/convert', expect.objectContaining({ receiptId: 4, description: 'Family lunch' }))
+  })
+
+  it('pre-fills from browsed receipts and restores the bank description when cleared or undescribed', async () => {
+    api.get.mockImplementation(async (url: string) => url === '/api/receipts'
+      ? [receipt({ id: 7, description: 'Birthday dinner' }), receipt({ id: 8, description: '  Groceries  ' }), receipt({ id: 9 })]
+      : [])
+    const wrapper = await conversionDialog({ notes: 'Bank note' })
+    const description = wrapper.findAllComponents({ name: 'VTextField' }).find(field => field.props('label') === 'Description')!.get('input')
+    await toggleReceipts()
+    await clickDialogButton('Browse all pending receipts')
+    await selectReceipt('7')
+    expect((description.element as HTMLInputElement).value).toBe('Birthday dinner')
+    await selectReceipt('8')
+    expect((description.element as HTMLInputElement).value).toBe('Groceries')
+    await selectReceipt('9')
+    expect((description.element as HTMLInputElement).value).toBe('Bank description')
+    await selectReceipt('7')
+    wrapper.getComponent({ name: 'VRadioGroup' }).vm.$emit('update:modelValue', null)
+    await flushPromises()
+    expect((description.element as HTMLInputElement).value).toBe('Bank description')
+    await selectReceipt('7')
+    await clickDialogButton('Apply')
+    expect(api.post).toHaveBeenCalledWith('/api/pending-expenses/10/convert', expect.objectContaining({
+      description: 'Birthday dinner', date: '2026-03-04', notes: 'Bank note',
+      items: [{ expenseCategoryId: 1, amount: 1250 }],
+    }))
+  })
+
+  it('keeps expense description edits when matches arrive, refresh, or the receipt is cleared', async () => {
+    let finish!: (value: ReceiptDto[]) => void
+    api.get.mockImplementationOnce(() => new Promise<ReceiptDto[]>(resolve => { finish = resolve }))
+    const wrapper = await conversionDialog()
+    const description = wrapper.findAllComponents({ name: 'VTextField' }).find(field => field.props('label') === 'Description')!.get('input')
+    await description.setValue('My edited description')
+    finish([receipt({ description: 'Receipt description' })])
+    await flushPromises()
+    expect(dialogRadio('1').checked).toBe(true)
+    expect((description.element as HTMLInputElement).value).toBe('My edited description')
+    api.get.mockResolvedValue([receipt({ description: 'Refreshed description' })])
+    await clickDialogButton('Refresh matches')
+    expect((description.element as HTMLInputElement).value).toBe('My edited description')
+    wrapper.getComponent({ name: 'VRadioGroup' }).vm.$emit('update:modelValue', null)
+    await flushPromises()
+    expect((description.element as HTMLInputElement).value).toBe('My edited description')
+    await wrapper.setProps({ modelValue: false })
+    await wrapper.setProps({ modelValue: true })
+    await flushPromises()
+    expect((description.element as HTMLInputElement).value).toBe('Refreshed description')
   })
 
   it('does not guess between equally close matches', async () => {

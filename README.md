@@ -189,11 +189,19 @@ later. Receipt details are read-only until **Edit receipt** is selected; **Save 
 edits. Unsaved drafts survive switching receipts or refreshing the list, but not leaving the page
 or reloading the browser. Possible duplicates are kept with a non-blocking warning, not a prompt.
 
+Before **Take a photo** or **Choose file**, enter an optional description (up to 500 characters).
+It is saved with the receipt, even if extraction fails, and cleared from capture after a successful
+upload. Failed uploads retain it for retry. Change it later under **Edit receipt**.
+Apply the `AddReceiptDescription` database migration before deploying this update.
+
 When processing a pending debit, the compact **Receipt (optional)** section is collapsed by default
 when there are no matches and opens automatically when suggestions are found. Expand it to
 select one suggested receipt, **Browse all pending receipts**
 to choose one with incorrect or missing AI details, or select **No receipt**. Previewing or
-attaching it does not change the editable expense description, date, notes, or category amounts.
+attaching a receipt pre-fills the expense description from its saved description, unless you have
+already edited the expense description. Switching receipts updates that default; **No receipt**
+restores the bank description. Receipts without a description also use the bank description.
+Your edits always take priority. Date, notes, and category amounts are unchanged.
 After conversion, **View receipt** in Expenses opens the original document. Receipt previews show
 loading/error/retry states and offer an **Open original receipt** link (including for existing PDFs).
 Deleting any receipt requires confirmation and permanently deletes its original image, receipt,

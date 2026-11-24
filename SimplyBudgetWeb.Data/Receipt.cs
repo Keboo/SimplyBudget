@@ -22,6 +22,9 @@ public class Receipt
     [MaxLength(300)]
     public string? MerchantName { get; set; }
 
+    [MaxLength(500)]
+    public string? Description { get; set; }
+
     public DateTime? TransactionDate { get; set; }
 
     public int? TotalAmountCents { get; set; }

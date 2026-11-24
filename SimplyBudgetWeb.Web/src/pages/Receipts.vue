@@ -60,6 +60,7 @@ const selectedReceipt = computed(() => receipts.value.find(receipt => receipt.id
 const imageFile = ref<File | null>(null)
 const imagePreviewUrl = ref('')
 const imageGeometry = ref<ReceiptImageGeometry | null>(null)
+const uploadDescription = ref('')
 const view = ref('pending')
 const visibleReceipts = computed(() => receipts.value
   .filter(receipt => Boolean(receipt.isLinked) === (view.value === 'categorized'))
@@ -72,6 +73,7 @@ const deleting = ref(false)
 const draftReceiptId = ref<number | null>(null)
 const drafts = new Map<number, ReceiptUpdateRequest>()
 const merchantName = ref('')
+const description = ref('')
 const transactionDate = ref('')
 const total = ref('')
 const notes = ref('')
@@ -116,6 +118,7 @@ async function loadReceipts() {
 function snapshot(): ReceiptUpdateRequest {
   return {
     merchantName: merchantName.value,
+    description: description.value,
     transactionDate: transactionDate.value,
     totalAmountCents: total.value.trim() ? dollarsToCents(total.value) : null,
     notes: notes.value,
@@ -131,6 +134,7 @@ watch(selectedReceipt, receipt => {
   editedGeometry.value = draft ? draft.imageGeometry ?? null : receipt?.imageGeometry ?? null
   geometryChanged.value = draft?.updateImageGeometry ?? false
   merchantName.value = draft?.merchantName ?? receipt?.merchantName ?? ''
+  description.value = draft?.description ?? receipt?.description ?? ''
   transactionDate.value = (draft?.transactionDate ?? receipt?.transactionDate)?.split('T')[0] ?? ''
   const amount = draft ? draft.totalAmountCents : receipt?.totalAmountCents
   total.value = amount == null ? '' : centsToDollars(amount)
@@ -181,6 +185,7 @@ async function uploadReceipt() {
   try {
     const formData = new FormData()
     formData.append('image', imageFile.value)
+    if (uploadDescription.value.trim()) formData.append('description', uploadDescription.value.trim())
     if (imageGeometry.value) formData.append('imageGeometry', JSON.stringify(imageGeometry.value))
     const receipt = await apiClient.upload<ReceiptDto>('/api/receipts', formData)
     const merchant = normalizeMerchant(receipt.merchantName)
@@ -198,6 +203,7 @@ async function uploadReceipt() {
     imageGeometry.value = null
     releaseUrl(imagePreviewUrl.value)
     imagePreviewUrl.value = ''
+    uploadDescription.value = ''
     finishUpload(receipt)
     if (match) snackbar.enqueueSnackbar('Receipt saved. It may duplicate an existing receipt; you can edit or delete it from the list.', { variant: 'warning' })
   } catch (error: unknown) {
@@ -243,6 +249,7 @@ async function completeReceipt() {
   try {
     const updated = await apiClient.put<ReceiptDto>(`/api/receipts/${receipt.id}`, {
       merchantName: receipt.merchantName,
+      description: receipt.description,
       transactionDate: date,
       totalAmountCents: amount,
       notes: receipt.notes,
@@ -282,6 +289,7 @@ async function saveReceipt() {
   try {
     const request: ReceiptUpdateRequest = {
       merchantName: merchantName.value.trim() || null,
+      description: description.value.trim() || null,
       transactionDate: transactionDate.value || null,
       totalAmountCents: total.value.trim() ? dollarsToCents(total.value) : null,
       notes: notes.value.trim() || null,
@@ -341,6 +349,15 @@ onBeforeUnmount(() => {
       <div class="text-body-2 text-medium-emphasis mb-3">
         Snap a photo and we will crop and save it. We only need your help if the date or total is missing.
       </div>
+      <v-text-field
+        v-model="uploadDescription"
+        label="Description (optional)"
+        maxlength="500"
+        hint="Pre-fills the expense description when you attach this receipt."
+        persistent-hint
+        class="mb-3"
+        :disabled="preparingImage || uploading || incompleteReceipt !== null"
+      />
       <div class="d-flex flex-wrap align-center ga-3">
         <v-btn
           prepend-icon="mdi-camera-plus"
@@ -487,6 +504,7 @@ onBeforeUnmount(() => {
         <v-alert v-if="actionError && !deleteOpen" type="error" variant="tonal" tabindex="-1" class="receipt-action-error mb-3">{{ actionError }}</v-alert>
         <div class="d-flex flex-column ga-2">
           <v-text-field v-model="merchantName" label="Location / merchant" maxlength="300" hide-details />
+          <v-text-field v-model="description" label="Expense description (optional)" maxlength="500" hide-details />
           <v-text-field v-model="transactionDate" label="Date" type="date" hide-details />
           <v-text-field v-model="total" label="Total amount" prefix="$" type="number" min="0" step="0.01" hide-details />
           <div class="d-flex align-center justify-space-between mt-2">

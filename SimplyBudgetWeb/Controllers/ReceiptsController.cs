@@ -168,12 +168,15 @@ public class ReceiptsController(
     public async Task<ActionResult<ReceiptDto>> Upload(
         [FromForm] IFormFile? image,
         CancellationToken cancellationToken,
-        [FromForm] string? imageGeometry = null)
+        [FromForm] string? imageGeometry = null,
+        [FromForm] string? description = null)
     {
         if (image is null || image.Length == 0)
             return BadRequest("An image is required.");
         if (image.Length > MaximumImageBytes)
             return BadRequest("Receipt images must be 15 MB or smaller.");
+        if (description?.Length > 500)
+            return BadRequest("Description must be 500 characters or fewer.");
 
         var extension = Path.GetExtension(image.FileName);
         var fileName = Path.GetFileName(image.FileName);
@@ -225,6 +228,7 @@ public class ReceiptsController(
             BlobName = blobName,
             FileName = fileName,
             ContentType = contentType,
+            Description = Normalize(description),
             ImageGeometryJson = geometry?.ToJson(),
             ProcessingStatus = "processing",
         };
@@ -307,6 +311,8 @@ public class ReceiptsController(
             return NotFound();
         if (request.MerchantName?.Length > 300)
             return BadRequest("Merchant name must be 300 characters or fewer.");
+        if (request.Description?.Length > 500)
+            return BadRequest("Description must be 500 characters or fewer.");
         if (request.Notes?.Length > 10000)
             return BadRequest("Notes must be 10,000 characters or fewer.");
         if (request.LineItems is null ||
@@ -329,6 +335,7 @@ public class ReceiptsController(
             .FirstOrDefaultAsync();
 
         receipt.MerchantName = Normalize(request.MerchantName);
+        receipt.Description = Normalize(request.Description);
         receipt.TransactionDate = request.TransactionDate?.Date;
         receipt.TotalAmountCents = request.TotalAmountCents;
         receipt.Notes = Normalize(request.Notes);
@@ -441,4 +448,5 @@ public record ReceiptUpdateRequest(
     string? Notes,
     ReceiptLineItemUpdateRequest[] LineItems,
     ReceiptImageGeometry? ImageGeometry = null,
-    bool UpdateImageGeometry = false);
+    bool UpdateImageGeometry = false,
+    string? Description = null);

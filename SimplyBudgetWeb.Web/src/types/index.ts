@@ -202,6 +202,7 @@ export interface ReceiptImageGeometry {
 
 export interface ReceiptDto {
   imageGeometry?: ReceiptImageGeometry | null
+  description: string | null
   id: number
   isLinked: boolean
   merchantName: string | null
@@ -218,6 +219,7 @@ export interface ReceiptDto {
 export interface ReceiptUpdateRequest {
   imageGeometry?: ReceiptImageGeometry | null
   updateImageGeometry?: boolean
+  description: string | null
   merchantName: string | null
   transactionDate: string | null
   totalAmountCents: number | null

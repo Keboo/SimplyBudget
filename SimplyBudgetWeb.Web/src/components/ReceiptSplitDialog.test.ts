@@ -23,6 +23,7 @@ const receipt = {
   id: 3,
   isLinked: false,
   merchantName: 'Market',
+  description: null,
   transactionDate: '2026-10-28',
   totalAmountCents: 1500,
   notes: null,
