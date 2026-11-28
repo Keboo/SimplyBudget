@@ -7,16 +7,16 @@
   <ItemGroup>
     <PackageVersion Include="Azure.AI.DocumentIntelligence" Version="1.0.0" />
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
-    <PackageVersion Include="Azure.Storage.Blobs" Version="12.30.1" />
+    <PackageVersion Include="Azure.Storage.Blobs" Version="12.30.2" />
 
     <!-- Aspire -->
-    <PackageVersion Include="Aspire.Hosting.Azure" Version="13.6.5" />
-    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="13.6.5" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Sql" Version="13.6.5" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="13.6.5" />
-    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.6.5" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.6.5" />
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.6.5" />
+    <PackageVersion Include="Aspire.Hosting.Azure" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.Azure.AppContainers" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Sql" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="17.0.0" />
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="17.0.0" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.6.0" />
 
     <!-- WPF / MVVM (existing desktop app) -->
@@ -27,14 +27,14 @@
     <PackageVersion Include="Velopack" Version="1.2.161" />
 
     <!-- CSV -->
-    <PackageVersion Include="CsvHelper" Version="34.0.0" />
+    <PackageVersion Include="CsvHelper" Version="34.1.0" />
 
     <!-- Database -->
     <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="11.0.0" />
     <!-- Keep SqlClient and its Azure authentication extension on the same release line
          to avoid an AmbiguousMatchException in SqlAuthenticationProviderManager. -->
-    <PackageVersion Include="Microsoft.Data.SqlClient" Version="7.1.2" />
-    <PackageVersion Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="7.1.2" />
+    <PackageVersion Include="Microsoft.Data.SqlClient" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="8.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="11.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="11.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0">
@@ -62,8 +62,8 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="11.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="11.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="11.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="11.0.1" />
 
     <!-- OpenTelemetry -->
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.21.0" />
@@ -74,7 +74,7 @@
 
     <!-- Playwright / UI Tests -->
     <PackageVersion Include="Deque.AxeCore.Playwright" Version="4.14.0" />
-    <PackageVersion Include="Microsoft.Playwright" Version="1.64.1" />
+    <PackageVersion Include="Microsoft.Playwright" Version="1.65.1" />
 
     <!-- TypeScript -->
     <PackageVersion Include="Microsoft.TypeScript.MSBuild" Version="7.0.1">
@@ -92,7 +92,7 @@
     <PackageVersion Include="Moq.AutoMock" Version="4.0.3" />
     <PackageVersion Include="MSTest.TestAdapter" Version="4.5.2" />
     <PackageVersion Include="MSTest.TestFramework" Version="4.5.2" />
-    <PackageVersion Include="TUnit" Version="1.84.0" />
+    <PackageVersion Include="TUnit" Version="1.87.12" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
